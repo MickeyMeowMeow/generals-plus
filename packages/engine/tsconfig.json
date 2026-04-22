@@ -1,5 +1,5 @@
 {
-  "extends": "@generals-plus/typescript-config/base.json",
+  "extends": "@generals-plus/typescript-config/lib.json",
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist"

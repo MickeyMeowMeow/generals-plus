@@ -3,9 +3,10 @@
   "compilerOptions": {
     "module": "esnext",
     "target": "es2023",
-    "skipLibCheck": true,
 
+    "skipLibCheck": true,
     "strict": true,
+
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
