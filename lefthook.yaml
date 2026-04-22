@@ -1,0 +1,18 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome-lint:
+      glob: "*.{js,ts,jsx,tsx,json}"
+      run: pnpm exec biome check --write --no-errors-on-unmatched {staged_files} && git add {staged_files}
+
+    type-check:
+      run: pnpm type-check
+
+    test-related:
+      glob: "*.{ts,tsx}"
+      run: pnpm vitest related --run {staged_files}
+
+pre-push:
+  commands:
+    test-all:
+      run: pnpm test
