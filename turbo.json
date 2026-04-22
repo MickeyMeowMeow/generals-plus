@@ -13,7 +13,7 @@
       "persistent": true
     },
     "test": {
-      "dependsOn": ["transit"]
+      "dependsOn": ["transit", "@generals-plus/vitest-config#build"]
     },
     "//#check": {},
     "//#check:fix": {
