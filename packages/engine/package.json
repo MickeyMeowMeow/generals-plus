@@ -1,0 +1,18 @@
+{
+  "name": "@generals-plus/engine",
+  "private": true,
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.js",
+  "scripts": {
+    "build": "rolldown src/index.ts",
+    "dev": "rolldown src/index.ts --watch --dir dist",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@generals-plus/typescript-config": "workspace:*",
+    "@generals-plus/vitest-config": "workspace:*",
+    "rolldown": "1.0.0-rc.16",
+    "vitest": "^4.1.5"
+  }
+}

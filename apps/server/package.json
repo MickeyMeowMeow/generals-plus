@@ -1,0 +1,29 @@
+{
+  "name": "server",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "rolldown src/index.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@colyseus/core": "^0.17.42",
+    "@colyseus/schema": "^4.0.20",
+    "@colyseus/ws-transport": "^0.17.13",
+    "@generals-plus/engine": "workspace:*",
+    "colyseus": "^0.17.10",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@generals-plus/typescript-config": "workspace:*",
+    "@generals-plus/vitest-config": "workspace:*",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "rolldown": "1.0.0-rc.16",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
+}
