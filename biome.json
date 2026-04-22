@@ -1,12 +1,13 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.12/schema.json",
   "vcs": {
-    "enabled": false,
+    "enabled": true,
     "clientKind": "git",
-    "useIgnoreFile": false
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
   },
   "files": {
-    "includes": ["**", "!!**/dist"],
+    "includes": ["**", "!!**/dist", "!!**/build"],
     "ignoreUnknown": false
   },
   "formatter": {
@@ -17,7 +18,15 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "style": {
+        "useImportType": {
+          "level": "on",
+          "options": {
+            "style": "separatedType"
+          }
+        }
+      }
     }
   },
   "javascript": {
@@ -29,7 +38,22 @@
     "enabled": true,
     "actions": {
       "source": {
-        "organizeImports": "on"
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              ":NODE:",
+              ":BLANK_LINE:",
+              [":PACKAGE:", ":PACKAGE_WITH_PROTOCOL:"],
+              ":BLANK_LINE:",
+              [":ALIAS:", "!**/*.css", "!**/*.scss"],
+              [":PATH:", "!**/*.css", "!**/*.scss"],
+              ":BLANK_LINE:",
+              ["**/*.css", "**/*.scss"],
+              ":BLANK_LINE:"
+            ]
+          }
+        }
       }
     }
   }
