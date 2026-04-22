@@ -15,8 +15,11 @@
     "test": {
       "dependsOn": ["transit", "@generals-plus/vitest-config#build"]
     },
-    "//#check": {},
-    "//#check:fix": {
+    "type-check": {
+      "dependsOn": ["transit"]
+    },
+    "//#lint": {},
+    "//#lint:fix": {
       "cache": false
     }
   }

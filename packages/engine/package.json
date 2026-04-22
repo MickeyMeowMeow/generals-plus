@@ -7,7 +7,8 @@
   "scripts": {
     "build": "rolldown src/index.ts",
     "dev": "rolldown src/index.ts --watch --dir dist",
-    "test": "vitest run"
+    "test": "vitest run",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "@generals-plus/typescript-config": "workspace:*",
