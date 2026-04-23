@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useMatchConnectionStore } from "../../match/store/matchConnectionStore";
+import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 
 export function LobbyPage() {
   const navigate = useNavigate();

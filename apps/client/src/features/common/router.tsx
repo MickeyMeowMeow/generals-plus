@@ -1,10 +1,10 @@
 import type { RouteObject } from "react-router-dom";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
-import App from "../../App";
-import { LobbyPage } from "../lobby/pages/LobbyPage";
-import { MatchPage } from "../match/pages/MatchPage";
-import { NotFoundPage } from "./pages/NotFoundPage";
+import App from "#/App";
+import { NotFoundPage } from "#/features/common/pages/NotFoundPage";
+import { LobbyPage } from "#/features/lobby/pages/LobbyPage";
+import { MatchPage } from "#/features/match/pages/MatchPage";
 
 export const appRoutes: RouteObject[] = [
   {
