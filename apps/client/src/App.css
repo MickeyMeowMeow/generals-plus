@@ -55,3 +55,53 @@
 .page p {
   margin-bottom: 12px;
 }
+
+.status-line {
+  font-weight: 600;
+}
+
+.error-text {
+  color: #b42318;
+}
+
+.room-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.room-form input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.actions button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  font: inherit;
+  padding: 8px 12px;
+}
+
+.actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.state-preview {
+  background: var(--code-bg);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 8px;
+}
