@@ -5,6 +5,8 @@ export default defineConfig({
   ...webConfig,
   test: {
     ...webConfig.test,
-    // Package-specific overrides if needed
+    passWithNoTests: false,
+    setupFiles: ["./tests/setup.ts"],
+    include: ["tests/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
   },
 });
