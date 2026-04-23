@@ -72,7 +72,7 @@ describe("colyseus connection gateway", () => {
     expect(joinedRoom).toBe(room);
 
     expect(room.onStateChange).toHaveBeenCalledWith(onStateChange);
-    expect(room.onMessage).toHaveBeenCalledWith(onMessage);
+    expect(room.onMessage).toHaveBeenCalledWith("*", onMessage);
     expect(room.onError).toHaveBeenCalledWith(onError);
     expect(room.onLeave).toHaveBeenCalledWith(onLeave);
   });

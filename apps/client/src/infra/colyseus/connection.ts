@@ -7,7 +7,14 @@ export interface ColyseusRoomLike<State = unknown, Message = unknown> {
   sessionId: string;
   leave(consented?: boolean): Promise<number>;
   onStateChange(callback: (state: State) => void): void;
-  onMessage(callback: (message: Message) => void): void;
+  onMessage(
+    type: string | number,
+    callback: (message: Message) => void,
+  ): unknown;
+  onMessage(
+    type: "*",
+    callback: (type: string | number, message: Message) => void,
+  ): unknown;
   onError(callback: (code: number, message?: string) => void): void;
   onLeave(callback: (code: number) => void): void;
 }
@@ -32,7 +39,10 @@ export interface JoinRoomOptions {
 }
 
 export function resolveColyseusEndpoint(
-  env: { VITE_COLYSEUS_ENDPOINT?: string } = import.meta.env,
+  env: Record<string, string | undefined> = import.meta.env as Record<
+    string,
+    string | undefined
+  >,
 ): string {
   const endpoint = env.VITE_COLYSEUS_ENDPOINT?.trim();
   return endpoint && endpoint.length > 0 ? endpoint : DEFAULT_COLYSEUS_ENDPOINT;
@@ -45,7 +55,11 @@ export function createColyseusClient(
 }
 
 export class ColyseusConnectionGateway {
-  constructor(private readonly client: ColyseusClientLike) {}
+  private readonly client: ColyseusClientLike;
+
+  constructor(client: ColyseusClientLike) {
+    this.client = client;
+  }
 
   async joinRoom<State = unknown, Message = unknown>(
     joinOptions: JoinRoomOptions,
@@ -61,7 +75,7 @@ export class ColyseusConnectionGateway {
     }
 
     if (handlers.onMessage) {
-      room.onMessage(handlers.onMessage);
+      room.onMessage("*", handlers.onMessage);
     }
 
     if (handlers.onError) {

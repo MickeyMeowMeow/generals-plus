@@ -4,8 +4,8 @@ import type {
   ColyseusRoomLike,
   JoinRoomOptions,
   RoomEventHandlers,
-} from "../../../infra/colyseus/connection";
-import { createColyseusConnectionGateway } from "../../../infra/colyseus/connection";
+} from "#/infra/colyseus/connection";
+import { createColyseusConnectionGateway } from "#/infra/colyseus/connection";
 
 export type MatchConnectionStatus =
   | "idle"

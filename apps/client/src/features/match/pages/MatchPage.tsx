@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { useMatchConnectionStore } from "../store/matchConnectionStore";
+import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 
 export function MatchPage() {
   const navigate = useNavigate();
