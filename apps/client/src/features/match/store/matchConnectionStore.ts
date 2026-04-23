@@ -113,7 +113,7 @@ export function createMatchConnectionStore(
             onStateChange: (state) => {
               set({ latestState: state });
             },
-            onMessage: (message) => {
+            onMessage: (_type, message) => {
               set({ latestMessage: message });
             },
             onError: (_code, message) => {

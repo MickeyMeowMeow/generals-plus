@@ -28,7 +28,7 @@ export interface ColyseusClientLike {
 
 export interface RoomEventHandlers<State = unknown, Message = unknown> {
   onStateChange?: (state: State) => void;
-  onMessage?: (message: Message) => void;
+  onMessage?: (type: string | number, message: Message) => void;
   onError?: (code: number, message?: string) => void;
   onLeave?: (code: number) => void;
 }
