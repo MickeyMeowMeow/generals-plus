@@ -1,0 +1,19 @@
+{
+  "name": "@generals-plus/room-types",
+  "private": true,
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "vitest": "^4.1.5"
+  },
+  "devDependencies": {
+    "@generals-plus/typescript-config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}
