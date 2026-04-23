@@ -2,8 +2,12 @@
   "name": "@generals-plus/engine",
   "private": true,
   "version": "0.1.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.js",
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./src/index.ts"
+    }
+  },
   "scripts": {
     "build": "rolldown src/index.ts",
     "dev": "rolldown src/index.ts --watch --dir dist",
