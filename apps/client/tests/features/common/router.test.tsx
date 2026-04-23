@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import { appRoutes } from "../../../src/features/common/router";
+import { appRoutes } from "#/features/common/router";
 
 function renderRoute(initialPath: string) {
   const router = createMemoryRouter(appRoutes, {
