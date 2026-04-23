@@ -1,9 +1,5 @@
 {
   "name": "@generals-plus/typescript-config",
   "version": "0.1.0",
-  "private": true,
-  "files": [
-    "base.json",
-    "vite.json"
-  ]
+  "private": true
 }
