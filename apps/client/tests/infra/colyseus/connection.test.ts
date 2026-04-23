@@ -3,12 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import type {
   ColyseusClientLike,
   ColyseusRoomLike,
-} from "../../../src/infra/colyseus/connection";
+} from "#/infra/colyseus/connection";
 import {
   ColyseusConnectionGateway,
   DEFAULT_COLYSEUS_ENDPOINT,
   resolveColyseusEndpoint,
-} from "../../../src/infra/colyseus/connection";
+} from "#/infra/colyseus/connection";
 
 interface MatchState {
   tick: number;
