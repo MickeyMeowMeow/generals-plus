@@ -100,7 +100,7 @@ describe("match connection store", () => {
     expect(store.getState().sessionId).toBe("session-1");
 
     handlers?.onStateChange?.({ turn: 2 });
-    handlers?.onMessage?.({ kind: "sync" });
+    handlers?.onMessage?.("sync", { kind: "sync" });
 
     expect(store.getState().latestState).toEqual({ turn: 2 });
     expect(store.getState().latestMessage).toEqual({ kind: "sync" });
