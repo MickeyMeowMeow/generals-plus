@@ -5,11 +5,17 @@
 import "dotenv/config";
 
 import { monitor } from "@colyseus/monitor";
-import { defineServer } from "colyseus";
+import { defineServer, matchMaker } from "colyseus";
 import mongoose from "mongoose";
 
 import { ENV } from "#env";
 import { auth } from "#features/auth/auth-config";
+
+matchMaker.controller.exposedMethods = [
+  "joinById",
+  "reconnect",
+  "consumeSeatReservation",
+];
 
 /**
  * Database connection utility.
