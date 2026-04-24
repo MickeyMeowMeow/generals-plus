@@ -9,7 +9,7 @@ import obstacleIconUrl from "#assets/generals-io/obstacle.svg";
 import swampIconUrl from "#assets/generals-io/swamp.svg";
 
 /**
- * Raster icons from generals.io used as the terrain overlay in the Pixi grid.
+ * Icons from generals.io used as the terrain overlay in the Pixi grid.
  */
 const terrainIconUrls: Partial<Record<TerrainValue, string>> = {
   [Terrain.GENERAL]: crownIconUrl,
