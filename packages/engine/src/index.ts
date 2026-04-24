@@ -1,4 +1,4 @@
-export * from "@/domain/action/action_type";
+export * from "@/domain/action/action-type";
 export * from "@/domain/action/interfaces";
 export * from "@/domain/cell/interfaces";
 export * from "@/domain/cell/terrain";
