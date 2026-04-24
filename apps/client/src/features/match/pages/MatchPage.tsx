@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 
 export function MatchPage() {
@@ -9,6 +10,7 @@ export function MatchPage() {
   const resolvedRoomName = roomName ? decodeURIComponent(roomName) : "";
 
   const status = useMatchConnectionStore((state) => state.status);
+  const displayName = useUserAuthStore((state) => state.displayName);
   const activeRoomName = useMatchConnectionStore((state) => state.roomName);
   const roomId = useMatchConnectionStore((state) => state.roomId);
   const sessionId = useMatchConnectionStore((state) => state.sessionId);
@@ -48,6 +50,7 @@ export function MatchPage() {
     <section className="page" aria-label="Match Page">
       <h2>Match Room</h2>
       <p>Room: {resolvedRoomName || "unknown"}</p>
+      <p>Player: {displayName ?? "anonymous"}</p>
       <p className="status-line" role="status">
         Connection status: {status}
       </p>
