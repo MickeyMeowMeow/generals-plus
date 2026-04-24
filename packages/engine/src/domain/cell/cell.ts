@@ -12,7 +12,7 @@ export interface CellOptions {
   /** Immutable location of the cell in the grid. */
   readonly coordinate: ICoordinate;
   /** Terrain determines passability and the base renderer color. */
-  readonly terrain?: Terrain;
+  readonly terrain: Terrain;
   /** Current owner, if this cell has been captured. */
   readonly owner?: ICellOwner | null;
   /** Current troop count; null means the cell has no meaningful troop state yet. */
@@ -40,7 +40,7 @@ export class Cell extends EffectTarget implements ICell {
     super(`cell:${options.coordinate.x},${options.coordinate.y}`);
 
     this.coordinate = options.coordinate;
-    this.terrain = options.terrain ?? Terrain.PLAIN;
+    this.terrain = options.terrain;
     this.isPassable =
       this.terrain !== Terrain.MOUNTAIN && this.terrain !== Terrain.VOID;
     this.owner = options.owner ?? null;
