@@ -73,6 +73,7 @@ export function createMatchConnectionStore(
   // Mutable references held outside Zustand state to avoid triggering re-renders.
   let gateway: MatchConnectionGateway | null = null;
   let activeRoom: ColyseusRoomLike | null = null;
+  let joinGeneration = 0;
 
   // Lazily create or replace the gateway instance.
   const resolveGateway = (endpoint?: string): MatchConnectionGateway => {
@@ -100,7 +101,10 @@ export function createMatchConnectionStore(
     },
 
     // Join (or create) a room. Leaves any previous room first.
+    // Uses a generation counter to discard stale callbacks from previous rooms.
     async joinRoom(roomName, options = {}) {
+      const generation = ++joinGeneration;
+
       // Leave the current room before joining a new one.
       if (activeRoom) {
         await resolveGateway().leaveRoom(activeRoom, true);
@@ -112,6 +116,8 @@ export function createMatchConnectionStore(
         roomName,
         roomId: null,
         sessionId: null,
+        latestState: null,
+        latestMessage: null,
         lastError: null,
       });
 
@@ -123,24 +129,35 @@ export function createMatchConnectionStore(
           },
           {
             onStateChange: (state) => {
+              if (generation !== joinGeneration) return;
               set({ latestState: state });
             },
             // Register specific message type handlers when the game protocol is defined.
             // Colyseus 0.16 requires per-type registration — no client-side wildcard.
             onError: (_code, message) => {
+              if (generation !== joinGeneration) return;
               get().setError(message ?? "Room connection error");
             },
             onLeave: () => {
+              if (generation !== joinGeneration) return;
               activeRoom = null;
               set({
                 status: "disconnected",
                 roomId: null,
                 roomName: null,
                 sessionId: null,
+                latestState: null,
+                latestMessage: null,
               });
             },
           },
         );
+
+        // Another joinRoom call arrived while we were connecting — discard this room.
+        if (generation !== joinGeneration) {
+          await resolveGateway().leaveRoom(room, true);
+          return;
+        }
 
         activeRoom = room;
         set({
@@ -151,12 +168,15 @@ export function createMatchConnectionStore(
           lastError: null,
         });
       } catch (error) {
+        if (generation !== joinGeneration) return;
         activeRoom = null;
         set({
           status: "error",
           roomId: null,
           roomName: null,
           sessionId: null,
+          latestState: null,
+          latestMessage: null,
           lastError:
             error instanceof Error ? error.message : "Failed to join room",
         });
@@ -171,6 +191,8 @@ export function createMatchConnectionStore(
           roomId: null,
           roomName: null,
           sessionId: null,
+          latestState: null,
+          latestMessage: null,
         });
         return;
       }
@@ -185,6 +207,8 @@ export function createMatchConnectionStore(
           roomId: null,
           roomName: null,
           sessionId: null,
+          latestState: null,
+          latestMessage: null,
           lastError: null,
         });
       } catch (error) {
@@ -193,6 +217,8 @@ export function createMatchConnectionStore(
           roomId: null,
           roomName: null,
           sessionId: null,
+          latestState: null,
+          latestMessage: null,
           lastError:
             error instanceof Error ? error.message : "Failed to leave room",
         });

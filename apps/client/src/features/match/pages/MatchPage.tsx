@@ -92,7 +92,15 @@ export function MatchPage() {
         </button>
       </div>
       <p>
-        <Link to="/lobby">Back to lobby</Link>
+        <Link
+          to="/lobby"
+          onClick={(event) => {
+            event.preventDefault();
+            void handleLeave();
+          }}
+        >
+          Back to lobby
+        </Link>
       </p>
     </section>
   );
