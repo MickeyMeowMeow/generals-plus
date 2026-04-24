@@ -18,6 +18,12 @@ matchMaker.controller.exposedMethods = [
   "consumeSeatReservation",
 ];
 
+matchMaker.controller.exposedMethods = [
+  "joinById",
+  "reconnect",
+  "consumeSeatReservation",
+];
+
 /**
  * Database connection utility.
  * Uses credentials defined in your Docker Compose / .env file.
