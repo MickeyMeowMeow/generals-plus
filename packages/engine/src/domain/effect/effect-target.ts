@@ -43,12 +43,7 @@ export abstract class EffectTarget implements IEffectTarget {
    * Advances all active effects, expiring them before running same-tick updates.
    */
   tickEffects(currentTick: number): void {
-    for (const effect of [...this.effects]) {
-      if (effect.expireAt !== null && currentTick >= effect.expireAt) {
-        this.removeEffect(effect.id);
-        continue;
-      }
-
+    for (const effect of this.effects) {
       effect.onTick?.(currentTick);
     }
   }
