@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { MatchConnectionGateway } from "#/features/match/store/matchConnectionStore";
-import { createMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
+import type { MatchConnectionGateway } from "@/features/match/store/matchConnectionStore";
+import { createMatchConnectionStore } from "@/features/match/store/matchConnectionStore";
 import type {
   ColyseusRoomLike,
   JoinRoomOptions,
   RoomEventHandlers,
-} from "#/infra/colyseus/connection";
+} from "@/infra/colyseus/connection";
 
 interface MatchState {
   turn: number;

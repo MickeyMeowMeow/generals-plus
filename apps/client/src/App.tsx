@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
-import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
+import { useUserAuthStore } from "@/features/auth/store/userAuthStore";
 
 import "./App.css";
 

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
-import type { ColyseusAuthData } from "#/infra/colyseus/connection";
-import { createSharedColyseusConnectionGateway } from "#/infra/colyseus/connection";
+import type { ColyseusAuthData } from "@/infra/colyseus/connection";
+import { createSharedColyseusConnectionGateway } from "@/infra/colyseus/connection";
 
 // State machine for the user authentication lifecycle:
 // idle → hydrating → authenticated | idle

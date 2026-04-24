@@ -2,12 +2,12 @@ import type { ReactElement } from "react";
 import type { RouteObject } from "react-router-dom";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
-import App from "#/App";
-import { UserPage } from "#/features/auth/pages/UserPage";
-import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
-import { NotFoundPage } from "#/features/common/pages/NotFoundPage";
-import { LobbyPage } from "#/features/lobby/pages/LobbyPage";
-import { MatchPage } from "#/features/match/pages/MatchPage";
+import App from "@/App";
+import { UserPage } from "@/features/auth/pages/UserPage";
+import { useUserAuthStore } from "@/features/auth/store/userAuthStore";
+import { NotFoundPage } from "@/features/common/pages/NotFoundPage";
+import { LobbyPage } from "@/features/lobby/pages/LobbyPage";
+import { MatchPage } from "@/features/match/pages/MatchPage";
 
 // Route guard that redirects unauthenticated users to /user.
 function RequireAuthenticated({ children }: { children: ReactElement }) {

@@ -1,8 +1,15 @@
+import path from "node:path";
+
 import { webConfig } from "@generals-plus/vitest-config";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   ...webConfig,
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+    },
+  },
   test: {
     ...webConfig.test,
     passWithNoTests: false,

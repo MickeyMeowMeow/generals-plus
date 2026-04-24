@@ -6,12 +6,12 @@ import type {
   ColyseusAuthLike,
   ColyseusClientLike,
   ColyseusRoomLike,
-} from "#/infra/colyseus/connection";
+} from "@/infra/colyseus/connection";
 import {
   ColyseusConnectionGateway,
   DEFAULT_COLYSEUS_ENDPOINT,
   resolveColyseusEndpoint,
-} from "#/infra/colyseus/connection";
+} from "@/infra/colyseus/connection";
 
 interface MatchState {
   tick: number;

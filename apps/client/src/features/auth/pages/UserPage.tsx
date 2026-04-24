@@ -2,8 +2,8 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
-import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
+import { useUserAuthStore } from "@/features/auth/store/userAuthStore";
+import { useMatchConnectionStore } from "@/features/match/store/matchConnectionStore";
 
 // Authentication page where players create or manage their anonymous session.
 export function UserPage() {

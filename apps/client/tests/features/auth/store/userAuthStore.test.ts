@@ -3,12 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import type {
   UserAuthDependencies,
   UserAuthGateway,
-} from "#/features/auth/store/userAuthStore";
+} from "@/features/auth/store/userAuthStore";
 import {
   createUserAuthStore,
   resolveDisplayNameFromUser,
-} from "#/features/auth/store/userAuthStore";
-import type { ColyseusAuthData } from "#/infra/colyseus/connection";
+} from "@/features/auth/store/userAuthStore";
+import type { ColyseusAuthData } from "@/infra/colyseus/connection";
 
 interface AuthGatewayHarness {
   gateway: UserAuthGateway;

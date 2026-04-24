@@ -4,8 +4,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
-import { appRoutes } from "#/features/common/router";
+import { useUserAuthStore } from "@/features/auth/store/userAuthStore";
+import { appRoutes } from "@/features/common/router";
 
 function renderRoute(initialPath: string) {
   const router = createMemoryRouter(appRoutes, {

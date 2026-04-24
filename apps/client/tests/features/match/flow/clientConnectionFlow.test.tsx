@@ -5,9 +5,9 @@ import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
-import { appRoutes } from "#/features/common/router";
-import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
+import { useUserAuthStore } from "@/features/auth/store/userAuthStore";
+import { appRoutes } from "@/features/common/router";
+import { useMatchConnectionStore } from "@/features/match/store/matchConnectionStore";
 
 const initialMatchState = useMatchConnectionStore.getInitialState();
 const initialAuthState = useUserAuthStore.getInitialState();

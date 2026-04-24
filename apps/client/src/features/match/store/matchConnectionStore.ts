@@ -4,8 +4,8 @@ import type {
   ColyseusRoomLike,
   JoinRoomOptions,
   RoomEventHandlers,
-} from "#/infra/colyseus/connection";
-import { createSharedColyseusConnectionGateway } from "#/infra/colyseus/connection";
+} from "@/infra/colyseus/connection";
+import { createSharedColyseusConnectionGateway } from "@/infra/colyseus/connection";
 
 // State machine for the match room connection lifecycle:
 // idle → connecting → connected → disconnected
