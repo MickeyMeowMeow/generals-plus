@@ -2,6 +2,15 @@
   "name": "server",
   "private": true,
   "version": "0.1.0",
+  "imports": {
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
+  },
   "scripts": {
     "build": "tsdown src/index.ts",
     "dev": "tsx watch src/index.ts",

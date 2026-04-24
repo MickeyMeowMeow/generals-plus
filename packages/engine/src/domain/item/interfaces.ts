@@ -1,4 +1,4 @@
-import type { ItemType } from "@/domain/item/item-type";
+import type { ItemType } from "#domain/item/item-type";
 
 /**
  * Represents a carryable object on the grid.

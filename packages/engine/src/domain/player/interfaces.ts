@@ -1,6 +1,6 @@
-import type { IEffectTarget } from "@/domain/effect/interfaces";
-import type { PlayerStatus } from "@/domain/player/player-status";
-import type { Team } from "@/domain/team/interfaces";
+import type { IEffectTarget } from "#domain/effect/interfaces";
+import type { PlayerStatus } from "#domain/player/player-status";
+import type { Team } from "#domain/team/interfaces";
 
 /**
  * Represents a single player in an ongoing match.

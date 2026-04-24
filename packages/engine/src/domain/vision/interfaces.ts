@@ -1,7 +1,7 @@
-import type { PlayerStatus } from "@/domain/player/player-status";
-import type { Team } from "@/domain/team/interfaces";
-import type { Visibility } from "@/domain/vision/visibility";
-import type { ICoordinate } from "@/math/coordinate";
+import type { PlayerStatus } from "#domain/player/player-status";
+import type { Team } from "#domain/team/interfaces";
+import type { Visibility } from "#domain/vision/visibility";
+import type { ICoordinate } from "#math/coordinate";
 
 export interface IVisionPlayer {
   team: Team;
