@@ -1,12 +1,5 @@
 import { Schema, type } from "@colyseus/schema";
-
-// Aligned with engine PlayerStatus enum values
-export const PlayerStatus = {
-  ACTIVE: "active",
-  ELIMINATED: "eliminated",
-} as const;
-
-export type PlayerStatus = (typeof PlayerStatus)[keyof typeof PlayerStatus];
+import { PlayerStatus } from "@generals-plus/engine";
 
 export class Player extends Schema {
   @type("string") id: string = "";

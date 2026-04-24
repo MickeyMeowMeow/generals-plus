@@ -2,7 +2,7 @@ import { Server } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import cors from "cors";
 
-import { MatchRoom } from "./features/match/match-room.js";
+import { MatchRoom } from "#features/match/match-room.js";
 
 const port = Number(process.env.PORT) || 3000;
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { RoomUser } from "./room-user";
+import type { RoomUser } from "#/room-user";
 
 export interface CellInit {
   terrain: string;
