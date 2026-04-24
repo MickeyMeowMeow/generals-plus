@@ -11,7 +11,11 @@ import mongoose from "mongoose";
 import { ENV } from "#env";
 import { auth } from "#features/auth/auth-config";
 
-matchMaker.controller.exposedMethods = ['joinById', 'reconnect', 'consumeSeatReservation'];
+matchMaker.controller.exposedMethods = [
+  "joinById",
+  "reconnect",
+  "consumeSeatReservation",
+];
 
 /**
  * Database connection utility.

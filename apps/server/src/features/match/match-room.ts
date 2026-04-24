@@ -1,8 +1,8 @@
+import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { Room } from "@colyseus/core";
 import type { Terrain } from "@generals-plus/engine";
 import { PlayerStatus } from "@generals-plus/engine";
-import { JWT } from "@colyseus/auth";
 import {
   Cell,
   MatchState,
@@ -77,9 +77,13 @@ export class MatchRoom extends Room<{
         player.sessionId = client.sessionId;
         player.status = PlayerStatus.ACTIVE;
 
-        console.log(`[MatchRoom] Player ${userdata.username} bound to session ${client.sessionId}`);
+        console.log(
+          `[MatchRoom] Player ${userdata.username} bound to session ${client.sessionId}`,
+        );
       } else {
-        console.log(`[MatchRoom] Error: Player data not found for user: ${userdata.username}`);
+        console.log(
+          `[MatchRoom] Error: Player data not found for user: ${userdata.username}`,
+        );
       }
     } else {
       console.log(
