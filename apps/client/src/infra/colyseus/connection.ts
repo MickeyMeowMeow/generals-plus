@@ -161,16 +161,18 @@ export function createColyseusConnectionGateway(
 const sharedGatewayByEndpoint = new Map<string, ColyseusConnectionGateway>();
 
 // Return a cached gateway for the given endpoint, creating one on first access.
+// Normalizes whitespace and falls back to the default endpoint when empty.
 export function createSharedColyseusConnectionGateway(
   endpoint = resolveColyseusEndpoint(),
 ): ColyseusConnectionGateway {
-  const existingGateway = sharedGatewayByEndpoint.get(endpoint);
+  const normalized = endpoint.trim() || resolveColyseusEndpoint();
+  const existingGateway = sharedGatewayByEndpoint.get(normalized);
   if (existingGateway) {
     return existingGateway;
   }
 
-  const gateway = createColyseusConnectionGateway(endpoint);
-  sharedGatewayByEndpoint.set(endpoint, gateway);
+  const gateway = createColyseusConnectionGateway(normalized);
+  sharedGatewayByEndpoint.set(normalized, gateway);
   return gateway;
 }
 

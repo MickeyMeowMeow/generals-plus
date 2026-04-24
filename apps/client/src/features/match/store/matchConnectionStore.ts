@@ -93,10 +93,20 @@ export function createMatchConnectionStore(
     ...createInitialState(),
 
     connect(endpoint) {
+      // Tear down any active room before switching gateways.
+      if (activeRoom) {
+        const previousRoom = activeRoom;
+        activeRoom = null;
+        joinGeneration++;
+        void resolveGateway()
+          .leaveRoom(previousRoom, true)
+          .catch(() => {});
+      }
+
       gateway = resolveGateway(endpoint);
       set({
+        ...createInitialState(),
         status: "disconnected",
-        lastError: null,
       });
     },
 
