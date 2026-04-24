@@ -20,11 +20,11 @@ export interface ICell extends IEffectTarget {
 
   /**
    * Whether the cell can be traversed or occupied.
-   * Impassible cells always have zero troops and no owner.
+   * Impassable cells always have zero troops and no owner.
    */
   isPassable: boolean;
 
-  /** Number of troops currently stationed on this cell, null if untouched or impassible. */
+  /** Number of troops currently stationed on this cell, null if untouched or impassable. */
   troopCount: number | null;
 
   /** Owner of the cell, or null if unoccupied. */

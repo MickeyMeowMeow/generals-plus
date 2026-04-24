@@ -8,7 +8,7 @@ import type { TeamType } from "@/domain/team/team-type";
 export interface IBaseTeam extends IEffectTarget {
   /** The strategic nature of the team. */
   readonly type: TeamType;
-  /** IDs of players belonging to this team. */
+  /** Players belonging to this team. */
   readonly players: IPlayer[];
   /** Whether the team has been eliminated. */
   isEliminated: boolean;

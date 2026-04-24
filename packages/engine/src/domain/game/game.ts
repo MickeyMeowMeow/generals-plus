@@ -34,7 +34,6 @@ export interface IBaseGame {
   readonly items: Array<IItem>;
 
   /**
-   * Transitions the game status from 'LOBBY' to 'PLAYING'.
    * Starts the internal tick counter and troop growth timers.
    */
   startGame(): void;
@@ -132,7 +131,7 @@ export interface IBiohazardGame extends IBaseGame {
  */
 export interface ICollapseGame extends IBaseGame {
   readonly mode: typeof GameMode.COLLAPSE;
-  /** Current progress of the safe zone become smaller. */
+  /** Current progress of the safe zone shrinking. */
   currentProgress: number;
   /** Tick count until the next border shrinkage. */
   nextCollapseTick: number;

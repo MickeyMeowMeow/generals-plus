@@ -34,7 +34,7 @@ export interface IVisibilityMap {
    * Evaluates the current visibility level of a specific coordinate for the map's owner.
    *
    * @param coordinate The grid location to query.
-   * @returns The visibility level (HIDDEN, FOG, or VISIBLE) for the map's owner.
+   * @returns The visibility level for the map's owner.
    */
   getVisibility(coordinate: ICoordinate): Visibility;
 }

@@ -33,7 +33,7 @@ export interface IVisionCell {
 
   /**
    * The perceived number of troops.
-   * Null if untouched, impassible, or if visibility is strictly less than `VISIBLE`.
+   * Null if untouched, impassable, or if visibility is strictly less than `VISIBLE`.
    */
   readonly troopCount: number | null;
 
