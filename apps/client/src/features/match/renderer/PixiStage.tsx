@@ -2,8 +2,8 @@ import type { IGrid } from "@generals-plus/engine";
 import { Application } from "pixi.js";
 import { useEffect, useRef } from "react";
 
-import { GridRenderer } from "#features/match/renderer/GridRenderer";
-import { renderConfig } from "#features/match/renderer/renderConfig";
+import { GridRenderer } from "#/features/match/renderer/GridRenderer";
+import { renderConfig } from "#/features/match/renderer/renderConfig";
 
 /**
  * Props for the Pixi stage wrapper.

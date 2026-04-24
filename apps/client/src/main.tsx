@@ -4,7 +4,7 @@ import { RouterProvider } from "react-router-dom";
 
 import { appRouter } from "#/features/common/router";
 
-import "#index.css";
+import "#/index.css";
 
 /**
  * Bootstraps the React tree while keeping a guard for broken HTML host markup.

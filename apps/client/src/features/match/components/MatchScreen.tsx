@@ -1,7 +1,7 @@
 import { MockGridGenerator } from "@generals-plus/engine";
 import { useMemo } from "react";
 
-import { PixiStage } from "#features/match/renderer/PixiStage";
+import { PixiStage } from "#/features/match/renderer/PixiStage";
 
 /**
  * Match page shell for the current local-rendering milestone.
