@@ -63,8 +63,9 @@ auth.settings.onEmailConfirmed = async (email: string) => {
 };
 
 // Filter user data before sending to client (remove password)
-auth.settings.onParseToken = async (data: any) => {
-  const { password, ...safeData } = data;
+auth.settings.onParseToken = async (data: Record<string, unknown>) => {
+  const safeData = { ...data };
+  delete safeData.password;
   return safeData;
 };
 

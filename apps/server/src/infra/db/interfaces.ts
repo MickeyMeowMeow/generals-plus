@@ -10,6 +10,8 @@ export interface IUser {
   elo?: number; // Player's ranking score
 }
 
+export type UserCreateOptions = Record<string, unknown>;
+
 /**
  * Repository interface for User Database operations.
  * Decouples the Auth logic from the specific database implementation (MongoDB).
@@ -19,9 +21,9 @@ export interface IUserRepository {
   createWithEmailAndPassword(
     email: string,
     passwordHash: string,
-    options?: any,
+    options?: UserCreateOptions,
   ): Promise<IUser>;
-  createAnonymous(options?: any): Promise<IUser>;
+  createAnonymous(options?: UserCreateOptions): Promise<IUser>;
   updatePassword(email: string, newPasswordHash: string): Promise<boolean>;
   verifyEmail(email: string): Promise<boolean>;
 }
