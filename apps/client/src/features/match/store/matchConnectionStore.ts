@@ -158,6 +158,7 @@ export function createMatchConnectionStore(
                 sessionId: null,
                 latestState: null,
                 latestMessage: null,
+                lastError: null,
               });
             },
           },

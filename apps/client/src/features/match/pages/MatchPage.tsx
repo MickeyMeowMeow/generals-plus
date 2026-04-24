@@ -8,14 +8,7 @@ import { useMatchConnectionStore } from "#/features/match/store/matchConnectionS
 export function MatchPage() {
   const navigate = useNavigate();
   const { roomName } = useParams<{ roomName: string }>();
-  let resolvedRoomName = "";
-  if (roomName) {
-    try {
-      resolvedRoomName = decodeURIComponent(roomName);
-    } catch {
-      resolvedRoomName = "";
-    }
-  }
+  const resolvedRoomName = roomName ?? "";
   const status = useMatchConnectionStore((state) => state.status);
   const displayName = useUserAuthStore((state) => state.displayName);
   const activeRoomName = useMatchConnectionStore((state) => state.roomName);
