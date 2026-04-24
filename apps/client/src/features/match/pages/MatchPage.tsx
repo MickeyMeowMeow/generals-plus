@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 
+// In-game page for an active match room. Auto-joins on mount and leaves on unmount.
 export function MatchPage() {
   const navigate = useNavigate();
   const { roomName } = useParams<{ roomName: string }>();
@@ -20,12 +21,14 @@ export function MatchPage() {
   const leaveRoom = useMatchConnectionStore((state) => state.leaveRoom);
   const setError = useMatchConnectionStore((state) => state.setError);
 
+  // Auto-join the room when the page loads or the route changes.
   useEffect(() => {
     if (!resolvedRoomName) {
       setError("Route does not contain a room name");
       return;
     }
 
+    // Already connected to the correct room — nothing to do.
     if (status === "connected" && activeRoomName === resolvedRoomName) {
       return;
     }
@@ -35,6 +38,7 @@ export function MatchPage() {
     }
   }, [activeRoomName, joinRoom, resolvedRoomName, setError, status]);
 
+  // Leave the room when the component unmounts.
   useEffect(() => {
     return () => {
       void leaveRoom();

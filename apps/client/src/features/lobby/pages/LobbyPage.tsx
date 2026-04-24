@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 
+// Landing page after authentication. Lets the player join or create a game room.
 export function LobbyPage() {
   const navigate = useNavigate();
   const [roomName, setRoomName] = useState("skirmish-room");
@@ -23,6 +24,8 @@ export function LobbyPage() {
   const displayName = useUserAuthStore((state) => state.displayName);
   const signOut = useUserAuthStore((state) => state.signOut);
 
+  // Attempt to join a room. If the room requires an access code, include it in the options.
+  // Navigate to the match page on success.
   const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -32,6 +35,7 @@ export function LobbyPage() {
       return;
     }
 
+    // Build join options — access code is optional and only sent when provided.
     const nextAccessCode = roomAccessCode.trim();
     const joinOptions: Record<string, unknown> = {
       user: {
@@ -51,6 +55,7 @@ export function LobbyPage() {
     }
   };
 
+  // Tear down the match connection, clear auth state, and return to the user page.
   const handleSignOut = async () => {
     await resetMatchConnection();
     await signOut();

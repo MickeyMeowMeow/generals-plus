@@ -7,6 +7,9 @@ import type {
 } from "#/infra/colyseus/connection";
 import { createSharedColyseusConnectionGateway } from "#/infra/colyseus/connection";
 
+// State machine for the match room connection lifecycle:
+// idle → connecting → connected → disconnected
+// Any stage can transition to error.
 export type MatchConnectionStatus =
   | "idle"
   | "connecting"
@@ -14,6 +17,7 @@ export type MatchConnectionStatus =
   | "error"
   | "disconnected";
 
+// Zustand store shape for match room connection state and actions.
 export interface MatchConnectionStore {
   status: MatchConnectionStatus;
   roomId: string | null;
@@ -32,6 +36,7 @@ export interface MatchConnectionStore {
   reset: () => Promise<void>;
 }
 
+// Abstraction over Colyseus room operations, allowing tests to inject fakes.
 export interface MatchConnectionGateway {
   joinRoom<State = unknown, Message = unknown>(
     joinOptions: JoinRoomOptions,
@@ -40,6 +45,7 @@ export interface MatchConnectionGateway {
   leaveRoom(room: ColyseusRoomLike, consented?: boolean): Promise<number>;
 }
 
+// Factory dependencies injected into the store for testability.
 export interface MatchConnectionDependencies {
   createGateway: (endpoint?: string) => MatchConnectionGateway;
 }
@@ -57,14 +63,18 @@ const createInitialState = (): Omit<
   lastError: null,
 });
 
+// Factory that creates a Zustand store for managing a single active match room.
+// Accepts optional dependencies so tests can inject a fake gateway.
 export function createMatchConnectionStore(
   dependencies: MatchConnectionDependencies = {
     createGateway: createSharedColyseusConnectionGateway,
   },
 ) {
+  // Mutable references held outside Zustand state to avoid triggering re-renders.
   let gateway: MatchConnectionGateway | null = null;
   let activeRoom: ColyseusRoomLike | null = null;
 
+  // Lazily create or replace the gateway instance.
   const resolveGateway = (endpoint?: string): MatchConnectionGateway => {
     if (endpoint) {
       gateway = dependencies.createGateway(endpoint);
@@ -89,7 +99,9 @@ export function createMatchConnectionStore(
       });
     },
 
+    // Join (or create) a room. Leaves any previous room first.
     async joinRoom(roomName, options = {}) {
+      // Leave the current room before joining a new one.
       if (activeRoom) {
         await resolveGateway().leaveRoom(activeRoom, true);
         activeRoom = null;
@@ -113,6 +125,7 @@ export function createMatchConnectionStore(
             onStateChange: (state) => {
               set({ latestState: state });
             },
+            // Wildcard handler — receives all message types.
             onMessage: (_type, message) => {
               set({ latestMessage: message });
             },
@@ -152,6 +165,7 @@ export function createMatchConnectionStore(
       }
     },
 
+    // Leave the active room. Clears connection state even if the leave call fails.
     async leaveRoom() {
       if (!activeRoom) {
         set({
@@ -191,6 +205,7 @@ export function createMatchConnectionStore(
       });
     },
 
+    // Tear down the room connection and reset all state to initial values.
     async reset() {
       await get().leaveRoom();
       gateway = null;

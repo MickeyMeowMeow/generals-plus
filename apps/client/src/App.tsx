@@ -8,6 +8,7 @@ import "./App.css";
 function App() {
   const hydrateUser = useUserAuthStore((state) => state.hydrateUser);
 
+  // Kick off session hydration once on app startup.
   useEffect(() => {
     void hydrateUser();
   }, [hydrateUser]);
