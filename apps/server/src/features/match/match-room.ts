@@ -3,26 +3,57 @@ import { Room } from "@colyseus/core";
 import type { RoomData, RoomUser } from "@generals-plus/room-types";
 import { parseJoinOptions } from "@generals-plus/room-types";
 
-export class MatchRoom extends Room {
-  maxClients = 2;
+import type { Terrain } from "./schema";
+import { Cell, MatchState, Player, PlayerStatus } from "./schema";
+
+export class MatchRoom extends Room<{
+  state: MatchState;
+  metadata: RoomData;
+}> {
+  maxClients = 8;
   private users: RoomUser[] = [];
 
-  async onCreate(_options: { metadata: RoomData }) {
-    this.users = _options.metadata.players ?? [];
-    if (this.users.length === 0) {
-      console.warn(
-        "[MatchRoom] No players provided in room metadata. Room will be empty.",
-      );
+  onCreate(options: { metadata: RoomData }) {
+    const { metadata } = options;
+    this.users = metadata.players ?? [];
+
+    const state = new MatchState();
+    state.mode = metadata.mode as typeof state.mode;
+    state.width = metadata.map.width;
+    state.height = metadata.map.height;
+
+    for (const cellInit of metadata.map.cells) {
+      const cell = new Cell();
+      cell.terrain = cellInit.terrain as Terrain;
+      cell.isPassable = cellInit.isPassable;
+      cell.troopCount = cellInit.troopCount ?? 0;
+      cell.ownerIndex = cellInit.ownerIndex ?? -1;
+      state.grid.push(cell);
     }
+
+    for (const playerInit of metadata.playerInit) {
+      const player = new Player();
+      player.id = playerInit.id;
+      player.username = playerInit.username;
+      player.teamId = playerInit.teamId;
+      player.status = PlayerStatus.ACTIVE;
+      state.players.set(playerInit.id, player);
+    }
+
+    this.state = state;
+
     console.log(
-      "[MatchRoom] Room: ",
+      "[MatchRoom] Room:",
       this.roomId,
-      " created with metadata: ",
-      _options.metadata,
+      "mode:",
+      state.mode,
+      "map:",
+      `${state.width}x${state.height}`,
+      "players:",
+      metadata.playerInit.length,
     );
-    // TODO: define and implement MatchState schema
-    // this.setState(new MatchState());
   }
+
   onAuth(_client: Client, options: unknown) {
     const joinOptions = parseJoinOptions(options);
     if (!joinOptions) {
@@ -40,6 +71,7 @@ export class MatchRoom extends Room {
     }
     return userdata;
   }
+
   onJoin(client: Client, _options: unknown) {
     console.log(`[MatchRoom] ${client.sessionId} joined`);
     const userdata = client.auth;
