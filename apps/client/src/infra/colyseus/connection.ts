@@ -29,10 +29,6 @@ export interface ColyseusRoomLike<State = unknown, Message = unknown> {
     type: string | number,
     callback: (message: Message) => void,
   ): unknown;
-  onMessage(
-    type: "*",
-    callback: (type: string | number, message: Message) => void,
-  ): unknown;
   onError(callback: (code: number, message?: string) => void): void;
   onLeave(callback: (code: number) => void): void;
 }
@@ -47,9 +43,14 @@ export interface ColyseusClientLike {
 }
 
 // Optional callbacks forwarded to a room after joining.
+// messageHandlers is an array of {type, handler} pairs because Colyseus 0.16
+// requires registering each message type individually — no client-side wildcard.
 export interface RoomEventHandlers<State = unknown, Message = unknown> {
   onStateChange?: (state: State) => void;
-  onMessage?: (type: string | number, message: Message) => void;
+  messageHandlers?: ReadonlyArray<{
+    type: string | number;
+    handler: (message: Message) => void;
+  }>;
   onError?: (code: number, message?: string) => void;
   onLeave?: (code: number) => void;
 }
@@ -128,8 +129,10 @@ export class ColyseusConnectionGateway {
       room.onStateChange(handlers.onStateChange);
     }
 
-    if (handlers.onMessage) {
-      room.onMessage("*", handlers.onMessage);
+    if (handlers.messageHandlers) {
+      for (const { type, handler } of handlers.messageHandlers) {
+        room.onMessage(type, handler);
+      }
     }
 
     if (handlers.onError) {
