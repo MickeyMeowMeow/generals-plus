@@ -1,8 +1,9 @@
 /**
  * Entry point of the server application.
  */
-import server from "@/app.config";
-import { ENV } from "@/env";
+
+import server from "#app.config";
+import { ENV } from "#env";
 
 // Get port from environment variables or default to 2567
 const port = ENV.PORT;

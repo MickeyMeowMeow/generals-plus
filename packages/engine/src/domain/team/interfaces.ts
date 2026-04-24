@@ -1,6 +1,6 @@
-import type { IEffectTarget } from "@/domain/effect/interfaces";
-import type { IPlayer } from "@/domain/player/interfaces";
-import type { TeamType } from "@/domain/team/team-type";
+import type { IEffectTarget } from "#domain/effect/interfaces";
+import type { IPlayer } from "#domain/player/interfaces";
+import type { TeamType } from "#domain/team/team-type";
 
 /**
  * Common properties for all team types.

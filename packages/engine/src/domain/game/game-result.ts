@@ -1,4 +1,4 @@
-import type { GameMode } from "@/domain/game/game-mode";
+import type { GameMode } from "#domain/game/game-mode";
 
 /**
  * The final report generated when a game terminates.

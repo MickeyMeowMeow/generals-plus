@@ -1,4 +1,4 @@
-import type { ICoordinate } from "@/math/coordinate";
+import type { ICoordinate } from "#math/coordinate";
 
 /**
  * A purely mathematical 2D spatial container.
