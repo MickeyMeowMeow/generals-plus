@@ -1,0 +1,16 @@
+reviews:
+  profile: strict
+
+auto_review:
+  enabled: false
+
+paths:
+  exclude:
+    - "node_modules/**"
+    - "dist/**"
+
+instructions: |
+  Focus on:
+  - performance
+  - security
+  - clean code
