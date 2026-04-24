@@ -2,10 +2,14 @@ import type { Client } from "@colyseus/core";
 import { Room } from "@colyseus/core";
 import type { Terrain } from "@generals-plus/engine";
 import { PlayerStatus } from "@generals-plus/engine";
-import type { RoomUser } from "@generals-plus/room-types";
-import { parseJoinOptions, parseRoomData } from "@generals-plus/room-types";
-
-import { Cell, MatchState, Player } from "#/features/match/schema";
+import type { RoomUser } from "@generals-plus/shared-types";
+import {
+  Cell,
+  MatchState,
+  Player,
+  parseJoinOptions,
+  parseRoomData,
+} from "@generals-plus/shared-types";
 
 export class MatchRoom extends Room<{
   state: MatchState;

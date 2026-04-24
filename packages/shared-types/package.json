@@ -1,5 +1,5 @@
 {
-  "name": "@generals-plus/room-types",
+  "name": "@generals-plus/shared-types",
   "private": true,
   "version": "0.1.0",
   "exports": {
@@ -23,6 +23,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@colyseus/schema": "^4.0.20",
+    "@generals-plus/engine": "workspace:*",
+    "colyseus": "^0.17.10",
     "zod": "^4.1.12"
   },
   "devDependencies": {

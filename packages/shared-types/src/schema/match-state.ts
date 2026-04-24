@@ -1,8 +1,8 @@
 import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema";
 import { GameMode, GameStatus } from "@generals-plus/engine";
 
-import { Cell } from "#/features/match/schema/cell";
-import { Player } from "#/features/match/schema/player";
+import { Cell } from "#/schema/cell";
+import { Player } from "#/schema/player";
 
 export class MatchState extends Schema {
   @type("string") mode: GameMode = GameMode.CLASSIC;

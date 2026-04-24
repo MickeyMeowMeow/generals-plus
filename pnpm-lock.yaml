@@ -120,9 +120,9 @@ importers:
       '@generals-plus/engine':
         specifier: workspace:*
         version: link:../../packages/engine
-      '@generals-plus/room-types':
+      '@generals-plus/shared-types':
         specifier: workspace:*
-        version: link:../../packages/room-types
+        version: link:../../packages/shared-types
       colyseus:
         specifier: ^0.17.10
         version: 0.17.10(@colyseus/auth@0.17.9(@colyseus/core@0.17.42)(express@5.2.1))(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/core@0.17.42)(@colyseus/redis-driver@0.17.7(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6))(@colyseus/redis-presence@0.17.7(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/uwebsockets-transport@0.17.20(@colyseus/core@0.17.42))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(tsx@4.21.0))(zod@4.3.6)
@@ -182,8 +182,17 @@ importers:
         specifier: ^4.1.5
         version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(jsdom@29.0.2)(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(tsx@4.21.0))
 
-  packages/room-types:
+  packages/shared-types:
     dependencies:
+      '@colyseus/schema':
+        specifier: ^4.0.20
+        version: 4.0.20(typescript@6.0.3)
+      '@generals-plus/engine':
+        specifier: workspace:*
+        version: link:../engine
+      colyseus:
+        specifier: ^0.17.10
+        version: 0.17.10(@colyseus/auth@0.17.9(@colyseus/core@0.17.42)(express@5.2.1))(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/core@0.17.42)(@colyseus/redis-driver@0.17.7(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6))(@colyseus/redis-presence@0.17.7(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/uwebsockets-transport@0.17.20(@colyseus/core@0.17.42))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(tsx@4.21.0))(zod@4.3.6)
       zod:
         specifier: ^4.1.12
         version: 4.3.6
