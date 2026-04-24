@@ -87,7 +87,7 @@ export class MongoUserRepository implements IUserRepository {
       { email },
       { password: newPasswordHash },
     ).exec();
-    return result.modifiedCount > 0;
+    return result.acknowledged && result.matchedCount > 0;
   }
 
   public async verifyEmail(email: string): Promise<boolean> {
