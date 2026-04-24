@@ -8,7 +8,7 @@ export interface JoinOptions {
 export const joinOptionsSchema = z
   .object({
     username: z.string().trim().min(1),
-    token: z.string().trim().min(1),
+    token: z.string().min(1),
   })
   .strict();
 

@@ -1,21 +1,27 @@
 import type { Client } from "@colyseus/core";
 import { Room } from "@colyseus/core";
-import type { RoomData, RoomUser } from "@generals-plus/room-types";
-import { parseJoinOptions } from "@generals-plus/room-types";
+import type { RoomUser } from "@generals-plus/room-types";
+import { parseJoinOptions, parseRoomData } from "@generals-plus/room-types";
 
 import type { Terrain } from "./schema";
 import { Cell, MatchState, Player, PlayerStatus } from "./schema";
 
 export class MatchRoom extends Room<{
   state: MatchState;
-  metadata: RoomData;
 }> {
   maxClients = 8;
   private users: RoomUser[] = [];
 
-  onCreate(options: { metadata: RoomData }) {
-    const { metadata } = options;
-    this.users = metadata.players ?? [];
+  onCreate(options: { metadata: unknown }) {
+    const metadata = parseRoomData(options.metadata);
+    if (!metadata) {
+      throw new Error("[MatchRoom] Invalid room metadata");
+    }
+    this.users = metadata.players;
+
+    if (metadata.players.length > this.maxClients) {
+      throw new Error("[MatchRoom] Too many players for this room");
+    }
 
     const state = new MatchState();
     state.mode = metadata.mode as typeof state.mode;
