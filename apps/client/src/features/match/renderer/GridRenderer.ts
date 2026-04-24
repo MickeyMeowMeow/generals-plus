@@ -1,9 +1,9 @@
 import type { IGrid } from "@generals-plus/engine";
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
 
-import { getTerrainColor } from "#/features/match/renderer/gridColors";
-import { renderConfig } from "#/features/match/renderer/renderConfig";
-import { getTerrainIconUrl } from "#/features/match/renderer/terrainAssets";
+import { getTerrainColor } from "#features/match/renderer/grid-colors.ts";
+import { RenderConfig } from "#features/match/renderer/render-config.ts";
+import { getTerrainIconUrl } from "#features/match/renderer/terrain-assets.ts";
 
 /**
  * Pixel dimensions available to the grid renderer.
@@ -70,33 +70,33 @@ export class GridRenderer {
  */
 function getGridLayout(grid: IGrid, viewport: ViewportSize) {
   const availableWidth = Math.max(
-    viewport.width - renderConfig.stagePadding * 2,
+    viewport.width - RenderConfig.stagePadding * 2,
     1,
   );
   const availableHeight = Math.max(
-    viewport.height - renderConfig.stagePadding * 2,
+    viewport.height - RenderConfig.stagePadding * 2,
     1,
   );
   const strideX = availableWidth / grid.width;
   const strideY = availableHeight / grid.height;
   const stride = Math.max(
-    renderConfig.minCellSize,
-    Math.min(renderConfig.maxCellSize, strideX, strideY),
+    RenderConfig.minCellSize,
+    Math.min(RenderConfig.maxCellSize, strideX, strideY),
   );
-  const cellSize = Math.max(1, stride - renderConfig.cellGap);
-  const gridWidth = grid.width * stride - renderConfig.cellGap;
-  const gridHeight = grid.height * stride - renderConfig.cellGap;
+  const cellSize = Math.max(1, stride - RenderConfig.cellGap);
+  const gridWidth = grid.width * stride - RenderConfig.cellGap;
+  const gridHeight = grid.height * stride - RenderConfig.cellGap;
 
   return {
     cellSize,
     stride,
     offsetX: Math.max(
       (viewport.width - gridWidth) / 2,
-      renderConfig.stagePadding,
+      RenderConfig.stagePadding,
     ),
     offsetY: Math.max(
       (viewport.height - gridHeight) / 2,
-      renderConfig.stagePadding,
+      RenderConfig.stagePadding,
     ),
   };
 }
@@ -111,7 +111,7 @@ function createTerrainIcon(
   cellSize: number,
 ): Sprite {
   const icon = Sprite.from(Texture.from(iconUrl));
-  const iconSize = Math.max(1, cellSize * renderConfig.terrainIconScale);
+  const iconSize = Math.max(1, cellSize * RenderConfig.terrainIconScale);
 
   icon.anchor.set(0.5);
   icon.width = iconSize;

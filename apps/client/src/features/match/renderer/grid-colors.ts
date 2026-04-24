@@ -4,7 +4,7 @@ import { Terrain } from "@generals-plus/engine";
 /**
  * Central terrain palette for the base layer.
  */
-const terrainColors: Record<TerrainValue, number> = {
+const TerrainColors: Record<TerrainValue, number> = {
   [Terrain.PLAIN]: 0xd8dde3,
   [Terrain.GENERAL]: 0xf2b84b,
   [Terrain.MOUNTAIN]: 0x4b5563,
@@ -18,5 +18,5 @@ const terrainColors: Record<TerrainValue, number> = {
  * Resolves a terrain enum value to a Pixi-compatible fill color.
  */
 export function getTerrainColor(terrain: TerrainValue): number {
-  return terrainColors[terrain];
+  return TerrainColors[terrain];
 }

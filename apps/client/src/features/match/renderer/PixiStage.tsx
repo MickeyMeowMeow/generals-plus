@@ -3,7 +3,7 @@ import { Application } from "pixi.js";
 import { useEffect, useRef } from "react";
 
 import { GridRenderer } from "#/features/match/renderer/GridRenderer";
-import { renderConfig } from "#/features/match/renderer/renderConfig";
+import { RenderConfig } from "#features/match/renderer/render-config.ts";
 
 /**
  * Props for the Pixi stage wrapper.
@@ -31,7 +31,7 @@ export function PixiStage({ grid }: PixiStageProps) {
     host.replaceChildren();
 
     const app = new Application<HTMLCanvasElement>({
-      backgroundColor: renderConfig.stageBackground,
+      backgroundColor: RenderConfig.stageBackground,
       antialias: true,
       autoDensity: true,
       resolution: window.devicePixelRatio || 1,

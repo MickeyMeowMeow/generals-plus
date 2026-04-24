@@ -1,7 +1,7 @@
 /**
  * Shared Pixi renderer constants for the first static grid pass.
  */
-export const renderConfig = {
+export const RenderConfig = {
   stageBackground: 0x101318,
   stagePadding: 24,
   cellGap: 2,
