@@ -28,7 +28,7 @@ async function connectDB() {
   console.log("Attempting to connect to:", redactMongoUri(mongoUri));
 
   try {
-    // Set strictQuery to prepare for Mongoose 7/8 changes
+    // Explicitly configure query strictness for this application.
     mongoose.set("strictQuery", false);
 
     await mongoose.connect(mongoUri);
