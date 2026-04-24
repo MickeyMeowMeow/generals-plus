@@ -3,9 +3,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type {
-  ColyseusAuthLike,
-  ColyseusClientLike,
-  ColyseusRoomLike,
+  ColyseusAuth,
+  ColyseusClient,
+  ColyseusRoom,
 } from "#/infra/colyseus/connection";
 import {
   ColyseusConnectionGateway,
@@ -21,7 +21,7 @@ interface MatchMessage {
   text: string;
 }
 
-function createAuthStub(): ColyseusAuthLike {
+function createAuthStub(): ColyseusAuth {
   return {
     token: null,
     onChange: vi.fn().mockReturnValue(() => {}),
@@ -48,7 +48,7 @@ describe("colyseus connection gateway", () => {
   });
 
   it("joins a room and binds all handlers", async () => {
-    const room: ColyseusRoomLike<MatchState, MatchMessage> = {
+    const room: ColyseusRoom<MatchState, MatchMessage> = {
       roomId: "room-1",
       sessionId: "session-1",
       leave: vi.fn().mockResolvedValue(1000),
@@ -59,7 +59,7 @@ describe("colyseus connection gateway", () => {
     };
 
     const joinOrCreate = vi.fn().mockResolvedValue(room);
-    const client: ColyseusClientLike = {
+    const client: ColyseusClient = {
       auth: createAuthStub(),
       joinOrCreate,
     };
@@ -97,7 +97,7 @@ describe("colyseus connection gateway", () => {
   });
 
   it("delegates leaveRoom to room.leave", async () => {
-    const room: ColyseusRoomLike = {
+    const room: ColyseusRoom = {
       roomId: "room-2",
       sessionId: "session-2",
       leave: vi.fn().mockResolvedValue(1000),
@@ -107,7 +107,7 @@ describe("colyseus connection gateway", () => {
       onLeave: vi.fn(),
     };
 
-    const client: ColyseusClientLike = {
+    const client: ColyseusClient = {
       auth: createAuthStub(),
       joinOrCreate: vi.fn(),
     };
@@ -130,7 +130,7 @@ describe("colyseus connection gateway", () => {
       .mockResolvedValue({ user: { id: "user-1" }, token: "token-1" });
     auth.signOut = vi.fn().mockResolvedValue(undefined);
 
-    const client: ColyseusClientLike = {
+    const client: ColyseusClient = {
       auth,
       joinOrCreate: vi.fn(),
     };

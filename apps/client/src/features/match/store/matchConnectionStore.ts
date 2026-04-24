@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import type {
-  ColyseusRoomLike,
+  ColyseusRoom,
   JoinRoomOptions,
   RoomEventHandlers,
 } from "#/infra/colyseus/connection";
@@ -41,8 +41,8 @@ export interface MatchConnectionGateway {
   joinRoom<State = unknown, Message = unknown>(
     joinOptions: JoinRoomOptions,
     handlers?: RoomEventHandlers<State, Message>,
-  ): Promise<ColyseusRoomLike<State, Message>>;
-  leaveRoom(room: ColyseusRoomLike, consented?: boolean): Promise<number>;
+  ): Promise<ColyseusRoom<State, Message>>;
+  leaveRoom(room: ColyseusRoom, consented?: boolean): Promise<number>;
 }
 
 // Factory dependencies injected into the store for testability.
@@ -72,7 +72,7 @@ export function createMatchConnectionStore(
 ) {
   // Mutable references held outside Zustand state to avoid triggering re-renders.
   let gateway: MatchConnectionGateway | null = null;
-  let activeRoom: ColyseusRoomLike | null = null;
+  let activeRoom: ColyseusRoom | null = null;
   let joinGeneration = 0;
 
   // Lazily create or replace the gateway instance.

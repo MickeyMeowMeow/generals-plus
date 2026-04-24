@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { MatchConnectionGateway } from "#/features/match/store/matchConnectionStore";
 import { createMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 import type {
-  ColyseusRoomLike,
+  ColyseusRoom,
   JoinRoomOptions,
   RoomEventHandlers,
 } from "#/infra/colyseus/connection";
@@ -16,7 +16,7 @@ interface MatchMessage {
   kind: string;
 }
 
-function createRoom(): ColyseusRoomLike<MatchState, MatchMessage> {
+function createRoom(): ColyseusRoom<MatchState, MatchMessage> {
   return {
     roomId: "room-1",
     sessionId: "session-1",

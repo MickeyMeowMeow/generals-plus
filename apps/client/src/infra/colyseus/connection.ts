@@ -9,7 +9,7 @@ export interface ColyseusAuthData<User = unknown> {
 }
 
 // Subset of the Colyseus auth API used by the app, decoupled from the real SDK for testing.
-export interface ColyseusAuthLike<User = unknown> {
+export interface ColyseusAuth<User = unknown> {
   token: string | null | undefined;
   onChange(callback: (response: ColyseusAuthData<User>) => void): () => void;
   getUserData(): Promise<User>;
@@ -20,7 +20,7 @@ export interface ColyseusAuthLike<User = unknown> {
 }
 
 // Minimal room interface representing an active Colyseus room session.
-export interface ColyseusRoomLike<State = unknown, Message = unknown> {
+export interface ColyseusRoom<State = unknown, Message = unknown> {
   roomId: string;
   sessionId: string;
   leave(consented?: boolean): Promise<number>;
@@ -34,12 +34,12 @@ export interface ColyseusRoomLike<State = unknown, Message = unknown> {
 }
 
 // Abstraction over the Colyseus client, exposing auth and room operations.
-export interface ColyseusClientLike {
-  auth: ColyseusAuthLike;
+export interface ColyseusClient {
+  auth: ColyseusAuth;
   joinOrCreate<State = unknown, Message = unknown>(
     roomName: string,
     options?: Record<string, unknown>,
-  ): Promise<ColyseusRoomLike<State, Message>>;
+  ): Promise<ColyseusRoom<State, Message>>;
 }
 
 // Optional callbacks forwarded to a room after joining.
@@ -75,15 +75,15 @@ export function resolveColyseusEndpoint(
 // Create a raw Colyseus client wrapping the SDK constructor.
 export function createColyseusClient(
   endpoint = resolveColyseusEndpoint(),
-): ColyseusClientLike {
+): ColyseusClient {
   return new Client(endpoint);
 }
 
 // Facade over a Colyseus client that implements both UserAuthGateway and MatchConnectionGateway.
 export class ColyseusConnectionGateway {
-  private readonly client: ColyseusClientLike;
+  private readonly client: ColyseusClient;
 
-  constructor(client: ColyseusClientLike) {
+  constructor(client: ColyseusClient) {
     this.client = client;
   }
 
@@ -119,7 +119,7 @@ export class ColyseusConnectionGateway {
   async joinRoom<State = unknown, Message = unknown>(
     joinOptions: JoinRoomOptions,
     handlers: RoomEventHandlers<State, Message> = {},
-  ): Promise<ColyseusRoomLike<State, Message>> {
+  ): Promise<ColyseusRoom<State, Message>> {
     const room = await this.client.joinOrCreate<State, Message>(
       joinOptions.roomName,
       joinOptions.options ?? {},
@@ -146,7 +146,7 @@ export class ColyseusConnectionGateway {
     return room;
   }
 
-  async leaveRoom(room: ColyseusRoomLike, consented = true): Promise<number> {
+  async leaveRoom(room: ColyseusRoom, consented = true): Promise<number> {
     return room.leave(consented);
   }
 }
