@@ -9,8 +9,8 @@
     }
   },
   "scripts": {
-    "build": "rolldown src/index.ts",
-    "dev": "rolldown src/index.ts --watch --dir dist",
+    "build": "rolldown src/index.ts --file dist/index.js",
+    "dev": "rolldown src/index.ts --watch --file dist/index.js",
     "test": "vitest run",
     "type-check": "tsc --noEmit"
   },
