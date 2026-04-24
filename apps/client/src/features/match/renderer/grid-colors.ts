@@ -12,7 +12,7 @@ const TerrainColors: Record<TerrainValue, number> = {
   [Terrain.DESERT]: 0xe5cf8d,
   [Terrain.CITY]: 0x8aa4c8,
   [Terrain.VOID]: 0x171717,
-};
+} as const;
 
 /**
  * Resolves a terrain enum value to a Pixi-compatible fill color.

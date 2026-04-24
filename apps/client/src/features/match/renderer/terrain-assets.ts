@@ -18,7 +18,7 @@ const TerrainIconUrls: Partial<Record<TerrainValue, string>> = {
   [Terrain.DESERT]: desertIconUrl,
   [Terrain.CITY]: cityIconUrl,
   [Terrain.VOID]: obstacleIconUrl,
-};
+} as const;
 
 /**
  * Returns a terrain icon URL when the terrain has a visual marker.
