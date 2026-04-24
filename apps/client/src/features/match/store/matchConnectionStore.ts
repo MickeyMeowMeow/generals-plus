@@ -210,6 +210,7 @@ export function createMatchConnectionStore(
 
       const roomToLeave = activeRoom;
       activeRoom = null;
+      joinGeneration++;
 
       try {
         await resolveGateway().leaveRoom(roomToLeave, true);
