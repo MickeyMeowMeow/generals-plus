@@ -1,6 +1,7 @@
 import type { Terrain } from "@/domain/cell/terrain";
 import type { IEffectTarget } from "@/domain/effect/interfaces";
 import type { PlayerStatus } from "@/domain/player/player-status";
+import type { IVisionModifier } from "@/domain/vision/interfaces";
 import type { ICoordinate } from "@/math/coordinate";
 
 export interface ICellOwner {
@@ -23,13 +24,14 @@ export interface ICell extends IEffectTarget {
    */
   isPassable: boolean;
 
-  /** Number of troops currently stationed on this cell. */
-  troopCount: number;
+  /** Number of troops currently stationed on this cell, null if untouched or impassible. */
+  troopCount: number | null;
 
   /** Owner of the cell, or null if unoccupied. */
   owner: ICellOwner | null;
 
-  // TODO: Vision properties for fog of war
+  /** Vision modifier applied to this cell, affecting the sight radius of its owner. */
+  vision: IVisionModifier;
 
   /**
    * Adds or removes troops from the cell.
