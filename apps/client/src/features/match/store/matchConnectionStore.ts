@@ -105,23 +105,23 @@ export function createMatchConnectionStore(
     async joinRoom(roomName, options = {}) {
       const generation = ++joinGeneration;
 
-      // Leave the current room before joining a new one.
-      if (activeRoom) {
-        await resolveGateway().leaveRoom(activeRoom, true);
-        activeRoom = null;
-      }
-
-      set({
-        status: "connecting",
-        roomName,
-        roomId: null,
-        sessionId: null,
-        latestState: null,
-        latestMessage: null,
-        lastError: null,
-      });
-
       try {
+        // Leave the current room before joining a new one.
+        if (activeRoom) {
+          await resolveGateway().leaveRoom(activeRoom, true);
+          activeRoom = null;
+        }
+
+        set({
+          status: "connecting",
+          roomName,
+          roomId: null,
+          sessionId: null,
+          latestState: null,
+          latestMessage: null,
+          lastError: null,
+        });
+
         const room = await resolveGateway().joinRoom(
           {
             roomName,
@@ -193,6 +193,7 @@ export function createMatchConnectionStore(
           sessionId: null,
           latestState: null,
           latestMessage: null,
+          lastError: null,
         });
         return;
       }
