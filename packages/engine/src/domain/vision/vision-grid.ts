@@ -11,7 +11,7 @@ import type { IGrid2D } from "@/math/grid-2d";
 export const MaskedTerrain = {
   MAYBE_PLAIN: "maybe_plain",
   MAYBE_MOUNTAIN: "maybe_mountain",
-};
+} as const;
 export type MaskedTerrain = (typeof MaskedTerrain)[keyof typeof MaskedTerrain];
 
 /** Represents the perceived terrain of a cell based on its visibility state. */
