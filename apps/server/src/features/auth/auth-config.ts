@@ -1,8 +1,24 @@
 import { auth } from "@colyseus/auth";
 
 import { ENV } from "@/env";
-import type { IUserRepository } from "@/infra/db/interfaces";
+import type { IUserRepository, UserCreateOptions } from "@/infra/db/interfaces";
 import { MongoUserRepository } from "@/infra/db/repositories/MongoUserRepository";
+
+/**
+ * Remove privileged fields from caller-supplied registration options so that
+ * user-controlled input cannot override security-sensitive document fields.
+ */
+function sanitizeOptions(options: Record<string, unknown>): UserCreateOptions {
+  const {
+    password: _pw,
+    verified: _v,
+    elo: _elo,
+    anonymous: _anon,
+    email: _email,
+    ...safe
+  } = options;
+  return safe;
+}
 
 // Instantiate the repository (Dependency Injection)
 const userRepository: IUserRepository = new MongoUserRepository();
@@ -38,13 +54,15 @@ auth.settings.onRegisterWithEmailAndPassword = async (
   return await userRepository.createWithEmailAndPassword(
     email,
     passwordHash,
-    options,
+    options ? sanitizeOptions(options) : undefined,
   );
 };
 
 // Handle Anonymous Sign In
 auth.settings.onRegisterAnonymously = async (options) => {
-  return await userRepository.createAnonymous(options);
+  return await userRepository.createAnonymous(
+    options ? sanitizeOptions(options) : undefined,
+  );
 };
 
 // Handle Password Reset
