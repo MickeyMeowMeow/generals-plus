@@ -4,7 +4,7 @@ export const DEFAULT_COLYSEUS_ENDPOINT = "ws://localhost:2567";
 
 // Shape of the auth response emitted by Colyseus on sign-in and session changes.
 export interface ColyseusAuthData<User = unknown> {
-  user: User;
+  user: User | null;
   token: string | null;
 }
 

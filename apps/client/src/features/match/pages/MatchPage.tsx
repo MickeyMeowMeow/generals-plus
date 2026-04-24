@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
@@ -26,6 +26,7 @@ export function MatchPage() {
   const joinRoom = useMatchConnectionStore((state) => state.joinRoom);
   const leaveRoom = useMatchConnectionStore((state) => state.leaveRoom);
   const setError = useMatchConnectionStore((state) => state.setError);
+  const hasLeftRef = useRef(false);
 
   // Auto-join the room when the page loads or the route changes.
   useEffect(() => {
@@ -34,30 +35,30 @@ export function MatchPage() {
       return;
     }
 
-    // Already connected to the correct room — nothing to do.
-    if (status === "connected" && activeRoomName === resolvedRoomName) {
+    // Already connected or connecting to the correct room — nothing to do.
+    if (
+      activeRoomName === resolvedRoomName &&
+      (status === "connected" || status === "connecting")
+    ) {
       return;
     }
 
-    // Switch rooms when connected elsewhere; store-level joinRoom already handles leave-first.
-    if (status === "connected" && activeRoomName !== resolvedRoomName) {
-      void joinRoom(resolvedRoomName);
-      return;
-    }
-
-    if (status === "idle" || status === "disconnected") {
-      void joinRoom(resolvedRoomName);
-    }
+    // Not connected to the target room — join.
+    // The store's generation counter discards stale joins from rapid switches.
+    void joinRoom(resolvedRoomName);
   }, [activeRoomName, joinRoom, resolvedRoomName, setError, status]);
 
-  // Leave the room when the component unmounts.
+  // Leave the room on unmount, unless handleLeave already did.
   useEffect(() => {
     return () => {
-      void leaveRoom();
+      if (!hasLeftRef.current) {
+        void leaveRoom();
+      }
     };
   }, [leaveRoom]);
 
   const handleLeave = async () => {
+    hasLeftRef.current = true;
     await leaveRoom();
     navigate("/lobby");
   };
