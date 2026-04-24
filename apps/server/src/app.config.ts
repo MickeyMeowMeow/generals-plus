@@ -15,10 +15,17 @@ import { auth } from "@/features/auth/auth-config";
  * Database connection utility.
  * Uses credentials defined in your Docker Compose / .env file.
  */
+function redactMongoUri(uri: string) {
+  return uri.replace(
+    /^(mongodb(?:\+srv)?:\/\/)([^:@/]+)(?::([^@/]*))?@/i,
+    "$1***:***@",
+  );
+}
+
 async function connectDB() {
   // Default to the credentials set in your docker-compose.yml
   const mongoUri = ENV.MONGO_URI;
-  console.log("Attempting to connect to:", ENV.MONGO_URI);
+  console.log("Attempting to connect to:", redactMongoUri(mongoUri));
 
   try {
     // Set strictQuery to prepare for Mongoose 7/8 changes
