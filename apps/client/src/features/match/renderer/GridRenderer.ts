@@ -1,8 +1,9 @@
 import type { IGrid } from "@generals-plus/engine";
-import { Container, Graphics } from "pixi.js";
+import { Container, Graphics, Sprite, Texture } from "pixi.js";
 
 import { getTerrainColor } from "@/features/match/renderer/gridColors";
 import { renderConfig } from "@/features/match/renderer/renderConfig";
+import { getTerrainIconUrl } from "@/features/match/renderer/terrainAssets";
 
 /**
  * Pixel dimensions available to the grid renderer.
@@ -18,9 +19,11 @@ interface ViewportSize {
 export class GridRenderer {
   readonly container = new Container();
   private readonly baseLayer = new Graphics();
+  private readonly iconLayer = new Container();
 
   constructor() {
     this.container.addChild(this.baseLayer);
+    this.container.addChild(this.iconLayer);
   }
 
   /**
@@ -29,6 +32,7 @@ export class GridRenderer {
   render(grid: IGrid, viewport: ViewportSize): void {
     const layout = getGridLayout(grid, viewport);
     this.baseLayer.clear();
+    this.clearIconLayer();
 
     grid.forEach((cell) => {
       const x = layout.offsetX + cell.coordinate.x * layout.stride;
@@ -37,6 +41,13 @@ export class GridRenderer {
       this.baseLayer.beginFill(getTerrainColor(cell.terrain));
       this.baseLayer.drawRect(x, y, layout.cellSize, layout.cellSize);
       this.baseLayer.endFill();
+
+      const iconUrl = getTerrainIconUrl(cell.terrain);
+
+      if (iconUrl) {
+        const icon = createTerrainIcon(iconUrl, x, y, layout.cellSize);
+        this.iconLayer.addChild(icon);
+      }
     });
   }
 
@@ -45,6 +56,12 @@ export class GridRenderer {
    */
   destroy(): void {
     this.container.destroy({ children: true });
+  }
+
+  private clearIconLayer(): void {
+    for (const child of this.iconLayer.removeChildren()) {
+      child.destroy();
+    }
   }
 }
 
@@ -82,4 +99,25 @@ function getGridLayout(grid: IGrid, viewport: ViewportSize) {
       renderConfig.stagePadding,
     ),
   };
+}
+
+/**
+ * Creates a centered terrain sprite scaled to sit inside one square cell.
+ */
+function createTerrainIcon(
+  iconUrl: string,
+  cellX: number,
+  cellY: number,
+  cellSize: number,
+): Sprite {
+  const icon = Sprite.from(Texture.from(iconUrl));
+  const iconSize = Math.max(1, cellSize * renderConfig.terrainIconScale);
+
+  icon.anchor.set(0.5);
+  icon.width = iconSize;
+  icon.height = iconSize;
+  icon.x = cellX + cellSize / 2;
+  icon.y = cellY + cellSize / 2;
+
+  return icon;
 }
