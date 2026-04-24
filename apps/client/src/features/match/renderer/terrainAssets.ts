@@ -1,12 +1,12 @@
 import type { Terrain as TerrainValue } from "@generals-plus/engine";
 import { Terrain } from "@generals-plus/engine";
 
-import cityIconUrl from "@/assets/generals-io/city.svg";
-import crownIconUrl from "@/assets/generals-io/crown.svg";
-import desertIconUrl from "@/assets/generals-io/desert.svg";
-import mountainIconUrl from "@/assets/generals-io/mountain.svg";
-import obstacleIconUrl from "@/assets/generals-io/obstacle.svg";
-import swampIconUrl from "@/assets/generals-io/swamp.svg";
+import cityIconUrl from "#assets/generals-io/city.svg";
+import crownIconUrl from "#assets/generals-io/crown.svg";
+import desertIconUrl from "#assets/generals-io/desert.svg";
+import mountainIconUrl from "#assets/generals-io/mountain.svg";
+import obstacleIconUrl from "#assets/generals-io/obstacle.svg";
+import swampIconUrl from "#assets/generals-io/swamp.svg";
 
 /**
  * Raster icons from generals.io used as the terrain overlay in the Pixi grid.

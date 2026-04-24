@@ -1,9 +1,9 @@
 import type { IGrid } from "@generals-plus/engine";
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
 
-import { getTerrainColor } from "@/features/match/renderer/gridColors";
-import { renderConfig } from "@/features/match/renderer/renderConfig";
-import { getTerrainIconUrl } from "@/features/match/renderer/terrainAssets";
+import { getTerrainColor } from "#features/match/renderer/gridColors";
+import { renderConfig } from "#features/match/renderer/renderConfig";
+import { getTerrainIconUrl } from "#features/match/renderer/terrainAssets";
 
 /**
  * Pixel dimensions available to the grid renderer.

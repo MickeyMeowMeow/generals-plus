@@ -1,4 +1,4 @@
-import type { IBaseEffect, IEffectTarget } from "@/domain/effect/interfaces";
+import type { IBaseEffect, IEffectTarget } from "#domain/effect/interfaces";
 
 /**
  * Shared base for domain objects that can receive temporary or persistent effects.

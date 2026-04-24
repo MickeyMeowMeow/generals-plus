@@ -1,7 +1,7 @@
-import { Cell } from "@/domain/cell/cell";
-import { Terrain } from "@/domain/cell/terrain";
-import { Grid } from "@/domain/grid/grid";
-import type { IGrid } from "@/domain/grid/interfaces";
+import { Cell } from "#domain/cell/cell";
+import { Terrain } from "#domain/cell/terrain";
+import { Grid } from "#domain/grid/grid";
+import type { IGrid } from "#domain/grid/interfaces";
 
 /**
  * Options for deterministic local map generation used by renderer smoke tests.

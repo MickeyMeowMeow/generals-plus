@@ -1,8 +1,8 @@
-import type { ICell, ICellOwner } from "@/domain/cell/interfaces";
-import { Terrain } from "@/domain/cell/terrain";
-import { EffectTarget } from "@/domain/effect/effect-target";
-import type { IVisionModifier } from "@/domain/vision/interfaces";
-import type { ICoordinate } from "@/math/coordinate";
+import type { ICell, ICellOwner } from "#domain/cell/interfaces";
+import { Terrain } from "#domain/cell/terrain";
+import { EffectTarget } from "#domain/effect/effect-target";
+import type { IVisionModifier } from "#domain/vision/interfaces";
+import type { ICoordinate } from "#math/coordinate";
 
 /**
  * Construction data for a cell.

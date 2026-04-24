@@ -1,7 +1,7 @@
-import type { ICell } from "@/domain/cell/interfaces";
-import { EffectTarget } from "@/domain/effect/effect-target";
-import type { IGrid } from "@/domain/grid/interfaces";
-import type { ICoordinate } from "@/math/coordinate";
+import type { ICell } from "#domain/cell/interfaces";
+import { EffectTarget } from "#domain/effect/effect-target";
+import type { IGrid } from "#domain/grid/interfaces";
+import type { ICoordinate } from "#math/coordinate";
 
 /**
  * In-memory grid implementation backed by a row-major cell matrix.
