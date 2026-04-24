@@ -25,6 +25,13 @@ interface RenderGrid {
   forEach(callback: (cell: RenderGridCell) => void): void;
 }
 
+export interface GridLayout {
+  cellSize: number;
+  stride: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 /**
  * Draws the mode-independent terrain layer for a grid.
  */
@@ -80,7 +87,7 @@ export class GridRenderer {
 /**
  * Calculates a centered, bounded square-cell layout for the current viewport.
  */
-function getGridLayout(grid: RenderGrid, viewport: ViewportSize) {
+function getGridLayout(grid: RenderGrid, viewport: ViewportSize): GridLayout {
   const availableWidth = Math.max(
     viewport.width - RenderConfig.stagePadding * 2,
     1,
