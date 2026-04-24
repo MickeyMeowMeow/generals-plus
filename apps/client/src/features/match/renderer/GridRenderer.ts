@@ -1,4 +1,4 @@
-import type { IGrid } from "@generals-plus/engine";
+import type { ICoordinate, Terrain } from "@generals-plus/engine";
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
 
 import { getTerrainColor } from "#features/match/renderer/grid-colors.ts";
@@ -11,6 +11,18 @@ import { getTerrainIconUrl } from "#features/match/renderer/terrain-assets.ts";
 interface ViewportSize {
   readonly width: number;
   readonly height: number;
+}
+
+interface RenderGridCell {
+  coordinate: ICoordinate;
+  terrain: Terrain;
+}
+
+interface RenderGrid {
+  width: number;
+  height: number;
+
+  forEach(callback: (cell: RenderGridCell) => void): void;
 }
 
 /**
@@ -29,7 +41,7 @@ export class GridRenderer {
   /**
    * Redraws the base terrain layer for the supplied viewport.
    */
-  render(grid: IGrid, viewport: ViewportSize): void {
+  render(grid: RenderGrid, viewport: ViewportSize): void {
     const layout = getGridLayout(grid, viewport);
     this.baseLayer.clear();
     this.clearIconLayer();
@@ -68,7 +80,7 @@ export class GridRenderer {
 /**
  * Calculates a centered, bounded square-cell layout for the current viewport.
  */
-function getGridLayout(grid: IGrid, viewport: ViewportSize) {
+function getGridLayout(grid: RenderGrid, viewport: ViewportSize) {
   const availableWidth = Math.max(
     viewport.width - RenderConfig.stagePadding * 2,
     1,
