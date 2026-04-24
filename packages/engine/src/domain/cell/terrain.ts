@@ -1,4 +1,4 @@
-export const TerrainType = {
+export const Terrain = {
   /** Standard walkable terrain. Generates troops when owned. */
   PLAIN: "plain",
   /** Player's capital. Capturing this eliminates the player. */
@@ -13,4 +13,4 @@ export const TerrainType = {
   CITY: "city",
 } as const;
 
-export type TerrainType = (typeof TerrainType)[keyof typeof TerrainType];
+export type Terrain = (typeof Terrain)[keyof typeof Terrain];

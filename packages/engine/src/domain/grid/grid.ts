@@ -1,4 +1,4 @@
-import type { ICell } from "@/domain/cell/cell";
+import type { ICell } from "@/domain/cell/interfaces";
 import type { ICoordinate } from "@/math/coordinate";
 
 export interface IGrid {
