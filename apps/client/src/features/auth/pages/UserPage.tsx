@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 
+// Authentication page where players create or manage their anonymous session.
 export function UserPage() {
   const navigate = useNavigate();
   const [displayNameInput, setDisplayNameInput] = useState("Commander");
@@ -19,6 +20,7 @@ export function UserPage() {
 
   const resetMatchConnection = useMatchConnectionStore((state) => state.reset);
 
+  // Sign in as a guest and navigate to the lobby on success.
   const handleSignIn = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -28,6 +30,7 @@ export function UserPage() {
     }
   };
 
+  // Tear down the match connection and clear the auth session.
   const handleSignOut = async () => {
     await resetMatchConnection();
     await signOut();

@@ -3,6 +3,9 @@ import { create } from "zustand";
 import type { ColyseusAuthData } from "#/infra/colyseus/connection";
 import { createSharedColyseusConnectionGateway } from "#/infra/colyseus/connection";
 
+// State machine for the user authentication lifecycle:
+// idle → hydrating → authenticated | idle
+// idle → authenticating → authenticated | error
 export type UserAuthStatus =
   | "idle"
   | "hydrating"
@@ -10,6 +13,7 @@ export type UserAuthStatus =
   | "authenticated"
   | "error";
 
+// Zustand store shape for user authentication state and actions.
 export interface UserAuthStore {
   status: UserAuthStatus;
   hasHydrated: boolean;
@@ -28,6 +32,7 @@ export interface UserAuthStore {
   reset: () => Promise<void>;
 }
 
+// Abstraction over the Colyseus auth endpoint, allowing tests to inject fakes.
 export interface UserAuthGateway {
   onAuthChange<User = unknown>(
     callback: (response: ColyseusAuthData<User>) => void,
@@ -40,6 +45,7 @@ export interface UserAuthGateway {
   getAuthToken(): string | null;
 }
 
+// Factory dependencies injected into the store for testability.
 export interface UserAuthDependencies {
   createGateway: (endpoint?: string) => UserAuthGateway;
 }
@@ -61,6 +67,7 @@ const createInitialState = (): Omit<
   lastError: null,
 });
 
+// Extract a display name from an opaque user object, trying common field names in priority order.
 export function resolveDisplayNameFromUser(user: unknown): string | null {
   if (!user || typeof user !== "object") {
     return null;
@@ -79,6 +86,7 @@ export function resolveDisplayNameFromUser(user: unknown): string | null {
   return nextDisplayName ? nextDisplayName : null;
 }
 
+// Coerce an unknown thrown value into a readable string.
 function normalizeError(error: unknown, fallbackMessage: string): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message;
@@ -87,16 +95,20 @@ function normalizeError(error: unknown, fallbackMessage: string): string {
   return fallbackMessage;
 }
 
+// Factory that creates a Zustand store bound to a Colyseus auth gateway.
+// Accepts optional dependencies so tests can inject a fake gateway.
 export function createUserAuthStore(
   dependencies: UserAuthDependencies = {
     createGateway: createSharedColyseusConnectionGateway,
   },
 ) {
+  // Mutable references held outside Zustand state to avoid triggering re-renders.
   let gateway: UserAuthGateway | null = null;
   let unbindAuthChange: (() => void) | null = null;
   let hydrationPromise: Promise<void> | null = null;
 
   return create<UserAuthStore>()((set, get) => {
+    // Subscribe to real-time auth state changes from the gateway.
     const bindAuthChange = (nextGateway: UserAuthGateway): void => {
       unbindAuthChange?.();
       unbindAuthChange = nextGateway.onAuthChange((response) => {
@@ -115,6 +127,7 @@ export function createUserAuthStore(
       });
     };
 
+    // Lazily create or replace the gateway instance. A new endpoint always creates a fresh gateway.
     const resolveGateway = (endpoint?: string): UserAuthGateway => {
       if (endpoint) {
         gateway = dependencies.createGateway(endpoint);
@@ -140,11 +153,13 @@ export function createUserAuthStore(
         });
       },
 
+      // Restore session from the server. Deduplicates concurrent calls via a shared promise.
       async hydrateUser() {
         if (get().hasHydrated) {
           return;
         }
 
+        // Await an in-flight hydration instead of starting a duplicate request.
         if (hydrationPromise) {
           await hydrationPromise;
           return;
@@ -185,6 +200,7 @@ export function createUserAuthStore(
         await hydrationPromise;
       },
 
+      // Authenticate as a guest using only a display name (no password).
       async signInAnonymously(displayName, metadata = {}) {
         const nextDisplayName = displayName.trim();
         if (!nextDisplayName) {
@@ -224,6 +240,7 @@ export function createUserAuthStore(
         }
       },
 
+      // Clear the local session and notify the server.
       async signOut() {
         const activeGateway = resolveGateway();
 
@@ -252,6 +269,7 @@ export function createUserAuthStore(
         });
       },
 
+      // Tear down the gateway connection and reset all state to initial values.
       async reset() {
         if (gateway) {
           try {

@@ -2,11 +2,13 @@ import { Client } from "colyseus.js";
 
 export const DEFAULT_COLYSEUS_ENDPOINT = "ws://localhost:2567";
 
+// Shape of the auth response emitted by Colyseus on sign-in and session changes.
 export interface ColyseusAuthData<User = unknown> {
   user: User;
   token: string | null;
 }
 
+// Subset of the Colyseus auth API used by the app, decoupled from the real SDK for testing.
 export interface ColyseusAuthLike<User = unknown> {
   token: string | null | undefined;
   onChange(callback: (response: ColyseusAuthData<User>) => void): () => void;
@@ -17,6 +19,7 @@ export interface ColyseusAuthLike<User = unknown> {
   signOut(): Promise<void>;
 }
 
+// Minimal room interface representing an active Colyseus room session.
 export interface ColyseusRoomLike<State = unknown, Message = unknown> {
   roomId: string;
   sessionId: string;
@@ -34,6 +37,7 @@ export interface ColyseusRoomLike<State = unknown, Message = unknown> {
   onLeave(callback: (code: number) => void): void;
 }
 
+// Abstraction over the Colyseus client, exposing auth and room operations.
 export interface ColyseusClientLike {
   auth: ColyseusAuthLike;
   joinOrCreate<State = unknown, Message = unknown>(
@@ -42,6 +46,7 @@ export interface ColyseusClientLike {
   ): Promise<ColyseusRoomLike<State, Message>>;
 }
 
+// Optional callbacks forwarded to a room after joining.
 export interface RoomEventHandlers<State = unknown, Message = unknown> {
   onStateChange?: (state: State) => void;
   onMessage?: (type: string | number, message: Message) => void;
@@ -49,11 +54,13 @@ export interface RoomEventHandlers<State = unknown, Message = unknown> {
   onLeave?: (code: number) => void;
 }
 
+// Parameters for a join-or-create room request.
 export interface JoinRoomOptions {
   roomName: string;
   options?: Record<string, unknown>;
 }
 
+// Resolve the Colyseus server endpoint from the environment, falling back to the default.
 export function resolveColyseusEndpoint(
   env: Record<string, string | undefined> = import.meta.env as Record<
     string,
@@ -64,12 +71,14 @@ export function resolveColyseusEndpoint(
   return endpoint && endpoint.length > 0 ? endpoint : DEFAULT_COLYSEUS_ENDPOINT;
 }
 
+// Create a raw Colyseus client wrapping the SDK constructor.
 export function createColyseusClient(
   endpoint = resolveColyseusEndpoint(),
 ): ColyseusClientLike {
   return new Client(endpoint);
 }
 
+// Facade over a Colyseus client that implements both UserAuthGateway and MatchConnectionGateway.
 export class ColyseusConnectionGateway {
   private readonly client: ColyseusClientLike;
 
@@ -105,6 +114,7 @@ export class ColyseusConnectionGateway {
     return this.client.auth.token ?? null;
   }
 
+  // Join or create a room, then wire up optional lifecycle handlers.
   async joinRoom<State = unknown, Message = unknown>(
     joinOptions: JoinRoomOptions,
     handlers: RoomEventHandlers<State, Message> = {},
@@ -144,8 +154,10 @@ export function createColyseusConnectionGateway(
   return new ColyseusConnectionGateway(createColyseusClient(endpoint));
 }
 
+// Cache of gateway instances keyed by endpoint to avoid duplicate client connections.
 const sharedGatewayByEndpoint = new Map<string, ColyseusConnectionGateway>();
 
+// Return a cached gateway for the given endpoint, creating one on first access.
 export function createSharedColyseusConnectionGateway(
   endpoint = resolveColyseusEndpoint(),
 ): ColyseusConnectionGateway {
@@ -159,6 +171,7 @@ export function createSharedColyseusConnectionGateway(
   return gateway;
 }
 
+// Clear the shared gateway cache — intended for use between test runs only.
 export function resetSharedColyseusConnectionGatewayForTesting(): void {
   sharedGatewayByEndpoint.clear();
 }
