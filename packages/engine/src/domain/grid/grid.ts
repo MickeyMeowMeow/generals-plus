@@ -1,7 +1,8 @@
 import type { ICell } from "@/domain/cell/interfaces";
+import type { IEffectTarget } from "@/domain/effect/interfaces";
 import type { ICoordinate } from "@/math/coordinate";
 
-export interface IGrid {
+export interface IGrid extends IEffectTarget {
   /** Number of columns. */
   readonly width: number;
   /** Number of rows. */
