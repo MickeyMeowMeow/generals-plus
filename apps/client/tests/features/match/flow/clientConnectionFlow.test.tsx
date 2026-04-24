@@ -5,10 +5,12 @@ import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import { appRoutes } from "#/features/common/router";
 import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 
-const initialState = useMatchConnectionStore.getInitialState();
+const initialMatchState = useMatchConnectionStore.getInitialState();
+const initialAuthState = useUserAuthStore.getInitialState();
 
 function renderRoute(initialPath: string) {
   const router = createMemoryRouter(appRoutes, {
@@ -20,7 +22,11 @@ function renderRoute(initialPath: string) {
 
 describe("client connection flow", () => {
   beforeEach(() => {
-    useMatchConnectionStore.setState(initialState, true);
+    useMatchConnectionStore.setState(initialMatchState, true);
+    useUserAuthStore.setState(initialAuthState, true);
+    useUserAuthStore.setState({
+      hydrateUser: vi.fn().mockResolvedValue(undefined),
+    });
   });
 
   afterEach(() => {
@@ -29,6 +35,15 @@ describe("client connection flow", () => {
 
   it("calls connect action from lobby", async () => {
     const connect = vi.fn();
+
+    useUserAuthStore.setState({
+      status: "authenticated",
+      hasHydrated: true,
+      displayName: "Scout",
+      user: { name: "Scout" },
+      token: "token-scout",
+      lastError: null,
+    });
 
     useMatchConnectionStore.setState({
       connect,
@@ -62,6 +77,15 @@ describe("client connection flow", () => {
       });
     });
 
+    useUserAuthStore.setState({
+      status: "authenticated",
+      hasHydrated: true,
+      displayName: "Rogue",
+      user: { displayName: "Rogue" },
+      token: "token-rogue",
+      lastError: null,
+    });
+
     useMatchConnectionStore.setState({
       connect: vi.fn(),
       joinRoom,
@@ -84,12 +108,25 @@ describe("client connection flow", () => {
     await user.type(input, "alpha-room");
     await user.click(screen.getByRole("button", { name: "Join room" }));
 
-    expect(joinRoom).toHaveBeenCalledWith("alpha-room");
+    expect(joinRoom).toHaveBeenCalledWith("alpha-room", {
+      user: {
+        displayName: "Rogue",
+      },
+    });
     expect(await screen.findByText("Room: alpha-room")).toBeTruthy();
   });
 
   it("leaves room when match page unmounts", async () => {
     const leaveRoom = vi.fn().mockResolvedValue(undefined);
+
+    useUserAuthStore.setState({
+      status: "authenticated",
+      hasHydrated: true,
+      displayName: "Scout",
+      user: { name: "Scout" },
+      token: "token-scout",
+      lastError: null,
+    });
 
     useMatchConnectionStore.setState({
       connect: vi.fn(),
@@ -115,6 +152,51 @@ describe("client connection flow", () => {
 
     await waitFor(() => {
       expect(leaveRoom).toHaveBeenCalled();
+    });
+  });
+
+  it("sends room access code when provided", async () => {
+    const joinRoom = vi.fn().mockResolvedValue(undefined);
+
+    useUserAuthStore.setState({
+      status: "authenticated",
+      hasHydrated: true,
+      displayName: "Cipher",
+      user: { name: "Cipher" },
+      token: "token-cipher",
+      lastError: null,
+    });
+
+    useMatchConnectionStore.setState({
+      connect: vi.fn(),
+      joinRoom,
+      setError: vi.fn(),
+      leaveRoom: vi.fn().mockResolvedValue(undefined),
+      status: "disconnected",
+      roomId: null,
+      roomName: null,
+      sessionId: null,
+      latestState: null,
+      latestMessage: null,
+      lastError: null,
+    });
+
+    const user = userEvent.setup();
+    renderRoute("/lobby");
+
+    await user.type(
+      screen.getByLabelText("Room access code (optional)"),
+      "abc123",
+    );
+    await user.click(screen.getByRole("button", { name: "Join room" }));
+
+    expect(joinRoom).toHaveBeenCalledWith("skirmish-room", {
+      user: {
+        displayName: "Cipher",
+      },
+      roomAuth: {
+        accessCode: "abc123",
+      },
     });
   });
 });
