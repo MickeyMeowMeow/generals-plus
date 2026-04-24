@@ -1,4 +1,4 @@
-import type { EffectType } from "@/domain/effect/types";
+import type { EffectType } from "@/domain/effect/effect-type";
 
 /**
  * Target that can have effects applied to it.

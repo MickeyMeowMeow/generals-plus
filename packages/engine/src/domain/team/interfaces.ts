@@ -1,5 +1,5 @@
 import type { IEffectTarget } from "@/domain/effect/interfaces";
-import type { IPlayer } from "@/domain/player/player";
+import type { IPlayer } from "@/domain/player/interfaces";
 import type { TeamType } from "@/domain/team/team-type";
 
 /**
@@ -9,7 +9,7 @@ export interface IBaseTeam extends IEffectTarget {
   /** The strategic nature of the team. */
   readonly type: TeamType;
   /** IDs of players belonging to this team. */
-  readonly players: ReadonlyArray<IPlayer>;
+  readonly players: IPlayer[];
   /** Whether the team has been eliminated. */
   isEliminated: boolean;
 
