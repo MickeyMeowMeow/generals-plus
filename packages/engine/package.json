@@ -5,8 +5,17 @@
   "exports": {
     ".": {
       "default": "./dist/index.js",
-      "types": "./src/index.ts"
+      "types": "./dist/index.d.mts"
     }
+  },
+  "imports": {
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
   },
   "scripts": {
     "build": "tsdown src/index.ts",

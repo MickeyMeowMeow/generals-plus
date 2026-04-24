@@ -1,8 +1,8 @@
-import type { Terrain } from "@/domain/cell/terrain";
-import type { IEffectTarget } from "@/domain/effect/interfaces";
-import type { PlayerStatus } from "@/domain/player/player-status";
-import type { IVisionModifier } from "@/domain/vision/interfaces";
-import type { ICoordinate } from "@/math/coordinate";
+import type { Terrain } from "#domain/cell/terrain";
+import type { IEffectTarget } from "#domain/effect/interfaces";
+import type { PlayerStatus } from "#domain/player/player-status";
+import type { IVisionModifier } from "#domain/vision/interfaces";
+import type { ICoordinate } from "#math/coordinate";
 
 export interface ICellOwner {
   status: PlayerStatus;

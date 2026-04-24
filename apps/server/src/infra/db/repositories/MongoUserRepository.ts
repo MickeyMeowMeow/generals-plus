@@ -2,9 +2,9 @@ import type {
   IUser,
   IUserRepository,
   UserCreateOptions,
-} from "@/infra/db/interfaces";
-import type { IUserDocument } from "@/infra/db/models/user-model";
-import { UserModel } from "@/infra/db/models/user-model";
+} from "#infra/db/interfaces";
+import type { IUserDocument } from "#infra/db/models/user-model";
+import { UserModel } from "#infra/db/models/user-model";
 
 /**
  * MongoDB implementation of the IUserRepository using Mongoose.
