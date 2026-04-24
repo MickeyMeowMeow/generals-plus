@@ -14,7 +14,6 @@ import {
 export class MatchRoom extends Room<{
   state: MatchState;
 }> {
-  maxClients = 8;
   private users: RoomUser[] = [];
 
   onCreate(options: { metadata: unknown }) {
@@ -23,10 +22,6 @@ export class MatchRoom extends Room<{
       throw new Error("[MatchRoom] Invalid room metadata");
     }
     this.users = metadata.players;
-
-    if (metadata.players.length > this.maxClients) {
-      throw new Error("[MatchRoom] Too many players for this room");
-    }
 
     const state = new MatchState();
     state.mode = metadata.mode as typeof state.mode;
