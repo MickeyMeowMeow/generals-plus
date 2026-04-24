@@ -2,20 +2,40 @@
 
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
-import { appRoutes } from "#/features/common/router";
 import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
+import AppLayout from "#/routes/_app";
+import IndexRoute from "#/routes/_index";
+import LobbyRoute from "#/routes/lobby";
+import MatchRoute from "#/routes/match.$roomName";
+import NotFoundRoute from "#/routes/not-found";
+import UserRoute from "#/routes/user";
 
 const initialAuthState = useUserAuthStore.getInitialState();
 const initialMatchState = useMatchConnectionStore.getInitialState();
 
 function renderRoute(initialPath: string) {
-  const router = createMemoryRouter(appRoutes, {
-    initialEntries: [initialPath],
-  });
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/",
+        element: <AppLayout />,
+        children: [
+          { index: true, element: <IndexRoute /> },
+          { path: "user", element: <UserRoute /> },
+          { path: "lobby", element: <LobbyRoute /> },
+          { path: "match/:roomName", element: <MatchRoute /> },
+          { path: "*", element: <NotFoundRoute /> },
+        ],
+      },
+    ],
+    {
+      initialEntries: [initialPath],
+    },
+  );
 
   return render(<RouterProvider router={router} />);
 }
