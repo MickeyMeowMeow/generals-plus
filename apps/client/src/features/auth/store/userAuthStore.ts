@@ -127,7 +127,9 @@ export function createUserAuthStore(
       });
     };
 
-    // Lazily create or replace the gateway instance. A new endpoint always creates a fresh gateway.
+    // Lazily resolve the active gateway reference. Supplying an endpoint rebinds to
+    // the gateway for that endpoint (may be a shared/cached instance depending on
+    // the configured createGateway implementation).
     const resolveGateway = (endpoint?: string): UserAuthGateway => {
       if (endpoint) {
         gateway = dependencies.createGateway(endpoint);
