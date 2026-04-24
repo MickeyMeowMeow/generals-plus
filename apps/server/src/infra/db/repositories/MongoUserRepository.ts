@@ -38,20 +38,40 @@ export class MongoUserRepository implements IUserRepository {
     passwordHash: string,
     options?: UserCreateOptions,
   ): Promise<IUser> {
+    // Strip privileged fields from caller-supplied options to prevent
+    // callers from overriding security-sensitive values.
+    const {
+      password: _pw,
+      verified: _v,
+      elo: _elo,
+      anonymous: _anon,
+      email: _email,
+      ...safeOptions
+    } = options ?? {};
     const newUser = new UserModel({
+      ...safeOptions,
       email,
       password: passwordHash,
       anonymous: false,
-      ...options,
     });
     const savedUser = await newUser.save();
     return this.mapToEntity(savedUser);
   }
 
   public async createAnonymous(options?: UserCreateOptions): Promise<IUser> {
+    // Strip privileged fields from caller-supplied options to prevent
+    // callers from overriding security-sensitive values.
+    const {
+      password: _pw,
+      verified: _v,
+      elo: _elo,
+      anonymous: _anon,
+      email: _email,
+      ...safeOptions
+    } = options ?? {};
     const anonUser = new UserModel({
+      ...safeOptions,
       anonymous: true,
-      ...options,
     });
     const savedUser = await anonUser.save();
     return this.mapToEntity(savedUser);
