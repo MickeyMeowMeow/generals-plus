@@ -2,6 +2,21 @@ import { Client } from "colyseus.js";
 
 export const DEFAULT_COLYSEUS_ENDPOINT = "ws://localhost:2567";
 
+export interface ColyseusAuthData<User = unknown> {
+  user: User;
+  token: string | null;
+}
+
+export interface ColyseusAuthLike<User = unknown> {
+  token: string | null | undefined;
+  onChange(callback: (response: ColyseusAuthData<User>) => void): () => void;
+  getUserData(): Promise<User>;
+  signInAnonymously(
+    options?: Record<string, unknown>,
+  ): Promise<ColyseusAuthData<User>>;
+  signOut(): Promise<void>;
+}
+
 export interface ColyseusRoomLike<State = unknown, Message = unknown> {
   roomId: string;
   sessionId: string;
@@ -20,6 +35,7 @@ export interface ColyseusRoomLike<State = unknown, Message = unknown> {
 }
 
 export interface ColyseusClientLike {
+  auth: ColyseusAuthLike;
   joinOrCreate<State = unknown, Message = unknown>(
     roomName: string,
     options?: Record<string, unknown>,
@@ -61,6 +77,34 @@ export class ColyseusConnectionGateway {
     this.client = client;
   }
 
+  onAuthChange<User = unknown>(
+    callback: (response: ColyseusAuthData<User>) => void,
+  ): () => void {
+    return this.client.auth.onChange(
+      callback as (response: ColyseusAuthData<unknown>) => void,
+    );
+  }
+
+  async getUserData<User = unknown>(): Promise<User> {
+    return this.client.auth.getUserData() as Promise<User>;
+  }
+
+  async signInAnonymously<User = unknown>(
+    options: Record<string, unknown> = {},
+  ): Promise<ColyseusAuthData<User>> {
+    return this.client.auth.signInAnonymously(options) as Promise<
+      ColyseusAuthData<User>
+    >;
+  }
+
+  async signOut(): Promise<void> {
+    await this.client.auth.signOut();
+  }
+
+  getAuthToken(): string | null {
+    return this.client.auth.token ?? null;
+  }
+
   async joinRoom<State = unknown, Message = unknown>(
     joinOptions: JoinRoomOptions,
     handlers: RoomEventHandlers<State, Message> = {},
@@ -98,4 +142,23 @@ export function createColyseusConnectionGateway(
   endpoint?: string,
 ): ColyseusConnectionGateway {
   return new ColyseusConnectionGateway(createColyseusClient(endpoint));
+}
+
+const sharedGatewayByEndpoint = new Map<string, ColyseusConnectionGateway>();
+
+export function createSharedColyseusConnectionGateway(
+  endpoint = resolveColyseusEndpoint(),
+): ColyseusConnectionGateway {
+  const existingGateway = sharedGatewayByEndpoint.get(endpoint);
+  if (existingGateway) {
+    return existingGateway;
+  }
+
+  const gateway = createColyseusConnectionGateway(endpoint);
+  sharedGatewayByEndpoint.set(endpoint, gateway);
+  return gateway;
+}
+
+export function resetSharedColyseusConnectionGatewayForTesting(): void {
+  sharedGatewayByEndpoint.clear();
 }

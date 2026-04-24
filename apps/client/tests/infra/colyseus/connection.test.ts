@@ -1,6 +1,9 @@
+// @vitest-environment jsdom
+
 import { describe, expect, it, vi } from "vitest";
 
 import type {
+  ColyseusAuthLike,
   ColyseusClientLike,
   ColyseusRoomLike,
 } from "#/infra/colyseus/connection";
@@ -16,6 +19,16 @@ interface MatchState {
 
 interface MatchMessage {
   text: string;
+}
+
+function createAuthStub(): ColyseusAuthLike {
+  return {
+    token: null,
+    onChange: vi.fn().mockReturnValue(() => {}),
+    getUserData: vi.fn(),
+    signInAnonymously: vi.fn(),
+    signOut: vi.fn(),
+  };
 }
 
 describe("colyseus connection gateway", () => {
@@ -47,6 +60,7 @@ describe("colyseus connection gateway", () => {
 
     const joinOrCreate = vi.fn().mockResolvedValue(room);
     const client: ColyseusClientLike = {
+      auth: createAuthStub(),
       joinOrCreate,
     };
 
@@ -89,6 +103,7 @@ describe("colyseus connection gateway", () => {
     };
 
     const client: ColyseusClientLike = {
+      auth: createAuthStub(),
       joinOrCreate: vi.fn(),
     };
 
@@ -96,5 +111,40 @@ describe("colyseus connection gateway", () => {
     await gateway.leaveRoom(room);
 
     expect(room.leave).toHaveBeenCalledWith(true);
+  });
+
+  it("delegates auth operations to the underlying client", async () => {
+    const auth = createAuthStub();
+    const onAuthChange = vi.fn();
+
+    auth.token = "token-1";
+    auth.onChange = vi.fn().mockReturnValue(() => {});
+    auth.getUserData = vi.fn().mockResolvedValue({ id: "user-1" });
+    auth.signInAnonymously = vi
+      .fn()
+      .mockResolvedValue({ user: { id: "user-1" }, token: "token-1" });
+    auth.signOut = vi.fn().mockResolvedValue(undefined);
+
+    const client: ColyseusClientLike = {
+      auth,
+      joinOrCreate: vi.fn(),
+    };
+
+    const gateway = new ColyseusConnectionGateway(client);
+
+    expect(gateway.getAuthToken()).toBe("token-1");
+    expect(gateway.onAuthChange(onAuthChange)).toBeTypeOf("function");
+    expect(auth.onChange).toHaveBeenCalledWith(onAuthChange);
+
+    await expect(gateway.getUserData()).resolves.toEqual({ id: "user-1" });
+    await expect(gateway.signInAnonymously({ name: "fox" })).resolves.toEqual({
+      user: { id: "user-1" },
+      token: "token-1",
+    });
+    await expect(gateway.signOut()).resolves.toBeUndefined();
+
+    expect(auth.getUserData).toHaveBeenCalledTimes(1);
+    expect(auth.signInAnonymously).toHaveBeenCalledWith({ name: "fox" });
+    expect(auth.signOut).toHaveBeenCalledTimes(1);
   });
 });

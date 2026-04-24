@@ -5,7 +5,7 @@ import type {
   JoinRoomOptions,
   RoomEventHandlers,
 } from "#/infra/colyseus/connection";
-import { createColyseusConnectionGateway } from "#/infra/colyseus/connection";
+import { createSharedColyseusConnectionGateway } from "#/infra/colyseus/connection";
 
 export type MatchConnectionStatus =
   | "idle"
@@ -59,7 +59,7 @@ const createInitialState = (): Omit<
 
 export function createMatchConnectionStore(
   dependencies: MatchConnectionDependencies = {
-    createGateway: createColyseusConnectionGateway,
+    createGateway: createSharedColyseusConnectionGateway,
   },
 ) {
   let gateway: MatchConnectionGateway | null = null;
