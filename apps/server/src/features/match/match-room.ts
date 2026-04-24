@@ -56,7 +56,7 @@ export class MatchRoom extends Room<{
     );
   }
 
-  // use reservation seat system by cloyseus to validate auth before allowing clients to join the room, instead of validating in onAuth
+  // use reservation seat system by colyseus to validate auth before allowing clients to join the room, instead of validating in onAuth
   static async onAuth(token: string, _options: unknown, _context: unknown) {
     // validate the token
     const userdata = await JWT.verify(token);
