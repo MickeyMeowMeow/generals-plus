@@ -1,17 +1,23 @@
-import { Server } from "@colyseus/core";
-import { WebSocketTransport } from "@colyseus/ws-transport";
-import cors from "cors";
+/**
+ * Entry point of the server application.
+ */
 
-import { MatchRoom } from "#features/match/match-room.js";
+import server from "#app.config";
+import { ENV } from "#env";
 
-const port = Number(process.env.PORT) || 3000;
+// Get port from environment variables or default to 2567
+const port = ENV.PORT;
 
-const transport = new WebSocketTransport();
-transport.getExpressApp().use(cors());
-
-const server = new Server({ transport });
-server.define("match", MatchRoom);
-
-server.listen(port).then(() => {
-  console.log(`Server listening on port ${port}`);
-});
+/**
+ * Start listening on the specified port.
+ * This will trigger the hooks defined in app.config.ts (like express, connectDB, etc.)
+ */
+server
+  .listen(port)
+  .then(() => {
+    console.log(`✅ Server: Listening on http://localhost:${port}`);
+  })
+  .catch((err) => {
+    console.error("❌ Server: Failed to start!", err);
+    process.exit(1);
+  });
