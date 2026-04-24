@@ -1,35 +1,38 @@
 import type { Client } from "@colyseus/core";
 import { Room } from "@colyseus/core";
-import type {
-  JoinOptions,
-  RoomData,
-  RoomUser,
-} from "@generals-plus/room-types";
+import type { RoomData, RoomUser } from "@generals-plus/room-types";
+import { parseJoinOptions } from "@generals-plus/room-types";
 
-export class MatchRoom extends Room<{
-  metadata: RoomData;
-}> {
+export class MatchRoom extends Room {
   maxClients = 2;
   private users: RoomUser[] = [];
 
-  async onCreate(_options: unknown) {
-    this.users = this.metadata.players;
+  async onCreate(_options: { metadata: RoomData }) {
+    this.users = _options.metadata.players ?? [];
+    if (this.users.length === 0) {
+      console.warn(
+        "[MatchRoom] No players provided in room metadata. Room will be empty.",
+      );
+    }
     console.log(
       "[MatchRoom] Room: ",
       this.roomId,
       " created with metadata: ",
-      this.metadata,
+      _options.metadata,
     );
+    // TODO: define and implement MatchState schema
     // this.setState(new MatchState());
   }
-  onAuth(_client: Client, options: JoinOptions) {
-    const username = options.username;
-    if (!username || typeof username !== "string" || username.trim() === "") {
-      console.log(`[MatchRoom] Invalid username: ${username}`);
+  onAuth(_client: Client, options: unknown) {
+    const joinOptions = parseJoinOptions(options);
+    if (!joinOptions) {
+      console.log("[MatchRoom] Invalid join payload");
       return false;
     }
+
+    const { username, token } = joinOptions;
     const userdata = this.users.find(
-      (user) => user.username === username && user.token === options.token,
+      (user) => user.username === username && user.token === token,
     );
     if (!userdata) {
       console.log(`[MatchRoom] Username not in user list: ${username}`);

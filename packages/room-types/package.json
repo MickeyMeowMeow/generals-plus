@@ -14,10 +14,11 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "vitest": "^4.1.5"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@generals-plus/typescript-config": "workspace:*",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
   }
 }

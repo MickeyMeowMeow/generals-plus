@@ -6,6 +6,8 @@ import { MatchRoom } from "./features/match/match-room.js";
 
 const port = Number(process.env.PORT) || 3000;
 
+// TODO: Restrict CORS to specific origins
+
 const transport = new WebSocketTransport();
 transport.getExpressApp().use(cors());
 
