@@ -7,8 +7,12 @@ import { MongoUserRepository } from "@/infra/db/repositories/MongoUserRepository
 /**
  * Remove privileged fields from caller-supplied registration options so that
  * user-controlled input cannot override security-sensitive document fields.
+ * Returns undefined when no options are provided.
  */
-function sanitizeOptions(options: Record<string, unknown>): UserCreateOptions {
+function sanitizeOptions(
+  options: Record<string, unknown> | undefined,
+): UserCreateOptions | undefined {
+  if (!options) return undefined;
   const {
     password: _pw,
     verified: _v,
@@ -54,15 +58,13 @@ auth.settings.onRegisterWithEmailAndPassword = async (
   return await userRepository.createWithEmailAndPassword(
     email,
     passwordHash,
-    options ? sanitizeOptions(options) : undefined,
+    sanitizeOptions(options),
   );
 };
 
 // Handle Anonymous Sign In
 auth.settings.onRegisterAnonymously = async (options) => {
-  return await userRepository.createAnonymous(
-    options ? sanitizeOptions(options) : undefined,
-  );
+  return await userRepository.createAnonymous(sanitizeOptions(options));
 };
 
 // Handle Password Reset
