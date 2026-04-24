@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router";
 
+import { RequireAuthenticated } from "#/common/guards";
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 
 // In-game page for an active match room. Auto-joins on mount and leaves on unmount.
-export function MatchPage() {
+function MatchPage() {
   const navigate = useNavigate();
   const { roomName } = useParams<{ roomName: string }>();
   const resolvedRoomName = roomName ?? "";
@@ -97,5 +98,13 @@ export function MatchPage() {
         </Link>
       </p>
     </section>
+  );
+}
+
+export default function MatchRoute() {
+  return (
+    <RequireAuthenticated>
+      <MatchPage />
+    </RequireAuthenticated>
   );
 }

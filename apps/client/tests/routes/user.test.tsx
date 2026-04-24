@@ -40,7 +40,7 @@ function renderRoute(initialPath: string) {
   return render(<RouterProvider router={router} />);
 }
 
-describe("user auth flow", () => {
+describe("user route", () => {
   beforeEach(() => {
     useUserAuthStore.setState(initialAuthState, true);
     useMatchConnectionStore.setState(initialMatchState, true);
@@ -53,7 +53,7 @@ describe("user auth flow", () => {
     cleanup();
   });
 
-  it("redirects unauthenticated players to user page", async () => {
+  it("renders user page with sign-in form", () => {
     useUserAuthStore.setState({
       status: "idle",
       hasHydrated: true,
@@ -63,32 +63,95 @@ describe("user auth flow", () => {
       lastError: null,
     });
 
-    renderRoute("/lobby");
-    expect(await screen.findByRole("heading", { name: "User" })).toBeTruthy();
+    renderRoute("/user");
+
+    expect(screen.getByRole("heading", { name: "User" })).toBeTruthy();
+    expect(screen.getByLabelText("Display name")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Sign in anonymously" }),
+    ).toBeTruthy();
   });
 
-  it("signs in from user page and enters lobby", async () => {
-    const signInAnonymously = vi
-      .fn()
-      .mockImplementation(async (name: string) => {
-        useUserAuthStore.setState({
-          status: "authenticated",
-          hasHydrated: true,
-          displayName: name,
-          user: { displayName: name },
-          token: "token-1",
-          lastError: null,
-        });
-      });
-
+  it("shows default display name in input", () => {
     useUserAuthStore.setState({
       status: "idle",
       hasHydrated: true,
-      displayName: null,
-      user: null,
-      token: null,
+    });
+
+    renderRoute("/user");
+
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Commander");
+  });
+
+  it("disables sign-in button while authenticating", () => {
+    useUserAuthStore.setState({
+      status: "authenticating",
+      hasHydrated: true,
+    });
+
+    renderRoute("/user");
+
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Signing in...",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
+  it("displays error message when auth fails", () => {
+    useUserAuthStore.setState({
+      status: "error",
+      hasHydrated: true,
+      lastError: "Network error",
+    });
+
+    renderRoute("/user");
+
+    expect(screen.getByRole("alert").textContent).toContain("Network error");
+  });
+
+  it("shows active player name when authenticated", () => {
+    useUserAuthStore.setState({
+      status: "authenticated",
+      hasHydrated: true,
+      displayName: "Nova",
+      user: { displayName: "Nova" },
+      token: "tok",
       lastError: null,
-      signInAnonymously,
+    });
+
+    renderRoute("/user");
+
+    expect(screen.getByText("Nova")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Enter lobby" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
+  });
+
+  it("navigates to lobby when clicking Enter lobby button", async () => {
+    useUserAuthStore.setState({
+      status: "authenticated",
+      hasHydrated: true,
+      displayName: "Scout",
+      user: { displayName: "Scout" },
+      token: "tok",
+      lastError: null,
+    });
+
+    const user = userEvent.setup();
+    renderRoute("/user");
+
+    await user.click(screen.getByRole("button", { name: "Enter lobby" }));
+    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeTruthy();
+  });
+
+  it("updates display name input on typing", async () => {
+    useUserAuthStore.setState({
+      status: "idle",
+      hasHydrated: true,
     });
 
     const user = userEvent.setup();
@@ -96,16 +159,12 @@ describe("user auth flow", () => {
 
     const input = screen.getByLabelText("Display name");
     await user.clear(input);
-    await user.type(input, "Nova");
-    await user.click(
-      screen.getByRole("button", { name: "Sign in anonymously" }),
-    );
+    await user.type(input, "Ace");
 
-    expect(signInAnonymously).toHaveBeenCalledWith("Nova");
-    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeTruthy();
+    expect((input as HTMLInputElement).value).toBe("Ace");
   });
 
-  it("signs out from user page and clears active room state", async () => {
+  it("clears match connection and signs out on sign-out click", async () => {
     const signOut = vi.fn().mockResolvedValue(undefined);
     const resetMatchConnection = vi.fn().mockResolvedValue(undefined);
 
@@ -114,14 +173,11 @@ describe("user auth flow", () => {
       hasHydrated: true,
       displayName: "Helix",
       user: { displayName: "Helix" },
-      token: "token-2",
+      token: "tok",
       lastError: null,
       signOut,
     });
-
-    useMatchConnectionStore.setState({
-      reset: resetMatchConnection,
-    });
+    useMatchConnectionStore.setState({ reset: resetMatchConnection });
 
     const user = userEvent.setup();
     renderRoute("/user");
