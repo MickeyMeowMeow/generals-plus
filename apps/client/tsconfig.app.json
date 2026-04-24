@@ -7,5 +7,5 @@
     "noEmit": true,
     "paths": { "#/*": ["./src/*"] }
   },
-  "include": ["src", "tests"]
+  "include": ["src", "tests", ".react-router/types"]
 }
