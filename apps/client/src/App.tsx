@@ -5,6 +5,9 @@ import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 
 import "./App.css";
 
+/**
+ * Root client component; routing can grow here once lobby and account flows exist.
+ */
 function App() {
   const hydrateUser = useUserAuthStore((state) => state.hydrateUser);
 
@@ -23,6 +26,9 @@ function App() {
           </NavLink>
           <NavLink to="/lobby" className="nav-link">
             Lobby
+          </NavLink>
+          <NavLink to="/match-screen" className="nav-link">
+            Match Screen
           </NavLink>
         </nav>
       </header>

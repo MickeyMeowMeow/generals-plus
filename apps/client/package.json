@@ -15,7 +15,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "colyseus.js": "^0.16.22",
+    "@generals-plus/engine": "workspace:*",
+    "colyseus": "^0.17.10",
+    "pixi.js": "^7.4.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2",

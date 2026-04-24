@@ -2,7 +2,12 @@
   "extends": "@generals-plus/typescript-config/base.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    "paths": {
+      "@/domain/*": ["../../packages/engine/src/domain/*"],
+      "@/math/*": ["../../packages/engine/src/math/*"],
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules"]
