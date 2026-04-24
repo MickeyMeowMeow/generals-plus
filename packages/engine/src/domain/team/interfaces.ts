@@ -18,7 +18,7 @@ export interface IBaseTeam extends IEffectTarget {
 }
 
 /**
- * Perperties for teams that compete primarily through elimination rather than scoring.
+ * Properties for teams that compete primarily through elimination rather than scoring.
  */
 export interface IStandardTeam extends IBaseTeam {}
 
