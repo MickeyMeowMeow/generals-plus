@@ -53,6 +53,7 @@ export class MongoUserRepository implements IUserRepository {
       email,
       password: passwordHash,
       anonymous: false,
+      verified: false,
     });
     const savedUser = await newUser.save();
     return this.mapToEntity(savedUser);
@@ -72,6 +73,7 @@ export class MongoUserRepository implements IUserRepository {
     const anonUser = new UserModel({
       ...safeOptions,
       anonymous: true,
+      verified: false,
     });
     const savedUser = await anonUser.save();
     return this.mapToEntity(savedUser);
