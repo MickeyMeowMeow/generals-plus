@@ -15,6 +15,11 @@ export abstract class EffectTarget implements IEffectTarget {
    * Attaches an effect and gives it a chance to initialize state on the target.
    */
   attachEffect(effect: IBaseEffect): void {
+    if (effect.target !== this) {
+      throw new Error(
+        `Cannot attach effect "${effect.id}" to target "${this.id}" because it belongs to a different target.`,
+      );
+    }
     this.effects.push(effect);
     effect.onAttach?.();
   }
