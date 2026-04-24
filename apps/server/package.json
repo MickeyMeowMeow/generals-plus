@@ -9,13 +9,17 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@colyseus/auth": "^0.17.9",
     "@colyseus/core": "^0.17.42",
+    "@colyseus/monitor": "^0.17.8",
     "@colyseus/schema": "^4.0.20",
     "@colyseus/ws-transport": "^0.17.13",
     "@generals-plus/engine": "workspace:*",
     "colyseus": "^0.17.10",
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongoose": "^9.5.0"
   },
   "devDependencies": {
     "@generals-plus/typescript-config": "workspace:*",
