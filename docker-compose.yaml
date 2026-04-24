@@ -8,7 +8,6 @@ services:
     ports:
       - 27017:27017
     volumes:
-      - ./init:/docker-entrypoint-initdb.d
       - db:/data/db
       - configdb:/data/configdb
       - mongot:/data/mongot
