@@ -125,10 +125,8 @@ export function createMatchConnectionStore(
             onStateChange: (state) => {
               set({ latestState: state });
             },
-            // Wildcard handler — receives all message types.
-            onMessage: (_type, message) => {
-              set({ latestMessage: message });
-            },
+            // Register specific message type handlers when the game protocol is defined.
+            // Colyseus 0.16 requires per-type registration — no client-side wildcard.
             onError: (_code, message) => {
               get().setError(message ?? "Room connection error");
             },
@@ -192,6 +190,9 @@ export function createMatchConnectionStore(
       } catch (error) {
         set({
           status: "error",
+          roomId: null,
+          roomName: null,
+          sessionId: null,
           lastError:
             error instanceof Error ? error.message : "Failed to leave room",
         });

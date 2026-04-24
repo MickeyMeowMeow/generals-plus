@@ -65,7 +65,8 @@ describe("colyseus connection gateway", () => {
     };
 
     const onStateChange = vi.fn();
-    const onMessage = vi.fn();
+    const onMoveMessage = vi.fn();
+    const onChatMessage = vi.fn();
     const onError = vi.fn();
     const onLeave = vi.fn();
 
@@ -76,7 +77,10 @@ describe("colyseus connection gateway", () => {
       },
       {
         onStateChange,
-        onMessage,
+        messageHandlers: [
+          { type: "move", handler: onMoveMessage },
+          { type: "chat", handler: onChatMessage },
+        ],
         onError,
         onLeave,
       },
@@ -86,7 +90,8 @@ describe("colyseus connection gateway", () => {
     expect(joinedRoom).toBe(room);
 
     expect(room.onStateChange).toHaveBeenCalledWith(onStateChange);
-    expect(room.onMessage).toHaveBeenCalledWith("*", onMessage);
+    expect(room.onMessage).toHaveBeenCalledWith("move", onMoveMessage);
+    expect(room.onMessage).toHaveBeenCalledWith("chat", onChatMessage);
     expect(room.onError).toHaveBeenCalledWith(onError);
     expect(room.onLeave).toHaveBeenCalledWith(onLeave);
   });

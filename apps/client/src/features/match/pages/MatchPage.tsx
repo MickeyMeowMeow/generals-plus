@@ -8,8 +8,14 @@ import { useMatchConnectionStore } from "#/features/match/store/matchConnectionS
 export function MatchPage() {
   const navigate = useNavigate();
   const { roomName } = useParams<{ roomName: string }>();
-  const resolvedRoomName = roomName ? decodeURIComponent(roomName) : "";
-
+  let resolvedRoomName = "";
+  if (roomName) {
+    try {
+      resolvedRoomName = decodeURIComponent(roomName);
+    } catch {
+      resolvedRoomName = "";
+    }
+  }
   const status = useMatchConnectionStore((state) => state.status);
   const displayName = useUserAuthStore((state) => state.displayName);
   const activeRoomName = useMatchConnectionStore((state) => state.roomName);
@@ -30,6 +36,12 @@ export function MatchPage() {
 
     // Already connected to the correct room — nothing to do.
     if (status === "connected" && activeRoomName === resolvedRoomName) {
+      return;
+    }
+
+    // Switch rooms when connected elsewhere; store-level joinRoom already handles leave-first.
+    if (status === "connected" && activeRoomName !== resolvedRoomName) {
+      void joinRoom(resolvedRoomName);
       return;
     }
 
