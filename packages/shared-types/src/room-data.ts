@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import type { RoomUser } from "#/room-user";
-
 export interface CellInit {
   terrain: string;
   isPassable: boolean;
@@ -25,7 +23,6 @@ export interface PlayerInit {
 export interface RoomData {
   mode: string;
   map: MapConfig;
-  players: RoomUser[];
   playerInit: PlayerInit[];
 }
 

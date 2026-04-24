@@ -8,4 +8,5 @@ export class Player extends Schema {
   @type("string") username: string = "";
   @type("number") landCount: number = 0;
   @type("number") armyCount: number = 0;
+  @type("string") sessionId: string = "";
 }

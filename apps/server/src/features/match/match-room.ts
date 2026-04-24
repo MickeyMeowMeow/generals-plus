@@ -2,26 +2,22 @@ import type { Client } from "@colyseus/core";
 import { Room } from "@colyseus/core";
 import type { Terrain } from "@generals-plus/engine";
 import { PlayerStatus } from "@generals-plus/engine";
-import type { RoomUser } from "@generals-plus/shared-types";
+import { JWT } from "@colyseus/auth";
 import {
   Cell,
   MatchState,
   Player,
-  parseJoinOptions,
   parseRoomData,
 } from "@generals-plus/shared-types";
 
 export class MatchRoom extends Room<{
   state: MatchState;
 }> {
-  private users: RoomUser[] = [];
-
   onCreate(options: { metadata: unknown }) {
     const metadata = parseRoomData(options.metadata);
     if (!metadata) {
       throw new Error("[MatchRoom] Invalid room metadata");
     }
-    this.users = metadata.players;
 
     const state = new MatchState();
     state.mode = metadata.mode as typeof state.mode;
@@ -60,31 +56,31 @@ export class MatchRoom extends Room<{
     );
   }
 
-  onAuth(_client: Client, options: unknown) {
-    const joinOptions = parseJoinOptions(options);
-    if (!joinOptions) {
-      console.log("[MatchRoom] Invalid join payload");
-      return false;
-    }
+  // use reservation seat system by cloyseus to validate auth before allowing clients to join the room, instead of validating in onAuth
+  static async onAuth(token: string, _options: unknown, _context: unknown) {
+    // validate the token
+    const userdata = await JWT.verify(token);
 
-    const { username, token } = joinOptions;
-    const user = this.users.find((u) => u.username === username);
-    if (!user) {
-      console.log(`[MatchRoom] Unknown username: ${username}`);
-      return false;
-    }
-    if (user.token !== token) {
-      console.log(`[MatchRoom] Invalid token for: ${username}`);
-      return false;
-    }
-    return user;
+    // return userdata
+    return userdata;
   }
 
   onJoin(client: Client, _options: unknown) {
     console.log(`[MatchRoom] ${client.sessionId} joined`);
     const userdata = client.auth;
+
     if (userdata) {
       console.log(`[MatchRoom] User Joined: ${userdata.username}`);
+
+      const player = this.state.players.get(userdata.id);
+      if (player) {
+        player.sessionId = client.sessionId;
+        player.status = PlayerStatus.ACTIVE;
+
+        console.log(`[MatchRoom] Player ${userdata.username} bound to session ${client.sessionId}`);
+      } else {
+        console.log(`[MatchRoom] Error: Player data not found for user: ${userdata.username}`);
+      }
     } else {
       console.log(
         `[MatchRoom] Joining user not found in room data: ${client.sessionId}`,
