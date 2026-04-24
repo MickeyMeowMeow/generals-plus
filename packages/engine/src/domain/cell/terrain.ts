@@ -11,6 +11,8 @@ export const Terrain = {
   DESERT: "desert",
   /** Requires troops to capture, generates troops when owned. */
   CITY: "city",
+  /** Void terrain. Not part of the playable grid, used for padding. */
+  VOID: "void",
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];
