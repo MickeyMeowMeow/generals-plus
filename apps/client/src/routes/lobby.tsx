@@ -1,12 +1,13 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
+import { RequireAuthenticated } from "#/common/guards";
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 
 // Landing page after authentication. Lets the player join or create a game room.
-export function LobbyPage() {
+function LobbyPage() {
   const navigate = useNavigate();
   const [roomName, setRoomName] = useState("skirmish-room");
   const [roomAccessCode, setRoomAccessCode] = useState("");
@@ -115,5 +116,13 @@ export function LobbyPage() {
         </p>
       ) : null}
     </section>
+  );
+}
+
+export default function LobbyRoute() {
+  return (
+    <RequireAuthenticated>
+      <LobbyPage />
+    </RequireAuthenticated>
   );
 }

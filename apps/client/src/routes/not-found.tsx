@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
-export function NotFoundPage() {
+export default function NotFoundPage() {
   return (
     <section className="page" aria-label="Not Found Page">
       <h2>Page not found</h2>

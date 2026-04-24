@@ -1,12 +1,12 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
 
 // Authentication page where players create or manage their anonymous session.
-export function UserPage() {
+export default function UserPage() {
   const navigate = useNavigate();
   const [displayNameInput, setDisplayNameInput] = useState("Commander");
 

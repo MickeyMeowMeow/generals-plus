@@ -1,11 +1,11 @@
 import { useEffect } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet } from "react-router";
 
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 
-import "./App.css";
+import "#/App.css";
 
-function App() {
+export default function AppLayout() {
   const hydrateUser = useUserAuthStore((state) => state.hydrateUser);
 
   // Kick off session hydration once on app startup.
@@ -32,5 +32,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
