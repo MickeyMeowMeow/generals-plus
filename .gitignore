@@ -4,6 +4,7 @@ logs
 pnpm-debug.log*
 
 node_modules
+*.tsbuildinfo
 dist
 dist-ssr
 build
