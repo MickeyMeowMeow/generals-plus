@@ -48,7 +48,7 @@ const mapConfigSchema = z
 
 const playerInitSchema = z.object({
   id: z.string().min(1),
-  username: z.string().min(1),
+  username: z.string().trim().min(1),
   teamId: z.string().min(1),
 });
 
@@ -56,7 +56,12 @@ export const roomDataSchema = z
   .object({
     mode: z.string().min(1),
     map: mapConfigSchema,
-    players: z.array(z.object({ username: z.string(), token: z.string() })),
+    players: z.array(
+      z.object({
+        username: z.string().trim().min(1),
+        token: z.string().min(1),
+      }),
+    ),
     playerInit: z.array(playerInitSchema),
   })
   .refine(

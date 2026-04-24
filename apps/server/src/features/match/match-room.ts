@@ -68,14 +68,16 @@ export class MatchRoom extends Room<{
     }
 
     const { username, token } = joinOptions;
-    const userdata = this.users.find(
-      (user) => user.username === username && user.token === token,
-    );
-    if (!userdata) {
-      console.log(`[MatchRoom] Username not in user list: ${username}`);
+    const user = this.users.find((u) => u.username === username);
+    if (!user) {
+      console.log(`[MatchRoom] Unknown username: ${username}`);
       return false;
     }
-    return userdata;
+    if (user.token !== token) {
+      console.log(`[MatchRoom] Invalid token for: ${username}`);
+      return false;
+    }
+    return user;
   }
 
   onJoin(client: Client, _options: unknown) {
