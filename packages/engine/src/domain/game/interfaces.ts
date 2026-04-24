@@ -31,7 +31,7 @@ export interface IBaseGame {
   readonly teams: Map<string, Team>;
 
   /** Dynamic entities (bomb, cart, ball) based on the current mode. */
-  readonly items: Array<IItem>;
+  readonly items: IItem[];
 
   /**
    * Starts the internal tick counter and troop growth timers.
