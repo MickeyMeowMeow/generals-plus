@@ -9,14 +9,15 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "rolldown src/index.ts --file dist/index.js",
+    "dev": "rolldown src/index.ts --watch --file dist/index.js",
     "test": "vitest run",
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "@generals-plus/typescript-config": "workspace:*",
     "@generals-plus/vitest-config": "workspace:*",
+    "rolldown": "1.0.0-rc.16",
     "vitest": "^4.1.5"
   }
 }
