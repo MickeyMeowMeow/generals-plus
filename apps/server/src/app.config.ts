@@ -14,6 +14,7 @@ import { auth } from "#features/auth/auth-config";
 matchMaker.controller.exposedMethods = [
   "joinById",
   "reconnect",
+  "joinOrCreate",
   "consumeSeatReservation",
 ];
 

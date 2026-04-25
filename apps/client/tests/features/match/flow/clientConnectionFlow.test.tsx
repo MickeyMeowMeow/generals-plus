@@ -10,7 +10,7 @@ import { useMatchConnectionStore } from "#/features/match/store/matchConnectionS
 import AppLayout from "#/routes/_app";
 import IndexRoute from "#/routes/_index";
 import LobbyRoute from "#/routes/lobby";
-import MatchRoute from "#/routes/match.$roomName";
+import MatchRoute from "#/routes/match.$roomId";
 import NotFoundRoute from "#/routes/not-found";
 import UserRoute from "#/routes/user";
 
@@ -27,7 +27,7 @@ function renderRoute(initialPath: string) {
           { index: true, element: <IndexRoute /> },
           { path: "user", element: <UserRoute /> },
           { path: "lobby", element: <LobbyRoute /> },
-          { path: "match/:roomName", element: <MatchRoute /> },
+          { path: "match/:roomId", element: <MatchRoute /> },
           { path: "*", element: <NotFoundRoute /> },
         ],
       },
@@ -91,7 +91,7 @@ describe("client connection flow", () => {
     const joinRoom = vi.fn().mockImplementation(async (roomName: string) => {
       useMatchConnectionStore.setState({
         status: "connected",
-        roomName,
+        roomName: roomName,
         roomId: "room-123",
         sessionId: "session-123",
       });
@@ -133,7 +133,7 @@ describe("client connection flow", () => {
         displayName: "Rogue",
       },
     });
-    expect(await screen.findByText("Room: alpha-room")).toBeTruthy();
+    expect(await screen.findByText("Room ID: room-123")).toBeTruthy();
   });
 
   it("leaves room when match page unmounts", async () => {
@@ -162,7 +162,7 @@ describe("client connection flow", () => {
       lastError: null,
     });
 
-    const view = renderRoute("/match/alpha-room");
+    const view = renderRoute("/match/room-9");
 
     expect(
       await screen.findByRole("heading", { name: "Match Room" }),

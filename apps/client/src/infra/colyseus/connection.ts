@@ -22,6 +22,7 @@ export interface ColyseusAuth<User = unknown> {
 // Minimal room interface representing an active Colyseus room session.
 export interface ColyseusRoom<State = unknown, Message = unknown> {
   roomId: string;
+  name: string;
   sessionId: string;
   leave(consented?: boolean): Promise<number>;
   onStateChange(callback: (state: State) => void): void;
@@ -38,6 +39,10 @@ export interface ColyseusClient {
   auth: ColyseusAuth;
   joinOrCreate<State = unknown, Message = unknown>(
     roomName: string,
+    options?: Record<string, unknown>,
+  ): Promise<ColyseusRoom<State, Message>>;
+  joinById<State = unknown, Message = unknown>(
+    roomId: string,
     options?: Record<string, unknown>,
   ): Promise<ColyseusRoom<State, Message>>;
 }
@@ -58,6 +63,12 @@ export interface RoomEventHandlers<State = unknown, Message = unknown> {
 // Parameters for a join-or-create room request.
 export interface JoinRoomOptions {
   roomName: string;
+  options?: Record<string, unknown>;
+}
+
+// Parameters for joining a specific room by its unique ID.
+export interface JoinByIdOptions {
+  roomId: string;
   options?: Record<string, unknown>;
 }
 
@@ -125,6 +136,28 @@ export class ColyseusConnectionGateway {
       joinOptions.options ?? {},
     );
 
+    this.wireHandlers(room, handlers);
+    return room;
+  }
+
+  // Join a specific room by ID, then wire up optional lifecycle handlers.
+  async joinById<State = unknown, Message = unknown>(
+    joinOptions: JoinByIdOptions,
+    handlers: RoomEventHandlers<State, Message> = {},
+  ): Promise<ColyseusRoom<State, Message>> {
+    const room = await this.client.joinById<State, Message>(
+      joinOptions.roomId,
+      joinOptions.options ?? {},
+    );
+
+    this.wireHandlers(room, handlers);
+    return room;
+  }
+
+  private wireHandlers<State = unknown, Message = unknown>(
+    room: ColyseusRoom<State, Message>,
+    handlers: RoomEventHandlers<State, Message>,
+  ): void {
     if (handlers.onStateChange) {
       room.onStateChange(handlers.onStateChange);
     }
@@ -142,8 +175,6 @@ export class ColyseusConnectionGateway {
     if (handlers.onLeave) {
       room.onLeave(handlers.onLeave);
     }
-
-    return room;
   }
 
   async leaveRoom(room: ColyseusRoom, consented = true): Promise<number> {

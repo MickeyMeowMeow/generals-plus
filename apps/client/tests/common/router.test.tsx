@@ -8,7 +8,7 @@ import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import AppLayout from "#/routes/_app";
 import IndexRoute from "#/routes/_index";
 import LobbyRoute from "#/routes/lobby";
-import MatchRoute from "#/routes/match.$roomName";
+import MatchRoute from "#/routes/match.$roomId";
 import NotFoundRoute from "#/routes/not-found";
 import UserRoute from "#/routes/user";
 
@@ -22,7 +22,7 @@ function renderRoute(initialPath: string) {
           { index: true, element: <IndexRoute /> },
           { path: "user", element: <UserRoute /> },
           { path: "lobby", element: <LobbyRoute /> },
-          { path: "match/:roomName", element: <MatchRoute /> },
+          { path: "match/:roomId", element: <MatchRoute /> },
           { path: "*", element: <NotFoundRoute /> },
         ],
       },

@@ -50,6 +50,7 @@ describe("colyseus connection gateway", () => {
   it("joins a room and binds all handlers", async () => {
     const room: ColyseusRoom<MatchState, MatchMessage> = {
       roomId: "room-1",
+      name: "battle",
       sessionId: "session-1",
       leave: vi.fn().mockResolvedValue(1000),
       onStateChange: vi.fn(),
@@ -99,6 +100,7 @@ describe("colyseus connection gateway", () => {
   it("delegates leaveRoom to room.leave", async () => {
     const room: ColyseusRoom = {
       roomId: "room-2",
+      name: "battle",
       sessionId: "session-2",
       leave: vi.fn().mockResolvedValue(1000),
       onStateChange: vi.fn(),

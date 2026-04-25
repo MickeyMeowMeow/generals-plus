@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import type {
   ColyseusRoom,
+  JoinByIdOptions,
   JoinRoomOptions,
   RoomEventHandlers,
 } from "#/infra/colyseus/connection";
@@ -31,6 +32,10 @@ export interface MatchConnectionStore {
     roomName: string,
     options?: Record<string, unknown>,
   ) => Promise<void>;
+  joinById: (
+    roomId: string,
+    options?: Record<string, unknown>,
+  ) => Promise<void>;
   leaveRoom: () => Promise<void>;
   setError: (message: string) => void;
   reset: () => Promise<void>;
@@ -40,6 +45,10 @@ export interface MatchConnectionStore {
 export interface MatchConnectionGateway {
   joinRoom<State = unknown, Message = unknown>(
     joinOptions: JoinRoomOptions,
+    handlers?: RoomEventHandlers<State, Message>,
+  ): Promise<ColyseusRoom<State, Message>>;
+  joinById<State = unknown, Message = unknown>(
+    joinOptions: JoinByIdOptions,
     handlers?: RoomEventHandlers<State, Message>,
   ): Promise<ColyseusRoom<State, Message>>;
   leaveRoom(room: ColyseusRoom, consented?: boolean): Promise<number>;
@@ -52,7 +61,7 @@ export interface MatchConnectionDependencies {
 
 const createInitialState = (): Omit<
   MatchConnectionStore,
-  "connect" | "joinRoom" | "leaveRoom" | "setError" | "reset"
+  "connect" | "joinRoom" | "joinById" | "leaveRoom" | "setError" | "reset"
 > => ({
   status: "idle",
   roomId: null,
@@ -124,7 +133,7 @@ export function createMatchConnectionStore(
 
         set({
           status: "connecting",
-          roomName,
+          roomName: roomName,
           roomId: null,
           sessionId: null,
           latestState: null,
@@ -174,7 +183,83 @@ export function createMatchConnectionStore(
         set({
           status: "connected",
           roomId: room.roomId,
-          roomName,
+          roomName: room.name,
+          sessionId: room.sessionId,
+          lastError: null,
+        });
+      } catch (error) {
+        if (generation !== joinGeneration) return;
+        activeRoom = null;
+        set({
+          status: "error",
+          roomId: null,
+          roomName: null,
+          sessionId: null,
+          latestState: null,
+          latestMessage: null,
+          lastError:
+            error instanceof Error ? error.message : "Failed to join room",
+        });
+      }
+    },
+
+    // Join a specific room by its unique ID. Leaves any previous room first.
+    async joinById(roomId, options = {}) {
+      const generation = ++joinGeneration;
+
+      try {
+        if (activeRoom) {
+          await resolveGateway().leaveRoom(activeRoom, true);
+          activeRoom = null;
+        }
+
+        set({
+          status: "connecting",
+          roomId,
+          roomName: null,
+          sessionId: null,
+          latestState: null,
+          latestMessage: null,
+          lastError: null,
+        });
+
+        const room = await resolveGateway().joinById(
+          { roomId, options },
+          {
+            onStateChange: (state) => {
+              if (generation !== joinGeneration) return;
+              set({ latestState: state });
+            },
+            onError: (_code, message) => {
+              if (generation !== joinGeneration) return;
+              get().setError(message ?? "Room connection error");
+            },
+            onLeave: () => {
+              if (generation !== joinGeneration) return;
+              activeRoom = null;
+              set({
+                status: "disconnected",
+                roomId: null,
+                roomName: null,
+                sessionId: null,
+                latestState: null,
+                latestMessage: null,
+                lastError: null,
+              });
+            },
+          },
+        );
+
+        if (generation !== joinGeneration) {
+          await resolveGateway().leaveRoom(room, true);
+          return;
+        }
+
+        activeRoom = room;
+        set({
+          status: "connected",
+          roomId: room.roomId,
+          roomName: room.name,
           sessionId: room.sessionId,
           lastError: null,
         });

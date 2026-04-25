@@ -51,8 +51,9 @@ function LobbyPage() {
     }
 
     await joinRoom(nextRoom, joinOptions);
-    if (useMatchConnectionStore.getState().status === "connected") {
-      navigate(`/match/${encodeURIComponent(nextRoom)}`);
+    const { status, roomId } = useMatchConnectionStore.getState();
+    if (status === "connected" && roomId) {
+      navigate(`/match/${encodeURIComponent(roomId)}`);
     }
   };
 
