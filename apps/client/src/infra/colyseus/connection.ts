@@ -1,4 +1,6 @@
-import { Client } from "colyseus.js";
+import { Callbacks, Client } from "@colyseus/sdk";
+
+export { Callbacks };
 
 export const DEFAULT_COLYSEUS_ENDPOINT = "ws://localhost:2567";
 
@@ -12,31 +14,75 @@ export interface ColyseusAuthData<User = unknown> {
 export interface ColyseusAuth<User = unknown> {
   token: string | null | undefined;
   onChange(callback: (response: ColyseusAuthData<User>) => void): () => void;
-  getUserData(): Promise<User>;
+  getUserData<UserResolved = User>(): Promise<{ user: UserResolved }>;
   signInAnonymously(
     options?: Record<string, unknown>,
   ): Promise<ColyseusAuthData<User>>;
   signOut(): Promise<void>;
 }
 
-// Minimal room interface representing an active Colyseus room session.
+// Subscription from SDK signal events (onError, onLeave, onDrop, etc.).
+// The SDK's createSignal returns EventEmitter which exposes clear() for cleanup.
+export interface ColyseusSignalSubscription {
+  clear(): void;
+}
+
+// Subscription from SDK message events (onMessage).
+// The SDK's nanoevents .on() returns a plain unsubscribe function.
+export type ColyseusMessageSubscription = () => void;
+
+// Reconnection configuration exposed on each room instance by the SDK.
+export interface ReconnectionOptions {
+  enabled: boolean;
+  maxRetries: number;
+  minDelay: number;
+  maxDelay: number;
+  minUptime: number;
+  delay: number;
+  backoff: (attempt: number, delay: number) => number;
+  maxEnqueuedMessages: number;
+  enqueuedMessages: Array<{ data: Uint8Array }>;
+  retryCount: number;
+  isReconnecting: boolean;
+}
+
+// Room interface matching @colyseus/sdk 0.17 Room surface, decoupled for testing.
 export interface ColyseusRoom<State = unknown, Message = unknown> {
   roomId: string;
   name: string;
   sessionId: string;
+  reconnectionToken: string;
+  reconnection: ReconnectionOptions;
+  readonly state: State;
+
   leave(consented?: boolean): Promise<number>;
-  onStateChange(callback: (state: State) => void): void;
+  send(type: string | number, message?: unknown): void;
+  sendBytes(type: string | number, bytes: Uint8Array): void;
+  sendUnreliable(type: string | number, message?: unknown): void;
+  ping(callback: (ms: number) => void): void;
+  removeAllListeners(): void;
+
+  onStateChange(callback: (state: State) => void): ColyseusSignalSubscription;
   onMessage(
     type: string | number,
     callback: (message: Message) => void,
-  ): unknown;
-  onError(callback: (code: number, message?: string) => void): void;
-  onLeave(callback: (code: number) => void): void;
+  ): ColyseusMessageSubscription;
+  onError(
+    callback: (code: number, message?: string) => void,
+  ): ColyseusSignalSubscription;
+  onLeave(
+    callback: (code: number, reason?: string) => void,
+  ): ColyseusSignalSubscription;
+  onDrop(
+    callback: (code: number, reason?: string) => void,
+  ): ColyseusSignalSubscription;
+  onReconnect(callback: () => void): ColyseusSignalSubscription;
 }
 
 // Abstraction over the Colyseus client, exposing auth and room operations.
 export interface ColyseusClient {
   auth: ColyseusAuth;
+  http: unknown;
   joinOrCreate<State = unknown, Message = unknown>(
     roomName: string,
     options?: Record<string, unknown>,
@@ -45,19 +91,30 @@ export interface ColyseusClient {
     roomId: string,
     options?: Record<string, unknown>,
   ): Promise<ColyseusRoom<State, Message>>;
+  create<State = unknown, Message = unknown>(
+    roomName: string,
+    options?: Record<string, unknown>,
+  ): Promise<ColyseusRoom<State, Message>>;
+  join<State = unknown, Message = unknown>(
+    roomName: string,
+    options?: Record<string, unknown>,
+  ): Promise<ColyseusRoom<State, Message>>;
+  reconnect<State = unknown, Message = unknown>(
+    reconnectionToken: string,
+  ): Promise<ColyseusRoom<State, Message>>;
+  consumeSeatReservation<State = unknown, Message = unknown>(
+    reservation: unknown,
+  ): Promise<ColyseusRoom<State, Message>>;
+  getLatency(options?: { pingCount?: number }): Promise<number>;
 }
 
-// Optional callbacks forwarded to a room after joining.
-// messageHandlers is an array of {type, handler} pairs because Colyseus 0.16
-// requires registering each message type individually — no client-side wildcard.
-export interface RoomEventHandlers<State = unknown, Message = unknown> {
-  onStateChange?: (state: State) => void;
-  messageHandlers?: ReadonlyArray<{
-    type: string | number;
-    handler: (message: Message) => void;
-  }>;
+// Lifecycle-only callbacks forwarded to a room after joining.
+// State observation uses Callbacks.get(room). Messages use room.onMessage().
+export interface RoomLifecycleHandlers {
   onError?: (code: number, message?: string) => void;
-  onLeave?: (code: number) => void;
+  onLeave?: (code: number, reason?: string) => void;
+  onDrop?: (code: number, reason?: string) => void;
+  onReconnect?: () => void;
 }
 
 // Parameters for a join-or-create room request.
@@ -87,12 +144,13 @@ export function resolveColyseusEndpoint(
 export function createColyseusClient(
   endpoint = resolveColyseusEndpoint(),
 ): ColyseusClient {
-  return new Client(endpoint);
+  return new Client(endpoint) as ColyseusClient;
 }
 
-// Facade over a Colyseus client that implements both UserAuthGateway and MatchConnectionGateway.
+// Facade over a Colyseus client that wires only lifecycle events.
 export class ColyseusConnectionGateway {
   private readonly client: ColyseusClient;
+  private activeSubscriptions: Array<ColyseusSignalSubscription> = [];
 
   constructor(client: ColyseusClient) {
     this.client = client;
@@ -107,7 +165,8 @@ export class ColyseusConnectionGateway {
   }
 
   async getUserData<User = unknown>(): Promise<User> {
-    return this.client.auth.getUserData() as Promise<User>;
+    const response = await this.client.auth.getUserData();
+    return response.user as User;
   }
 
   async signInAnonymously<User = unknown>(
@@ -126,58 +185,70 @@ export class ColyseusConnectionGateway {
     return this.client.auth.token ?? null;
   }
 
-  // Join or create a room, then wire up optional lifecycle handlers.
   async joinRoom<State = unknown, Message = unknown>(
     joinOptions: JoinRoomOptions,
-    handlers: RoomEventHandlers<State, Message> = {},
+    handlers: RoomLifecycleHandlers = {},
   ): Promise<ColyseusRoom<State, Message>> {
     const room = await this.client.joinOrCreate<State, Message>(
       joinOptions.roomName,
       joinOptions.options ?? {},
     );
 
-    this.wireHandlers(room, handlers);
+    this.wireLifecycleHandlers(room, handlers);
     return room;
   }
 
-  // Join a specific room by ID, then wire up optional lifecycle handlers.
   async joinById<State = unknown, Message = unknown>(
     joinOptions: JoinByIdOptions,
-    handlers: RoomEventHandlers<State, Message> = {},
+    handlers: RoomLifecycleHandlers = {},
   ): Promise<ColyseusRoom<State, Message>> {
     const room = await this.client.joinById<State, Message>(
       joinOptions.roomId,
       joinOptions.options ?? {},
     );
 
-    this.wireHandlers(room, handlers);
+    this.wireLifecycleHandlers(room, handlers);
     return room;
   }
 
-  private wireHandlers<State = unknown, Message = unknown>(
-    room: ColyseusRoom<State, Message>,
-    handlers: RoomEventHandlers<State, Message>,
-  ): void {
-    if (handlers.onStateChange) {
-      room.onStateChange(handlers.onStateChange);
-    }
+  async reconnect<State = unknown, Message = unknown>(
+    reconnectionToken: string,
+    handlers: RoomLifecycleHandlers = {},
+  ): Promise<ColyseusRoom<State, Message>> {
+    const room = await this.client.reconnect<State, Message>(reconnectionToken);
+    this.wireLifecycleHandlers(room, handlers);
+    return room;
+  }
 
-    if (handlers.messageHandlers) {
-      for (const { type, handler } of handlers.messageHandlers) {
-        room.onMessage(type, handler);
-      }
-    }
+  private wireLifecycleHandlers<State, Message>(
+    room: ColyseusRoom<State, Message>,
+    handlers: RoomLifecycleHandlers,
+  ): void {
+    this.unsubscribeHandlers();
 
     if (handlers.onError) {
-      room.onError(handlers.onError);
+      this.activeSubscriptions.push(room.onError(handlers.onError));
     }
-
     if (handlers.onLeave) {
-      room.onLeave(handlers.onLeave);
+      this.activeSubscriptions.push(room.onLeave(handlers.onLeave));
+    }
+    if (handlers.onDrop) {
+      this.activeSubscriptions.push(room.onDrop(handlers.onDrop));
+    }
+    if (handlers.onReconnect) {
+      this.activeSubscriptions.push(room.onReconnect(handlers.onReconnect));
     }
   }
 
+  unsubscribeHandlers(): void {
+    for (const sub of this.activeSubscriptions) {
+      sub.clear();
+    }
+    this.activeSubscriptions = [];
+  }
+
   async leaveRoom(room: ColyseusRoom, consented = true): Promise<number> {
+    this.unsubscribeHandlers();
     return room.leave(consented);
   }
 }
@@ -188,11 +259,8 @@ export function createColyseusConnectionGateway(
   return new ColyseusConnectionGateway(createColyseusClient(endpoint));
 }
 
-// Cache of gateway instances keyed by endpoint to avoid duplicate client connections.
 const sharedGatewayByEndpoint = new Map<string, ColyseusConnectionGateway>();
 
-// Return a cached gateway for the given endpoint, creating one on first access.
-// Normalizes whitespace and falls back to the default endpoint when empty.
 export function createSharedColyseusConnectionGateway(
   endpoint = resolveColyseusEndpoint(),
 ): ColyseusConnectionGateway {
@@ -207,7 +275,6 @@ export function createSharedColyseusConnectionGateway(
   return gateway;
 }
 
-// Clear the shared gateway cache — intended for use between test runs only.
 export function resetSharedColyseusConnectionGatewayForTesting(): void {
   sharedGatewayByEndpoint.clear();
 }

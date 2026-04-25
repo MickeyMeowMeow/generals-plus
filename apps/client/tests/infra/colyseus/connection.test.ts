@@ -31,6 +31,43 @@ function createAuthStub(): ColyseusAuth {
   };
 }
 
+function createRoom(
+  name = "skirmish-room",
+): ColyseusRoom<MatchState, MatchMessage> {
+  return {
+    roomId: "room-1",
+    name,
+    sessionId: "session-1",
+    reconnectionToken: "room-1:token-abc",
+    reconnection: {
+      enabled: true,
+      maxRetries: 15,
+      minDelay: 100,
+      maxDelay: 5000,
+      minUptime: 5000,
+      delay: 100,
+      backoff: vi.fn(),
+      maxEnqueuedMessages: 10,
+      enqueuedMessages: [],
+      retryCount: 0,
+      isReconnecting: false,
+    },
+    state: { tick: 0 },
+    leave: vi.fn().mockResolvedValue(1000),
+    send: vi.fn(),
+    sendBytes: vi.fn(),
+    sendUnreliable: vi.fn(),
+    ping: vi.fn(),
+    removeAllListeners: vi.fn(),
+    onStateChange: vi.fn().mockReturnValue({ clear: vi.fn() }),
+    onMessage: vi.fn().mockReturnValue(() => {}),
+    onError: vi.fn().mockReturnValue({ clear: vi.fn() }),
+    onLeave: vi.fn().mockReturnValue({ clear: vi.fn() }),
+    onDrop: vi.fn().mockReturnValue({ clear: vi.fn() }),
+    onReconnect: vi.fn().mockReturnValue({ clear: vi.fn() }),
+  };
+}
+
 describe("colyseus connection gateway", () => {
   it("uses default endpoint when env is empty", () => {
     expect(resolveColyseusEndpoint({})).toBe(DEFAULT_COLYSEUS_ENDPOINT);
@@ -47,76 +84,113 @@ describe("colyseus connection gateway", () => {
     ).toBe("ws://localhost:3579");
   });
 
-  it("joins a room and binds all handlers", async () => {
-    const room: ColyseusRoom<MatchState, MatchMessage> = {
-      roomId: "room-1",
-      name: "battle",
-      sessionId: "session-1",
-      leave: vi.fn().mockResolvedValue(1000),
-      onStateChange: vi.fn(),
-      onMessage: vi.fn(),
-      onError: vi.fn(),
-      onLeave: vi.fn(),
-    };
-
+  it("joins a room and wires lifecycle handlers", async () => {
+    const room = createRoom();
     const joinOrCreate = vi.fn().mockResolvedValue(room);
     const client: ColyseusClient = {
       auth: createAuthStub(),
       joinOrCreate,
+      joinById: vi.fn(),
+      create: vi.fn(),
+      join: vi.fn(),
+      reconnect: vi.fn(),
+      consumeSeatReservation: vi.fn(),
+      getLatency: vi.fn(),
+      http: {},
     };
 
-    const onStateChange = vi.fn();
-    const onMoveMessage = vi.fn();
-    const onChatMessage = vi.fn();
     const onError = vi.fn();
     const onLeave = vi.fn();
+    const onDrop = vi.fn();
+    const onReconnect = vi.fn();
 
     const gateway = new ColyseusConnectionGateway(client);
     const joinedRoom = await gateway.joinRoom(
-      {
-        roomName: "battle",
-      },
-      {
-        onStateChange,
-        messageHandlers: [
-          { type: "move", handler: onMoveMessage },
-          { type: "chat", handler: onChatMessage },
-        ],
-        onError,
-        onLeave,
-      },
+      { roomName: "battle" },
+      { onError, onLeave, onDrop, onReconnect },
     );
 
     expect(joinOrCreate).toHaveBeenCalledWith("battle", {});
     expect(joinedRoom).toBe(room);
 
-    expect(room.onStateChange).toHaveBeenCalledWith(onStateChange);
-    expect(room.onMessage).toHaveBeenCalledWith("move", onMoveMessage);
-    expect(room.onMessage).toHaveBeenCalledWith("chat", onChatMessage);
     expect(room.onError).toHaveBeenCalledWith(onError);
     expect(room.onLeave).toHaveBeenCalledWith(onLeave);
+    expect(room.onDrop).toHaveBeenCalledWith(onDrop);
+    expect(room.onReconnect).toHaveBeenCalledWith(onReconnect);
   });
 
-  it("delegates leaveRoom to room.leave", async () => {
-    const room: ColyseusRoom = {
-      roomId: "room-2",
-      name: "battle",
-      sessionId: "session-2",
-      leave: vi.fn().mockResolvedValue(1000),
-      onStateChange: vi.fn(),
-      onMessage: vi.fn(),
-      onError: vi.fn(),
-      onLeave: vi.fn(),
+  it("wires onDrop and onReconnect handlers", async () => {
+    const room = createRoom();
+    const client: ColyseusClient = {
+      auth: createAuthStub(),
+      joinOrCreate: vi.fn().mockResolvedValue(room),
+      joinById: vi.fn(),
+      create: vi.fn(),
+      join: vi.fn(),
+      reconnect: vi.fn(),
+      consumeSeatReservation: vi.fn(),
+      getLatency: vi.fn(),
+      http: {},
     };
 
+    const onDrop = vi.fn();
+    const onReconnect = vi.fn();
+
+    const gateway = new ColyseusConnectionGateway(client);
+    await gateway.joinRoom({ roomName: "battle" }, { onDrop, onReconnect });
+
+    expect(room.onDrop).toHaveBeenCalledWith(onDrop);
+    expect(room.onReconnect).toHaveBeenCalledWith(onReconnect);
+  });
+
+  it("reconnects to a room using a reconnection token", async () => {
+    const room = createRoom();
+    const reconnect = vi.fn().mockResolvedValue(room);
     const client: ColyseusClient = {
       auth: createAuthStub(),
       joinOrCreate: vi.fn(),
+      joinById: vi.fn(),
+      create: vi.fn(),
+      join: vi.fn(),
+      reconnect,
+      consumeSeatReservation: vi.fn(),
+      getLatency: vi.fn(),
+      http: {},
+    };
+
+    const onError = vi.fn();
+    const gateway = new ColyseusConnectionGateway(client);
+    const reconnectedRoom = await gateway.reconnect("room-1:token-abc", {
+      onError,
+    });
+
+    expect(reconnect).toHaveBeenCalledWith("room-1:token-abc");
+    expect(reconnectedRoom).toBe(room);
+    expect(room.onError).toHaveBeenCalledWith(onError);
+  });
+
+  it("delegates leaveRoom and clears subscriptions", async () => {
+    const room = createRoom();
+    const onLeaveSub = { clear: vi.fn() };
+    room.onLeave = vi.fn().mockReturnValue(onLeaveSub);
+
+    const client: ColyseusClient = {
+      auth: createAuthStub(),
+      joinOrCreate: vi.fn().mockResolvedValue(room),
+      joinById: vi.fn(),
+      create: vi.fn(),
+      join: vi.fn(),
+      reconnect: vi.fn(),
+      consumeSeatReservation: vi.fn(),
+      getLatency: vi.fn(),
+      http: {},
     };
 
     const gateway = new ColyseusConnectionGateway(client);
+    await gateway.joinRoom({ roomName: "battle" }, { onLeave: vi.fn() });
     await gateway.leaveRoom(room);
 
+    expect(onLeaveSub.clear).toHaveBeenCalled();
     expect(room.leave).toHaveBeenCalledWith(true);
   });
 
@@ -126,7 +200,7 @@ describe("colyseus connection gateway", () => {
 
     auth.token = "token-1";
     auth.onChange = vi.fn().mockReturnValue(() => {});
-    auth.getUserData = vi.fn().mockResolvedValue({ id: "user-1" });
+    auth.getUserData = vi.fn().mockResolvedValue({ user: { id: "user-1" } });
     auth.signInAnonymously = vi
       .fn()
       .mockResolvedValue({ user: { id: "user-1" }, token: "token-1" });
@@ -135,6 +209,13 @@ describe("colyseus connection gateway", () => {
     const client: ColyseusClient = {
       auth,
       joinOrCreate: vi.fn(),
+      joinById: vi.fn(),
+      create: vi.fn(),
+      join: vi.fn(),
+      reconnect: vi.fn(),
+      consumeSeatReservation: vi.fn(),
+      getLatency: vi.fn(),
+      http: {},
     };
 
     const gateway = new ColyseusConnectionGateway(client);
