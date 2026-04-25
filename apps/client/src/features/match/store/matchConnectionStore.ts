@@ -201,7 +201,16 @@ export function createMatchConnectionStore(
       },
       onReconnect: () => {
         if (generation !== joinGeneration) return;
-        set({ status: "connected", isReconnecting: false });
+        // Re-read reconnectionToken from the room after SDK auto-reconnect.
+        const token = activeRoom?.reconnectionToken ?? null;
+        if (token) {
+          persistReconnectionToken(token, activeRoom!.roomId);
+        }
+        set({
+          status: "connected",
+          isReconnecting: false,
+          reconnectionToken: token,
+        });
       },
     });
 
@@ -372,6 +381,7 @@ export function createMatchConnectionStore(
         const roomToLeave = activeRoom;
         activeRoom = null;
         joinGeneration++;
+        clearPersistedReconnectionToken();
 
         try {
           await resolveGateway().leaveRoom(roomToLeave, true);
