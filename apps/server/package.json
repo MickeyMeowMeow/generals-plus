@@ -24,8 +24,10 @@
     "@colyseus/schema": "^4.0.20",
     "@colyseus/ws-transport": "^0.17.13",
     "@generals-plus/engine": "workspace:*",
+    "@generals-plus/shared-types": "workspace:*",
     "colyseus": "^0.17.10",
     "cors": "^2.8.6",
+    "zod": "^4.3.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^9.5.0"

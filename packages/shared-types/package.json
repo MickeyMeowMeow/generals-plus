@@ -1,0 +1,36 @@
+{
+  "name": "@generals-plus/shared-types",
+  "private": true,
+  "version": "0.1.0",
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./src/index.ts"
+    }
+  },
+  "imports": {
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@colyseus/schema": "^4.0.20",
+    "@generals-plus/engine": "workspace:*",
+    "colyseus": "^0.17.10",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@generals-plus/typescript-config": "workspace:*",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
+}
