@@ -4,7 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "imports": {
-    "#/*": "./src/*"
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
   },
   "scripts": {
     "dev": "vite",
@@ -15,7 +21,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@generals-plus/engine": "workspace:*",
     "colyseus.js": "^0.16.22",
+    "pixi.js": "^7.4.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2",

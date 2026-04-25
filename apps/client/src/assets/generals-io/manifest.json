@@ -1,0 +1,141 @@
+{
+  "source": "https://generals.io/",
+  "bundles": [
+    "https://generals.io/generals-main-prod-v31.3.0-f09ff1c0.css",
+    "https://generals.io/generals-main-prod-v31.3.0-f09ff1c0.js"
+  ],
+  "note": "Images publicly referenced by generals.io at crawl time. Verify rights before redistribution or production use.",
+  "assets": [
+    { "file": "bot-sticker.png", "url": "https://generals.io/bot-sticker.png" },
+    {
+      "file": "champion-1v1.svg",
+      "url": "https://generals.io/champion-1v1.svg"
+    },
+    {
+      "file": "champion-2v2.svg",
+      "url": "https://generals.io/champion-2v2.svg"
+    },
+    {
+      "file": "champion-customs.svg",
+      "url": "https://generals.io/champion-customs.svg"
+    },
+    {
+      "file": "champion-ffa.svg",
+      "url": "https://generals.io/champion-ffa.svg"
+    },
+    { "file": "city.png", "url": "https://generals.io/city.png" },
+    { "file": "city.svg", "url": "https://generals.io/city.svg" },
+    { "file": "crown.png", "url": "https://generals.io/crown.png" },
+    { "file": "crown.svg", "url": "https://generals.io/crown.svg" },
+    { "file": "desert.png", "url": "https://generals.io/desert.png" },
+    { "file": "desert.svg", "url": "https://generals.io/desert.svg" },
+    {
+      "file": "discord-color.svg",
+      "url": "https://generals.io/discord-color.svg"
+    },
+    {
+      "file": "discord-white.svg",
+      "url": "https://generals.io/discord-white.svg"
+    },
+    { "file": "eye-dark.svg", "url": "https://generals.io/eye-dark.svg" },
+    { "file": "eye.svg", "url": "https://generals.io/eye.svg" },
+    {
+      "file": "favicon__android-icon-192x192.png",
+      "url": "https://generals.io/favicon/android-icon-192x192.png"
+    },
+    {
+      "file": "favicon__apple-icon-114x114.png",
+      "url": "https://generals.io/favicon/apple-icon-114x114.png"
+    },
+    {
+      "file": "favicon__apple-icon-120x120.png",
+      "url": "https://generals.io/favicon/apple-icon-120x120.png"
+    },
+    {
+      "file": "favicon__apple-icon-144x144.png",
+      "url": "https://generals.io/favicon/apple-icon-144x144.png"
+    },
+    {
+      "file": "favicon__apple-icon-152x152.png",
+      "url": "https://generals.io/favicon/apple-icon-152x152.png"
+    },
+    {
+      "file": "favicon__apple-icon-180x180.png",
+      "url": "https://generals.io/favicon/apple-icon-180x180.png"
+    },
+    {
+      "file": "favicon__apple-icon-57x57.png",
+      "url": "https://generals.io/favicon/apple-icon-57x57.png"
+    },
+    {
+      "file": "favicon__apple-icon-60x60.png",
+      "url": "https://generals.io/favicon/apple-icon-60x60.png"
+    },
+    {
+      "file": "favicon__apple-icon-72x72.png",
+      "url": "https://generals.io/favicon/apple-icon-72x72.png"
+    },
+    {
+      "file": "favicon__apple-icon-76x76.png",
+      "url": "https://generals.io/favicon/apple-icon-76x76.png"
+    },
+    {
+      "file": "favicon__favicon-16x16.png",
+      "url": "https://generals.io/favicon/favicon-16x16.png"
+    },
+    {
+      "file": "favicon__favicon-32x32.png",
+      "url": "https://generals.io/favicon/favicon-32x32.png"
+    },
+    {
+      "file": "favicon__favicon-96x96.png",
+      "url": "https://generals.io/favicon/favicon-96x96.png"
+    },
+    {
+      "file": "favicon__ms-icon-144x144.png",
+      "url": "https://generals.io/favicon/ms-icon-144x144.png"
+    },
+    { "file": "gavel-hover.svg", "url": "https://generals.io/gavel-hover.svg" },
+    { "file": "gavel.svg", "url": "https://generals.io/gavel.svg" },
+    { "file": "icon-small.png", "url": "https://generals.io/icon-small.png" },
+    { "file": "icon.png", "url": "https://generals.io/icon.png" },
+    { "file": "leaderboard.png", "url": "https://generals.io/leaderboard.png" },
+    { "file": "light.png", "url": "https://generals.io/light.png" },
+    { "file": "light.svg", "url": "https://generals.io/light.svg" },
+    { "file": "lookout.png", "url": "https://generals.io/lookout.png" },
+    { "file": "lookout.svg", "url": "https://generals.io/lookout.svg" },
+    { "file": "megaphone.svg", "url": "https://generals.io/megaphone.svg" },
+    { "file": "mountain.png", "url": "https://generals.io/mountain.png" },
+    { "file": "mountain.svg", "url": "https://generals.io/mountain.svg" },
+    { "file": "observatory.png", "url": "https://generals.io/observatory.png" },
+    { "file": "observatory.svg", "url": "https://generals.io/observatory.svg" },
+    { "file": "obstacle.png", "url": "https://generals.io/obstacle.png" },
+    { "file": "obstacle.svg", "url": "https://generals.io/obstacle.svg" },
+    {
+      "file": "options-color.png",
+      "url": "https://generals.io/options-color.png"
+    },
+    {
+      "file": "options-white.png",
+      "url": "https://generals.io/options-white.png"
+    },
+    { "file": "podium.svg", "url": "https://generals.io/podium.svg" },
+    { "file": "profile.png", "url": "https://generals.io/profile.png" },
+    { "file": "qq-darker.svg", "url": "https://generals.io/qq-darker.svg" },
+    { "file": "qq.svg", "url": "https://generals.io/qq.svg" },
+    {
+      "file": "qualifier-badge-light.svg",
+      "url": "https://generals.io/qualifier-badge-light.svg"
+    },
+    {
+      "file": "qualifier-badge.svg",
+      "url": "https://generals.io/qualifier-badge.svg"
+    },
+    { "file": "reddit.png", "url": "https://generals.io/reddit.png" },
+    { "file": "satellite.png", "url": "https://generals.io/satellite.png" },
+    { "file": "skull.svg", "url": "https://generals.io/skull.svg" },
+    { "file": "swamp.png", "url": "https://generals.io/swamp.png" },
+    { "file": "swamp.svg", "url": "https://generals.io/swamp.svg" },
+    { "file": "tv-icon.png", "url": "https://generals.io/tv-icon.png" }
+  ]
+}

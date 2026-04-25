@@ -1,8 +1,8 @@
 import { auth } from "@colyseus/auth";
 
-import { ENV } from "#env";
-import type { IUserRepository, UserCreateOptions } from "#infra/db/interfaces";
-import { MongoUserRepository } from "#infra/db/repositories/MongoUserRepository";
+import { ENV } from "#/env";
+import type { IUserRepository, UserCreateOptions } from "#/infra/db/interfaces";
+import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
 /**
  * Remove privileged fields from caller-supplied registration options so that

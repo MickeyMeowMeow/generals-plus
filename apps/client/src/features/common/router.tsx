@@ -7,6 +7,7 @@ import { UserPage } from "#/features/auth/pages/UserPage";
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import { NotFoundPage } from "#/features/common/pages/NotFoundPage";
 import { LobbyPage } from "#/features/lobby/pages/LobbyPage";
+import { MatchScreen } from "#/features/match/components/MatchScreen";
 import { MatchPage } from "#/features/match/pages/MatchPage";
 
 // Route guard that redirects unauthenticated users to /user.
@@ -58,6 +59,10 @@ export const appRoutes: RouteObject[] = [
             <MatchPage />
           </RequireAuthenticated>
         ),
+      },
+      {
+        path: "match-screen",
+        element: <MatchScreen />,
       },
       {
         path: "*",
