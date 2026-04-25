@@ -14,9 +14,13 @@ function MatchPage() {
   const displayName = useUserAuthStore((state) => state.displayName);
   const activeRoomId = useMatchConnectionStore((state) => state.roomId);
   const sessionId = useMatchConnectionStore((state) => state.sessionId);
-  const latestState = useMatchConnectionStore((state) => state.latestState);
+  const isReconnecting = useMatchConnectionStore(
+    (state) => state.isReconnecting,
+  );
   const lastError = useMatchConnectionStore((state) => state.lastError);
+  const getRoom = useMatchConnectionStore((state) => state.getRoom);
   const joinById = useMatchConnectionStore((state) => state.joinById);
+  const reconnect = useMatchConnectionStore((state) => state.reconnect);
   const leaveRoom = useMatchConnectionStore((state) => state.leaveRoom);
   const setError = useMatchConnectionStore((state) => state.setError);
   const hasLeftRef = useRef(false);
@@ -31,14 +35,27 @@ function MatchPage() {
     // Already connected or connecting to the correct room — nothing to do.
     if (
       activeRoomId === resolvedRoomId &&
-      (status === "connected" || status === "connecting")
+      (status === "connected" ||
+        status === "connecting" ||
+        status === "reconnecting")
     ) {
+      return;
+    }
+
+    // Attempt reconnection before fresh join when idle/disconnected.
+    if (status === "idle" || status === "disconnected") {
+      void reconnect().then(() => {
+        const { status: s, roomId: r } = useMatchConnectionStore.getState();
+        if (s !== "connected" || r !== resolvedRoomId) {
+          void joinById(resolvedRoomId);
+        }
+      });
       return;
     }
 
     // Not connected to the target room — join by ID.
     void joinById(resolvedRoomId);
-  }, [activeRoomId, joinById, resolvedRoomId, setError, status]);
+  }, [activeRoomId, joinById, reconnect, resolvedRoomId, setError, status]);
 
   // Leave the room on unmount, unless handleLeave already did.
   useEffect(() => {
@@ -55,13 +72,15 @@ function MatchPage() {
     navigate("/lobby");
   };
 
+  const room = getRoom();
+
   return (
     <section className="page" aria-label="Match Page">
       <h2>Match Room</h2>
       <p>Room ID: {resolvedRoomId || "unknown"}</p>
       <p>Player: {displayName ?? "anonymous"}</p>
       <p className="status-line" role="status">
-        Connection status: {status}
+        Connection status: {isReconnecting ? "reconnecting" : status}
       </p>
       {sessionId ? <p>Session ID: {sessionId}</p> : null}
 
@@ -71,9 +90,13 @@ function MatchPage() {
         </p>
       ) : null}
 
-      <p className="state-preview">
-        Latest state: {JSON.stringify(latestState)}
-      </p>
+      {isReconnecting ? (
+        <p className="reconnect-text" role="alert">
+          Connection lost. Attempting to reconnect...
+        </p>
+      ) : null}
+
+      <p className="state-preview">Room state: {room ? "connected" : "none"}</p>
 
       <div className="actions">
         <button type="button" onClick={handleLeave}>

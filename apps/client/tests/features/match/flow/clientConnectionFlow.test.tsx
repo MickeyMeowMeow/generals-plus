@@ -68,15 +68,18 @@ describe("client connection flow", () => {
     useMatchConnectionStore.setState({
       connect,
       joinRoom: vi.fn(),
+      joinById: vi.fn(),
+      reconnect: vi.fn().mockResolvedValue(undefined),
       setError: vi.fn(),
       leaveRoom: vi.fn().mockResolvedValue(undefined),
       status: "idle",
       roomId: null,
       roomName: null,
       sessionId: null,
-      latestState: null,
-      latestMessage: null,
+      reconnectionToken: null,
+      isReconnecting: false,
       lastError: null,
+      getRoom: () => null,
     });
 
     const user = userEvent.setup();
@@ -109,15 +112,18 @@ describe("client connection flow", () => {
     useMatchConnectionStore.setState({
       connect: vi.fn(),
       joinRoom,
+      joinById: vi.fn(),
+      reconnect: vi.fn().mockResolvedValue(undefined),
       setError: vi.fn(),
       leaveRoom: vi.fn().mockResolvedValue(undefined),
       status: "disconnected",
       roomId: null,
       roomName: null,
       sessionId: null,
-      latestState: null,
-      latestMessage: null,
+      reconnectionToken: null,
+      isReconnecting: false,
       lastError: null,
+      getRoom: () => null,
     });
 
     const user = userEvent.setup();
@@ -151,15 +157,18 @@ describe("client connection flow", () => {
     useMatchConnectionStore.setState({
       connect: vi.fn(),
       joinRoom: vi.fn().mockResolvedValue(undefined),
+      joinById: vi.fn().mockResolvedValue(undefined),
+      reconnect: vi.fn().mockResolvedValue(undefined),
       setError: vi.fn(),
       leaveRoom,
       status: "connected",
       roomId: "room-9",
       roomName: "alpha-room",
       sessionId: "session-9",
-      latestState: { hp: 10 },
-      latestMessage: null,
+      reconnectionToken: "room-9:token",
+      isReconnecting: false,
       lastError: null,
+      getRoom: () => null,
     });
 
     const view = renderRoute("/match/room-9");
@@ -190,15 +199,18 @@ describe("client connection flow", () => {
     useMatchConnectionStore.setState({
       connect: vi.fn(),
       joinRoom,
+      joinById: vi.fn(),
+      reconnect: vi.fn().mockResolvedValue(undefined),
       setError: vi.fn(),
       leaveRoom: vi.fn().mockResolvedValue(undefined),
       status: "disconnected",
       roomId: null,
       roomName: null,
       sessionId: null,
-      latestState: null,
-      latestMessage: null,
+      reconnectionToken: null,
+      isReconnecting: false,
       lastError: null,
+      getRoom: () => null,
     });
 
     const user = userEvent.setup();
