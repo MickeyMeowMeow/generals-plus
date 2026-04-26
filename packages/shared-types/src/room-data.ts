@@ -57,27 +57,14 @@ export const roomDataSchema = z
   .object({
     mode: z.enum(gameModeValues),
     map: mapConfigSchema,
-    players: z.array(
-      z.object({
-        username: z.string().trim().min(1),
-        token: z.string().min(1),
-      }),
-    ),
     playerInit: z.array(playerInitSchema),
   })
   .refine(
     (data) => {
-      const playerUsernames = new Set(data.players.map((p) => p.username));
-      const initUsernames = new Set(data.playerInit.map((p) => p.username));
-      if (playerUsernames.size !== data.players.length) return false;
-      if (initUsernames.size !== data.playerInit.length) return false;
-      if (playerUsernames.size !== initUsernames.size) return false;
-      for (const u of playerUsernames) {
-        if (!initUsernames.has(u)) return false;
-      }
-      return true;
+      const usernames = new Set(data.playerInit.map((p) => p.username));
+      return usernames.size === data.playerInit.length;
     },
-    { message: "players and playerInit must have matching unique usernames" },
+    { message: "playerInit must have unique usernames" },
   );
 
 export function parseRoomData(raw: unknown): RoomData | null {

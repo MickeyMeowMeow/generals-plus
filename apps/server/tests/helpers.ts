@@ -39,11 +39,6 @@ export function createValidRoomData(
       { id: "p1", username: "Player1", teamId: "team_0" } satisfies PlayerInit,
       { id: "p2", username: "Player2", teamId: "team_1" } satisfies PlayerInit,
     ],
-    // roomDataSchema also requires a `players` array with matching usernames
-    players: [
-      { username: "Player1", token: "test-token-p1" },
-      { username: "Player2", token: "test-token-p2" },
-    ],
     ...overrides,
   } as TestRoomData;
 }
