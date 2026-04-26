@@ -3,9 +3,8 @@ import { extend } from "@pixi/react";
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
 import { useCallback, useMemo } from "react";
 
-import { TerrainColors } from "#/features/match/renderer/grid-colors.ts";
-import { RenderConfig } from "#/features/match/renderer/render-config.ts";
-import { TerrainIconUrls } from "#/features/match/renderer/terrain-assets.ts";
+import { RenderConfig } from "#features/game/renderer/render-config.ts";
+import { TerrainTheme } from "#features/game/renderer/theme.ts";
 
 extend({ Container, Graphics, Sprite });
 
@@ -42,7 +41,7 @@ export function GridLayer({ grid, stride }: GridLayerProps) {
       grid.forEach((cell) => {
         const x = cell.coordinate.x * stride;
         const y = cell.coordinate.y * stride;
-        const color = TerrainColors[cell.terrain];
+        const color = TerrainTheme[cell.terrain].color;
         g.rect(x, y, cellSize, cellSize).fill(color);
       });
     },
@@ -50,10 +49,10 @@ export function GridLayer({ grid, stride }: GridLayerProps) {
   );
 
   const iconCells = useMemo(() => {
-    const cells: Array<{ cell: RenderGridCell; iconUrl: string }> = [];
+    const cells: Array<{ cell: RenderGridCell; icon: string }> = [];
     grid.forEach((cell) => {
-      const iconUrl = TerrainIconUrls[cell.terrain];
-      if (iconUrl) cells.push({ cell, iconUrl });
+      const icon = TerrainTheme[cell.terrain].icon;
+      if (icon) cells.push({ cell, icon });
     });
     return cells;
   }, [grid]);
@@ -62,7 +61,7 @@ export function GridLayer({ grid, stride }: GridLayerProps) {
     <pixiContainer>
       <pixiGraphics draw={drawBaseLayer} />
       <pixiContainer>
-        {iconCells.map(({ cell, iconUrl }) => {
+        {iconCells.map(({ cell, icon }) => {
           const x = cell.coordinate.x * stride + cellSize / 2;
           const y = cell.coordinate.y * stride + cellSize / 2;
           const iconSize = Math.max(
@@ -73,7 +72,7 @@ export function GridLayer({ grid, stride }: GridLayerProps) {
           return (
             <pixiSprite
               key={`${cell.coordinate.x},${cell.coordinate.y}`}
-              texture={Texture.from(iconUrl)}
+              texture={Texture.from(icon)}
               anchor={0.5}
               width={iconSize}
               height={iconSize}

@@ -1,9 +1,9 @@
 import { MockGridGenerator } from "@generals-plus/engine";
 import { useEffect, useMemo, useState } from "react";
 
-import { MatchView } from "#features/match/renderer/MatchView.tsx";
+import { MatchView } from "#features/game/renderer/MatchView.tsx";
 
-export function MatchScreen() {
+export function GamePage() {
   const [tick, setTick] = useState(0);
 
   /**

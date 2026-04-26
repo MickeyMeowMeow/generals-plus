@@ -3,10 +3,10 @@ import { Assets } from "pixi.js";
 import { useEffect, useState } from "react";
 
 import { Viewport } from "#/components/pixi/Viewport";
-import { RenderConfig } from "#/features/match/renderer/render-config.ts";
-import { TerrainIconUrls } from "#/features/match/renderer/terrain-assets";
-import type { RenderGrid } from "#features/match/renderer/GridLayer.tsx";
-import { GridLayer } from "#features/match/renderer/GridLayer.tsx";
+import type { RenderGrid } from "#features/game/renderer/GridLayer.tsx";
+import { GridLayer } from "#features/game/renderer/GridLayer.tsx";
+import { RenderConfig } from "#features/game/renderer/render-config.ts";
+import { TerrainTheme } from "#features/game/renderer/theme.ts";
 
 interface MatchViewProps {
   /** Grid snapshot to render. */
@@ -24,8 +24,10 @@ export function MatchView({ grid }: MatchViewProps) {
   useEffect(() => {
     // Preload terrain icon assets.
     const preloadAssets = async () => {
-      const urls = Object.values(TerrainIconUrls);
-      await Assets.load(urls);
+      const icons = Object.values(TerrainTheme)
+        .map((theme) => theme.icon)
+        .filter((icon): icon is string => icon !== undefined);
+      await Assets.load(icons);
     };
     preloadAssets().then(() => setIsReady(true));
   }, []);
