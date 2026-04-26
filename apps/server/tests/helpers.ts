@@ -1,6 +1,7 @@
 import { JWT } from "@colyseus/auth";
 import { defineRoom, defineServer, LobbyRoom } from "@colyseus/core";
 import { boot } from "@colyseus/testing";
+import { Terrain } from "@generals-plus/engine";
 import type {
   MapConfig,
   PlayerInit,
@@ -18,7 +19,7 @@ function buildDefaultMapConfig(): MapConfig {
     const y = Math.floor(i / width);
     const isEdge = x === 0 || y === 0 || x === width - 1 || y === height - 1;
     return {
-      terrain: isEdge ? ("mountain" as const) : ("plain" as const),
+      terrain: isEdge ? Terrain.MOUNTAIN : Terrain.PLAIN,
       isPassable: !isEdge,
     };
   });

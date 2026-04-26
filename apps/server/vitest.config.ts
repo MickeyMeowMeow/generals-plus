@@ -1,9 +1,10 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { sharedConfig } from "@generals-plus/vitest-config";
 import { defineConfig } from "vitest/config";
 
-const monorepoRoot = path.resolve(__dirname, "../..");
+const monorepoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 export default defineConfig({
   ...sharedConfig,
