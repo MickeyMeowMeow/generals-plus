@@ -1,7 +1,8 @@
+import { GameMode, Terrain } from "@generals-plus/engine";
 import { z } from "zod";
 
 export interface CellInit {
-  terrain: string;
+  terrain: Terrain;
   isPassable: boolean;
   troopCount?: number;
   ownerIndex?: number;
@@ -21,13 +22,16 @@ export interface PlayerInit {
 }
 
 export interface RoomData {
-  mode: string;
+  mode: GameMode;
   map: MapConfig;
   playerInit: PlayerInit[];
 }
 
+const terrainValues = Object.values(Terrain) as [string, ...string[]];
+const gameModeValues = Object.values(GameMode) as [string, ...string[]];
+
 const cellInitSchema = z.object({
-  terrain: z.string().min(1),
+  terrain: z.enum(terrainValues),
   isPassable: z.boolean(),
   troopCount: z.number().int().min(0).optional(),
   ownerIndex: z.number().int().min(-1).optional(),
@@ -51,7 +55,7 @@ const playerInitSchema = z.object({
 
 export const roomDataSchema = z
   .object({
-    mode: z.string().min(1),
+    mode: z.enum(gameModeValues),
     map: mapConfigSchema,
     players: z.array(
       z.object({

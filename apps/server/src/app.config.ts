@@ -4,12 +4,15 @@
  */
 import "dotenv/config";
 
+import { defineRoom, LobbyRoom } from "@colyseus/core";
 import { monitor } from "@colyseus/monitor";
 import { defineServer, matchMaker } from "colyseus";
 import mongoose from "mongoose";
 
 import { ENV } from "#env";
 import { auth } from "#features/auth/auth-config";
+import { MatchRoom } from "#features/match/match-room";
+import { GeneralsQueueRoom } from "#features/queue/queue-room";
 
 matchMaker.controller.exposedMethods = [
   "joinById",
@@ -53,7 +56,11 @@ export default defineServer({
   /**
    * Define game rooms and their respective handler classes.
    */
-  rooms: {},
+  rooms: {
+    lobby: defineRoom(LobbyRoom),
+    queue: defineRoom(GeneralsQueueRoom).filterBy(["gameMode"]),
+    match: defineRoom(MatchRoom).enableRealtimeListing(),
+  },
 
   /**
    * Configure Express middleware and HTTP routes.

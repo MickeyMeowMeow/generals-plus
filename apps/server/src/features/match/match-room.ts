@@ -3,6 +3,7 @@ import type { Client } from "@colyseus/core";
 import { Room } from "@colyseus/core";
 import type { Terrain } from "@generals-plus/engine";
 import { PlayerStatus } from "@generals-plus/engine";
+import type { RoomData } from "@generals-plus/shared-types";
 import {
   Cell,
   MatchState,
@@ -10,14 +11,26 @@ import {
   parseRoomData,
 } from "@generals-plus/shared-types";
 
+export interface MatchRoomMetadata extends RoomData {
+  isPublic?: boolean;
+}
+
 export class MatchRoom extends Room<{
   state: MatchState;
+  metadata: MatchRoomMetadata;
 }> {
-  onCreate(options: { metadata: unknown }) {
+  async onCreate(options: { metadata: unknown }) {
     const metadata = parseRoomData(options.metadata);
     if (!metadata) {
       throw new Error("[MatchRoom] Invalid room metadata");
     }
+
+    const isPublic = (options.metadata as Record<string, unknown>)?.isPublic;
+    if (isPublic === false) {
+      await this.setPrivate(true);
+    }
+
+    this.maxClients = metadata.playerInit.length;
 
     const state = new MatchState();
     state.mode = metadata.mode as typeof state.mode;
