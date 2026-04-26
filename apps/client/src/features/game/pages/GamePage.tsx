@@ -1,7 +1,7 @@
 import { MockGridGenerator } from "@generals-plus/engine";
 import { useEffect, useMemo, useState } from "react";
 
-import { MatchView } from "#features/game/renderer/MatchView.tsx";
+import { GameApp } from "#features/game/renderer/GameApp.tsx";
 
 export function GamePage() {
   const [tick, setTick] = useState(0);
@@ -26,5 +26,5 @@ export function GamePage() {
     return () => clearInterval(id);
   }, []);
 
-  return <MatchView grid={grid} />;
+  return <GameApp grid={grid} />;
 }

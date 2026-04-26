@@ -8,12 +8,12 @@ import { GridLayer } from "#/features/game/renderer/GridLayer.tsx";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 
-interface MatchViewProps {
+interface GameAppProps {
   /** Grid snapshot to render. */
   readonly grid: RenderGrid;
 }
 
-export function MatchView({ grid }: MatchViewProps) {
+export function GameApp({ grid }: GameAppProps) {
   const [isReady, setIsReady] = useState(false);
 
   const worldWidth =
