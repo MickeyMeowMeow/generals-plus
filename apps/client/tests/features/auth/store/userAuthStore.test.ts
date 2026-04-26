@@ -104,6 +104,7 @@ describe("user auth store", () => {
     expect(gateway.signInAnonymously).toHaveBeenCalledWith({
       name: "Scout",
       displayName: "Scout",
+      username: "Scout",
       metadata: {},
     });
     expect(store.getState().status).toBe("authenticated");
