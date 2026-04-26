@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import { webConfig } from "@generals-plus/vitest-config";
 import { defineConfig } from "vitest/config";
 
@@ -25,13 +23,5 @@ export default defineConfig({
         inline: ["@pixi/react"],
       },
     },
-  },
-  resolve: {
-    alias: [
-      {
-        find: /^@generals-plus\/(.*)/,
-        replacement: path.join(__dirname, "../../packages", "$1", "src"),
-      },
-    ],
   },
 });
