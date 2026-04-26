@@ -5,6 +5,7 @@ export interface IUser {
   id: string; // Mongoose _id as string
   email?: string;
   password?: string; // Hashed password
+  username?: string; // Display name
   anonymous?: boolean;
   verified?: boolean;
   elo?: number; // Player's ranking score
