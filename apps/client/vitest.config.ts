@@ -20,6 +20,11 @@ export default defineConfig({
         statements: 80,
       },
     },
+    server: {
+      deps: {
+        inline: ["@pixi/react"],
+      },
+    },
   },
   resolve: {
     alias: [

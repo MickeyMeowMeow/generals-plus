@@ -50,17 +50,3 @@ body {
   background: var(--panel);
   overflow: hidden;
 }
-
-/* The stage keeps a stable height so the Pixi renderer can resize deterministically. */
-.pixi-stage {
-  width: 100%;
-  height: calc(100svh - 34px);
-  min-height: 360px;
-}
-
-/* Pixi owns drawing resolution; CSS only makes the canvas fill its host. */
-.pixi-stage canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}

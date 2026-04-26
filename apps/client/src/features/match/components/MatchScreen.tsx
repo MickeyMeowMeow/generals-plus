@@ -1,12 +1,11 @@
 import { MockGridGenerator } from "@generals-plus/engine";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { PixiStage } from "#/features/match/renderer/PixiStage";
+import { MatchView } from "#features/match/renderer/MatchView.tsx";
 
-/**
- * Match page shell for the current local-rendering milestone.
- */
 export function MatchScreen() {
+  const [tick, setTick] = useState(0);
+
   /**
    * Keep mock data stable across React renders so Pixi only redraws on real grid changes.
    */
@@ -15,16 +14,17 @@ export function MatchScreen() {
       MockGridGenerator.generate({
         width: 28,
         height: 18,
-        seed: 42,
+        seed: tick,
       }),
-    [],
+    [tick],
   );
 
-  return (
-    <main className="match-screen">
-      <section className="match-board" aria-label="Generals Hub match board">
-        <PixiStage grid={grid} />
-      </section>
-    </main>
-  );
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTick((t: number) => t + 1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return <MatchView grid={grid} />;
 }

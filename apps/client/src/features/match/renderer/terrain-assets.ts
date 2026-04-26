@@ -11,7 +11,7 @@ import swampIconUrl from "#/assets/generals-io/swamp.svg";
 /**
  * Icons from generals.io used as the terrain overlay in the Pixi grid.
  */
-const TerrainIconUrls: Partial<Record<TerrainValue, string>> = {
+export const TerrainIconUrls: Partial<Record<TerrainValue, string>> = {
   [Terrain.GENERAL]: crownIconUrl,
   [Terrain.MOUNTAIN]: mountainIconUrl,
   [Terrain.SWAMP]: swampIconUrl,
@@ -19,10 +19,3 @@ const TerrainIconUrls: Partial<Record<TerrainValue, string>> = {
   [Terrain.CITY]: cityIconUrl,
   [Terrain.VOID]: obstacleIconUrl,
 } as const;
-
-/**
- * Returns a terrain icon URL when the terrain has a visual marker.
- */
-export function getTerrainIconUrl(terrain: TerrainValue): string | null {
-  return TerrainIconUrls[terrain] ?? null;
-}
