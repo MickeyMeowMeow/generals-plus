@@ -40,7 +40,7 @@ export abstract class EffectTarget implements IEffectTarget {
   }
 
   /**
-   * Advances all active effects, expiring them before running same-tick updates.
+   * Advances all active effects.
    */
   tickEffects(currentTick: number): void {
     for (const effect of this.effects) {
