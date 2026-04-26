@@ -42,7 +42,8 @@ describe("GeneralsQueueRoom", () => {
       countdownCycles: 2,
     });
 
-    const port = (testServer.server as unknown as Record<string, unknown>).port as number;
+    const port = (testServer.server as unknown as Record<string, unknown>)
+      .port as number;
 
     // Connect first client (below minPlayers of 2)
     const sdk1 = new ColyseusSDK(`ws://127.0.0.1:${port}`);
