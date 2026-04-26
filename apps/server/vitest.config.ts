@@ -11,11 +11,11 @@ export default defineConfig({
     alias: {
       "@generals-plus/engine": path.join(
         monorepoRoot,
-        "packages/engine/dist/index.mjs",
+        "packages/engine/src/index.ts",
       ),
       "@generals-plus/shared-types": path.join(
         monorepoRoot,
-        "packages/shared-types/dist/index.js",
+        "packages/shared-types/src/index.ts",
       ),
     },
   },
