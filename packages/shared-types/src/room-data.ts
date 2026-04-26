@@ -25,10 +25,11 @@ export interface RoomData {
   mode: GameMode;
   map: MapConfig;
   playerInit: PlayerInit[];
+  isPublic?: boolean;
 }
 
-const terrainValues = Object.values(Terrain) as [string, ...string[]];
-const gameModeValues = Object.values(GameMode) as [string, ...string[]];
+const terrainValues = Object.values(Terrain) as [Terrain, ...Terrain[]];
+const gameModeValues = Object.values(GameMode) as [GameMode, ...GameMode[]];
 
 const cellInitSchema = z.object({
   terrain: z.enum(terrainValues),
@@ -58,6 +59,7 @@ export const roomDataSchema = z
     mode: z.enum(gameModeValues),
     map: mapConfigSchema,
     playerInit: z.array(playerInitSchema),
+    isPublic: z.boolean().optional(),
   })
   .refine(
     (data) => {
@@ -68,5 +70,6 @@ export const roomDataSchema = z
   );
 
 export function parseRoomData(raw: unknown): RoomData | null {
-  return roomDataSchema.safeParse(raw).success ? (raw as RoomData) : null;
+  const result = roomDataSchema.safeParse(raw);
+  return result.success ? result.data : null;
 }

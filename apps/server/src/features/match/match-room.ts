@@ -11,13 +11,9 @@ import {
   parseRoomData,
 } from "@generals-plus/shared-types";
 
-export interface MatchRoomMetadata extends RoomData {
-  isPublic?: boolean;
-}
-
 export class MatchRoom extends Room<{
   state: MatchState;
-  metadata: MatchRoomMetadata;
+  metadata: RoomData;
 }> {
   async onCreate(options: { metadata: unknown }) {
     const metadata = parseRoomData(options.metadata);
@@ -25,7 +21,7 @@ export class MatchRoom extends Room<{
       throw new Error("[MatchRoom] Invalid room metadata");
     }
 
-    const isPublic = (options.metadata as Record<string, unknown>)?.isPublic;
+    const isPublic = metadata.isPublic;
     if (isPublic === false) {
       await this.setPrivate(true);
     }
@@ -33,7 +29,7 @@ export class MatchRoom extends Room<{
     this.maxClients = metadata.playerInit.length;
 
     const state = new MatchState();
-    state.mode = metadata.mode as typeof state.mode;
+    state.mode = metadata.mode;
     state.width = metadata.map.width;
     state.height = metadata.map.height;
 

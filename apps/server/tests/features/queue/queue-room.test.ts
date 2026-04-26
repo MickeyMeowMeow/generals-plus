@@ -30,7 +30,7 @@ describe("GeneralsQueueRoom", () => {
       gameMode: "classic",
     });
     const room2 = await testServer.createRoom<GeneralsQueueRoom>("queue", {
-      gameMode: "blitz",
+      gameMode: "turf_war",
     });
 
     expect(room1.roomId).not.toBe(room2.roomId);

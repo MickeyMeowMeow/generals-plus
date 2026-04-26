@@ -25,9 +25,7 @@ function buildDefaultMapConfig(): MapConfig {
   return { width, height, cells };
 }
 
-interface TestRoomData extends RoomData {
-  isPublic?: boolean;
-}
+interface TestRoomData extends RoomData {}
 
 export function createValidRoomData(
   overrides?: Partial<TestRoomData>,
