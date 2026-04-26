@@ -1,7 +1,7 @@
 import { MockGridGenerator } from "@generals-plus/engine";
 import { useEffect, useMemo, useState } from "react";
 
-import { GameApp } from "#features/game/renderer/GameApp.tsx";
+import { GameApp } from "#/features/game/renderer/GameApp.tsx";
 
 export function GamePage() {
   const [tick, setTick] = useState(0);
