@@ -3,10 +3,10 @@ import { Assets } from "pixi.js";
 import { useEffect, useState } from "react";
 
 import { Viewport } from "#/components/pixi/Viewport";
-import type { RenderGrid } from "#features/game/renderer/GridLayer.tsx";
-import { GridLayer } from "#features/game/renderer/GridLayer.tsx";
-import { RenderConfig } from "#features/game/renderer/render-config.ts";
-import { TerrainTheme } from "#features/game/renderer/theme.ts";
+import type { RenderGrid } from "#/features/game/renderer/GridLayer.tsx";
+import { GridLayer } from "#/features/game/renderer/GridLayer.tsx";
+import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 
 interface MatchViewProps {
   /** Grid snapshot to render. */

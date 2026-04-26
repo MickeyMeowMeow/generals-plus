@@ -3,8 +3,8 @@ import { extend } from "@pixi/react";
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
 import { useCallback, useMemo } from "react";
 
-import { RenderConfig } from "#features/game/renderer/render-config.ts";
-import { TerrainTheme } from "#features/game/renderer/theme.ts";
+import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 
 extend({ Container, Graphics, Sprite });
 
