@@ -1,4 +1,4 @@
-import type { ICoordinate, Terrain } from "@generals-plus/engine";
+import type { ICoordinate, IGrid2D, Terrain } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
 import { useCallback, useMemo } from "react";
@@ -13,12 +13,7 @@ export interface RenderGridCell {
   terrain: Terrain;
 }
 
-export interface RenderGrid {
-  width: number;
-  height: number;
-
-  forEach(callback: (cell: RenderGridCell) => void): void;
-}
+export interface RenderGrid extends IGrid2D<RenderGridCell> {}
 
 export interface GridLayout {
   cellSize: number;
