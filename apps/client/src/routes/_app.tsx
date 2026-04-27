@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { NavLink, Outlet } from "react-router";
 
-import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
+import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
 
-import "#/App.css";
+import "#/app.css";
 
 export default function AppLayout() {
   const hydrateUser = useUserAuthStore((state) => state.hydrateUser);

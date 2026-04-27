@@ -3,8 +3,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 
 import { RequireAuthenticated } from "#/common/guards";
-import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
-import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
+import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
 // Landing page after authentication. Lets the player join or create a game room.
 function LobbyPage() {

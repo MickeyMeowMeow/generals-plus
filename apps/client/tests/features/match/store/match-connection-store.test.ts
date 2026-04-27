@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { MatchConnectionGateway } from "#/features/match/store/matchConnectionStore";
-import { createMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
+import type { MatchConnectionGateway } from "#/features/match/store/match-connection-store";
+import { createMatchConnectionStore } from "#/features/match/store/match-connection-store";
 import type {
   ColyseusRoom,
   RoomLifecycleHandlers,

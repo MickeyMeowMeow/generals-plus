@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { RequireAuthenticated } from "#/common/guards";
-import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
-import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
+import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
 // In-game page for an active match room. Auto-joins by roomId on mount and leaves on unmount.
 function MatchPage() {
