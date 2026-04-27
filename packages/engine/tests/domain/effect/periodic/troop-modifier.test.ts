@@ -93,7 +93,7 @@ describe("TroopModifierEffect", () => {
       status: PlayerStatus.ACTIVE,
     });
 
-    // Matching terrain, netural cell -> should not be affected
+    // Matching terrain, neutral cell -> should not be affected
     const neutralCell = grid.addCell(Terrain.CITY, null);
 
     // Matching terrain, eliminated player -> should not be affected
