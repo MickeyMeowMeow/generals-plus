@@ -1,12 +1,15 @@
+/**
+ * @module [TODO:description]
+ */
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import { Grid } from "#/domain/grid/grid";
 import type { IGrid } from "#/domain/grid/interfaces";
 
 /**
- * Options for deterministic local map generation used by renderer smoke tests.
+ * Options for grid generation.
  */
-export interface MockGridGeneratorOptions {
+export interface GridGeneratorOptions {
   /** Number of columns to generate. */
   readonly width?: number;
   /** Number of rows to generate. */
@@ -19,23 +22,35 @@ export interface MockGridGeneratorOptions {
   readonly cityRate?: number;
 }
 
-const DEFAULT_WIDTH = 24;
-const DEFAULT_HEIGHT = 16;
-const DEFAULT_SEED = 20260425;
+/** Default options for grid generation when not provided. */
+export const DefaultGridGeneratorOptions: Required<GridGeneratorOptions> = {
+  width: 24,
+  height: 16,
+  seed: 20260425,
+  mountainRate: 0.12,
+  cityRate: 0.06,
+};
 
 /**
- * Generates a stable mock grid without depending on server state or networking.
+ * Grid generator interface for creating new grid instances with configurable options.
  */
-export const MockGridGenerator = {
-  /**
-   * Builds a complete grid using deterministic terrain distribution.
-   */
-  generate(options: MockGridGeneratorOptions = {}): IGrid {
-    const width = options.width ?? DEFAULT_WIDTH;
-    const height = options.height ?? DEFAULT_HEIGHT;
-    const mountainRate = options.mountainRate ?? 0.12;
-    const cityRate = options.cityRate ?? 0.06;
-    const random = createSeededRandom(options.seed ?? DEFAULT_SEED);
+export interface GridGenerator {
+  generate(options?: GridGeneratorOptions): IGrid;
+}
+
+/**
+ * Default grid generator that creates a grid with specified dimensions and randomly placed terrains.
+ */
+export class DefaultGridGenerator implements GridGenerator {
+  generate(options: GridGeneratorOptions = {}): IGrid {
+    const width = options.width ?? DefaultGridGeneratorOptions.width;
+    const height = options.height ?? DefaultGridGeneratorOptions.height;
+    const mountainRate =
+      options.mountainRate ?? DefaultGridGeneratorOptions.mountainRate;
+    const cityRate = options.cityRate ?? DefaultGridGeneratorOptions.cityRate;
+    const random = createSeededRandom(
+      options.seed ?? DefaultGridGeneratorOptions.seed,
+    );
 
     const generalCoordinates = [
       { x: 1, y: 1 },
@@ -49,7 +64,7 @@ export const MockGridGenerator = {
         );
         const terrain = isGeneral
           ? Terrain.GENERAL
-          : pickMockTerrain(random(), mountainRate, cityRate);
+          : pickTerrain(random(), mountainRate, cityRate);
 
         return new Cell({
           coordinate: { x, y },
@@ -61,13 +76,10 @@ export const MockGridGenerator = {
     );
 
     return new Grid(width, height, cells);
-  },
-} as const;
+  }
+}
 
-/**
- * Converts a random value into one of the mock terrain buckets.
- */
-function pickMockTerrain(
+function pickTerrain(
   value: number,
   mountainRate: number,
   cityRate: number,
@@ -83,9 +95,7 @@ function pickMockTerrain(
   return Terrain.PLAIN;
 }
 
-/**
- * Linear congruential generator for reproducible mock maps.
- */
+// TODO: Consider using a more robust PRNG for better randomness, third party libs may be used.
 function createSeededRandom(seed: number): () => number {
   let state = seed >>> 0;
 

@@ -1,4 +1,4 @@
-import { MockGridGenerator } from "@generals-plus/engine";
+import { DefaultGridGenerator } from "@generals-plus/engine";
 import { useEffect, useMemo, useState } from "react";
 
 import { GameApp } from "#/features/game/renderer/GameApp.tsx";
@@ -6,17 +6,17 @@ import { GameApp } from "#/features/game/renderer/GameApp.tsx";
 export function GamePage() {
   const [tick, setTick] = useState(0);
 
-  /**
-   * Keep mock data stable across React renders so Pixi only redraws on real grid changes.
-   */
+  // TODO: Load generator from config
+  const generator = useMemo(() => new DefaultGridGenerator(), []);
+
   const grid = useMemo(
     () =>
-      MockGridGenerator.generate({
+      generator.generate({
         width: 28,
         height: 18,
         seed: tick,
       }),
-    [tick],
+    [generator, tick],
   );
 
   useEffect(() => {
