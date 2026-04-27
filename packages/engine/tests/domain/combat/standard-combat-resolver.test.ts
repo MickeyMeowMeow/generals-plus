@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { ActionType } from "../../../src/domain/action/action-type";
-import type { IAction } from "../../../src/domain/action/interfaces";
-import { Cell } from "../../../src/domain/cell/cell";
-import { Terrain } from "../../../src/domain/cell/terrain";
-import { StandardCombatResolver } from "../../../src/domain/combat/standard-combat-resolver";
-import { Grid } from "../../../src/domain/grid/grid";
-import { Player } from "../../../src/domain/player/player";
-import { PlayerStatus } from "../../../src/domain/player/player-status";
-import { StandardTeam } from "../../../src/domain/team/team";
+import { ActionType } from "#/domain/action/action-type";
+import type { IAction } from "#/domain/action/interfaces";
+import { Cell } from "#/domain/cell/cell";
+import { Terrain } from "#/domain/cell/terrain";
+import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
+import { Grid } from "#/domain/grid/grid";
+import { Player } from "#/domain/player/player";
+import { PlayerStatus } from "#/domain/player/player-status";
+import { StandardTeam } from "#/domain/team/team";
 
 function createGrid(width = 2, height = 1): Grid {
   const cells = Array.from({ length: height }, (_, y) =>

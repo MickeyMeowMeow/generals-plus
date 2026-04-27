@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { Cell } from "../../../src/domain/cell/cell";
-import { Terrain } from "../../../src/domain/cell/terrain";
-import { Grid } from "../../../src/domain/grid/grid";
-import { Player } from "../../../src/domain/player/player";
-import { StandardTeam } from "../../../src/domain/team/team";
-import { Visibility } from "../../../src/domain/vision/visibility";
+import { Cell } from "#/domain/cell/cell";
+import { Terrain } from "#/domain/cell/terrain";
+import { Grid } from "#/domain/grid/grid";
+import { Player } from "#/domain/player/player";
+import { StandardTeam } from "#/domain/team/team";
+import { Visibility } from "#/domain/vision/visibility";
 import {
   createVisionCell,
   VisibilityMap,
-} from "../../../src/domain/vision/visibility-map";
-import { MaskedTerrain } from "../../../src/domain/vision/vision-grid";
+} from "#/domain/vision/visibility-map";
+import { MaskedTerrain } from "#/domain/vision/vision-grid";
 
 function createVisionGrid(): Grid {
   const terrains = [

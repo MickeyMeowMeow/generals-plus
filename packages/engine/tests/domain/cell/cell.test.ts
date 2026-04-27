@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { Cell } from "../../../src/domain/cell/cell";
-import { Terrain } from "../../../src/domain/cell/terrain";
+import { Cell } from "#/domain/cell/cell";
+import { Terrain } from "#/domain/cell/terrain";
 
 describe("Cell", () => {
   it("applies expected defaults for a passable cell", () => {

@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { ActionType } from "../../../src/domain/action/action-type";
-import type { IAction } from "../../../src/domain/action/interfaces";
-import { Cell } from "../../../src/domain/cell/cell";
-import { Terrain } from "../../../src/domain/cell/terrain";
-import { BaseGame } from "../../../src/domain/game/base-game";
-import { GameMode } from "../../../src/domain/game/game-mode";
-import { GameStatus } from "../../../src/domain/game/game-status";
-import { Grid } from "../../../src/domain/grid/grid";
-import type { IPlayerStats } from "../../../src/domain/player/interfaces";
-import { Player } from "../../../src/domain/player/player";
-import { StandardTeam } from "../../../src/domain/team/team";
+import { ActionType } from "#/domain/action/action-type";
+import type { IAction } from "#/domain/action/interfaces";
+import { Cell } from "#/domain/cell/cell";
+import { Terrain } from "#/domain/cell/terrain";
+import { BaseGame } from "#/domain/game/base-game";
+import { GameMode } from "#/domain/game/game-mode";
+import { GameStatus } from "#/domain/game/game-status";
+import { Grid } from "#/domain/grid/grid";
+import type { IPlayerStats } from "#/domain/player/interfaces";
+import { Player } from "#/domain/player/player";
+import { StandardTeam } from "#/domain/team/team";
 
 class TestGame extends BaseGame {
   public readonly mode = GameMode.CLASSIC;

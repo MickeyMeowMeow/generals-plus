@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { Terrain } from "../../../src/domain/cell/terrain";
+import { Terrain } from "#/domain/cell/terrain";
 import {
   DefaultGridGenerator,
   DefaultGridGeneratorOptions,
-} from "../../../src/domain/grid/grid-generator";
+} from "#/domain/grid/grid-generator";
 
 function toTerrainMatrix(
   grid: ReturnType<DefaultGridGenerator["generate"]>,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { Player } from "../../../src/domain/player/player";
-import { ScoringTeam, StandardTeam } from "../../../src/domain/team/team";
-import { TeamType } from "../../../src/domain/team/team-type";
+import { Player } from "#/domain/player/player";
+import { ScoringTeam, StandardTeam } from "#/domain/team/team";
+import { TeamType } from "#/domain/team/team-type";
 
 describe("Team", () => {
   it("creates standard team with expected defaults", () => {

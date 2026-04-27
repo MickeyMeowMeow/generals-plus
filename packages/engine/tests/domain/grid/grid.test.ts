@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { Cell } from "../../../src/domain/cell/cell";
-import { Terrain } from "../../../src/domain/cell/terrain";
-import { Grid } from "../../../src/domain/grid/grid";
+import { Cell } from "#/domain/cell/cell";
+import { Terrain } from "#/domain/cell/terrain";
+import { Grid } from "#/domain/grid/grid";
 
 function createCell(x: number, y: number): Cell {
   return new Cell({

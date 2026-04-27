@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { Player } from "../../../src/domain/player/player";
-import { PlayerStatus } from "../../../src/domain/player/player-status";
-import { StandardTeam } from "../../../src/domain/team/team";
+import { Player } from "#/domain/player/player";
+import { PlayerStatus } from "#/domain/player/player-status";
+import { StandardTeam } from "#/domain/team/team";
 
 describe("Player", () => {
   it("uses active as default status", () => {
