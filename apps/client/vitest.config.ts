@@ -8,6 +8,8 @@ export default defineConfig({
   test: {
     ...webConfig.test,
     include: ["tests/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+    // Register custom test matchers and global mocks.
+    setupFiles: ["./tests/setup.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
@@ -28,6 +30,7 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        // Match app runtime path aliases inside Vitest.
         find: /^@generals-plus\/(.*)/,
         replacement: path.join(
           import.meta.dirname,
