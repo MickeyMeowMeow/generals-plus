@@ -1,11 +1,11 @@
-import type { IEffectTarget } from "#/domain/effect/interfaces";
+import type { EffectTarget } from "#/domain/effect/effect-target";
 import type { IPlayer } from "#/domain/player/interfaces";
 import type { TeamType } from "#/domain/team/team-type";
 
 /**
  * Common properties for all team types.
  */
-export interface IBaseTeam extends IEffectTarget {
+export interface IBaseTeam extends EffectTarget {
   /** The strategic nature of the team. */
   readonly type: TeamType;
   /** Players belonging to this team. */

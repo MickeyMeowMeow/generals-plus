@@ -1,5 +1,5 @@
 import type { Terrain } from "#/domain/cell/terrain";
-import type { IEffectTarget } from "#/domain/effect/interfaces";
+import type { EffectTarget } from "#/domain/effect/effect-target";
 import type { PlayerStatus } from "#/domain/player/player-status";
 import type { IVisionModifier } from "#/domain/vision/interfaces";
 import type { ICoordinate } from "#/math/coordinate";
@@ -11,7 +11,7 @@ export interface ICellOwner {
 /**
  * Represents a single cell on the grid, encapsulating its state and behavior.
  */
-export interface ICell extends IEffectTarget {
+export interface ICell extends EffectTarget {
   /** Coordinate of the cell on the grid. */
   readonly coordinate: ICoordinate;
 

@@ -1,50 +1,44 @@
-import type { IBaseEffect, IEffectTarget } from "#/domain/effect/interfaces";
+import type { Effect } from "#/domain/effect/effect";
 
 /**
  * Shared base for domain objects that can receive temporary or persistent effects.
  */
-export abstract class EffectTarget implements IEffectTarget {
+export abstract class EffectTarget {
   readonly id: string;
-  readonly effects: IBaseEffect[] = [];
 
-  protected constructor(id: string) {
+  /** Collection of active effects on the target. */
+  readonly effects: Effect[] = [];
+
+  constructor(id: string) {
     this.id = id;
   }
 
   /**
-   * Attaches an effect and gives it a chance to initialize state on the target.
+   * Attaches an effect to the target.
+   *
+   * @param currentTick The current tick of the game when the effect is attached.
+   * @param effect The effect to add.
    */
-  attachEffect(effect: IBaseEffect): void {
+  attachEffect(effect: Effect): void {
     if (effect.target !== this) {
       throw new Error(
         `Cannot attach effect "${effect.id}" to target "${this.id}" because it belongs to a different target.`,
       );
     }
     this.effects.push(effect);
-    effect.onAttach?.();
   }
 
   /**
-   * Removes an effect by ID and runs its cleanup hook when present.
+   * Removes an effect from the target by its ID.
+   *
+   * @param effectId The ID of the effect to remove.
    */
   removeEffect(effectId: string): void {
     const effectIndex = this.effects.findIndex(
       (effect) => effect.id === effectId,
     );
-    if (effectIndex < 0) {
-      return;
-    }
-
-    const [effect] = this.effects.splice(effectIndex, 1);
-    effect?.onExpire?.();
-  }
-
-  /**
-   * Advances all active effects.
-   */
-  tickEffects(currentTick: number): void {
-    for (const effect of this.effects) {
-      effect.onTick?.(currentTick);
+    if (effectIndex >= 0) {
+      this.effects.splice(effectIndex, 1);
     }
   }
 }
