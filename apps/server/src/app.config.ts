@@ -18,6 +18,7 @@ import { SetupRoom } from "#/features/setup/setup-room";
 matchMaker.controller.exposedMethods = [
   "joinById",
   "reconnect",
+  "joinOrCreate",
   "consumeSeatReservation",
 ];
 
