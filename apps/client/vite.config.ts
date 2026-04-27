@@ -23,10 +23,6 @@ export default defineConfig({
           "src",
         ),
       },
-      {
-        find: /^#\//,
-        replacement: `${path.join(import.meta.dirname, "src")}/`,
-      },
     ],
   },
 });

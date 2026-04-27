@@ -4,7 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { RoomJoinForm } from "#/components/lobby/room-join-form";
+import { RoomJoinForm } from "#/features/lobby/components/room-join-form";
 
 const defaultProps = {
   roomName: "skirmish-room",

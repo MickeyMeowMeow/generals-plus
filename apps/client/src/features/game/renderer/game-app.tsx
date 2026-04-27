@@ -2,7 +2,7 @@ import { Application } from "@pixi/react";
 import { Assets } from "pixi.js";
 import { useEffect, useState } from "react";
 
-import { Viewport } from "#/components/pixi/viewport.tsx";
+import { Viewport } from "#/features/game/components/viewport.tsx";
 import type { RenderGrid } from "#/features/game/renderer/grid-layer.tsx";
 import { GridLayer } from "#/features/game/renderer/grid-layer.tsx";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";

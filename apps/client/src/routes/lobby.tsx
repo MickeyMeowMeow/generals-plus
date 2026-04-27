@@ -3,10 +3,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 
 import { RequireAuthenticated } from "#/common/guards";
-import { PageContainer } from "#/components/layout/page-container";
-import { PlayerInfo } from "#/components/lobby/player-info";
-import { RoomJoinForm } from "#/components/lobby/room-join-form";
 import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { PlayerInfo } from "#/features/lobby/components/player-info";
+import { RoomJoinForm } from "#/features/lobby/components/room-join-form";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
 /** Landing page after authentication for joining or creating game rooms. */
@@ -60,28 +59,26 @@ function LobbyPage() {
   };
 
   return (
-    <PageContainer>
-      <div className="space-y-6">
-        <PlayerInfo
-          displayName={displayName ?? "anonymous"}
-          authStatus={authStatus}
-          roomId={roomId}
-          sessionId={sessionId}
-        />
-        <RoomJoinForm
-          roomName={roomName}
-          accessCode={roomAccessCode}
-          onRoomNameChange={setRoomName}
-          onAccessCodeChange={setRoomAccessCode}
-          isConnecting={status === "connecting"}
-          lastError={lastError}
-          connectionStatus={status}
-          onConnect={() => connect()}
-          onJoin={handleJoin}
-          onSignOut={handleSignOut}
-        />
-      </div>
-    </PageContainer>
+    <div className="space-y-6">
+      <PlayerInfo
+        displayName={displayName ?? "anonymous"}
+        authStatus={authStatus}
+        roomId={roomId}
+        sessionId={sessionId}
+      />
+      <RoomJoinForm
+        roomName={roomName}
+        accessCode={roomAccessCode}
+        onRoomNameChange={setRoomName}
+        onAccessCodeChange={setRoomAccessCode}
+        isConnecting={status === "connecting"}
+        lastError={lastError}
+        connectionStatus={status}
+        onConnect={() => connect()}
+        onJoin={handleJoin}
+        onSignOut={handleSignOut}
+      />
+    </div>
   );
 }
 
