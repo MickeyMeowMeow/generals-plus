@@ -85,7 +85,7 @@ describe("client connection flow", () => {
     const user = userEvent.setup();
     renderRoute("/lobby");
 
-    await user.click(screen.getByRole("button", { name: "Init connection" }));
+    await user.click(screen.getByRole("button", { name: "Connect" }));
 
     expect(connect).toHaveBeenCalledTimes(1);
   });
@@ -139,7 +139,9 @@ describe("client connection flow", () => {
         displayName: "Rogue",
       },
     });
-    expect(await screen.findByText("Room ID: room-123")).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Match Room" }),
+    ).toBeTruthy();
   });
 
   it("leaves room when match page unmounts", async () => {
@@ -216,10 +218,7 @@ describe("client connection flow", () => {
     const user = userEvent.setup();
     renderRoute("/lobby");
 
-    await user.type(
-      screen.getByLabelText("Room access code (optional)"),
-      "abc123",
-    );
+    await user.type(screen.getByLabelText("Access code (optional)"), "abc123");
     await user.click(screen.getByRole("button", { name: "Join room" }));
 
     expect(joinRoom).toHaveBeenCalledWith("skirmish-room", {
