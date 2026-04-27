@@ -9,16 +9,11 @@ import { monitor } from "@colyseus/monitor";
 import { defineServer, matchMaker } from "colyseus";
 import mongoose from "mongoose";
 
-<<<<<<< feature/server-lobbyroom-and-queueroom
 import { ENV } from "#env";
 import { auth } from "#features/auth/auth-config";
 import { MatchRoom } from "#features/match/match-room";
 import { MatchQueueRoom } from "#features/queue/queue-room";
 import { SetupRoom } from "#features/setup/setup-room";
-=======
-import { ENV } from "#/env";
-import { auth } from "#/features/auth/auth-config";
->>>>>>> main
 
 matchMaker.controller.exposedMethods = [
   "joinById",

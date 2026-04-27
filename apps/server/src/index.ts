@@ -2,11 +2,8 @@
  * Entry point of the server application.
  */
 
-<<<<<<< feature/server-lobbyroom-and-queueroom
 import { logger } from "@colyseus/core";
 
-=======
->>>>>>> main
 import server from "#/app.config";
 import { ENV } from "#/env";
 
