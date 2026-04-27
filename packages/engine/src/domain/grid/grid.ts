@@ -1,4 +1,5 @@
 import type { ICell } from "#/domain/cell/interfaces";
+import type { Terrain } from "#/domain/cell/terrain";
 import { EffectTarget } from "#/domain/effect/effect-target";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { ICoordinate } from "#/math/coordinate";
@@ -77,6 +78,25 @@ export class Grid extends EffectTarget implements IGrid {
     for (let y = 0; y < this.height; y += 1) {
       for (let x = 0; x < this.width; x += 1) {
         callback(this.cells[y][x], { x, y });
+      }
+    }
+  }
+
+  /**
+   * Iterates over cells matching a terrain type, invoking the callback with the cell and its coordinate.
+   *
+   * @param terrain Terrain type to filter cells by.
+   * @param callback Callback invoked for each cell matching the terrain, along with its coordinate.
+   */
+  forEachTerrain(
+    terrain: Terrain,
+    callback: (cell: ICell, coordinate: ICoordinate) => void,
+  ): void {
+    for (let y = 0; y < this.height; y += 1) {
+      for (let x = 0; x < this.width; x += 1) {
+        if (this.cells[y][x].terrain === terrain) {
+          callback(this.cells[y][x], { x, y });
+        }
       }
     }
   }
