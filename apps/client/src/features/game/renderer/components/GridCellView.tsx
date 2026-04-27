@@ -66,7 +66,7 @@ function GridCellViewContent({
       {cell.isVisible && terrainTheme.icon ? (
         <pixiSprite
           texture={Texture.from(terrainTheme.icon)}
-          anchor={0.5}
+          anchor={RenderConfig.centerAnchor}
           width={iconSize}
           height={iconSize}
           x={x + cellSize / 2}
@@ -76,15 +76,18 @@ function GridCellViewContent({
       {textVisible ? (
         <pixiText
           text={String(cell.troopCount)}
-          anchor={0.5}
+          anchor={RenderConfig.centerAnchor}
           x={x + cellSize / 2}
           y={y + cellSize / 2}
           style={{
             fill: troopColor,
-            fontFamily: "Arial, sans-serif",
+            fontFamily: RenderConfig.fontFamily,
             fontSize: RenderConfig.troopFontSize,
-            fontWeight: "700",
-            stroke: { color: 0xffffff, width: 4 },
+            fontWeight: RenderConfig.fontWeightBold,
+            stroke: {
+              color: RenderConfig.textStrokeColor,
+              width: RenderConfig.textStrokeWidth,
+            },
             align: "center",
           }}
         />

@@ -133,31 +133,34 @@ function InteractionLayer({
   const drawOverlay = useCallback(
     (g: Graphics) => {
       g.clear();
-      g.rect(0, 0, worldWidth, worldHeight).fill({ color: 0x000000, alpha: 0 });
+      g.rect(0, 0, worldWidth, worldHeight).fill({
+        color: RenderConfig.transparentColor,
+        alpha: RenderConfig.transparentAlpha,
+      });
 
       if (selectedCell) {
         g.rect(
-          selectedCell.x * stride + 2,
-          selectedCell.y * stride + 2,
-          cellSize - 4,
-          cellSize - 4,
+          selectedCell.x * stride + RenderConfig.selectionInset,
+          selectedCell.y * stride + RenderConfig.selectionInset,
+          cellSize - RenderConfig.selectionInset * 2,
+          cellSize - RenderConfig.selectionInset * 2,
         ).stroke({
           color: RenderConfig.selectionBorderColor,
-          width: 5,
+          width: RenderConfig.selectionStrokeWidth,
           alpha: 1,
         });
       }
 
       if (hoveredCell) {
         g.rect(
-          hoveredCell.x * stride + 4,
-          hoveredCell.y * stride + 4,
-          cellSize - 8,
-          cellSize - 8,
+          hoveredCell.x * stride + RenderConfig.hoverInset,
+          hoveredCell.y * stride + RenderConfig.hoverInset,
+          cellSize - RenderConfig.hoverInset * 2,
+          cellSize - RenderConfig.hoverInset * 2,
         ).stroke({
           color: RenderConfig.hoverBorderColor,
-          width: 4,
-          alpha: 0.96,
+          width: RenderConfig.hoverStrokeWidth,
+          alpha: RenderConfig.hoverStrokeAlpha,
         });
       }
     },

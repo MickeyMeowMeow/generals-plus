@@ -38,7 +38,9 @@ function MoveQueueArrow({
   const color = item.isSplit
     ? RenderConfig.splitMoveColor
     : RenderConfig.fullMoveColor;
-  const alpha = item.isSplit ? 0.72 : 0.95;
+  const alpha = item.isSplit
+    ? RenderConfig.moveSplitAlpha
+    : RenderConfig.moveFullAlpha;
   const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
 
   const drawArrow = useCallback(
@@ -46,15 +48,28 @@ function MoveQueueArrow({
       g.clear();
       // Draw a center-to-center arrow trimmed to avoid overlapping cell centers.
       const angle = Math.atan2(to.y - from.y, to.x - from.x);
-      const headLength = Math.max(14, cellSize * 0.18);
-      const endX = to.x - Math.cos(angle) * (cellSize * 0.28);
-      const endY = to.y - Math.sin(angle) * (cellSize * 0.28);
-      const startX = from.x + Math.cos(angle) * (cellSize * 0.28);
-      const startY = from.y + Math.sin(angle) * (cellSize * 0.28);
+      const headLength = Math.max(
+        RenderConfig.moveHeadMinLength,
+        cellSize * RenderConfig.moveHeadScale,
+      );
+      const endX =
+        to.x - Math.cos(angle) * (cellSize * RenderConfig.moveTrimFactor);
+      const endY =
+        to.y - Math.sin(angle) * (cellSize * RenderConfig.moveTrimFactor);
+      const startX =
+        from.x + Math.cos(angle) * (cellSize * RenderConfig.moveTrimFactor);
+      const startY =
+        from.y + Math.sin(angle) * (cellSize * RenderConfig.moveTrimFactor);
 
       g.moveTo(startX, startY)
         .lineTo(endX, endY)
-        .stroke({ color, width: item.isSplit ? 5 : 8, alpha });
+        .stroke({
+          color,
+          width: item.isSplit
+            ? RenderConfig.moveArrowSplitWidth
+            : RenderConfig.moveArrowFullWidth,
+          alpha,
+        });
       g.moveTo(endX, endY)
         .lineTo(
           endX - headLength * Math.cos(angle - Math.PI / 6),
@@ -68,7 +83,11 @@ function MoveQueueArrow({
         .fill({ color, alpha });
 
       if (item.isSplit) {
-        g.circle(from.x, from.y, 9).stroke({ color, width: 4, alpha });
+        g.circle(from.x, from.y, RenderConfig.moveSplitMarkerRadius).stroke({
+          color,
+          width: RenderConfig.moveArrowSplitWidth - 1,
+          alpha,
+        });
       }
     },
     [alpha, cellSize, color, from.x, from.y, item.isSplit, to.x, to.y],
@@ -77,9 +96,13 @@ function MoveQueueArrow({
   const drawBadge = useCallback(
     (g: Graphics) => {
       g.clear();
-      g.circle(mid.x, mid.y, 18)
-        .fill({ color, alpha: 0.96 })
-        .stroke({ color: 0xffffff, width: 3, alpha: 0.9 });
+      g.circle(mid.x, mid.y, RenderConfig.moveBadgeRadius)
+        .fill({ color, alpha: RenderConfig.moveBadgeFillAlpha })
+        .stroke({
+          color: RenderConfig.textStrokeColor,
+          width: RenderConfig.moveBadgeStrokeWidth,
+          alpha: 0.9,
+        });
     },
     [color, mid.x, mid.y],
   );
@@ -104,14 +127,14 @@ function MoveQueueArrow({
         <pixiGraphics draw={drawBadge} />
         <pixiText
           text={String(item.order)}
-          anchor={0.5}
+          anchor={RenderConfig.centerAnchor}
           x={mid.x}
           y={mid.y}
           style={{
             fill: RenderConfig.queueLabelColor,
-            fontFamily: "Arial, sans-serif",
-            fontSize: 20,
-            fontWeight: "700",
+            fontFamily: RenderConfig.fontFamily,
+            fontSize: RenderConfig.queueLabelFontSize,
+            fontWeight: RenderConfig.fontWeightBold,
             align: "center",
           }}
         />
