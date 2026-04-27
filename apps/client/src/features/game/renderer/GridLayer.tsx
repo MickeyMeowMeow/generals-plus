@@ -1,82 +1,105 @@
-import type { ICoordinate, IGrid2D, Terrain } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
-import { Container, Graphics, Sprite, Texture } from "pixi.js";
-import { useCallback, useMemo } from "react";
+import { Container, Graphics, Sprite, Text } from "pixi.js";
+import { useMemo } from "react";
 
+import { GridCellView } from "#/features/game/renderer/components/GridCellView.tsx";
+import { InteractionLayer } from "#/features/game/renderer/components/InteractionLayer.tsx";
+import { MoveQueueLayer } from "#/features/game/renderer/components/MoveQueueLayer.tsx";
+import {
+  cellKeyFormatter,
+  RenderCellIndex,
+  RenderPlayerIndex,
+  ViewportCuller,
+} from "#/features/game/renderer/grid-model.ts";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
-import { TerrainTheme } from "#/features/game/renderer/theme.ts";
+import type {
+  GameMapCallbacks,
+  MoveQueueItem,
+  RenderCell,
+  RenderPlayer,
+  RenderViewportState,
+} from "#/features/game/renderer/render-types.ts";
 
-extend({ Container, Graphics, Sprite });
+extend({ Container, Graphics, Sprite, Text });
 
-export interface RenderGridCell {
-  coordinate: ICoordinate;
-  terrain: Terrain;
+interface GridLayerProps extends GameMapCallbacks {
+  readonly width: number;
+  readonly height: number;
+  readonly cells: readonly RenderCell[];
+  readonly players: readonly RenderPlayer[];
+  readonly moveQueue: readonly MoveQueueItem[];
+  readonly stride: number;
+  readonly viewport: RenderViewportState;
 }
 
-export interface RenderGrid extends IGrid2D<RenderGridCell> {}
-
-export interface GridLayout {
-  cellSize: number;
-  stride: number;
-  offsetX: number;
-  offsetY: number;
-}
-
-interface GridLayerProps {
-  grid: RenderGrid;
-  stride: number;
-}
-
-export function GridLayer({ grid, stride }: GridLayerProps) {
+export function GridLayer({
+  width,
+  height,
+  cells,
+  players,
+  moveQueue,
+  stride,
+  viewport,
+  onCellClick,
+  onCellHover,
+  onCellLeave,
+  onCellsSelect,
+  onQueueItemRemove,
+}: GridLayerProps) {
   const cellSize = stride - RenderConfig.cellGap;
-
-  const drawBaseLayer = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      grid.forEach((cell) => {
-        const x = cell.coordinate.x * stride;
-        const y = cell.coordinate.y * stride;
-        const color = TerrainTheme[cell.terrain].color;
-        g.rect(x, y, cellSize, cellSize).fill(color);
-      });
-    },
-    [grid, stride, cellSize],
+  // Build lookup helpers once per input snapshot.
+  const playerIndex = useMemo(() => new RenderPlayerIndex(players), [players]);
+  const cellIndex = useMemo(
+    () => new RenderCellIndex(width, height, cells),
+    [width, height, cells],
   );
-
-  const iconCells = useMemo(() => {
-    const cells: Array<{ cell: RenderGridCell; icon: string }> = [];
-    grid.forEach((cell) => {
-      const icon = TerrainTheme[cell.terrain].icon;
-      if (icon) cells.push({ cell, icon });
-    });
-    return cells;
-  }, [grid]);
+  const culler = useMemo(
+    () => new ViewportCuller(stride, cellSize),
+    [stride, cellSize],
+  );
+  const visibleCells = useMemo(
+    // Draw only visible cells to reduce per-frame work.
+    () => cells.filter((cell) => culler.isCellVisible(cell, viewport)),
+    [cells, culler, viewport],
+  );
+  const worldWidth = width * stride - RenderConfig.cellGap;
+  const worldHeight = height * stride - RenderConfig.cellGap;
 
   return (
     <pixiContainer>
-      <pixiGraphics draw={drawBaseLayer} />
       <pixiContainer>
-        {iconCells.map(({ cell, icon }) => {
-          const x = cell.coordinate.x * stride + cellSize / 2;
-          const y = cell.coordinate.y * stride + cellSize / 2;
-          const iconSize = Math.max(
-            1,
-            cellSize * RenderConfig.terrainIconScale,
-          );
-
-          return (
-            <pixiSprite
-              key={`${cell.coordinate.x},${cell.coordinate.y}`}
-              texture={Texture.from(icon)}
-              anchor={0.5}
-              width={iconSize}
-              height={iconSize}
-              x={x}
-              y={y}
-            />
-          );
-        })}
+        {visibleCells.map((cell) => (
+          <GridCellView
+            key={cellKeyFormatter.fromCell(cell)}
+            cell={cell}
+            ownerColor={playerIndex.ownerColor(cell.ownerIndex)}
+            troopColor={playerIndex.troopColor(cell.ownerIndex)}
+            stride={stride}
+            cellSize={cellSize}
+            scale={viewport.scale}
+          />
+        ))}
       </pixiContainer>
+      <InteractionLayer
+        width={width}
+        height={height}
+        stride={stride}
+        cellSize={cellSize}
+        cells={cellIndex}
+        worldWidth={worldWidth}
+        worldHeight={worldHeight}
+        onCellClick={onCellClick}
+        onCellHover={onCellHover}
+        onCellLeave={onCellLeave}
+        onCellsSelect={onCellsSelect}
+      />
+      <MoveQueueLayer
+        queue={moveQueue}
+        viewport={viewport}
+        stride={stride}
+        cellSize={cellSize}
+        onQueueItemRemove={onQueueItemRemove}
+      />
     </pixiContainer>
   );
 }
