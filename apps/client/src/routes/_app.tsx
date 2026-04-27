@@ -1,34 +1,20 @@
 import { useEffect } from "react";
-import { NavLink, Outlet } from "react-router";
+import { Outlet } from "react-router";
 
+import { AppHeader } from "#/components/layout/app-header";
 import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
-
-import "#/app.css";
 
 export default function AppLayout() {
   const hydrateUser = useUserAuthStore((state) => state.hydrateUser);
 
-  // Kick off session hydration once on app startup.
   useEffect(() => {
     void hydrateUser();
   }, [hydrateUser]);
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <h1>Generals Plus</h1>
-        <nav aria-label="Primary">
-          <NavLink to="/user" className="nav-link">
-            User
-          </NavLink>
-          <NavLink to="/lobby" className="nav-link">
-            Lobby
-          </NavLink>
-        </nav>
-      </header>
-      <main className="app-content">
-        <Outlet />
-      </main>
+    <div className="flex min-h-svh flex-col">
+      <AppHeader />
+      <Outlet />
     </div>
   );
 }
