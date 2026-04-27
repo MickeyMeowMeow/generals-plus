@@ -52,6 +52,9 @@ export abstract class BaseGame implements IBaseGame {
   /**
    * Processes a player-initiated action.
    * This provides a base stub, typically overridden or extended by specific modes.
+   *
+   * @param _action The action to process.
+   * @returns Whether the action was successfully processed.
    */
   public handleAction(_action: Action): boolean {
     if (this.status !== GameStatus.PLAYING) {

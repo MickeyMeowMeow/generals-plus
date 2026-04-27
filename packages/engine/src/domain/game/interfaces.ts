@@ -52,8 +52,8 @@ export interface IBaseGame {
   /**
    * Processes a player-initiated action (move, skill, etc.).
    *
-   * @param action - The action object containing player ID and execution details.
-   * @returns boolean - True if the action was valid and executed, false otherwise.
+   * @param action The action object containing player ID and execution details.
+   * @returns True if the action was valid and executed, false otherwise.
    */
   handleAction(action: Action): boolean;
 
@@ -65,8 +65,7 @@ export interface IBaseGame {
    * 2. Finalize all player and team statistics.
    * 3. Generate a complete game report.
    *
-   * @returns IGameResult | null - Returns the final game results if the game has ended,
-   * or null if the game is still in progress.
+   * @returns Returns the final game results if the game has ended, or null if the game is still in progress.
    */
   checkGameEnd(): IGameResult | null;
 
@@ -82,23 +81,23 @@ export interface IBaseGame {
    * and will use fallback logic (e.g., most tiles, most troops) to decide a winner
    * if no definitive victory is achieved.
    *
-   * @returns IGameResult - The final game results generated at the moment of termination.
+   * @returns The final game results generated at the moment of termination.
    */
   forceEnd(): IGameResult;
 
   /**
    * Retrieves the current vision grid for a specific player based on their team.
    *
-   * @param playerId - The ID of the player requesting vision.
-   * @returns IVisionGrid | null - The masked grid for the player, or null if the player doesn't exist.
+   * @param playerId The ID of the player requesting vision.
+   * @returns The masked grid for the player, or null if the player doesn't exist.
    */
   getVisionGrid(playerId: string): IVisionGrid | null;
 
   /**
    * Retrieves the current statistics (troops, land, etc.) for a specific player.
    *
-   * @param playerId - The ID of the player.
-   * @returns IPlayerStats | null - The statistics for the player, or null if the player doesn't exist.
+   * @param playerId The ID of the player.
+   * @returns The statistics for the player, or null if the player doesn't exist.
    */
   getPlayerStats(playerId: string): IPlayerStats | null;
 }
@@ -112,6 +111,9 @@ export interface IStandardGame extends IBaseGame {
 
   /**
    * Overridden covariant return type specific to standard games.
+   *
+   * @param playerId The ID of the player.
+   * @returns The standard player statistics for the player, or null if the player doesn't exist.
    */
   getPlayerStats(playerId: string): IStandardPlayerStats | null;
 }
