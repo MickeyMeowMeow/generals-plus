@@ -8,8 +8,8 @@ import { monitor } from "@colyseus/monitor";
 import { defineServer, matchMaker } from "colyseus";
 import mongoose from "mongoose";
 
-import { ENV } from "#env";
-import { auth } from "#features/auth/auth-config";
+import { ENV } from "#/env";
+import { auth } from "#/features/auth/auth-config";
 
 matchMaker.controller.exposedMethods = [
   "joinById",

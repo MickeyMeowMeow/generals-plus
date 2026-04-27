@@ -24,6 +24,9 @@ export default function AppLayout() {
           <NavLink to="/lobby" className="nav-link">
             Lobby
           </NavLink>
+          <NavLink to="/match-screen" className="nav-link">
+            Match Screen
+          </NavLink>
         </nav>
       </header>
       <main className="app-content">
