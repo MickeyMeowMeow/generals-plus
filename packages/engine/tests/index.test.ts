@@ -6,7 +6,7 @@ import {
   EffectTarget,
   Grid,
   Terrain,
-} from "../src/index";
+} from "#/index";
 
 describe("engine public exports", () => {
   it("exports core grid/effect primitives", () => {
