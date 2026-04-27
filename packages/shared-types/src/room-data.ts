@@ -1,7 +1,8 @@
+import { GameMode, Terrain } from "@generals-plus/engine";
 import { z } from "zod";
 
 export interface CellInit {
-  terrain: string;
+  terrain: Terrain;
   isPassable: boolean;
   troopCount?: number;
   ownerIndex?: number;
@@ -20,14 +21,30 @@ export interface PlayerInit {
   teamId: string;
 }
 
-export interface RoomData {
-  mode: string;
-  map: MapConfig;
-  playerInit: PlayerInit[];
+export interface ClientAuth {
+  id: string;
+  username: string;
 }
 
+export const RoomNames = {
+  LOBBY: "lobby",
+  QUEUE: "queue",
+  SETUP: "setup",
+  MATCH: "match",
+} as const;
+
+export interface RoomData {
+  mode: GameMode;
+  map: MapConfig;
+  playerInit: PlayerInit[];
+  isPublic?: boolean;
+}
+
+const terrainValues = Object.values(Terrain) as [Terrain, ...Terrain[]];
+const gameModeValues = Object.values(GameMode) as [GameMode, ...GameMode[]];
+
 const cellInitSchema = z.object({
-  terrain: z.string().min(1),
+  terrain: z.enum(terrainValues),
   isPassable: z.boolean(),
   troopCount: z.number().int().min(0).optional(),
   ownerIndex: z.number().int().min(-1).optional(),
@@ -51,31 +68,20 @@ const playerInitSchema = z.object({
 
 export const roomDataSchema = z
   .object({
-    mode: z.string().min(1),
+    mode: z.enum(gameModeValues),
     map: mapConfigSchema,
-    players: z.array(
-      z.object({
-        username: z.string().trim().min(1),
-        token: z.string().min(1),
-      }),
-    ),
     playerInit: z.array(playerInitSchema),
+    isPublic: z.boolean().optional(),
   })
   .refine(
     (data) => {
-      const playerUsernames = new Set(data.players.map((p) => p.username));
-      const initUsernames = new Set(data.playerInit.map((p) => p.username));
-      if (playerUsernames.size !== data.players.length) return false;
-      if (initUsernames.size !== data.playerInit.length) return false;
-      if (playerUsernames.size !== initUsernames.size) return false;
-      for (const u of playerUsernames) {
-        if (!initUsernames.has(u)) return false;
-      }
-      return true;
+      const usernames = new Set(data.playerInit.map((p) => p.username));
+      return usernames.size === data.playerInit.length;
     },
-    { message: "players and playerInit must have matching unique usernames" },
+    { message: "playerInit must have unique usernames" },
   );
 
 export function parseRoomData(raw: unknown): RoomData | null {
-  return roomDataSchema.safeParse(raw).success ? (raw as RoomData) : null;
+  const result = roomDataSchema.safeParse(raw);
+  return result.success ? result.data : null;
 }
