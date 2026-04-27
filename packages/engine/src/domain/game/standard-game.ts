@@ -20,7 +20,7 @@ export class StandardGame extends BaseGame implements IStandardGame {
     }
 
     if (action.type === ActionType.CLEAR_QUEUE) {
-      //Should not be processed by engine
+      // Should not be processed by engine
       return false;
     }
 
@@ -35,7 +35,7 @@ export class StandardGame extends BaseGame implements IStandardGame {
       this.players,
     );
 
-    // Optional: check game end immediately if an action might have ended the game
+    // Check game end immediately if an action might have ended the game
     if (success) {
       this.checkGameEnd();
     }
@@ -51,7 +51,7 @@ export class StandardGame extends BaseGame implements IStandardGame {
     // Process all grid, player, and team effects (e.g. troop generation)
     super.nextTick();
 
-    // Optional: check game end immediately after processing actions and effects
+    // Check game end immediately after processing actions and effects
     this.checkGameEnd();
   }
 
