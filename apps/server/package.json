@@ -9,6 +9,13 @@
       "./src/*.tsx",
       "./src/*/index.ts",
       "./src/*/index.tsx"
+    ],
+    "#tests/*": [
+      "./tests/*",
+      "./tests/*.ts",
+      "./tests/*.tsx",
+      "./tests/*/index.ts",
+      "./tests/*/index.tsx"
     ]
   },
   "scripts": {
@@ -27,12 +34,15 @@
     "@generals-plus/shared-types": "workspace:*",
     "colyseus": "^0.17.10",
     "cors": "^2.8.6",
-    "zod": "^4.3.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "mongoose": "^9.5.0"
+    "mongoose": "^9.5.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@colyseus/sdk": "~0.17.42",
+    "@colyseus/testing": "0.17.11",
+    "@colyseus/tools": "~0.17.19",
     "@generals-plus/typescript-config": "workspace:*",
     "@generals-plus/vitest-config": "workspace:*",
     "@types/cors": "^2.8.19",

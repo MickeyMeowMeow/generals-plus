@@ -4,12 +4,16 @@
  */
 import "dotenv/config";
 
+import { defineRoom, LobbyRoom, logger } from "@colyseus/core";
 import { monitor } from "@colyseus/monitor";
 import { defineServer, matchMaker } from "colyseus";
 import mongoose from "mongoose";
 
 import { ENV } from "#/env";
 import { auth } from "#/features/auth/auth-config";
+import { MatchRoom } from "#/features/match/match-room";
+import { MatchQueueRoom } from "#/features/queue/queue-room";
+import { SetupRoom } from "#/features/setup/setup-room";
 
 matchMaker.controller.exposedMethods = [
   "joinById",
@@ -32,16 +36,16 @@ function redactMongoUri(uri: string) {
 async function connectDB() {
   // Default to the credentials set in your docker-compose.yml
   const mongoUri = ENV.MONGO_URI;
-  console.log("Attempting to connect to:", redactMongoUri(mongoUri));
+  logger.info("Attempting to connect to:", redactMongoUri(mongoUri));
 
   try {
     // Explicitly configure query strictness for this application.
     mongoose.set("strictQuery", false);
 
     await mongoose.connect(mongoUri);
-    console.log("🍃 Database: MongoDB connected successfully.");
+    logger.info("🍃 Database: MongoDB connected successfully.");
   } catch (err) {
-    console.error("❌ Database: Connection failed.", err);
+    logger.error("❌ Database: Connection failed.", err);
     // Exit process on database failure as the app cannot function without it
     process.exit(1);
   }
@@ -54,7 +58,12 @@ export default defineServer({
   /**
    * Define game rooms and their respective handler classes.
    */
-  rooms: {},
+  rooms: {
+    lobby: defineRoom(LobbyRoom),
+    queue: defineRoom(MatchQueueRoom).filterBy(["gameMode"]),
+    setup: defineRoom(SetupRoom).filterBy(["gameMode"]).enableRealtimeListing(),
+    match: defineRoom(MatchRoom),
+  },
 
   /**
    * Configure Express middleware and HTTP routes.
