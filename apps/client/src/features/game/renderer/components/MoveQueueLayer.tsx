@@ -1,12 +1,12 @@
 import type { FederatedPointerEvent, Graphics } from "pixi.js";
 import { useCallback, useMemo } from "react";
 
-import { ViewportCuller } from "#/features/game/renderer/grid-model.ts";
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import { ViewportCuller } from "#/features/game/renderer/grid-model";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 import type {
   MoveQueueItem,
   RenderViewportState,
-} from "#/features/game/renderer/render-types.ts";
+} from "#/features/game/renderer/render-types";
 
 interface MoveQueueLayerProps {
   readonly queue: readonly MoveQueueItem[];

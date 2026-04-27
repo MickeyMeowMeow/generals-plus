@@ -2,23 +2,23 @@ import { extend } from "@pixi/react";
 import { Container, Graphics, Sprite, Text } from "pixi.js";
 import { useMemo } from "react";
 
-import { GridCellView } from "#/features/game/renderer/components/GridCellView.tsx";
-import { InteractionLayer } from "#/features/game/renderer/components/InteractionLayer.tsx";
-import { MoveQueueLayer } from "#/features/game/renderer/components/MoveQueueLayer.tsx";
+import { GridCellView } from "#/features/game/renderer/components/GridCellView";
+import { InteractionLayer } from "#/features/game/renderer/components/InteractionLayer";
+import { MoveQueueLayer } from "#/features/game/renderer/components/MoveQueueLayer";
 import {
   cellKeyFormatter,
   RenderCellIndex,
   RenderPlayerIndex,
   ViewportCuller,
-} from "#/features/game/renderer/grid-model.ts";
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+} from "#/features/game/renderer/grid-model";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 import type {
   GameMapCallbacks,
   MoveQueueItem,
   RenderCell,
   RenderPlayer,
   RenderViewportState,
-} from "#/features/game/renderer/render-types.ts";
+} from "#/features/game/renderer/render-types";
 
 extend({ Container, Graphics, Sprite, Text });
 

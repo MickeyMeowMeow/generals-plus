@@ -5,16 +5,16 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type {
   RenderCellIndex,
   SelectionRect,
-} from "#/features/game/renderer/grid-model.ts";
+} from "#/features/game/renderer/grid-model";
 import {
   GridCoordinateMapper,
   PointerDragState,
-} from "#/features/game/renderer/grid-model.ts";
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+} from "#/features/game/renderer/grid-model";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 import type {
   GameMapCallbacks,
   RenderPoint,
-} from "#/features/game/renderer/render-types.ts";
+} from "#/features/game/renderer/render-types";
 
 interface InteractionLayerProps extends GameMapCallbacks {
   readonly width: number;

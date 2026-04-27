@@ -1,11 +1,11 @@
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 import type {
   MoveQueueItem,
   RenderCell,
   RenderPlayer,
   RenderPoint,
   RenderViewportState,
-} from "#/features/game/renderer/render-types.ts";
+} from "#/features/game/renderer/render-types";
 
 /** Generates stable map keys for grid points/cells. */
 export class CellKeyFormatter {

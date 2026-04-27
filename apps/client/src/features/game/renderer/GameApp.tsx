@@ -3,14 +3,14 @@ import { Assets } from "pixi.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Viewport } from "#/components/pixi/Viewport";
-import { GridLayer } from "#/features/game/renderer/GridLayer.tsx";
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import { GridLayer } from "#/features/game/renderer/GridLayer";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 import type {
   GameMapCallbacks,
   GameMapProps,
   RenderViewportState,
-} from "#/features/game/renderer/render-types.ts";
-import { TerrainTheme } from "#/features/game/renderer/theme.ts";
+} from "#/features/game/renderer/render-types";
+import { TerrainTheme } from "#/features/game/renderer/theme";
 
 interface GameAppProps extends GameMapProps, GameMapCallbacks {}
 

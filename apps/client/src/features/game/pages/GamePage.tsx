@@ -1,11 +1,11 @@
 import { DefaultGridGenerator } from "@generals-plus/engine";
 import { useEffect, useMemo, useState } from "react";
 
-import { GameApp } from "#/features/game/renderer/GameApp.tsx";
-import type { RenderCell } from "#/features/game/renderer/render-types.ts";
+import { GameApp } from "#/features/game/renderer/GameApp";
+import type { RenderCell } from "#/features/game/renderer/render-types";
 
 export function GamePage() {
-  const [tick, setTick] = useState(0);
+  const [_tick, setTick] = useState(0);
 
   // TODO: Load generator from config
   const generator = useMemo(() => new DefaultGridGenerator(), []);

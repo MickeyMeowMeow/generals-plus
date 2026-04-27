@@ -2,9 +2,9 @@ import type { Graphics } from "pixi.js";
 import { Texture } from "pixi.js";
 import { memo, useCallback } from "react";
 
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
-import type { RenderCell } from "#/features/game/renderer/render-types.ts";
-import { TerrainTheme } from "#/features/game/renderer/theme.ts";
+import { RenderConfig } from "#/features/game/renderer/render-config";
+import type { RenderCell } from "#/features/game/renderer/render-types";
+import { TerrainTheme } from "#/features/game/renderer/theme";
 
 interface GridCellViewProps {
   readonly cell: RenderCell;
