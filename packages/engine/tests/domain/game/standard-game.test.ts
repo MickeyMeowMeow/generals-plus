@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, test } from "vitest";
 
 import { ActionType } from "#/domain/action/action-type";
 import type { IAction } from "#/domain/action/interfaces";
@@ -87,7 +87,7 @@ describe("StandardGame", () => {
     expect(game.status).toBe(GameStatus.FINISHED);
   });
 
-  it("nextTick increments and can trigger end-check", () => {
+  test("nextTick increments and can trigger end-check", () => {
     const game = new StandardGame(createGridForAction());
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
@@ -137,7 +137,7 @@ describe("StandardGame", () => {
     });
   });
 
-  it("forceEnd always sets finished with null winner", () => {
+  test("forceEnd always sets finished with null winner", () => {
     const game = new StandardGame(createGridForAction());
 
     const result = game.forceEnd();
@@ -146,7 +146,7 @@ describe("StandardGame", () => {
     expect(result).toEqual({ mode: GameMode.CLASSIC, winnerTeamId: null });
   });
 
-  it("surrender neutralizes all owned troops and can end the game", () => {
+  test("surrender neutralizes all owned troops and can end the game", () => {
     const grid = new Grid(3, 1, [
       [
         new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),

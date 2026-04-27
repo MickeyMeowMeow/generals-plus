@@ -24,7 +24,7 @@ function createGrid(width = 2, height = 1): Grid {
   return new Grid(width, height, cells);
 }
 
-function createAction(type: IAction["type"] = ActionType.MOVE): IAction {
+function createAction(type: ActionType = ActionType.MOVE): IAction {
   return {
     playerId: "p1",
     type,
