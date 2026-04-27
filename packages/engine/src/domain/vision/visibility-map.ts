@@ -69,6 +69,7 @@ export class VisibilityMap {
   public evaluate(team: Team): IVisionGrid {
     const width = this.gameGrid.width;
     const height = this.gameGrid.height;
+    const teamPlayerIds = new Set(team.players.map((player) => player.playerId));
 
     // Step 1: Compute visibility first. Everything starts as shrouded.
     const visibilityData: Visibility[][] = Array.from({ length: height }, () =>
@@ -76,10 +77,7 @@ export class VisibilityMap {
     );
 
     this.gameGrid.forEach((cell, coord) => {
-      if (
-        cell.owner &&
-        team.players.some((p) => p.playerId === cell.owner?.playerId)
-      ) {
+      if (cell.owner && teamPlayerIds.has(cell.owner.playerId)) {
         const radius = cell.vision?.radius ?? 1; // 1 means 3x3 square, 2 means 5x5 square
 
         // Mark all cells within Chebyshev distance <= radius as VISIBLE
