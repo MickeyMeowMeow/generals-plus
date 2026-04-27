@@ -1,15 +1,9 @@
 import type { Container, FederatedPointerEvent, Graphics } from "pixi.js";
 import { Rectangle } from "pixi.js";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
-import type {
-  RenderCellIndex,
-  SelectionRect,
-} from "#/features/game/renderer/grid-model";
-import {
-  GridCoordinateMapper,
-  PointerDragState,
-} from "#/features/game/renderer/grid-model";
+import type { RenderCellIndex } from "#/features/game/renderer/grid-model";
+import { GridCoordinateMapper } from "#/features/game/renderer/grid-model";
 import { RenderConfig } from "#/features/game/renderer/render-config";
 import type {
   GameMapCallbacks,
@@ -37,7 +31,6 @@ function InteractionLayer({
   onCellClick,
   onCellHover,
   onCellLeave,
-  onCellsSelect,
 }: InteractionLayerProps) {
   const mapper = useMemo(
     () => new GridCoordinateMapper(width, height, stride),
@@ -49,10 +42,6 @@ function InteractionLayer({
   );
   const [selectedCell, setSelectedCell] = useState<RenderPoint | null>(null);
   const [hoveredCell, setHoveredCell] = useState<RenderPoint | null>(null);
-  const [selectionRect, setSelectionRect] = useState<SelectionRect | null>(
-    null,
-  );
-  const dragStateRef = useRef<PointerDragState | null>(null);
 
   const pointFromEvent = useCallback((event: FederatedPointerEvent) => {
     // Convert pointer position into local world coordinates.
@@ -91,44 +80,21 @@ function InteractionLayer({
     [cells, clearHover, hoveredCell, mapper, onCellHover],
   );
 
-  const handlePointerDown = useCallback(
-    (event: FederatedPointerEvent) => {
-      if (event.button !== 0) return;
-
-      event.stopPropagation();
-      const point = pointFromEvent(event);
-      dragStateRef.current = new PointerDragState(point, point, false);
-      setSelectionRect(null);
-    },
-    [pointFromEvent],
-  );
+  const handlePointerDown = useCallback((event: FederatedPointerEvent) => {
+    // No-op: all interactions are handled in handlePointerUp.
+    // Left-click is reserved for viewport dragging.
+  }, []);
 
   const handlePointerMove = useCallback(
     (event: FederatedPointerEvent) => {
       const point = pointFromEvent(event);
-      const dragState = dragStateRef.current;
-
-      if (!dragState) {
-        updateHover(point);
-        return;
-      }
-
-      event.stopPropagation();
-      const nextDragState = dragState.update(point);
-      dragStateRef.current = nextDragState;
-
-      // Promote click intent to drag-select once threshold is exceeded.
-      if (nextDragState.isSelecting) {
-        setSelectionRect(mapper.selectionRect(nextDragState.start, point));
-      }
+      updateHover(point);
     },
-    [mapper, pointFromEvent, updateHover],
+    [pointFromEvent, updateHover],
   );
 
   const handleGlobalPointerMove = useCallback(
     (event: FederatedPointerEvent) => {
-      if (dragStateRef.current) return;
-
       updateHover(pointFromEvent(event));
     },
     [pointFromEvent, updateHover],
@@ -136,23 +102,10 @@ function InteractionLayer({
 
   const handlePointerUp = useCallback(
     (event: FederatedPointerEvent) => {
-      const dragState = dragStateRef.current;
-      if (!dragState) return;
+      // Only handle left-button single-cell clicks.
+      if (event.button !== 0) return;
 
-      event.stopPropagation();
       const point = pointFromEvent(event);
-      const nextDragState = dragState.update(point);
-      dragStateRef.current = null;
-      setSelectionRect(null);
-
-      if (nextDragState.isSelecting) {
-        const selected = cells.selectVisibleCells(
-          mapper.selectionRect(nextDragState.start, point),
-        );
-        onCellsSelect?.(selected);
-        return;
-      }
-
       const coordinate = mapper.pointToCoordinate(point);
       if (!coordinate) return;
 
@@ -167,14 +120,11 @@ function InteractionLayer({
       });
       onCellClick?.(coordinate.x, coordinate.y);
     },
-    [cells, mapper, onCellClick, onCellsSelect, pointFromEvent],
+    [cells, mapper, onCellClick, pointFromEvent],
   );
 
   const handlePointerLeave = useCallback(
     (event: FederatedPointerEvent) => {
-      if (dragStateRef.current) {
-        event.stopPropagation();
-      }
       clearHover();
     },
     [clearHover],
@@ -184,18 +134,6 @@ function InteractionLayer({
     (g: Graphics) => {
       g.clear();
       g.rect(0, 0, worldWidth, worldHeight).fill({ color: 0x000000, alpha: 0 });
-
-      if (selectionRect) {
-        // Draw the current drag-selection rectangle.
-        const rect = selectionRect.toWorldRect(stride);
-        g.rect(rect.x, rect.y, rect.width, rect.height)
-          .fill({ color: RenderConfig.selectionFillColor, alpha: 0.16 })
-          .stroke({
-            color: RenderConfig.selectionFillColor,
-            width: 3,
-            alpha: 0.95,
-          });
-      }
 
       if (selectedCell) {
         g.rect(
@@ -223,15 +161,7 @@ function InteractionLayer({
         });
       }
     },
-    [
-      cellSize,
-      hoveredCell,
-      selectedCell,
-      selectionRect,
-      stride,
-      worldHeight,
-      worldWidth,
-    ],
+    [cellSize, hoveredCell, selectedCell, stride, worldHeight, worldWidth],
   );
 
   return (

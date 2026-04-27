@@ -76,7 +76,7 @@ export function Viewport({
   worldHeight,
   minScale,
   maxScale,
-  dragMouseButtons = "right middle",
+  dragMouseButtons = "left middle",
   onViewportChange,
 }: PropsWithChildren<ViewportProps>) {
   const { app } = useApplication();
