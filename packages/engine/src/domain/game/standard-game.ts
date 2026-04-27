@@ -1,5 +1,5 @@
 import { ActionType } from "#/domain/action/action-type";
-import type { IAction } from "#/domain/action/interfaces";
+import type { Action } from "#/domain/action/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
 import { BaseGame } from "#/domain/game/base-game";
@@ -14,7 +14,7 @@ export class StandardGame extends BaseGame implements IStandardGame {
   public readonly mode = GameMode.CLASSIC;
   private readonly combatResolver = new StandardCombatResolver();
 
-  public handleAction(action: IAction): boolean {
+  public handleAction(action: Action): boolean {
     if (this.status !== GameStatus.PLAYING) {
       return false;
     }
@@ -28,7 +28,7 @@ export class StandardGame extends BaseGame implements IStandardGame {
       return this.handleSurrender(action.playerId);
     }
 
-    // Process the action synchronously
+    // The action must be a MoveAction at this point
     const success = this.combatResolver.execute(
       action,
       this.grid,

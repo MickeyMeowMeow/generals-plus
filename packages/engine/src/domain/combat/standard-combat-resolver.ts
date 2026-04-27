@@ -1,5 +1,5 @@
 import { ActionType } from "#/domain/action/action-type";
-import type { IAction } from "#/domain/action/interfaces";
+import type { MoveAction } from "#/domain/action/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import type { CombatResolver } from "#/domain/combat/interfaces";
 import type { IGrid } from "#/domain/grid/interfaces";
@@ -14,13 +14,10 @@ import { PlayerStatus } from "#/domain/player/player-status";
  */
 export class StandardCombatResolver implements CombatResolver {
   public execute(
-    action: IAction,
+    action: MoveAction,
     grid: IGrid,
     players: Map<string, IPlayer>,
   ): boolean {
-    if (!action.from || !action.to) {
-      return false; // Invalid action without source or target
-    }
     const source = grid.get(action.from);
     const target = grid.get(action.to);
     const targetOwnerId = target?.owner?.playerId ?? null;

@@ -1,4 +1,4 @@
-import type { IAction } from "#/domain/action/interfaces";
+import type { Action } from "#/domain/action/interfaces";
 import type { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import type { GameStatus } from "#/domain/game/game-status";
@@ -55,7 +55,7 @@ export interface IBaseGame {
    * @param action - The action object containing player ID and execution details.
    * @returns boolean - True if the action was valid and executed, false otherwise.
    */
-  handleAction(action: IAction): boolean;
+  handleAction(action: Action): boolean;
 
   /**
    * Evaluates the current game state against the specific victory conditions of the active GameMode.

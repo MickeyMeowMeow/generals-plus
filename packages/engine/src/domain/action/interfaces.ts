@@ -1,9 +1,35 @@
 import type { ActionType } from "#/domain/action/action-type";
 import type { ICoordinate } from "#/math/coordinate";
 
-export interface IAction {
+/**
+ * Represents a player-initiated action in the game.
+ */
+export interface BaseAction {
   readonly playerId: string;
   readonly type: ActionType;
-  readonly from?: ICoordinate;
-  readonly to?: ICoordinate;
 }
+
+/**
+ * Represents a movement action where a player moves troops from one cell to another.
+ */
+export interface MoveAction extends BaseAction {
+  readonly type: typeof ActionType.MOVE | typeof ActionType.SPLIT_MOVE;
+  readonly from: ICoordinate;
+  readonly to: ICoordinate;
+}
+
+/**
+ * Represents an action to clear the player's action queue.
+ */
+export interface ClearQueueAction extends BaseAction {
+  readonly type: typeof ActionType.CLEAR_QUEUE;
+}
+
+/**
+ * Represents an action where a player surrenders.
+ */
+export interface SurrenderAction extends BaseAction {
+  readonly type: typeof ActionType.SURRENDER;
+}
+
+export type Action = MoveAction | ClearQueueAction | SurrenderAction;

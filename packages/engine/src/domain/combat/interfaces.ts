@@ -1,4 +1,4 @@
-import type { IAction } from "#/domain/action/interfaces";
+import type { MoveAction } from "#/domain/action/interfaces";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { IPlayer } from "#/domain/player/interfaces";
 
@@ -13,5 +13,9 @@ export interface CombatResolver {
    * @param grid The game grid containing the cells.
    * @returns True if the combat movement was successfully executed.
    */
-  execute(action: IAction, grid: IGrid, players: Map<string, IPlayer>): boolean;
+  execute(
+    action: MoveAction,
+    grid: IGrid,
+    players: Map<string, IPlayer>,
+  ): boolean;
 }

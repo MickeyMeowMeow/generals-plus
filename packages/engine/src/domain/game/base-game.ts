@@ -1,4 +1,4 @@
-import type { IAction } from "#/domain/action/interfaces";
+import type { Action } from "#/domain/action/interfaces";
 import type { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import { GameStatus } from "#/domain/game/game-status";
@@ -53,7 +53,7 @@ export abstract class BaseGame implements IBaseGame {
    * Processes a player-initiated action.
    * This provides a base stub, typically overridden or extended by specific modes.
    */
-  public handleAction(_action: IAction): boolean {
+  public handleAction(_action: Action): boolean {
     if (this.status !== GameStatus.PLAYING) {
       return false;
     }
