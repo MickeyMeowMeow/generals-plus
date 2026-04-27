@@ -35,9 +35,6 @@ importers:
       '@pixi/react':
         specifier: ^8.0.5
         version: 8.0.5(@types/react@19.2.14)(pixi.js@8.18.1)(react@19.2.5)
-      '@react-router/node':
-        specifier: ^7.14.2
-        version: 7.14.2(react-router@7.14.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@6.0.3)
       isbot:
         specifier: ^5.1.39
         version: 5.1.39
@@ -75,6 +72,9 @@ importers:
       '@react-router/fs-routes':
         specifier: ^7.14.2
         version: 7.14.2(@react-router/dev@7.14.2(@types/node@24.12.2)(lightningcss@1.32.0)(react-router@7.14.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(tsx@4.21.0)(typescript@6.0.3)(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(tsx@4.21.0)))(typescript@6.0.3)
+      '@react-router/node':
+        specifier: ^7.14.2
+        version: 7.14.2(react-router@7.14.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@6.0.3)
       '@rolldown/plugin-babel':
         specifier: ^0.2.3
         version: 0.2.3(@babel/core@7.29.0)(@babel/runtime@7.29.2)(rolldown@1.0.0-rc.17)(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(tsx@4.21.0))
