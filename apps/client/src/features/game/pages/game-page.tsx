@@ -26,5 +26,9 @@ export function GamePage() {
     return () => clearInterval(id);
   }, []);
 
-  return <GameApp grid={grid} />;
+  return (
+    <div className="flex justify-center">
+      <GameApp grid={grid} />
+    </div>
+  );
 }
