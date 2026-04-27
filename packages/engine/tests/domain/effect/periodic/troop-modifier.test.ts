@@ -1,68 +1,165 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import type { ICellOwner } from "#/domain/cell/interfaces";
+import { Terrain } from "#/domain/cell/terrain";
 import { EffectTarget } from "#/domain/effect/effect-target";
 import { EffectType } from "#/domain/effect/effect-type";
 import { TroopModifierEffect } from "#/domain/effect/periodic/troop-modifier";
+import { PlayerStatus } from "#/domain/player/player-status";
+import type { ICoordinate } from "#/math/coordinate";
 
-class MockTroopCarrier extends EffectTarget {
-  public troops = 0;
+/**
+ * Mock implementation of a cell that can carry troops.
+ */
+class MockCell {
+  terrain: Terrain;
+  owner: ICellOwner | null;
+  troopCount = 0;
 
-  constructor() {
-    super("cell-1");
+  constructor(terrain: Terrain, owner: ICellOwner | null, troopCount: number) {
+    this.terrain = terrain;
+    this.owner = owner;
+    this.troopCount = troopCount;
   }
 
   addTroops(delta: number): void {
-    this.troops += delta;
+    this.troopCount += delta;
   }
 }
 
+/**
+ * Mock implementation of the grid.
+ */
+class MockGrid extends EffectTarget {
+  public cells: MockCell[] = [];
+
+  constructor() {
+    super("main-grid");
+  }
+
+  /**
+   * Helper to add cells.
+   */
+  addCell(terrain: Terrain, owner: ICellOwner | null): MockCell {
+    const cell = new MockCell(terrain, owner, 0);
+    this.cells.push(cell);
+    return cell;
+  }
+
+  forEachTerrain(
+    terrain: Terrain,
+    callback: (cell: MockCell, coordinate: ICoordinate) => void,
+  ): void {
+    this.cells.forEach((cell) => {
+      if (cell.terrain === terrain) {
+        callback(cell, { x: 0, y: 0 });
+      }
+    });
+  }
+
+  // Dummy implementations for IGrid2D
+  width = 0;
+  height = 0;
+  get = vi.fn();
+  getNeighbors = vi.fn();
+  isValid = vi.fn();
+  forEach = vi.fn();
+}
+
 describe("TroopModifierEffect", () => {
-  it("should initialize with correct triggerAt calculation", () => {
-    const target = new MockTroopCarrier();
-    const effect = new TroopModifierEffect(100, {
-      id: "eff-1",
+  it("should initialize with correct properties", () => {
+    const grid = new MockGrid();
+    const currentTick = 50;
+    const interval = 10;
+
+    const effect = new TroopModifierEffect(currentTick, {
+      id: "gen-eff",
       type: EffectType.TROOP_GENERATION,
-      interval: 25,
+      target: grid,
+      terrain: Terrain.PLAIN,
       delta: 1,
-      target,
+      interval: interval,
     });
 
-    expect(effect.interval).toBe(25);
-    expect(effect.delta).toBe(1);
-    expect(effect.triggerAt).toBe(125); // 100 + 25
+    expect(effect.triggerAt).toBe(60); // 50 + 10
+    expect(effect.terrain).toBe(Terrain.PLAIN);
   });
 
-  it("should add troops and reschedule when triggered (Generation)", () => {
-    const target = new MockTroopCarrier();
+  it("should modify troops only on matching terrain with active players", () => {
+    const grid = new MockGrid();
+
+    // Matching terrain, active player -> should be affected
+    const targetCell = grid.addCell(Terrain.CITY, {
+      status: PlayerStatus.ACTIVE,
+    });
+
+    // Matching terrain, netural cell -> should not be affected
+    const neutralCell = grid.addCell(Terrain.CITY, null);
+
+    // Matching terrain, eliminated player -> should not be affected
+    const deadCell = grid.addCell(Terrain.CITY, {
+      status: PlayerStatus.ELIMINATED,
+    });
+
+    // Different terrain, active player -> should not be affected
+    const plainCell = grid.addCell(Terrain.PLAIN, {
+      status: PlayerStatus.ACTIVE,
+    });
+
     const effect = new TroopModifierEffect(0, {
-      id: "eff-1",
+      id: "city-gen",
       type: EffectType.TROOP_GENERATION,
-      interval: 10,
-      delta: 5,
-      target,
+      target: grid,
+      terrain: Terrain.CITY,
+      delta: 1,
+      interval: 25,
     });
 
-    effect.trigger(10); // Manually trigger at tick 10
+    // Execute trigger
+    effect.trigger(25);
 
-    expect(target.troops).toBe(5);
-    expect(effect.triggerAt).toBe(20); // Rescheduled
+    expect(targetCell.troopCount).toBe(1);
+    expect(neutralCell.troopCount).toBe(0);
+    expect(deadCell.troopCount).toBe(0);
+    expect(plainCell.troopCount).toBe(0);
   });
 
-  it("should subtract troops when triggered with negative delta (Drain)", () => {
-    const target = new MockTroopCarrier();
-    target.troops = 10; // Start with 10 troops
+  it("should support negative deltas", () => {
+    const grid = new MockGrid();
+    const swampCell = grid.addCell(Terrain.SWAMP, {
+      status: PlayerStatus.ACTIVE,
+    });
+    swampCell.troopCount = 5;
 
     const effect = new TroopModifierEffect(0, {
-      id: "eff-1",
+      id: "swamp-drain",
       type: EffectType.TROOP_DRAIN,
-      interval: 5,
-      delta: -2,
-      target,
+      target: grid,
+      terrain: Terrain.SWAMP,
+      delta: -3,
+      interval: 1,
     });
 
-    effect.trigger(5);
+    effect.trigger(1);
 
-    expect(target.troops).toBe(8);
-    expect(effect.triggerAt).toBe(10);
+    expect(swampCell.troopCount).toBe(2);
+  });
+
+  it("should update triggerAt based on interval after triggering", () => {
+    const grid = new MockGrid();
+    const effect = new TroopModifierEffect(100, {
+      id: "eff",
+      type: EffectType.TROOP_GENERATION,
+      target: grid,
+      terrain: Terrain.PLAIN,
+      delta: 1,
+      interval: 50,
+    });
+
+    expect(effect.triggerAt).toBe(150);
+
+    effect.trigger(150);
+
+    expect(effect.triggerAt).toBe(200);
   });
 });

@@ -12,3 +12,10 @@ export interface IPlayer extends EffectTarget {
   /** Lifecycle status of the player in this match. */
   status: PlayerStatus;
 }
+
+/**
+ * Represents a player that is currently active in the match.
+ */
+export interface ActivePlayer extends IPlayer {
+  status: typeof PlayerStatus.ACTIVE;
+}
