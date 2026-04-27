@@ -2,8 +2,8 @@ import { Application } from "@pixi/react";
 import { Assets } from "pixi.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Viewport } from "#/components/pixi/Viewport";
-import { GridLayer } from "#/features/game/renderer/GridLayer";
+import { Viewport } from "#/components/pixi/viewport";
+import { GridLayer } from "#/features/game/renderer/grid-layer";
 import { RenderConfig } from "#/features/game/renderer/render-config";
 import type {
   GameMapCallbacks,
@@ -23,7 +23,6 @@ export function GameApp({
   onCellClick,
   onCellHover,
   onCellLeave,
-  onCellsSelect,
   onQueueItemRemove,
 }: GameAppProps) {
   const [isReady, setIsReady] = useState(false);
@@ -93,7 +92,6 @@ export function GameApp({
           onCellClick={onCellClick}
           onCellHover={onCellHover}
           onCellLeave={onCellLeave}
-          onCellsSelect={onCellsSelect}
           onQueueItemRemove={onQueueItemRemove}
         />
       </Viewport>

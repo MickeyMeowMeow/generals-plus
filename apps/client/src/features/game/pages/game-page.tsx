@@ -1,7 +1,7 @@
 import { DefaultGridGenerator } from "@generals-plus/engine";
 import { useEffect, useMemo, useState } from "react";
 
-import { GameApp } from "#/features/game/renderer/GameApp";
+import { GameApp } from "#/features/game/renderer/game-app";
 import type { RenderCell } from "#/features/game/renderer/render-types";
 
 export function GamePage() {
