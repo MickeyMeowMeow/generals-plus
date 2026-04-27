@@ -5,8 +5,8 @@ import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
-import { useMatchConnectionStore } from "#/features/match/store/matchConnectionStore";
+import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 import AppLayout from "#/routes/_app";
 import IndexRoute from "#/routes/_index";
 import LobbyRoute from "#/routes/lobby";

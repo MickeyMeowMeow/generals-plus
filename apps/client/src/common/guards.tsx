@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { Navigate } from "react-router";
 
-import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
+import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
 
 // Route guard that redirects unauthenticated users to /user.
 export function RequireAuthenticated({ children }: { children: ReactElement }) {
