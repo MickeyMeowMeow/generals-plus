@@ -142,6 +142,13 @@ export class MatchRoom extends Room<{
     if (playerId) {
       this.sessionToPlayerId.delete(client.sessionId);
       this.playerToSessionId.delete(playerId);
+
+      this.game.handleAction({ playerId, type: ActionType.SURRENDER });
+
+      const player = this.state.players.get(playerId);
+      if (player) {
+        player.status = PlayerStatus.ELIMINATED;
+      }
     }
     this.state.clientVisions.delete(client.sessionId);
     this.state.clientActionQueues.delete(client.sessionId);

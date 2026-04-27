@@ -27,7 +27,6 @@ function createMockGrid(width = 16, height = 16): IGrid {
     effects: [],
     attachEffect: () => {},
     removeEffect: () => {},
-    tickEffects: () => {},
   };
 }
 
