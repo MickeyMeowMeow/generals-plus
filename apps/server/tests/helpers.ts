@@ -1,6 +1,6 @@
 import { JWT } from "@colyseus/auth";
 import { defineRoom, defineServer, LobbyRoom } from "@colyseus/core";
-import { boot } from "@colyseus/testing";
+import { ColyseusTestServer } from "@colyseus/testing";
 import { Terrain } from "@generals-plus/engine";
 import type {
   MapConfig,
@@ -53,11 +53,14 @@ const testConfig = defineServer({
   },
 });
 
-let _nextPort = 18567;
+const workerBase =
+  18567 + (Number(process.env.VITEST_WORKER_ID ?? "1") - 1) * 100;
+let _nextPort = workerBase;
 
 export async function createTestServer() {
   const port = _nextPort++;
-  return boot(testConfig, port);
+  await testConfig.listen(port);
+  return new ColyseusTestServer(testConfig);
 }
 
 export function createTestToken(userData: {
