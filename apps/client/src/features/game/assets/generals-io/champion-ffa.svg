@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   id="svg3390"
+   version="1.1"
+   width="100"
+   height="75"
+   viewBox="0 0 100 75"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <metadata
+     id="metadata3396">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs3394" />
+  <g
+     id="layer5">
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#ababab;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 17.993021,63.818384 11.395178,35.735179"
+       id="path3402" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#ababab;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 14.476842,32.961681 17.103236,9.244992 16.024653,-26.96456"
+       id="path3406" />
+    <circle
+       r="6.1633282"
+       cy="29.725941"
+       cx="10.162513"
+       id="path4217"
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#ababab;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       id="path4235"
+       d="M 81.999185,63.818384 88.597028,35.735179"
+       style="fill:none;fill-rule:evenodd;stroke:#ababab;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       id="path4237"
+       d="M 85.515364,32.961681 68.412128,42.206673 52.387475,15.242113"
+       style="fill:none;fill-rule:evenodd;stroke:#ababab;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <circle
+       style="fill:none;fill-opacity:1;stroke:#ababab;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="circle4239"
+       cx="-89.829689"
+       cy="29.725941"
+       r="6.1633282"
+       transform="scale(-1,1)" />
+    <circle
+       r="6.1633282"
+       cy="9.5410414"
+       cx="-49.922142"
+       id="circle4241"
+       style="fill:none;fill-opacity:1;stroke:#ababab;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       transform="scale(-1,1)" />
+  </g>
+  <g
+     id="layer4"
+     style="display:inline"
+     transform="translate(0,2)">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:53.3333px;font-family:Verdana;-inkscape-font-specification:'Verdana Bold';letter-spacing:-8.23px;writing-mode:lr-tb;direction:ltr;fill:#1cff92;fill-opacity:0.719346;stroke:#003115;stroke-width:3;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       x="3.3735201"
+       y="69.9758"
+       id="text12"><tspan
+         id="tspan12"
+         x="3.3735201"
+         y="69.9758">F</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:53.3333px;font-family:Verdana;-inkscape-font-specification:'Verdana Bold';letter-spacing:-8.23px;writing-mode:lr-tb;direction:ltr;display:inline;fill:#1cff92;fill-opacity:0.719346;stroke:#003115;stroke-width:3;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       x="31.234419"
+       y="69.9758"
+       id="text12-6"><tspan
+         id="tspan12-8"
+         x="31.234419"
+         y="69.9758">F</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:53.3333px;font-family:Verdana;-inkscape-font-specification:'Verdana Bold';letter-spacing:-8.23px;writing-mode:lr-tb;direction:ltr;display:inline;fill:#1cff92;fill-opacity:0.719346;stroke:#003115;stroke-width:3;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       x="55.3834"
+       y="69.9758"
+       id="text12-7"><tspan
+         id="tspan12-6"
+         x="55.3834"
+         y="69.9758">A</tspan></text>
+  </g>
+</svg>

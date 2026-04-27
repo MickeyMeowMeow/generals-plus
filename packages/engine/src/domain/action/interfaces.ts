@@ -1,5 +1,5 @@
-import type { ActionType } from "#domain/action/action-type";
-import type { ICoordinate } from "#math/coordinate";
+import type { ActionType } from "#/domain/action/action-type";
+import type { ICoordinate } from "#/math/coordinate";
 
 export interface IAction {
   readonly playerId: string;

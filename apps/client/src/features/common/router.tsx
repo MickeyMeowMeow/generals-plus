@@ -6,8 +6,9 @@ import App from "#/App";
 import { UserPage } from "#/features/auth/pages/UserPage";
 import { useUserAuthStore } from "#/features/auth/store/userAuthStore";
 import { NotFoundPage } from "#/features/common/pages/NotFoundPage";
+import { GamePage } from "#/features/game/pages/GamePage.tsx";
 import { LobbyPage } from "#/features/lobby/pages/LobbyPage";
-import { MatchPage } from "#/features/match/pages/MatchPage";
+import { MatchPage } from "#/features/match/pages/MatchPage.tsx";
 
 // Route guard that redirects unauthenticated users to /user.
 function RequireAuthenticated({ children }: { children: ReactElement }) {
@@ -58,6 +59,10 @@ export const appRoutes: RouteObject[] = [
             <MatchPage />
           </RequireAuthenticated>
         ),
+      },
+      {
+        path: "match-screen",
+        element: <GamePage />,
       },
       {
         path: "*",

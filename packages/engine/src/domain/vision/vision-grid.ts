@@ -1,8 +1,8 @@
-import type { ICellOwner } from "#domain/cell/interfaces";
-import type { Terrain } from "#domain/cell/terrain";
-import type { Visibility } from "#domain/vision/visibility";
-import type { ICoordinate } from "#math/coordinate";
-import type { IGrid2D } from "#math/grid-2d";
+import type { ICellOwner } from "#/domain/cell/interfaces";
+import type { Terrain } from "#/domain/cell/terrain";
+import type { Visibility } from "#/domain/vision/visibility";
+import type { ICoordinate } from "#/math/coordinate";
+import type { IGrid2D } from "#/math/grid-2d";
 
 /**
  * Represents a terrain type that is partially obscured by the fog of war.
