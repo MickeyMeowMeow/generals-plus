@@ -78,7 +78,7 @@ export abstract class Grid2D<T> implements IGrid2D<T> {
         x: coordinate.x + offset.x,
         y: coordinate.y + offset.y,
       });
-      if (neighbor) {
+      if (neighbor !== null) {
         neighbors.push(neighbor);
       }
     }
@@ -100,7 +100,7 @@ export abstract class Grid2D<T> implements IGrid2D<T> {
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         const cell = this.get({ x, y });
-        if (cell) {
+        if (cell !== null) {
           callback(cell, { x, y });
         }
       }
