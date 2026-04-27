@@ -2,9 +2,9 @@ import { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 
 import { RequireAuthenticated } from "#/common/guards";
-import { MatchHeader } from "#/components/match/match-header";
-import { PlayerPanel } from "#/components/match/player-panel";
 import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { MatchHeader } from "#/features/match/components/match-header";
+import { PlayerPanel } from "#/features/match/components/player-panel";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
 /** In-game page for an active match room. Auto-joins by roomId on mount and leaves on unmount. */

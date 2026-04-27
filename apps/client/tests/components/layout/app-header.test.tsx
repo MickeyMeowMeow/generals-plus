@@ -4,8 +4,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { APP_TITLE } from "#/components/config/ui-constants";
 import { AppHeader } from "#/components/layout/app-header";
+import { APP_TITLE } from "#/config/ui-constants";
 
 function renderWithRouter(initialPath: string) {
   return render(

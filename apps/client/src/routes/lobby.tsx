@@ -4,9 +4,9 @@ import { useNavigate } from "react-router";
 
 import { RequireAuthenticated } from "#/common/guards";
 import { PageContainer } from "#/components/layout/page-container";
-import { PlayerInfo } from "#/components/lobby/player-info";
-import { RoomJoinForm } from "#/components/lobby/room-join-form";
 import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { PlayerInfo } from "#/features/lobby/components/player-info";
+import { RoomJoinForm } from "#/features/lobby/components/room-join-form";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
 /** Landing page after authentication for joining or creating game rooms. */
