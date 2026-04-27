@@ -204,7 +204,7 @@ export function createMatchConnectionStore(
         // Re-read reconnectionToken from the room after SDK auto-reconnect.
         const token = activeRoom?.reconnectionToken ?? null;
         if (token) {
-          persistReconnectionToken(token, activeRoom!.roomId);
+          persistReconnectionToken(token, activeRoom?.roomId ?? "");
         }
         set({
           status: "connected",

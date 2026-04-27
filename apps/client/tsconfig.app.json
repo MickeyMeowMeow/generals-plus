@@ -4,8 +4,8 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "allowImportingTsExtensions": true,
-    "noEmit": true,
-    "paths": { "#/*": ["./src/*"] }
+    "rootDirs": [".", "./.react-router/types"],
+    "noEmit": true
   },
   "include": ["src", "tests", ".react-router/types"]
 }
