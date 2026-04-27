@@ -25,7 +25,7 @@ export class MatchRoom extends Room<{
   state: MatchState;
   metadata: RoomData;
 }> {
-  private game!: IBaseGame;
+  private game: IBaseGame | undefined;
   private sessionToPlayerId = new Map<string, string>();
   private playerToSessionId = new Map<string, string>();
 
@@ -143,6 +143,10 @@ export class MatchRoom extends Room<{
   }
 
   onLeave(client: Client, _code?: number) {
+    if (!this.game) {
+      logger.error(`[MatchRoom] Error: Game instance not found on leave`);
+      throw new Error("Game instance not found");
+    }
     const playerId = this.sessionToPlayerId.get(client.sessionId);
     if (playerId) {
       this.sessionToPlayerId.delete(client.sessionId);
@@ -167,6 +171,10 @@ export class MatchRoom extends Room<{
   }
 
   private onTick(_deltaTime: number) {
+    if (!this.game) {
+      logger.error(`[MatchRoom] Error: Game instance not found on tick`);
+      throw new Error("Game instance not found");
+    }
     this.processActionQueues();
 
     this.game.nextTick();
@@ -184,6 +192,12 @@ export class MatchRoom extends Room<{
   }
 
   private processActionQueues() {
+    if (!this.game) {
+      logger.error(
+        `[MatchRoom] Error: Game instance not found on processActionQueues`,
+      );
+      throw new Error("Game instance not found");
+    }
     for (const [sessionId, schemaQueue] of this.state.clientActionQueues) {
       const playerId = this.sessionToPlayerId.get(sessionId);
       if (!playerId) continue;
@@ -213,6 +227,12 @@ export class MatchRoom extends Room<{
   }
 
   private syncPlayerStats() {
+    if (!this.game) {
+      logger.error(
+        `[MatchRoom] Error: Game instance not found on syncPlayerStats`,
+      );
+      throw new Error("Game instance not found");
+    }
     for (const [playerId, player] of this.state.players) {
       const stats = this.game.getPlayerStats(playerId);
       if (!stats) continue;
@@ -222,6 +242,12 @@ export class MatchRoom extends Room<{
   }
 
   private updateClientViews() {
+    if (!this.game) {
+      logger.error(
+        `[MatchRoom] Error: Game instance not found on updateClientViews`,
+      );
+      throw new Error("Game instance not found");
+    }
     for (const client of this.clients) {
       const playerId = this.sessionToPlayerId.get(client.sessionId);
       if (!playerId || !client.view) continue;
@@ -246,18 +272,13 @@ export class MatchRoom extends Room<{
             vision.terrain.push(vc.terrain ?? "");
             vision.troopCount.push(vc.troopCount ?? -1);
             vision.ownerIndex.push(
-              vc.owner && "status" in vc.owner
-                ? (vc.owner as { status: string }).status ===
-                  PlayerStatus.ACTIVE
-                  ? 1
-                  : -1
-                : -1,
+              vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "",
             );
           } else {
             vision.visibility.push("hidden");
             vision.terrain.push("");
             vision.troopCount.push(-1);
-            vision.ownerIndex.push(-1);
+            vision.ownerIndex.push("");
           }
         }
       }
