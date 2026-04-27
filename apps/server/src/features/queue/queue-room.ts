@@ -7,7 +7,9 @@ import type {
   PlayerInit,
   RoomData,
 } from "@generals-plus/shared-types";
-import { createGame, ROOM_NAMES } from "@generals-plus/shared-types";
+import { ROOM_NAMES } from "@generals-plus/shared-types";
+
+import { createGame } from "#/features/game-factory";
 
 const DEFAULT_MAX_PLAYERS = 8;
 const DEFAULT_MIN_PLAYERS = 2;

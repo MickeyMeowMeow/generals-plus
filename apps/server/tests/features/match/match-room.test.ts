@@ -235,8 +235,8 @@ describe("MatchRoom", () => {
   describe("tick simulation", () => {
     it("increments tick counter via game.nextTick()", async () => {
       const game = createMockGame();
-      game.nextTick = vi.fn(() => {
-        game.tick++;
+      game.nextTick = vi.fn(function (this: { tick: number }) {
+        this.tick++;
       });
       const metadata = createValidRoomData({ game });
       const room = await testServer.createRoom<MatchRoom>("match", {
@@ -319,7 +319,7 @@ describe("MatchRoom", () => {
 
   describe("vision sync", () => {
     it("populates clientVisions with flat arrays from engine", async () => {
-      const getVisionGrid = vi.fn(() => ({
+      const getVisionGrid = vi.fn((playerId: string) => ({
         width: 2,
         height: 2,
         get: ({ x, y }: { x: number; y: number }) => ({
@@ -327,7 +327,7 @@ describe("MatchRoom", () => {
           visibility: Visibility.VISIBLE,
           terrain: Terrain.PLAIN,
           troopCount: x * y + 1,
-          owner: { status: PlayerStatus.ACTIVE },
+          owner: { playerId, status: PlayerStatus.ACTIVE },
         }),
         getNeighbors: () => [],
         isValid: () => true,

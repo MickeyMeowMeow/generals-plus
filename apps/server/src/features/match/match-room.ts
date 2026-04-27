@@ -13,10 +13,11 @@ import {
   ActionData,
   ClientActionQueue,
   ClientVision,
-  createPlayer,
   MatchState,
-  parseRoomData,
 } from "@generals-plus/shared-types";
+
+import { createPlayer } from "#/features/factory";
+import { parseRoomData } from "#/features/room-data";
 
 const TICK_INTERVAL = 500;
 
@@ -43,7 +44,7 @@ export class MatchRoom extends Room<{
     this.game = metadata.game;
 
     const state = new MatchState();
-    state.mode = metadata.mode as typeof state.mode;
+    state.mode = metadata.mode;
     state.width = this.game.grid.width;
     state.height = this.game.grid.height;
 
@@ -128,12 +129,16 @@ export class MatchRoom extends Room<{
           `[MatchRoom] Player ${userdata.username} joined (session ${client.sessionId})`,
         );
       } else {
-        logger.warn(
-          `[MatchRoom] Player data not found for user: ${userdata.username}`,
+        logger.error(
+          `[MatchRoom] Error: Player data not found for user: ${userdata.username}`,
         );
+        throw new Error("Player not part of this match");
       }
     } else {
-      logger.warn(`[MatchRoom] No auth data for client: ${client.sessionId}`);
+      logger.error(
+        `[MatchRoom] Error: No auth data for client: ${client.sessionId}`,
+      );
+      throw new Error("No auth data");
     }
   }
 
@@ -225,10 +230,10 @@ export class MatchRoom extends Room<{
       const vision = this.state.clientVisions.get(client.sessionId);
       if (!visionGrid || !vision) continue;
 
-      const visibility: string[] = [];
-      const terrain: string[] = [];
-      const troopCount: number[] = [];
-      const ownerIndex: number[] = [];
+      vision.visibility.clear();
+      vision.terrain.clear();
+      vision.troopCount.clear();
+      vision.ownerIndex.clear();
 
       const width = this.state.width;
       const height = this.state.height;
@@ -237,10 +242,10 @@ export class MatchRoom extends Room<{
         for (let x = 0; x < width; x++) {
           const vc = visionGrid.get({ x, y });
           if (vc) {
-            visibility.push(vc.visibility);
-            terrain.push(vc.terrain ?? "");
-            troopCount.push(vc.troopCount ?? -1);
-            ownerIndex.push(
+            vision.visibility.push(vc.visibility);
+            vision.terrain.push(vc.terrain ?? "");
+            vision.troopCount.push(vc.troopCount ?? -1);
+            vision.ownerIndex.push(
               vc.owner && "status" in vc.owner
                 ? (vc.owner as { status: string }).status ===
                   PlayerStatus.ACTIVE
@@ -249,18 +254,13 @@ export class MatchRoom extends Room<{
                 : -1,
             );
           } else {
-            visibility.push("hidden");
-            terrain.push("");
-            troopCount.push(-1);
-            ownerIndex.push(-1);
+            vision.visibility.push("hidden");
+            vision.terrain.push("");
+            vision.troopCount.push(-1);
+            vision.ownerIndex.push(-1);
           }
         }
       }
-
-      vision.visibility = visibility;
-      vision.terrain = terrain;
-      vision.troopCount = troopCount;
-      vision.ownerIndex = ownerIndex;
     }
   }
 }

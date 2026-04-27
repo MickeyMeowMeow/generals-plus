@@ -5,13 +5,17 @@ import type { GridGeneratorOptions } from "@generals-plus/engine";
 import { DefaultGridGeneratorOptions, GameMode } from "@generals-plus/engine";
 import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
 import {
-  createGame,
   ROOM_NAMES,
   SetupPlayer,
   SetupState,
 } from "@generals-plus/shared-types";
 
+import { createGame } from "#/features/game-factory";
+
 const DEFAULT_MAX_PLAYERS = 8;
+
+const MIN_MAP_DIM = 5;
+const MAX_MAP_DIM = 100;
 
 interface SetupRoomOptions {
   gameMode?: GameMode;
@@ -116,19 +120,38 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         this.state.isPublic = message.isPublic;
         await this.setPrivate(!message.isPublic);
       }
-      if (message.mapWidth !== undefined) {
+      if (
+        typeof message.mapWidth === "number" &&
+        Number.isInteger(message.mapWidth) &&
+        message.mapWidth >= MIN_MAP_DIM &&
+        message.mapWidth <= MAX_MAP_DIM
+      ) {
         this.state.mapWidth = message.mapWidth;
       }
-      if (message.mapHeight !== undefined) {
+      if (
+        typeof message.mapHeight === "number" &&
+        Number.isInteger(message.mapHeight) &&
+        message.mapHeight >= MIN_MAP_DIM &&
+        message.mapHeight <= MAX_MAP_DIM
+      ) {
         this.state.mapHeight = message.mapHeight;
       }
-      if (message.seed !== undefined) {
+      if (typeof message.seed === "number" && Number.isInteger(message.seed)) {
         this.state.seed = message.seed;
       }
-      if (message.mountainRate !== undefined) {
+      if (
+        typeof message.mountainRate === "number" &&
+        message.mountainRate >= 0 &&
+        message.mountainRate <= 1
+      ) {
         this.state.mountainRate = message.mountainRate;
       }
-      if (message.cityRate !== undefined) {
+      if (
+        typeof message.cityRate === "number" &&
+        message.cityRate >= 0 &&
+        message.cityRate <= 1 &&
+        message.cityRate + this.state.mountainRate <= 1
+      ) {
         this.state.cityRate = message.cityRate;
       }
 
