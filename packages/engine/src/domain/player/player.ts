@@ -8,7 +8,11 @@ export class Player extends EffectTarget implements IPlayer {
   public team: Team;
   public status: PlayerStatus;
 
-  constructor(team: Team, playerId: string, status: PlayerStatus = PlayerStatus.ACTIVE) {
+  constructor(
+    team: Team,
+    playerId: string,
+    status: PlayerStatus = PlayerStatus.ACTIVE,
+  ) {
     super();
     this.playerId = playerId;
     this.team = team;

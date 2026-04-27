@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { IAction } from "../../../src/domain/action/interfaces";
 import { ActionType } from "../../../src/domain/action/action-type";
+import type { IAction } from "../../../src/domain/action/interfaces";
 import { Cell } from "../../../src/domain/cell/cell";
 import { Terrain } from "../../../src/domain/cell/terrain";
 import { BaseGame } from "../../../src/domain/game/base-game";

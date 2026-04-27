@@ -1,7 +1,6 @@
 import type { PlayerStatus } from "#/domain/player/player-status";
 import type { Team } from "#/domain/team/interfaces";
 
-
 export interface IVisionPlayer {
   team: Team;
   status: PlayerStatus;
@@ -21,4 +20,3 @@ export interface IVisionModifier {
    */
   readonly radius: number;
 }
-

@@ -1,6 +1,10 @@
 import { EffectTarget } from "#/domain/effect/effect-target";
 import type { IPlayer } from "#/domain/player/interfaces";
-import type { IBaseTeam, IScoringTeam, IStandardTeam } from "#/domain/team/interfaces";
+import type {
+  IBaseTeam,
+  IScoringTeam,
+  IStandardTeam,
+} from "#/domain/team/interfaces";
 import { TeamType } from "#/domain/team/team-type";
 
 export abstract class BaseTeam extends EffectTarget implements IBaseTeam {
@@ -31,7 +35,10 @@ export abstract class BaseTeam extends EffectTarget implements IBaseTeam {
 export class StandardTeam extends BaseTeam implements IStandardTeam {
   public readonly type = TeamType.STANDARD;
 
-  constructor(teamId: string, type: typeof TeamType.STANDARD = TeamType.STANDARD) {
+  constructor(
+    teamId: string,
+    type: typeof TeamType.STANDARD = TeamType.STANDARD,
+  ) {
     super(teamId);
     this.type = type;
   }
@@ -41,7 +48,10 @@ export class ScoringTeam extends BaseTeam implements IScoringTeam {
   public readonly type: typeof TeamType.SCORER | typeof TeamType.PUSHER;
   public score: number = 0;
 
-  constructor(type: typeof TeamType.SCORER | typeof TeamType.PUSHER, teamId: string) {
+  constructor(
+    type: typeof TeamType.SCORER | typeof TeamType.PUSHER,
+    teamId: string,
+  ) {
     super(teamId);
     this.type = type;
   }

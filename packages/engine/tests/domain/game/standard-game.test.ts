@@ -8,8 +8,8 @@ import { GameMode } from "../../../src/domain/game/game-mode";
 import { GameStatus } from "../../../src/domain/game/game-status";
 import { StandardGame } from "../../../src/domain/game/standard-game";
 import { Grid } from "../../../src/domain/grid/grid";
-import { PlayerStatus } from "../../../src/domain/player/player-status";
 import { Player } from "../../../src/domain/player/player";
+import { PlayerStatus } from "../../../src/domain/player/player-status";
 import { StandardTeam } from "../../../src/domain/team/team";
 
 function createGridForAction(): Grid {

@@ -78,7 +78,11 @@ describe("Grid", () => {
     }> = [];
 
     grid.forEach((cell, coordinate) => {
-      seen.push({ coordinate: cell.coordinate, x: coordinate.x, y: coordinate.y });
+      seen.push({
+        coordinate: cell.coordinate,
+        x: coordinate.x,
+        y: coordinate.y,
+      });
     });
 
     expect(seen).toEqual([

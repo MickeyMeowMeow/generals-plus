@@ -74,7 +74,10 @@ export abstract class Grid2D<T> implements IGrid2D<T> {
       { x: 1, y: 0 },
     ];
     for (const offset of offsets) {
-      const neighbor = this.get({ x: coordinate.x + offset.x, y: coordinate.y + offset.y });
+      const neighbor = this.get({
+        x: coordinate.x + offset.x,
+        y: coordinate.y + offset.y,
+      });
       if (neighbor) {
         neighbors.push(neighbor);
       }
@@ -91,7 +94,9 @@ export abstract class Grid2D<T> implements IGrid2D<T> {
     );
   }
 
-  public forEach(callback: (element: T, coordinate: ICoordinate) => void): void {
+  public forEach(
+    callback: (element: T, coordinate: ICoordinate) => void,
+  ): void {
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         const cell = this.get({ x, y });

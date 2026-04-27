@@ -45,7 +45,7 @@ export abstract class BaseGame implements IBaseGame {
     }
 
     this.tick++;
-    
+
     // Next, specific modes will evaluate rules, e.g., checkGameEnd.
   }
 

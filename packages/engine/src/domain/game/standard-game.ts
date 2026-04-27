@@ -1,23 +1,18 @@
 import { ActionType } from "#/domain/action/action-type";
 import type { IAction } from "#/domain/action/interfaces";
+import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
 import { BaseGame } from "#/domain/game/base-game";
 import { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import { GameStatus } from "#/domain/game/game-status";
 import type { IStandardGame } from "#/domain/game/interfaces";
-import type { IGrid } from "#/domain/grid/interfaces";
 import type { IStandardPlayerStats } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
-import { Terrain } from "#/domain/cell/terrain";
 
 export class StandardGame extends BaseGame implements IStandardGame {
   public readonly mode = GameMode.CLASSIC;
   private readonly combatResolver = new StandardCombatResolver();
-
-  constructor(grid: IGrid) {
-    super(grid);
-  }
 
   public handleAction(action: IAction): boolean {
     if (this.status !== GameStatus.PLAYING) {
@@ -29,7 +24,11 @@ export class StandardGame extends BaseGame implements IStandardGame {
     }
 
     // Process the action synchronously
-    const success = this.combatResolver.execute(action, this.grid, this.players);
+    const success = this.combatResolver.execute(
+      action,
+      this.grid,
+      this.players,
+    );
 
     // Optional: check game end immediately if an action might have ended the game
     if (success) {

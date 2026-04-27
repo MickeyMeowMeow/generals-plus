@@ -13,7 +13,11 @@ import { PlayerStatus } from "#/domain/player/player-status";
  * - Ownership changes if moving troops > defending troops.
  */
 export class StandardCombatResolver implements ICombatResolver {
-  public execute(action: IAction, grid: IGrid, players: Map<string, IPlayer>): boolean {
+  public execute(
+    action: IAction,
+    grid: IGrid,
+    players: Map<string, IPlayer>,
+  ): boolean {
     const source = grid.get(action.from);
     const target = grid.get(action.to);
     const targetOwnerId = target?.owner?.playerId ?? null;
