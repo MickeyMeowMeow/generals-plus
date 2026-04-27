@@ -7,7 +7,6 @@ export default defineConfig({
   ...webConfig,
   test: {
     ...webConfig.test,
-    setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
     // Register custom test matchers and global mocks.
     setupFiles: ["./tests/setup.ts"],

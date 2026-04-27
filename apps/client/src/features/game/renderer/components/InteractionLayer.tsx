@@ -80,7 +80,7 @@ function InteractionLayer({
     [cells, clearHover, hoveredCell, mapper, onCellHover],
   );
 
-  const handlePointerDown = useCallback((event: FederatedPointerEvent) => {
+  const handlePointerDown = useCallback((_event: FederatedPointerEvent) => {
     // No-op: all interactions are handled in handlePointerUp.
     // Left-click is reserved for viewport dragging.
   }, []);
@@ -124,7 +124,7 @@ function InteractionLayer({
   );
 
   const handlePointerLeave = useCallback(
-    (event: FederatedPointerEvent) => {
+    (_event: FederatedPointerEvent) => {
       clearHover();
     },
     [clearHover],
