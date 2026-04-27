@@ -9,7 +9,7 @@ export abstract class EffectTarget implements EffectTarget {
   /** Collection of active effects on the target. */
   readonly effects: Effect[] = [];
 
-  constructor(targetId: string) {
+  constructor(targetId?: string) {
     this.targetId = targetId ?? Math.random().toString(36).substring(2, 15);
   }
 
