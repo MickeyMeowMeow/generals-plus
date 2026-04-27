@@ -2,9 +2,9 @@ import { Application } from "@pixi/react";
 import { Assets } from "pixi.js";
 import { useEffect, useState } from "react";
 
-import { Viewport } from "#/components/pixi/Viewport";
-import type { RenderGrid } from "#/features/game/renderer/GridLayer.tsx";
-import { GridLayer } from "#/features/game/renderer/GridLayer.tsx";
+import { Viewport } from "#/components/pixi/viewport.tsx";
+import type { RenderGrid } from "#/features/game/renderer/grid-layer.tsx";
+import { GridLayer } from "#/features/game/renderer/grid-layer.tsx";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 
