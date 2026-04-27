@@ -55,7 +55,7 @@ describe("StandardCombatResolver", () => {
     if (!source) {
       throw new Error("source should exist");
     }
-    source.owner = { playerId: "other", status: "active" };
+    source.owner = { playerId: "other", status: PlayerStatus.ACTIVE };
     source.troopCount = 10;
 
     const result = resolver.execute(createAction(), grid, new Map());
@@ -72,7 +72,7 @@ describe("StandardCombatResolver", () => {
       throw new Error("cells should exist");
     }
 
-    source.owner = { playerId: "p1", status: "active" };
+    source.owner = { playerId: "p1", status: PlayerStatus.ACTIVE };
     source.troopCount = 5;
     target.terrain = Terrain.MOUNTAIN;
     target.isPassable = false;
