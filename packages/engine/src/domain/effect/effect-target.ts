@@ -4,13 +4,13 @@ import type { Effect } from "#/domain/effect/effect";
  * Shared base for domain objects that can receive temporary or persistent effects.
  */
 export abstract class EffectTarget {
-  readonly id: string;
+  readonly targetId: string;
 
   /** Collection of active effects on the target. */
   readonly effects: Effect[] = [];
 
-  constructor(id: string) {
-    this.id = id;
+  constructor(targetId?: string) {
+    this.targetId = targetId ?? Math.random().toString(36).substring(2, 15);
   }
 
   /**
@@ -22,7 +22,7 @@ export abstract class EffectTarget {
   attachEffect(_currentTick: number, effect: Effect): void {
     if (effect.target !== this) {
       throw new Error(
-        `Cannot attach effect "${effect.id}" to target "${this.id}" because it belongs to a different target.`,
+        `Cannot attach effect "${effect.id}" to target "${this.targetId}" because it belongs to a different target.`,
       );
     }
     this.effects.push(effect);

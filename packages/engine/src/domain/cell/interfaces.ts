@@ -5,6 +5,7 @@ import type { IVisionModifier } from "#/domain/vision/interfaces";
 import type { ICoordinate } from "#/math/coordinate";
 
 export interface ICellOwner {
+  readonly playerId: string;
   status: PlayerStatus;
 }
 

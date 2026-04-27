@@ -1,11 +1,16 @@
-import type { IAction } from "#/domain/action/interfaces";
+import type { Action } from "#/domain/action/interfaces";
 import type { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import type { GameStatus } from "#/domain/game/game-status";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { IItem } from "#/domain/item/interfaces";
-import type { IPlayer } from "#/domain/player/interfaces";
+import type {
+  IPlayer,
+  IPlayerStats,
+  IStandardPlayerStats,
+} from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
+import type { IVisionGrid } from "#/domain/vision/vision-grid";
 import type { ICoordinate } from "#/math/coordinate";
 
 /**
@@ -47,10 +52,10 @@ export interface IBaseGame {
   /**
    * Processes a player-initiated action (move, skill, etc.).
    *
-   * @param action - The action object containing player ID and execution details.
-   * @returns boolean - True if the action was valid and executed, false otherwise.
+   * @param action The action object containing player ID and execution details.
+   * @returns True if the action was valid and executed, false otherwise.
    */
-  handleAction(action: IAction): boolean;
+  handleAction(action: Action): boolean;
 
   /**
    * Evaluates the current game state against the specific victory conditions of the active GameMode.
@@ -60,8 +65,7 @@ export interface IBaseGame {
    * 2. Finalize all player and team statistics.
    * 3. Generate a complete game report.
    *
-   * @returns IGameResult | null - Returns the final game results if the game has ended,
-   * or null if the game is still in progress.
+   * @returns Returns the final game results if the game has ended, or null if the game is still in progress.
    */
   checkGameEnd(): IGameResult | null;
 
@@ -77,9 +81,25 @@ export interface IBaseGame {
    * and will use fallback logic (e.g., most tiles, most troops) to decide a winner
    * if no definitive victory is achieved.
    *
-   * @returns IGameResult - The final game results generated at the moment of termination.
+   * @returns The final game results generated at the moment of termination.
    */
   forceEnd(): IGameResult;
+
+  /**
+   * Retrieves the current vision grid for a specific player based on their team.
+   *
+   * @param playerId The ID of the player requesting vision.
+   * @returns The masked grid for the player, or null if the player doesn't exist.
+   */
+  getVisionGrid(playerId: string): IVisionGrid | null;
+
+  /**
+   * Retrieves the current statistics (troops, land, etc.) for a specific player.
+   *
+   * @param playerId The ID of the player.
+   * @returns The statistics for the player, or null if the player doesn't exist.
+   */
+  getPlayerStats(playerId: string): IPlayerStats | null;
 }
 
 /**
@@ -88,7 +108,14 @@ export interface IBaseGame {
  */
 export interface IStandardGame extends IBaseGame {
   readonly mode: typeof GameMode.CLASSIC | typeof GameMode.TURF_WAR;
-  // Standard rules usually don't need additional global variables.
+
+  /**
+   * Overridden covariant return type specific to standard games.
+   *
+   * @param playerId The ID of the player.
+   * @returns The standard player statistics for the player, or null if the player doesn't exist.
+   */
+  getPlayerStats(playerId: string): IStandardPlayerStats | null;
 }
 
 /**
