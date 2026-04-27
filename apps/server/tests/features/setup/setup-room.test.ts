@@ -1,11 +1,10 @@
 import { ColyseusSDK } from "@colyseus/sdk";
 import type { ColyseusTestServer } from "@colyseus/testing";
 import { GameMode } from "@generals-plus/engine";
-import { RoomNames } from "@generals-plus/shared-types";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { SetupRoom } from "#/features/setup/setup-room";
-import { createTestServer, createTestToken } from "#tests/helpers";
+import { createTestServer, createTestToken, ROOM_NAMES } from "#tests/helpers";
 
 describe("SetupRoom", () => {
   let testServer: ColyseusTestServer;
@@ -19,7 +18,7 @@ describe("SetupRoom", () => {
   });
 
   it("creates room with default settings", async () => {
-    const room = await testServer.createRoom<SetupRoom>(RoomNames.SETUP, {});
+    const room = await testServer.createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
 
     expect(room.state.gameMode).toBe(GameMode.CLASSIC);
     expect(room.state.isPublic).toBe(true);
@@ -28,7 +27,7 @@ describe("SetupRoom", () => {
   });
 
   it("creates private room when isPublic is false", async () => {
-    const room = await testServer.createRoom<SetupRoom>(RoomNames.SETUP, {
+    const room = await testServer.createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
       isPublic: false,
     });
 
@@ -51,7 +50,7 @@ describe("SetupRoom", () => {
   }
 
   it("first player becomes host", async () => {
-    const room = await testServer.createRoom<SetupRoom>(RoomNames.SETUP, {});
+    const room = await testServer.createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
 
     const c1 = await connectClient(testServer, room, {
       id: "p1",
@@ -66,7 +65,7 @@ describe("SetupRoom", () => {
   });
 
   it("subsequent players are not host", async () => {
-    const room = await testServer.createRoom<SetupRoom>(RoomNames.SETUP, {});
+    const room = await testServer.createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
 
     const c1 = await connectClient(testServer, room, {
       id: "p1",
@@ -85,7 +84,7 @@ describe("SetupRoom", () => {
   });
 
   it("transfers host when host leaves", async () => {
-    const room = await testServer.createRoom<SetupRoom>(RoomNames.SETUP, {});
+    const room = await testServer.createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
 
     const c1 = await connectClient(testServer, room, {
       id: "p1",
@@ -98,7 +97,6 @@ describe("SetupRoom", () => {
 
     await c1.leave();
 
-    // Wait for leave to process
     await new Promise((r) => setTimeout(r, 100));
 
     expect(room.state.players.length).toBe(1);
@@ -109,7 +107,7 @@ describe("SetupRoom", () => {
   });
 
   it("room survives with one player after host transfer", async () => {
-    const room = await testServer.createRoom<SetupRoom>(RoomNames.SETUP, {});
+    const room = await testServer.createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
 
     const c1 = await connectClient(testServer, room, {
       id: "p1",
@@ -123,7 +121,6 @@ describe("SetupRoom", () => {
     await c1.leave();
     await new Promise((r) => setTimeout(r, 100));
 
-    // Room still exists with one player
     expect(room.state.players.length).toBe(1);
     expect(room.state.hostId).toBe("p2");
 

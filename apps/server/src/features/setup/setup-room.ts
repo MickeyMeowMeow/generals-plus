@@ -1,19 +1,15 @@
 import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { matchMaker, Room } from "@colyseus/core";
-import { GameMode } from "@generals-plus/engine";
-import type {
-  ClientAuth,
-  MapGenerator,
-  RoomData,
-} from "@generals-plus/shared-types";
+import type { GridGeneratorOptions } from "@generals-plus/engine";
+import { DefaultGridGeneratorOptions, GameMode } from "@generals-plus/engine";
+import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
 import {
-  RoomNames,
+  createGame,
+  ROOM_NAMES,
   SetupPlayer,
   SetupState,
 } from "@generals-plus/shared-types";
-
-import { DefaultMapGenerator } from "#/features/queue/default-map-generator";
 
 const DEFAULT_MAX_PLAYERS = 8;
 
@@ -23,9 +19,19 @@ interface SetupRoomOptions {
   isPublic?: boolean;
 }
 
+interface UpdateSettingsMessage {
+  gameMode?: GameMode;
+  maxPlayers?: number;
+  isPublic?: boolean;
+  mapWidth?: number;
+  mapHeight?: number;
+  seed?: number;
+  mountainRate?: number;
+  cityRate?: number;
+}
+
 export class SetupRoom extends Room<{ state: SetupState }> {
   private hostId = "";
-  private mapGenerator: MapGenerator = new DefaultMapGenerator();
 
   async onCreate(options: SetupRoomOptions) {
     const gameMode = options.gameMode ?? GameMode.CLASSIC;
@@ -38,6 +44,11 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     state.gameMode = gameMode;
     state.isPublic = isPublic;
     state.maxPlayers = maxPlayers;
+    state.mapWidth = DefaultGridGeneratorOptions.width;
+    state.mapHeight = DefaultGridGeneratorOptions.height;
+    state.seed = DefaultGridGeneratorOptions.seed;
+    state.mountainRate = DefaultGridGeneratorOptions.mountainRate;
+    state.cityRate = DefaultGridGeneratorOptions.cityRate;
     this.state = state;
 
     if (!isPublic) {
@@ -88,15 +99,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   messages = {
-    updateSettings: async (
-      client: Client,
-      message: {
-        gameMode?: GameMode;
-        maxPlayers?: number;
-        isPublic?: boolean;
-        mapOptions?: Record<string, unknown>;
-      },
-    ) => {
+    updateSettings: async (client: Client, message: UpdateSettingsMessage) => {
       if (!this.isHost(client)) {
         client.send("error", "only the host can update settings");
         return;
@@ -112,6 +115,21 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       if (message.isPublic !== undefined) {
         this.state.isPublic = message.isPublic;
         await this.setPrivate(!message.isPublic);
+      }
+      if (message.mapWidth !== undefined) {
+        this.state.mapWidth = message.mapWidth;
+      }
+      if (message.mapHeight !== undefined) {
+        this.state.mapHeight = message.mapHeight;
+      }
+      if (message.seed !== undefined) {
+        this.state.seed = message.seed;
+      }
+      if (message.mountainRate !== undefined) {
+        this.state.mountainRate = message.mountainRate;
+      }
+      if (message.cityRate !== undefined) {
+        this.state.cityRate = message.cityRate;
       }
 
       await this.setMetadata({
@@ -154,6 +172,16 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     return (client.auth as ClientAuth)?.id === this.hostId;
   }
 
+  private getGridOptions(): GridGeneratorOptions {
+    return {
+      width: this.state.mapWidth,
+      height: this.state.mapHeight,
+      seed: this.state.seed,
+      mountainRate: this.state.mountainRate,
+      cityRate: this.state.cityRate,
+    };
+  }
+
   private async startGame() {
     const playerInit = this.state.players.map((p, i) => ({
       id: p.id,
@@ -161,14 +189,20 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       teamId: `team_${i}`,
     }));
 
+    const game = createGame({
+      mode: this.state.gameMode,
+      gridOptions: this.getGridOptions(),
+      playerIds: playerInit.map((p) => p.id),
+    });
+
     const metadata: RoomData = {
       mode: this.state.gameMode,
-      map: this.mapGenerator.generate(this.state.gameMode, playerInit.length),
+      game,
       playerInit,
       isPublic: false,
     };
 
-    const room = await matchMaker.createRoom(RoomNames.MATCH, { metadata });
+    const room = await matchMaker.createRoom(ROOM_NAMES.MATCH, { metadata });
 
     await matchMaker.reserveMultipleSeatsFor(
       room,
