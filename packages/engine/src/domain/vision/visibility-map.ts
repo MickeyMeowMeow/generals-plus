@@ -1,5 +1,5 @@
-import { Terrain } from "#/domain/cell/terrain";
 import type { ICell } from "#/domain/cell/interfaces";
+import { Terrain } from "#/domain/cell/terrain";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import { Visibility } from "#/domain/vision/visibility";
@@ -12,7 +12,10 @@ class VisionGrid extends Grid2D<IVisionCell> implements IVisionGrid {}
 /**
  * Maps a real game cell to a perceived vision cell according to the provided visibility.
  */
-export function createVisionCell(cell: ICell, visibility: Visibility): IVisionCell {
+export function createVisionCell(
+  cell: ICell,
+  visibility: Visibility,
+): IVisionCell {
   switch (visibility) {
     case Visibility.VISIBLE:
       return {
@@ -69,7 +72,9 @@ export class VisibilityMap {
   public evaluate(team: Team): IVisionGrid {
     const width = this.gameGrid.width;
     const height = this.gameGrid.height;
-    const teamPlayerIds = new Set(team.players.map((player) => player.playerId));
+    const teamPlayerIds = new Set(
+      team.players.map((player) => player.playerId),
+    );
 
     // Step 1: Compute visibility first. Everything starts as shrouded.
     const visibilityData: Visibility[][] = Array.from({ length: height }, () =>

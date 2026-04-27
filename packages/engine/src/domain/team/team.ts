@@ -34,10 +34,6 @@ export abstract class BaseTeam extends EffectTarget implements IBaseTeam {
 
 export class StandardTeam extends BaseTeam implements IStandardTeam {
   public readonly type = TeamType.STANDARD;
-
-  constructor(teamId: string) {
-    super(teamId);
-  }
 }
 
 export class ScoringTeam extends BaseTeam implements IScoringTeam {
