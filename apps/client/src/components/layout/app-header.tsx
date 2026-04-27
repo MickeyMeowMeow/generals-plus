@@ -1,7 +1,7 @@
 import { NavLink } from "react-router";
 
+import { APP_TITLE, NAV_LINKS } from "#/components/config/ui-constants";
 import { cn } from "#/lib/utils";
-import { APP_TITLE, NAV_LINKS } from "../config/ui-constants";
 
 /** Top navigation bar with app title and page links. */
 export function AppHeader() {

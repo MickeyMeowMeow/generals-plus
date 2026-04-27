@@ -1,8 +1,8 @@
 import { AlertTriangle } from "lucide-react";
 
+import { StatusBadge } from "#/components/feedback/status-badge";
 import { Badge } from "#/components/ui/badge";
 import { Separator } from "#/components/ui/separator";
-import { StatusBadge } from "../feedback/status-badge";
 
 interface MatchHeaderProps {
   roomId: string;

@@ -1,8 +1,8 @@
 import { User } from "lucide-react";
 
+import { StatusBadge } from "#/components/feedback/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Separator } from "#/components/ui/separator";
-import { StatusBadge } from "../feedback/status-badge";
 
 interface PlayerInfoProps {
   displayName: string;

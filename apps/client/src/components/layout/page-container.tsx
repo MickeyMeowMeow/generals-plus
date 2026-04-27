@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
+import { PAGE_MAX_WIDTH } from "#/components/config/ui-constants";
 import { cn } from "#/lib/utils";
-import { PAGE_MAX_WIDTH } from "../config/ui-constants";
 
 interface PageContainerProps {
   children: ReactNode;

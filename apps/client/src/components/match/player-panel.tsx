@@ -1,10 +1,10 @@
 import { ArrowLeft, LogOut, User } from "lucide-react";
 import { Link } from "react-router";
 
+import { ErrorAlert } from "#/components/feedback/error-alert";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Separator } from "#/components/ui/separator";
-import { ErrorAlert } from "../feedback/error-alert";
 
 interface PlayerPanelProps {
   displayName: string;

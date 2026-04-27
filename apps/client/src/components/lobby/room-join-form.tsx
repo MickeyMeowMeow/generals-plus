@@ -1,6 +1,8 @@
 import { Loader2, LogOut, Plug } from "lucide-react";
 import type { FormEvent } from "react";
 
+import { ErrorAlert } from "#/components/feedback/error-alert";
+import { StatusBadge } from "#/components/feedback/status-badge";
 import { Button } from "#/components/ui/button";
 import {
   Card,
@@ -12,8 +14,6 @@ import {
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { Separator } from "#/components/ui/separator";
-import { ErrorAlert } from "../feedback/error-alert";
-import { StatusBadge } from "../feedback/status-badge";
 
 interface RoomJoinFormProps {
   roomName: string;
