@@ -221,6 +221,7 @@ export function createUserAuthStore(
           const response = await activeGateway.signInAnonymously({
             name: nextDisplayName,
             displayName: nextDisplayName,
+            username: nextDisplayName,
             metadata,
           });
 
