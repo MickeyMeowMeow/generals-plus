@@ -7,7 +7,6 @@ export default defineConfig({
   ...webConfig,
   test: {
     ...webConfig.test,
-    passWithNoTests: false,
     include: ["tests/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
