@@ -5,23 +5,23 @@ import { Badge } from "#/components/ui/badge";
 import { cn } from "#/lib/utils";
 
 /** Maps a lifecycle status string to a badge variant. */
+const STATUS_VARIANT_MAP: Record<
+  string,
+  VariantProps<typeof badgeVariants>["variant"]
+> = {
+  authenticated: "default",
+  connected: "default",
+  authenticating: "secondary",
+  connecting: "secondary",
+  hydrating: "secondary",
+  reconnecting: "secondary",
+  error: "destructive",
+};
+
 function statusToVariant(
   status: string,
 ): VariantProps<typeof badgeVariants>["variant"] {
-  switch (status) {
-    case "authenticated":
-    case "connected":
-      return "default";
-    case "authenticating":
-    case "connecting":
-    case "hydrating":
-    case "reconnecting":
-      return "secondary";
-    case "error":
-      return "destructive";
-    default:
-      return "outline";
-  }
+  return STATUS_VARIANT_MAP[status] ?? "outline";
 }
 
 interface StatusBadgeProps {
