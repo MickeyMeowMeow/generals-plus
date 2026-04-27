@@ -13,6 +13,7 @@ import {
   ActionData,
   ClientActionQueue,
   ClientVision,
+  MatchMessage,
   MatchState,
 } from "@generals-plus/shared-types";
 
@@ -59,7 +60,7 @@ export class MatchRoom extends Room<{
 
     this.state = state;
 
-    this.onMessage("action", (client, action: MoveAction) => {
+    this.onMessage(MatchMessage.ACTION, (client, action: MoveAction) => {
       const playerId = this.sessionToPlayerId.get(client.sessionId);
       if (!playerId) return;
 
@@ -77,7 +78,7 @@ export class MatchRoom extends Room<{
       queue.queue.push(entry);
     });
 
-    this.onMessage("clear_queue", (client) => {
+    this.onMessage(MatchMessage.CLEAR_QUEUE, (client) => {
       const queue = this.state.clientActionQueues.get(client.sessionId);
       if (queue) {
         queue.queue.clear();
@@ -186,7 +187,7 @@ export class MatchRoom extends Room<{
     const result = this.game.checkGameEnd();
     if (result) {
       this.state.status = GameStatus.FINISHED;
-      this.broadcast("game_end", result);
+      this.broadcast(MatchMessage.GAME_END, result);
       this.disconnect();
     }
   }
