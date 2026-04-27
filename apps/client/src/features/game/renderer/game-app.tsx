@@ -1,19 +1,32 @@
+import type { ICoordinate } from "@generals-plus/engine";
 import { Application } from "@pixi/react";
 import { Assets } from "pixi.js";
 import { useEffect, useState } from "react";
 
-import { Viewport } from "#/features/game/components/viewport.tsx";
 import type { RenderGrid } from "#/features/game/renderer/grid-layer.tsx";
 import { GridLayer } from "#/features/game/renderer/grid-layer.tsx";
+import type { MoveDirection, MoveIntent } from "#/features/game/renderer/move";
+import { KeyToDirection } from "#/features/game/renderer/move";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
+import { Viewport } from "#/features/game/renderer/viewport";
 
 interface GameAppProps {
   /** Grid snapshot to render. */
   readonly grid: RenderGrid;
+  readonly selection: ICoordinate | null;
+  readonly moveQueue: MoveIntent[];
+  readonly onSelectCell: (coord: ICoordinate) => void;
+  readonly onQueueMove: (direction: MoveDirection) => void;
 }
 
-export function GameApp({ grid }: GameAppProps) {
+export function GameApp({
+  grid,
+  selection,
+  moveQueue,
+  onSelectCell,
+  onQueueMove,
+}: GameAppProps) {
   const [isReady, setIsReady] = useState(false);
 
   const worldWidth =
@@ -32,6 +45,19 @@ export function GameApp({ grid }: GameAppProps) {
     preloadAssets().then(() => setIsReady(true));
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (KeyToDirection[key]) {
+        e.preventDefault();
+        onQueueMove(KeyToDirection[key]);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onQueueMove]);
+
   if (!isReady) {
     return <div>Loading...</div>;
   }
@@ -49,7 +75,13 @@ export function GameApp({ grid }: GameAppProps) {
         minScale={RenderConfig.minScale}
         maxScale={RenderConfig.maxScale}
       >
-        <GridLayer grid={grid} stride={RenderConfig.cellStride} />
+        <GridLayer
+          grid={grid}
+          stride={RenderConfig.cellStride}
+          selection={selection}
+          moveQueue={moveQueue}
+          onCellClick={onSelectCell}
+        />
       </Viewport>
     </Application>
   );

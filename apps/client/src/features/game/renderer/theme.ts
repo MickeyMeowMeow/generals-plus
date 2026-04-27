@@ -1,4 +1,5 @@
 import { Terrain } from "@generals-plus/engine";
+import type { TextStyle } from "pixi.js";
 
 import {
   cityIcon,
@@ -47,3 +48,5 @@ export const TerrainTheme: Record<Terrain, CellTheme> = {
     icon: obstacleIcon,
   },
 };
+
+export const TextStyleConfig: Record<string, Partial<TextStyle>> = {};
