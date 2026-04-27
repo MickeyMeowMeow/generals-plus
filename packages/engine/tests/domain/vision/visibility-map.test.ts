@@ -6,7 +6,10 @@ import { Grid } from "../../../src/domain/grid/grid";
 import { Player } from "../../../src/domain/player/player";
 import { StandardTeam } from "../../../src/domain/team/team";
 import { Visibility } from "../../../src/domain/vision/visibility";
-import { VisibilityMap } from "../../../src/domain/vision/visibility-map";
+import {
+  createVisionCell,
+  VisibilityMap,
+} from "../../../src/domain/vision/visibility-map";
 import { MaskedTerrain } from "../../../src/domain/vision/vision-grid";
 
 function createVisionGrid(): Grid {
@@ -29,6 +32,41 @@ function createVisionGrid(): Grid {
 }
 
 describe("VisibilityMap", () => {
+  it("createVisionCell handles all four visibility states", () => {
+    const team = new StandardTeam("t1");
+    const player = new Player(team, "p1");
+    const cell = new Cell({
+      coordinate: { x: 1, y: 1 },
+      terrain: Terrain.CITY,
+      troopCount: 7,
+    });
+    cell.owner = player;
+
+    const visible = createVisionCell(cell, Visibility.VISIBLE);
+    expect(visible.visibility).toBe(Visibility.VISIBLE);
+    expect(visible.terrain).toBe(Terrain.CITY);
+    expect(visible.troopCount).toBe(7);
+    expect(visible.owner?.playerId).toBe("p1");
+
+    const terrainOnly = createVisionCell(cell, Visibility.TERRAIN);
+    expect(terrainOnly.visibility).toBe(Visibility.TERRAIN);
+    expect(terrainOnly.terrain).toBe(Terrain.CITY);
+    expect(terrainOnly.troopCount).toBeNull();
+    expect(terrainOnly.owner).toBeNull();
+
+    const shrouded = createVisionCell(cell, Visibility.SHROUDED);
+    expect(shrouded.visibility).toBe(Visibility.SHROUDED);
+    expect(shrouded.terrain).toBe(MaskedTerrain.MAYBE_MOUNTAIN);
+    expect(shrouded.troopCount).toBeNull();
+    expect(shrouded.owner).toBeNull();
+
+    const hidden = createVisionCell(cell, Visibility.HIDDEN);
+    expect(hidden.visibility).toBe(Visibility.HIDDEN);
+    expect(hidden.terrain).toBeNull();
+    expect(hidden.troopCount).toBeNull();
+    expect(hidden.owner).toBeNull();
+  });
+
   it("marks cells visible around owned cells using vision radius", () => {
     const grid = createVisionGrid();
     const team = new StandardTeam("t1");
@@ -50,7 +88,7 @@ describe("VisibilityMap", () => {
     expect(vision.get({ x: 1, y: 1 })?.owner?.playerId).toBe("p1");
   });
 
-  it("hides non-visible cells and masks terrain", () => {
+  it("shrouds non-visible cells and masks terrain", () => {
     const grid = createVisionGrid();
     const team = new StandardTeam("t1");
     const player = new Player(team, "p1");
@@ -64,25 +102,46 @@ describe("VisibilityMap", () => {
     center.vision = { radius: 0 };
 
     const vision = new VisibilityMap(grid).evaluate(team);
-    const hiddenMountain = vision.get({ x: 1, y: 0 });
-    const hiddenPlain = vision.get({ x: 0, y: 0 });
+    const shroudedMountain = vision.get({ x: 1, y: 0 });
+    const shroudedPlain = vision.get({ x: 0, y: 0 });
 
-    expect(hiddenMountain?.visibility).toBe(Visibility.HIDDEN);
-    expect(hiddenMountain?.terrain).toBe(MaskedTerrain.MAYBE_MOUNTAIN);
-    expect(hiddenMountain?.troopCount).toBeNull();
-    expect(hiddenMountain?.owner).toBeNull();
+    expect(shroudedMountain?.visibility).toBe(Visibility.SHROUDED);
+    expect(shroudedMountain?.terrain).toBe(MaskedTerrain.MAYBE_MOUNTAIN);
+    expect(shroudedMountain?.troopCount).toBeNull();
+    expect(shroudedMountain?.owner).toBeNull();
 
-    expect(hiddenPlain?.terrain).toBe(MaskedTerrain.MAYBE_PLAIN);
+    expect(shroudedPlain?.terrain).toBe(MaskedTerrain.MAYBE_PLAIN);
   });
 
-  it("returns fully hidden grid when team controls no cells", () => {
+  it("returns fully shrouded grid when team controls no cells", () => {
     const grid = createVisionGrid();
     const team = new StandardTeam("t1");
 
     const vision = new VisibilityMap(grid).evaluate(team);
 
-    expect(vision.get({ x: 1, y: 1 })?.visibility).toBe(Visibility.HIDDEN);
+    expect(vision.get({ x: 1, y: 1 })?.visibility).toBe(Visibility.SHROUDED);
     expect(vision.get({ x: 1, y: 1 })?.troopCount).toBeNull();
     expect(vision.get({ x: 1, y: 1 })?.owner).toBeNull();
+  });
+
+  it("only emits visible or shrouded visibility values", () => {
+    const grid = createVisionGrid();
+    const team = new StandardTeam("t1");
+    const player = new Player(team, "p1");
+    team.addPlayer(player);
+
+    const center = grid.get({ x: 1, y: 1 });
+    if (!center) {
+      throw new Error("center should exist");
+    }
+    center.owner = player;
+    center.vision = { radius: 1 };
+
+    const vision = new VisibilityMap(grid).evaluate(team);
+    vision.forEach((cell) => {
+      expect([Visibility.VISIBLE, Visibility.SHROUDED]).toContain(
+        cell.visibility,
+      );
+    });
   });
 });

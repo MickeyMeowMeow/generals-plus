@@ -1,4 +1,5 @@
 import { Terrain } from "#/domain/cell/terrain";
+import type { ICell } from "#/domain/cell/interfaces";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import { Visibility } from "#/domain/vision/visibility";
@@ -7,6 +8,51 @@ import { MaskedTerrain } from "#/domain/vision/vision-grid";
 import { Grid2D } from "#/math/grid-2d";
 
 class VisionGrid extends Grid2D<IVisionCell> implements IVisionGrid {}
+
+/**
+ * Maps a real game cell to a perceived vision cell according to the provided visibility.
+ */
+export function createVisionCell(cell: ICell, visibility: Visibility): IVisionCell {
+  switch (visibility) {
+    case Visibility.VISIBLE:
+      return {
+        coordinate: cell.coordinate,
+        visibility,
+        terrain: cell.terrain,
+        troopCount: cell.troopCount,
+        owner: cell.owner,
+      };
+    case Visibility.TERRAIN:
+      return {
+        coordinate: cell.coordinate,
+        visibility,
+        terrain: cell.terrain,
+        troopCount: null,
+        owner: null,
+      };
+    case Visibility.SHROUDED:
+      return {
+        coordinate: cell.coordinate,
+        visibility,
+        terrain:
+          cell.terrain === Terrain.MOUNTAIN ||
+          cell.terrain === Terrain.CITY ||
+          cell.terrain === Terrain.GENERAL
+            ? MaskedTerrain.MAYBE_MOUNTAIN
+            : MaskedTerrain.MAYBE_PLAIN,
+        troopCount: null,
+        owner: null,
+      };
+    case Visibility.HIDDEN:
+      return {
+        coordinate: cell.coordinate,
+        visibility,
+        terrain: null,
+        troopCount: null,
+        owner: null,
+      };
+  }
+}
 
 export class VisibilityMap {
   private readonly gameGrid: IGrid;
@@ -24,9 +70,9 @@ export class VisibilityMap {
     const width = this.gameGrid.width;
     const height = this.gameGrid.height;
 
-    // Initialize all as HIDDEN
+    // Step 1: Compute visibility first. Everything starts as shrouded.
     const visibilityData: Visibility[][] = Array.from({ length: height }, () =>
-      Array(width).fill(Visibility.HIDDEN),
+      Array(width).fill(Visibility.SHROUDED),
     );
 
     this.gameGrid.forEach((cell, coord) => {
@@ -58,39 +104,20 @@ export class VisibilityMap {
       }
     });
 
+    // Step 2: Compute perceived terrain and metadata based on visibility.
     const gridData: IVisionCell[][] = Array.from({ length: height }, () =>
-      Array(width).fill({
+      Array.from({ length: width }, () => ({
         coordinate: { x: 0, y: 0 },
-        visibility: Visibility.HIDDEN,
+        visibility: Visibility.SHROUDED,
         terrain: null,
         troopCount: null,
         owner: null,
-      }),
+      })),
     );
 
     this.gameGrid.forEach((cell, coord) => {
       const visibility = visibilityData[coord.y][coord.x];
-      let maskedTerrain = null;
-      if (
-        visibility === Visibility.HIDDEN ||
-        visibility === Visibility.SHROUDED
-      ) {
-        maskedTerrain =
-          cell.terrain === Terrain.MOUNTAIN ||
-          cell.terrain === Terrain.CITY ||
-          cell.terrain === Terrain.GENERAL
-            ? MaskedTerrain.MAYBE_MOUNTAIN
-            : MaskedTerrain.MAYBE_PLAIN;
-      }
-
-      gridData[coord.y][coord.x] = {
-        coordinate: cell.coordinate,
-        visibility,
-        terrain:
-          visibility === Visibility.VISIBLE ? cell.terrain : maskedTerrain,
-        troopCount: visibility === Visibility.VISIBLE ? cell.troopCount : null,
-        owner: visibility === Visibility.VISIBLE ? cell.owner : null,
-      };
+      gridData[coord.y][coord.x] = createVisionCell(cell, visibility);
     });
 
     return new VisionGrid(width, height, gridData);
