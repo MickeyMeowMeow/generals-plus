@@ -5,3 +5,4 @@ allowBuilds:
   esbuild: true
   lefthook: true
   msgpackr-extract: true
+  msw: true

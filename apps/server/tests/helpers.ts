@@ -44,20 +44,22 @@ export function createValidRoomData(
   } as TestRoomData;
 }
 
-const testConfig = defineServer({
-  rooms: {
-    lobby: defineRoom(LobbyRoom),
-    queue: defineRoom(MatchQueueRoom).filterBy(["gameMode"]),
-    setup: defineRoom(SetupRoom).filterBy(["gameMode"]).enableRealtimeListing(),
-    match: defineRoom(MatchRoom).enableRealtimeListing(),
-  },
-});
-
 const workerBasePort =
   18567 + (Number(process.env.VITEST_WORKER_ID ?? "1") - 1) * 100;
 let _nextPort = workerBasePort;
 
 export async function createTestServer() {
+  const testConfig = defineServer({
+    rooms: {
+      lobby: defineRoom(LobbyRoom),
+      queue: defineRoom(MatchQueueRoom).filterBy(["gameMode"]),
+      setup: defineRoom(SetupRoom)
+        .filterBy(["gameMode"])
+        .enableRealtimeListing(),
+      match: defineRoom(MatchRoom).enableRealtimeListing(),
+    },
+  });
+
   const port = _nextPort++;
   await testConfig.listen(port);
   return new ColyseusTestServer(testConfig);
