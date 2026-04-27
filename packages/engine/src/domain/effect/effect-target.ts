@@ -3,7 +3,7 @@ import type { Effect } from "#/domain/effect/effect";
 /**
  * Shared base for domain objects that can receive temporary or persistent effects.
  */
-export abstract class EffectTarget implements EffectTarget {
+export abstract class EffectTarget {
   readonly targetId: string;
 
   /** Collection of active effects on the target. */
