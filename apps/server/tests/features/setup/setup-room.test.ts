@@ -5,7 +5,7 @@ import { RoomNames } from "@generals-plus/shared-types";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { SetupRoom } from "#/features/setup/setup-room";
-import { createTestServer, createTestToken } from "../../helpers";
+import { createTestServer, createTestToken } from "#tests/helpers";
 
 describe("SetupRoom", () => {
   let testServer: ColyseusTestServer;

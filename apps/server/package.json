@@ -9,6 +9,13 @@
       "./src/*.tsx",
       "./src/*/index.ts",
       "./src/*/index.tsx"
+    ],
+    "#tests/*": [
+      "./tests/*",
+      "./tests/*.ts",
+      "./tests/*.tsx",
+      "./tests/*/index.ts",
+      "./tests/*/index.tsx"
     ]
   },
   "scripts": {
