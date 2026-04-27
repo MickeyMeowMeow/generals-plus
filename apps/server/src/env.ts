@@ -1,7 +1,12 @@
 const jwtSecret = process.env.JWT_SECRET;
+const sessionSecret = process.env.SESSION_SECRET;
 
 if (!jwtSecret && process.env.NODE_ENV === "production") {
   throw new Error("Missing required environment variable: JWT_SECRET");
+}
+
+if (!sessionSecret && process.env.NODE_ENV === "production") {
+  throw new Error("Missing required environment variable: SESSION_SECRET");
 }
 
 export const ENV = {
@@ -11,4 +16,7 @@ export const ENV = {
     process.env.MONGO_URI ||
     "mongodb://user:pass@localhost:27017/generals_hub?authSource=admin&directConnection=true",
   JWT_SECRET: jwtSecret || "your_jwt_secret_key_here",
+  SESSION_SECRET: sessionSecret || "your_session_secret_key_here",
 };
+
+process.env.SESSION_SECRET = ENV.SESSION_SECRET;

@@ -1,4 +1,4 @@
-import { auth } from "@colyseus/auth";
+import { auth, JWT } from "@colyseus/auth";
 
 import { ENV } from "#/env";
 import type { IUserRepository, UserCreateOptions } from "#/infra/db/interfaces";
@@ -31,6 +31,8 @@ const userRepository: IUserRepository = new MongoUserRepository();
  * Set the base URL for the backend (for redirects and OAuth)
  */
 auth.backend_url = ENV.BACKEND_URL;
+// Keep JWT signing aligned with server environment configuration.
+JWT.settings.secret = ENV.JWT_SECRET;
 
 /**
  * Bind @colyseus/auth v0.17 callbacks to our OOP Repository

@@ -9,13 +9,22 @@
     }
   },
   "imports": {
-    "#*": [
-      "./src/*",
-      "./src/*.ts",
-      "./src/*.tsx",
-      "./src/*/index.ts",
-      "./src/*/index.tsx"
-    ]
+    "#/map-generator": {
+      "types": "./src/map-generator.ts",
+      "default": "./dist/map-generator.js"
+    },
+    "#/room-data": {
+      "types": "./src/room-data.ts",
+      "default": "./dist/room-data.js"
+    },
+    "#/schema": {
+      "types": "./src/schema/index.ts",
+      "default": "./dist/schema/index.js"
+    },
+    "#/schema/*": {
+      "types": "./src/schema/*.ts",
+      "default": "./dist/schema/*.js"
+    }
   },
   "scripts": {
     "build": "tsc",
