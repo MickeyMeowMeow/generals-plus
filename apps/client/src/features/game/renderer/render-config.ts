@@ -15,7 +15,6 @@ export const RenderConfig = {
   fogColor: 0x050608,
   fogAlpha: 1,
   neutralTroopColor: 0x242832,
-  troopTextMinScale: 0.38,
   troopFontSize: 30,
   // Selection and interaction accents.
   selectionBorderColor: 0xf8fafc,

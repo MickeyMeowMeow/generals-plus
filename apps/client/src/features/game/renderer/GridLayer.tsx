@@ -43,7 +43,6 @@ export function GridLayer({
   onCellClick,
   onCellHover,
   onCellLeave,
-  onCellsSelect,
   onQueueItemRemove,
 }: GridLayerProps) {
   const cellSize = stride - RenderConfig.cellGap;
@@ -76,7 +75,6 @@ export function GridLayer({
             troopColor={playerIndex.troopColor(cell.ownerIndex)}
             stride={stride}
             cellSize={cellSize}
-            scale={viewport.scale}
           />
         ))}
       </pixiContainer>
@@ -91,7 +89,6 @@ export function GridLayer({
         onCellClick={onCellClick}
         onCellHover={onCellHover}
         onCellLeave={onCellLeave}
-        onCellsSelect={onCellsSelect}
       />
       <MoveQueueLayer
         queue={moveQueue}

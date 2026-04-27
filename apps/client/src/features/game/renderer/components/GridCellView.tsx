@@ -12,7 +12,6 @@ interface GridCellViewProps {
   readonly troopColor: number;
   readonly stride: number;
   readonly cellSize: number;
-  readonly scale: number;
 }
 
 interface CellMemoProps {
@@ -21,7 +20,6 @@ interface CellMemoProps {
   readonly troopColor: number;
   readonly stride: number;
   readonly cellSize: number;
-  readonly scale: number;
 }
 
 function GridCellViewContent({
@@ -30,16 +28,12 @@ function GridCellViewContent({
   troopColor,
   stride,
   cellSize,
-  scale,
 }: GridCellViewProps) {
   const x = cell.x * stride;
   const y = cell.y * stride;
   const terrainTheme = TerrainTheme[cell.terrain];
   const iconSize = Math.max(1, cellSize * RenderConfig.terrainIconScale);
-  const textVisible =
-    cell.isVisible &&
-    cell.troopCount > 0 &&
-    scale >= RenderConfig.troopTextMinScale;
+  const textVisible = cell.isVisible && cell.troopCount > 0;
 
   const drawCell = useCallback(
     (g: Graphics) => {
@@ -114,8 +108,7 @@ class CellMemoComparator {
       prev.ownerColor === next.ownerColor &&
       prev.troopColor === next.troopColor &&
       prev.stride === next.stride &&
-      prev.cellSize === next.cellSize &&
-      prev.scale === next.scale
+      prev.cellSize === next.cellSize
     );
   }
 }

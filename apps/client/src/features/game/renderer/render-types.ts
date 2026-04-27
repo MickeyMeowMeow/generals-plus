@@ -47,7 +47,6 @@ export interface GameMapCallbacks {
   onCellClick?(x: number, y: number): void;
   onCellHover?(x: number, y: number): void;
   onCellLeave?(): void;
-  onCellsSelect?(cells: RenderPoint[]): void;
   onQueueItemRemove?(order: number): void;
 }
 
