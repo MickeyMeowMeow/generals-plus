@@ -18,6 +18,9 @@ export class StandardCombatResolver implements ICombatResolver {
     grid: IGrid,
     players: Map<string, IPlayer>,
   ): boolean {
+    if (!action.from || !action.to) {
+      return false; // Invalid action without source or target
+    }
     const source = grid.get(action.from);
     const target = grid.get(action.to);
     const targetOwnerId = target?.owner?.playerId ?? null;
