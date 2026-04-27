@@ -4,7 +4,7 @@ import type { EffectType } from "#/domain/effect/effect-type";
  * Target that can have effects applied to it.
  */
 export interface IEffectTarget {
-  readonly id: string;
+  readonly targetId: string;
 
   /** Collection of active effects on the target. */
   readonly effects: IBaseEffect[];

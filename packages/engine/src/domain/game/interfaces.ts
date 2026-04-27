@@ -4,8 +4,9 @@ import type { IGameResult } from "#/domain/game/game-result";
 import type { GameStatus } from "#/domain/game/game-status";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { IItem } from "#/domain/item/interfaces";
-import type { IPlayer } from "#/domain/player/interfaces";
+import type { IPlayer, IPlayerStats, IStandardPlayerStats } from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
+import type { IVisionGrid } from "#/domain/vision/vision-grid";
 import type { ICoordinate } from "#/math/coordinate";
 
 /**
@@ -80,6 +81,22 @@ export interface IBaseGame {
    * @returns IGameResult - The final game results generated at the moment of termination.
    */
   forceEnd(): IGameResult;
+
+  /**
+   * Retrieves the current vision grid for a specific player based on their team.
+   *
+   * @param playerId - The ID of the player requesting vision.
+   * @returns IVisionGrid | null - The masked grid for the player, or null if the player doesn't exist.
+   */
+  getVisionGrid(playerId: string): IVisionGrid | null;
+
+  /**
+   * Retrieves the current statistics (troops, land, etc.) for a specific player.
+   *
+   * @param playerId - The ID of the player.
+   * @returns IPlayerStats | null - The statistics for the player, or null if the player doesn't exist.
+   */
+  getPlayerStats(playerId: string): IPlayerStats | null;
 }
 
 /**
@@ -88,7 +105,11 @@ export interface IBaseGame {
  */
 export interface IStandardGame extends IBaseGame {
   readonly mode: typeof GameMode.CLASSIC | typeof GameMode.TURF_WAR;
-  // Standard rules usually don't need additional global variables.
+  
+  /**
+   * Overridden covariant return type specific to standard games.
+   */
+  getPlayerStats(playerId: string): IStandardPlayerStats | null;
 }
 
 /**

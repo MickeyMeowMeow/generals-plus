@@ -6,6 +6,8 @@ import type { TeamType } from "#/domain/team/team-type";
  * Common properties for all team types.
  */
 export interface IBaseTeam extends IEffectTarget {
+  /** Unique ID for the team. */
+  readonly teamId: string;
   /** The strategic nature of the team. */
   readonly type: TeamType;
   /** Players belonging to this team. */
