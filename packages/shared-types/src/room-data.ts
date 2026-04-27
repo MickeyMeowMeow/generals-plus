@@ -1,7 +1,8 @@
+import type { Terrain } from "@generals-plus/engine";
 import { z } from "zod";
 
 export interface CellInit {
-  terrain: string;
+  terrain: Terrain;
   isPassable: boolean;
   troopCount?: number;
   ownerIndex?: number;
