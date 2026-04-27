@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { webConfig } from "@generals-plus/vitest-config";
 import { defineConfig } from "vitest/config";
 
@@ -5,8 +7,6 @@ export default defineConfig({
   ...webConfig,
   test: {
     ...webConfig.test,
-    passWithNoTests: false,
-    setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
@@ -19,5 +19,23 @@ export default defineConfig({
         statements: 80,
       },
     },
+    server: {
+      deps: {
+        inline: ["@pixi/react"],
+      },
+    },
+  },
+  resolve: {
+    alias: [
+      {
+        find: /^@generals-plus\/(.*)/,
+        replacement: path.join(
+          import.meta.dirname,
+          "../../packages",
+          "$1",
+          "src",
+        ),
+      },
+    ],
   },
 });
