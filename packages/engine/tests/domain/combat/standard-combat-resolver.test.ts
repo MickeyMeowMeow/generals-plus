@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import type { MoveActionType } from "#/domain/action/action-type";
 import { ActionType } from "#/domain/action/action-type";
-import type { IAction } from "#/domain/action/interfaces";
+import type { MoveAction } from "#/domain/action/interfaces";
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
@@ -24,7 +25,7 @@ function createGrid(width = 2, height = 1): Grid {
   return new Grid(width, height, cells);
 }
 
-function createAction(type: ActionType = ActionType.MOVE): IAction {
+function createMoveAction(type: MoveActionType = ActionType.MOVE): MoveAction {
   return {
     playerId: "p1",
     type,
@@ -40,7 +41,7 @@ describe("StandardCombatResolver", () => {
     const players = new Map();
 
     const result = resolver.execute(
-      { ...createAction(), to: { x: 9, y: 9 } },
+      { ...createMoveAction(), to: { x: 9, y: 9 } },
       grid,
       players,
     );
@@ -58,7 +59,7 @@ describe("StandardCombatResolver", () => {
     source.owner = { playerId: "other", status: PlayerStatus.ACTIVE };
     source.troopCount = 10;
 
-    const result = resolver.execute(createAction(), grid, new Map());
+    const result = resolver.execute(createMoveAction(), grid, new Map());
 
     expect(result).toBe(false);
   });
@@ -76,15 +77,15 @@ describe("StandardCombatResolver", () => {
     source.troopCount = 5;
     target.terrain = Terrain.MOUNTAIN;
     target.isPassable = false;
-    expect(resolver.execute(createAction(), grid, new Map())).toBe(false);
+    expect(resolver.execute(createMoveAction(), grid, new Map())).toBe(false);
 
     target.terrain = Terrain.PLAIN;
     target.isPassable = true;
     source.troopCount = 1;
-    expect(resolver.execute(createAction(), grid, new Map())).toBe(false);
+    expect(resolver.execute(createMoveAction(), grid, new Map())).toBe(false);
 
     source.troopCount = 5;
-    expect(resolver.execute(createAction(), grid, new Map())).toBe(false);
+    expect(resolver.execute(createMoveAction(), grid, new Map())).toBe(false);
   });
 
   it("reinforces allied target and updates ownership to attacker", () => {
@@ -109,7 +110,7 @@ describe("StandardCombatResolver", () => {
     target.owner = p2;
     target.troopCount = 3;
 
-    const result = resolver.execute(createAction(), grid, players);
+    const result = resolver.execute(createMoveAction(), grid, players);
 
     expect(result).toBe(true);
     expect(source.troopCount).toBe(1);
@@ -136,7 +137,7 @@ describe("StandardCombatResolver", () => {
     s1.troopCount = 10;
     d1.owner = p2;
     d1.troopCount = 5;
-    expect(resolver.execute(createAction(), grid1, players)).toBe(true);
+    expect(resolver.execute(createMoveAction(), grid1, players)).toBe(true);
     expect(d1.owner).toBe(p1);
     expect(d1.troopCount).toBe(4);
 
@@ -148,7 +149,7 @@ describe("StandardCombatResolver", () => {
     s2.troopCount = 5;
     d2.owner = p2;
     d2.troopCount = 4;
-    expect(resolver.execute(createAction(), grid2, players)).toBe(true);
+    expect(resolver.execute(createMoveAction(), grid2, players)).toBe(true);
     expect(d2.owner).toBe(p2);
     expect(d2.troopCount).toBe(0);
 
@@ -160,7 +161,7 @@ describe("StandardCombatResolver", () => {
     s3.troopCount = 4;
     d3.owner = p2;
     d3.troopCount = 5;
-    expect(resolver.execute(createAction(), grid3, players)).toBe(true);
+    expect(resolver.execute(createMoveAction(), grid3, players)).toBe(true);
     expect(d3.owner).toBe(p2);
     expect(d3.troopCount).toBe(2);
 
@@ -173,7 +174,7 @@ describe("StandardCombatResolver", () => {
     d4.owner = p2;
     d4.troopCount = 1;
     expect(
-      resolver.execute(createAction(ActionType.SPLIT_MOVE), grid4, players),
+      resolver.execute(createMoveAction(ActionType.SPLIT_MOVE), grid4, players),
     ).toBe(true);
     expect(s4.troopCount).toBe(5);
     expect(d4.owner).toBe(p1);
@@ -213,7 +214,7 @@ describe("StandardCombatResolver", () => {
     resourceCell.owner = p2;
     resourceCell.troopCount = 8;
 
-    const result = resolver.execute(createAction(), grid, players);
+    const result = resolver.execute(createMoveAction(), grid, players);
 
     expect(result).toBe(true);
     expect(general.owner).toBe(p1);

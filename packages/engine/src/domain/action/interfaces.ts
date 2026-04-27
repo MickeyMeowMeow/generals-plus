@@ -1,4 +1,4 @@
-import type { ActionType } from "#/domain/action/action-type";
+import type { ActionType, MoveActionType } from "#/domain/action/action-type";
 import type { ICoordinate } from "#/math/coordinate";
 
 /**
@@ -13,7 +13,7 @@ export interface BaseAction {
  * Represents a movement action where a player moves troops from one cell to another.
  */
 export interface MoveAction extends BaseAction {
-  readonly type: typeof ActionType.MOVE | typeof ActionType.SPLIT_MOVE;
+  readonly type: MoveActionType;
   readonly from: ICoordinate;
   readonly to: ICoordinate;
 }

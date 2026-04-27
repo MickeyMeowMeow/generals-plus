@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ActionType } from "#/domain/action/action-type";
-import type { IAction } from "#/domain/action/interfaces";
+import type { Action } from "#/domain/action/interfaces";
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import { BaseGame } from "#/domain/game/base-game";
@@ -71,7 +71,7 @@ describe("BaseGame", () => {
 
   it("default handleAction returns false", () => {
     const game = createGame();
-    const action: IAction = {
+    const action: Action = {
       playerId: "p1",
       type: ActionType.MOVE,
       from: { x: 0, y: 0 },

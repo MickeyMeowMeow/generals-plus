@@ -6,3 +6,7 @@ export const ActionType = {
 } as const;
 
 export type ActionType = (typeof ActionType)[keyof typeof ActionType];
+
+export type MoveActionType =
+  | typeof ActionType.MOVE
+  | typeof ActionType.SPLIT_MOVE;

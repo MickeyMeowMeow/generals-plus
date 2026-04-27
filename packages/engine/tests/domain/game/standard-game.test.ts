@@ -1,7 +1,7 @@
 import { describe, expect, it, test } from "vitest";
 
 import { ActionType } from "#/domain/action/action-type";
-import type { IAction } from "#/domain/action/interfaces";
+import type { Action, MoveAction } from "#/domain/action/interfaces";
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import { GameMode } from "#/domain/game/game-mode";
@@ -21,7 +21,7 @@ function createGridForAction(): Grid {
   ]);
 }
 
-function createAction(playerId = "p1"): IAction {
+function createMoveAction(playerId = "p1"): MoveAction {
   return {
     playerId,
     type: ActionType.MOVE,
@@ -30,12 +30,10 @@ function createAction(playerId = "p1"): IAction {
   };
 }
 
-function createSurrenderAction(playerId = "p1"): IAction {
+function createSurrenderAction(playerId = "p1"): Action {
   return {
     playerId,
     type: ActionType.SURRENDER,
-    from: { x: 0, y: 0 },
-    to: { x: 0, y: 0 },
   };
 }
 
@@ -43,7 +41,7 @@ describe("StandardGame", () => {
   it("rejects actions when game is not playing", () => {
     const game = new StandardGame(createGridForAction());
 
-    expect(game.handleAction(createAction())).toBe(false);
+    expect(game.handleAction(createMoveAction())).toBe(false);
   });
 
   it("processes valid action while playing", () => {
@@ -67,7 +65,7 @@ describe("StandardGame", () => {
     target.troopCount = 2;
 
     game.startGame();
-    const result = game.handleAction(createAction());
+    const result = game.handleAction(createMoveAction());
 
     expect(result).toBe(true);
     expect(source.troopCount).toBe(1);
