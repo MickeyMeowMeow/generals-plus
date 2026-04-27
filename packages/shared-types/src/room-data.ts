@@ -26,7 +26,7 @@ export interface ClientAuth {
   username: string;
 }
 
-export const ROOM_NAMES = {
+export const RoomNames = {
   LOBBY: "lobby",
   QUEUE: "queue",
   SETUP: "setup",

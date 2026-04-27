@@ -1,19 +1,19 @@
 import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { matchMaker, Room } from "@colyseus/core";
-import type { GameMode } from "@generals-plus/engine";
+import { GameMode } from "@generals-plus/engine";
 import type {
   ClientAuth,
   MapGenerator,
   RoomData,
 } from "@generals-plus/shared-types";
 import {
-  ROOM_NAMES,
+  RoomNames,
   SetupPlayer,
   SetupState,
 } from "@generals-plus/shared-types";
 
-import { DefaultMapGenerator } from "#features/queue/default-map-generator";
+import { DefaultMapGenerator } from "#/features/queue/default-map-generator";
 
 const DEFAULT_MAX_PLAYERS = 8;
 
@@ -28,7 +28,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   private mapGenerator: MapGenerator = new DefaultMapGenerator();
 
   async onCreate(options: SetupRoomOptions) {
-    const gameMode = options.gameMode ?? "classic";
+    const gameMode = options.gameMode ?? GameMode.CLASSIC;
     const maxPlayers = options.maxPlayers ?? DEFAULT_MAX_PLAYERS;
     const isPublic = options.isPublic ?? true;
 
@@ -168,7 +168,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       isPublic: false,
     };
 
-    const room = await matchMaker.createRoom(ROOM_NAMES.MATCH, { metadata });
+    const room = await matchMaker.createRoom(RoomNames.MATCH, { metadata });
 
     await matchMaker.reserveMultipleSeatsFor(
       room,

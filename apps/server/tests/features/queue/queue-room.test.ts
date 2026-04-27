@@ -1,5 +1,7 @@
 import { ColyseusSDK } from "@colyseus/sdk";
 import type { ColyseusTestServer } from "@colyseus/testing";
+import { GameMode } from "@generals-plus/engine";
+import { RoomNames } from "@generals-plus/shared-types";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { MatchQueueRoom } from "#features/queue/queue-room";
@@ -17,8 +19,8 @@ describe("MatchQueueRoom", () => {
   });
 
   it("creates queue room with classic gameMode", async () => {
-    const room = await testServer.createRoom<MatchQueueRoom>("queue", {
-      gameMode: "classic",
+    const room = await testServer.createRoom<MatchQueueRoom>(RoomNames.QUEUE, {
+      gameMode: GameMode.CLASSIC,
     });
 
     expect(room).toBeDefined();
@@ -26,11 +28,11 @@ describe("MatchQueueRoom", () => {
   });
 
   it("creates separate rooms for different gameModes", async () => {
-    const room1 = await testServer.createRoom<MatchQueueRoom>("queue", {
-      gameMode: "classic",
+    const room1 = await testServer.createRoom<MatchQueueRoom>(RoomNames.QUEUE, {
+      gameMode: GameMode.CLASSIC,
     });
-    const room2 = await testServer.createRoom<MatchQueueRoom>("queue", {
-      gameMode: "turf_war",
+    const room2 = await testServer.createRoom<MatchQueueRoom>(RoomNames.QUEUE, {
+      gameMode: GameMode.TURF_WAR,
     });
 
     expect(room1.roomId).not.toBe(room2.roomId);

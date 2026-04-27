@@ -1,7 +1,7 @@
 import { JWT } from "@colyseus/auth";
 import { defineRoom, defineServer, LobbyRoom } from "@colyseus/core";
 import { ColyseusTestServer } from "@colyseus/testing";
-import { Terrain } from "@generals-plus/engine";
+import { GameMode, Terrain } from "@generals-plus/engine";
 import type {
   MapConfig,
   PlayerInit,
@@ -33,7 +33,7 @@ export function createValidRoomData(
   overrides?: Partial<TestRoomData>,
 ): TestRoomData {
   return {
-    mode: "classic",
+    mode: GameMode.CLASSIC,
     map: buildDefaultMapConfig(),
     isPublic: true,
     playerInit: [
@@ -53,9 +53,9 @@ const testConfig = defineServer({
   },
 });
 
-const workerBase =
+const workerBasePort =
   18567 + (Number(process.env.VITEST_WORKER_ID ?? "1") - 1) * 100;
-let _nextPort = workerBase;
+let _nextPort = workerBasePort;
 
 export async function createTestServer() {
   const port = _nextPort++;

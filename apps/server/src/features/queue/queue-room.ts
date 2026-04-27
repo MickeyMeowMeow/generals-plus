@@ -8,9 +8,9 @@ import type {
   PlayerInit,
   RoomData,
 } from "@generals-plus/shared-types";
-import { ROOM_NAMES } from "@generals-plus/shared-types";
+import { RoomNames } from "@generals-plus/shared-types";
 
-import { DefaultMapGenerator } from "#features/queue/default-map-generator";
+import { DefaultMapGenerator } from "#/features/queue/default-map-generator";
 
 // TODO: Move to @generals-plus/engine GameModeConfig once available
 const DEFAULT_MAX_PLAYERS = 8;
@@ -32,7 +32,7 @@ export class MatchQueueRoom extends QueueRoom {
     this.minPlayers = DEFAULT_MIN_PLAYERS;
 
     const queueOptions: QueueOptions = {
-      matchRoomName: ROOM_NAMES.MATCH,
+      matchRoomName: RoomNames.MATCH,
       maxPlayers: DEFAULT_MAX_PLAYERS,
       maxWaitingCycles: options.countdownCycles ?? DEFAULT_COUNTDOWN_CYCLES,
       allowIncompleteGroups: true,
@@ -52,7 +52,7 @@ export class MatchQueueRoom extends QueueRoom {
           playerInit,
         };
 
-        return matchMaker.createRoom(ROOM_NAMES.MATCH, { metadata });
+        return matchMaker.createRoom(RoomNames.MATCH, { metadata });
       },
     };
 

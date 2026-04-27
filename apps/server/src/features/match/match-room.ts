@@ -89,7 +89,7 @@ export class MatchRoom extends Room<{
           `[MatchRoom] Player ${userdata.username} bound to session ${client.sessionId}`,
         );
       } else {
-        logger.warn(
+        logger.error(
           `[MatchRoom] Error: Player data not found for user: ${userdata.username}`,
         );
       }
