@@ -17,7 +17,7 @@ describe("EffectTarget", () => {
       target: target,
     });
 
-    target.attachEffect(effect);
+    target.attachEffect(0, effect);
     expect(target.effects).toHaveLength(1);
     expect(target.effects[0]).toBe(effect);
   });
@@ -32,7 +32,7 @@ describe("EffectTarget", () => {
       target: target2,
     });
 
-    expect(() => target1.attachEffect(effectForTarget2)).toThrow(
+    expect(() => target1.attachEffect(0, effectForTarget2)).toThrow(
       /Cannot attach effect "eff-2" to target "target-1"/,
     );
   });
@@ -45,7 +45,7 @@ describe("EffectTarget", () => {
       target: target,
     });
 
-    target.attachEffect(effect);
+    target.attachEffect(0, effect);
     expect(target.effects).toHaveLength(1);
 
     target.removeEffect("eff-1");

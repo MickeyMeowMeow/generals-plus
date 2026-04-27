@@ -38,7 +38,7 @@ export class EffectRegistry {
       this.triggerQueue.add(effect);
     }
 
-    effect.target.attachEffect(effect);
+    effect.target.attachEffect(currentTick, effect);
     effect.onAttach?.(currentTick);
   }
 

@@ -16,10 +16,10 @@ export abstract class EffectTarget {
   /**
    * Attaches an effect to the target.
    *
-   * @param currentTick The current tick of the game when the effect is attached.
+   * @param _currentTick The current tick of the game when the effect is attached.
    * @param effect The effect to add.
    */
-  attachEffect(effect: Effect): void {
+  attachEffect(_currentTick: number, effect: Effect): void {
     if (effect.target !== this) {
       throw new Error(
         `Cannot attach effect "${effect.id}" to target "${this.id}" because it belongs to a different target.`,
