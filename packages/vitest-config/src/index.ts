@@ -4,7 +4,6 @@ export const sharedConfig = defineConfig({
   test: {
     globals: true,
     passWithNoTests: true,
-    setupFiles: ["./tests/setup.ts"],
   },
 });
 

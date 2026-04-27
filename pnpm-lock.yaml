@@ -189,6 +189,10 @@ importers:
         version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(jsdom@29.0.2)(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(tsx@4.21.0))
 
   packages/engine:
+    dependencies:
+      data-structure-typed:
+        specifier: ^2.6.1
+        version: 2.6.1
     devDependencies:
       '@generals-plus/typescript-config':
         specifier: workspace:*
@@ -1447,6 +1451,10 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  data-structure-typed@2.6.1:
+    resolution: {integrity: sha512-uxfn1EliXqpktgpyzb4QUGep/uuHjRERn8aC50/eEYa/HxfN/Z9Rio+rHHYFW1Nqccx+JMsuJ/1Restw54CHjw==}
+    engines: {node: '>=12.20.0', npm: '>=6.14.0'}
 
   data-urls@7.0.0:
     resolution: {integrity: sha512-23XHcCF+coGYevirZceTVD7NdJOqVn+49IHyxgszm+JIiHLoB2TkmPtsYkNWT1pvRSGkc35L6NHs0yHkN2SumA==}
@@ -3807,6 +3815,8 @@ snapshots:
   css.escape@1.5.1: {}
 
   csstype@3.2.3: {}
+
+  data-structure-typed@2.6.1: {}
 
   data-urls@7.0.0:
     dependencies:

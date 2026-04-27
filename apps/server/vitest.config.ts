@@ -22,5 +22,6 @@ export default defineConfig({
   },
   test: {
     ...sharedConfig.test,
+    setupFiles: ["./tests/setup.ts"],
   },
 });
