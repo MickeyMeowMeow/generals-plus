@@ -21,6 +21,18 @@ export interface PlayerInit {
   teamId: string;
 }
 
+export interface ClientAuth {
+  id: string;
+  username: string;
+}
+
+export const ROOM_NAMES = {
+  LOBBY: "lobby",
+  QUEUE: "queue",
+  SETUP: "setup",
+  MATCH: "match",
+} as const;
+
 export interface RoomData {
   mode: GameMode;
   map: MapConfig;

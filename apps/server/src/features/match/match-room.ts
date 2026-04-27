@@ -3,7 +3,7 @@ import type { Client } from "@colyseus/core";
 import { Room } from "@colyseus/core";
 import type { Terrain } from "@generals-plus/engine";
 import { PlayerStatus } from "@generals-plus/engine";
-import type { RoomData } from "@generals-plus/shared-types";
+import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
 import {
   Cell,
   MatchState,
@@ -21,8 +21,7 @@ export class MatchRoom extends Room<{
       throw new Error("[MatchRoom] Invalid room metadata");
     }
 
-    const isPublic = metadata.isPublic;
-    if (isPublic === false) {
+    if (!metadata.isPublic) {
       await this.setPrivate(true);
     }
 
@@ -76,7 +75,7 @@ export class MatchRoom extends Room<{
 
   onJoin(client: Client, _options: unknown) {
     console.log(`[MatchRoom] ${client.sessionId} joined`);
-    const userdata = client.auth;
+    const userdata = client.auth as ClientAuth | undefined;
 
     if (userdata) {
       console.log(`[MatchRoom] User Joined: ${userdata.username}`);

@@ -9,7 +9,8 @@ import type {
 } from "@generals-plus/shared-types";
 
 import { MatchRoom } from "#features/match/match-room";
-import { GeneralsQueueRoom } from "#features/queue/queue-room";
+import { MatchQueueRoom } from "#features/queue/queue-room";
+import { SetupRoom } from "#features/setup/setup-room";
 
 function buildDefaultMapConfig(): MapConfig {
   const width = 16;
@@ -34,6 +35,7 @@ export function createValidRoomData(
   return {
     mode: "classic",
     map: buildDefaultMapConfig(),
+    isPublic: true,
     playerInit: [
       { id: "p1", username: "Player1", teamId: "team_0" } satisfies PlayerInit,
       { id: "p2", username: "Player2", teamId: "team_1" } satisfies PlayerInit,
@@ -45,7 +47,8 @@ export function createValidRoomData(
 const testConfig = defineServer({
   rooms: {
     lobby: defineRoom(LobbyRoom),
-    queue: defineRoom(GeneralsQueueRoom).filterBy(["gameMode"]),
+    queue: defineRoom(MatchQueueRoom).filterBy(["gameMode"]),
+    setup: defineRoom(SetupRoom).filterBy(["gameMode"]).enableRealtimeListing(),
     match: defineRoom(MatchRoom).enableRealtimeListing(),
   },
 });

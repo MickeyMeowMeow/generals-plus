@@ -2,10 +2,10 @@ import { ColyseusSDK } from "@colyseus/sdk";
 import type { ColyseusTestServer } from "@colyseus/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import type { GeneralsQueueRoom } from "#features/queue/queue-room";
+import type { MatchQueueRoom } from "#features/queue/queue-room";
 import { createTestServer, createTestToken } from "../../helpers";
 
-describe("GeneralsQueueRoom", () => {
+describe("MatchQueueRoom", () => {
   let testServer: ColyseusTestServer;
 
   beforeAll(async () => {
@@ -17,7 +17,7 @@ describe("GeneralsQueueRoom", () => {
   });
 
   it("creates queue room with classic gameMode", async () => {
-    const room = await testServer.createRoom<GeneralsQueueRoom>("queue", {
+    const room = await testServer.createRoom<MatchQueueRoom>("queue", {
       gameMode: "classic",
     });
 
@@ -26,10 +26,10 @@ describe("GeneralsQueueRoom", () => {
   });
 
   it("creates separate rooms for different gameModes", async () => {
-    const room1 = await testServer.createRoom<GeneralsQueueRoom>("queue", {
+    const room1 = await testServer.createRoom<MatchQueueRoom>("queue", {
       gameMode: "classic",
     });
-    const room2 = await testServer.createRoom<GeneralsQueueRoom>("queue", {
+    const room2 = await testServer.createRoom<MatchQueueRoom>("queue", {
       gameMode: "turf_war",
     });
 
@@ -37,7 +37,7 @@ describe("GeneralsQueueRoom", () => {
   });
 
   it("does not advance countdown until minPlayers have joined", async () => {
-    const room = await testServer.createRoom<GeneralsQueueRoom>("queue", {
+    const room = await testServer.createRoom<MatchQueueRoom>("queue", {
       gameMode: "classic",
       countdownCycles: 2,
     });

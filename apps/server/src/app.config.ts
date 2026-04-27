@@ -11,8 +11,8 @@ import mongoose from "mongoose";
 
 import { ENV } from "#env";
 import { auth } from "#features/auth/auth-config";
-import { MatchRoom } from "#features/match/match-room";
-import { GeneralsQueueRoom } from "#features/queue/queue-room";
+import { MatchQueueRoom } from "#features/queue/queue-room";
+import { SetupRoom } from "#features/setup/setup-room";
 
 matchMaker.controller.exposedMethods = [
   "joinById",
@@ -58,8 +58,8 @@ export default defineServer({
    */
   rooms: {
     lobby: defineRoom(LobbyRoom),
-    queue: defineRoom(GeneralsQueueRoom).filterBy(["gameMode"]),
-    match: defineRoom(MatchRoom).enableRealtimeListing(),
+    queue: defineRoom(MatchQueueRoom).filterBy(["gameMode"]),
+    setup: defineRoom(SetupRoom).filterBy(["gameMode"]).enableRealtimeListing(),
   },
 
   /**
