@@ -7,6 +7,7 @@ import { Terrain } from "../../../src/domain/cell/terrain";
 import { StandardCombatResolver } from "../../../src/domain/combat/standard-combat-resolver";
 import { Grid } from "../../../src/domain/grid/grid";
 import { Player } from "../../../src/domain/player/player";
+import { PlayerStatus } from "../../../src/domain/player/player-status";
 import { StandardTeam } from "../../../src/domain/team/team";
 
 function createGrid(width = 2, height = 1): Grid {
@@ -177,5 +178,47 @@ describe("StandardCombatResolver", () => {
     expect(s4.troopCount).toBe(5);
     expect(d4.owner).toBe(p1);
     expect(d4.troopCount).toBe(3);
+  });
+
+  it("captures all defender resources when defender general is taken", () => {
+    const resolver = new StandardCombatResolver();
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1");
+    const p2 = new Player(t2, "p2");
+    const players = new Map([
+      ["p1", p1],
+      ["p2", p2],
+    ]);
+
+    const grid = new Grid(3, 1, [
+      [
+        new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),
+        new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.GENERAL }),
+        new Cell({ coordinate: { x: 2, y: 0 }, terrain: Terrain.CITY }),
+      ],
+    ]);
+
+    const source = grid.get({ x: 0, y: 0 });
+    const general = grid.get({ x: 1, y: 0 });
+    const resourceCell = grid.get({ x: 2, y: 0 });
+    if (!source || !general || !resourceCell) {
+      throw new Error("cells should exist");
+    }
+
+    source.owner = p1;
+    source.troopCount = 10;
+    general.owner = p2;
+    general.troopCount = 3;
+    resourceCell.owner = p2;
+    resourceCell.troopCount = 8;
+
+    const result = resolver.execute(createAction(), grid, players);
+
+    expect(result).toBe(true);
+    expect(general.owner).toBe(p1);
+    expect(resourceCell.owner).toBe(p1);
+    expect(resourceCell.troopCount).toBe(8);
+    expect(p2.status).toBe(PlayerStatus.ELIMINATED);
   });
 });

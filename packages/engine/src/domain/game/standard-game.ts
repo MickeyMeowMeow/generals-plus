@@ -1,3 +1,4 @@
+import { ActionType } from "#/domain/action/action-type";
 import type { IAction } from "#/domain/action/interfaces";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
 import { BaseGame } from "#/domain/game/base-game";
@@ -7,6 +8,7 @@ import { GameStatus } from "#/domain/game/game-status";
 import type { IStandardGame } from "#/domain/game/interfaces";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { IStandardPlayerStats } from "#/domain/player/interfaces";
+import { PlayerStatus } from "#/domain/player/player-status";
 import { Terrain } from "#/domain/cell/terrain";
 
 export class StandardGame extends BaseGame implements IStandardGame {
@@ -20,6 +22,10 @@ export class StandardGame extends BaseGame implements IStandardGame {
   public handleAction(action: IAction): boolean {
     if (this.status !== GameStatus.PLAYING) {
       return false;
+    }
+
+    if (action.type === ActionType.SURRENDER) {
+      return this.handleSurrender(action.playerId);
     }
 
     // Process the action synchronously
@@ -54,7 +60,7 @@ export class StandardGame extends BaseGame implements IStandardGame {
     const aliveTeams = new Set<string>();
 
     for (const player of this.players.values()) {
-      if (player.status === "active") {
+      if (player.status === PlayerStatus.ACTIVE) {
         aliveTeams.add(player.team.teamId);
       }
     }
@@ -99,5 +105,23 @@ export class StandardGame extends BaseGame implements IStandardGame {
   public forceEnd(): IGameResult {
     this.status = GameStatus.FINISHED;
     return { mode: this.mode, winnerTeamId: null };
+  }
+
+  private handleSurrender(playerId: string): boolean {
+    const player = this.players.get(playerId);
+    if (!player) {
+      return false;
+    }
+
+    player.status = PlayerStatus.ELIMINATED;
+    this.grid.forEach((cell) => {
+      if (cell.owner?.playerId === playerId) {
+        // Surrender keeps troop count but clears ownership to neutralize the army.
+        cell.owner = null;
+      }
+    });
+
+    this.checkGameEnd();
+    return true;
   }
 }

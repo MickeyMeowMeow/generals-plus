@@ -30,6 +30,15 @@ function createAction(playerId = "p1"): IAction {
   };
 }
 
+function createSurrenderAction(playerId = "p1"): IAction {
+  return {
+    playerId,
+    type: ActionType.SURRENDER,
+    from: { x: 0, y: 0 },
+    to: { x: 0, y: 0 },
+  };
+}
+
 describe("StandardGame", () => {
   it("rejects actions when game is not playing", () => {
     const game = new StandardGame(createGridForAction());
@@ -135,5 +144,45 @@ describe("StandardGame", () => {
 
     expect(game.status).toBe(GameStatus.FINISHED);
     expect(result).toEqual({ mode: GameMode.CLASSIC, winnerTeamId: null });
+  });
+
+  it("surrender neutralizes all owned troops and can end the game", () => {
+    const grid = new Grid(3, 1, [
+      [
+        new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),
+        new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.CITY }),
+        new Cell({ coordinate: { x: 2, y: 0 }, terrain: Terrain.PLAIN }),
+      ],
+    ]);
+    const game = new StandardGame(grid);
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+
+    const c1 = grid.get({ x: 0, y: 0 });
+    const c2 = grid.get({ x: 1, y: 0 });
+    if (!c1 || !c2) {
+      throw new Error("cells should exist");
+    }
+
+    c1.owner = p1;
+    c1.troopCount = 9;
+    c2.owner = p1;
+    c2.troopCount = 4;
+
+    game.startGame();
+    const success = game.handleAction(createSurrenderAction("p1"));
+
+    expect(success).toBe(true);
+    expect(c1.owner).toBeNull();
+    expect(c2.owner).toBeNull();
+    expect(c1.troopCount).toBe(9);
+    expect(c2.troopCount).toBe(4);
+    expect(p1.status).toBe(PlayerStatus.ELIMINATED);
+    expect(game.status).toBe(GameStatus.FINISHED);
+    expect(game.checkGameEnd()).toBeNull();
   });
 });

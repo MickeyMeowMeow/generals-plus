@@ -1,8 +1,10 @@
 import { ActionType } from "#/domain/action/action-type";
 import type { IAction } from "#/domain/action/interfaces";
+import { Terrain } from "#/domain/cell/terrain";
 import type { ICombatResolver } from "#/domain/combat/interfaces";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { IPlayer } from "#/domain/player/interfaces";
+import { PlayerStatus } from "#/domain/player/player-status";
 
 /**
  * Standard combat logic:
@@ -14,6 +16,7 @@ export class StandardCombatResolver implements ICombatResolver {
   public execute(action: IAction, grid: IGrid, players: Map<string, IPlayer>): boolean {
     const source = grid.get(action.from);
     const target = grid.get(action.to);
+    const targetOwnerId = target?.owner?.playerId ?? null;
 
     if (!source || !target) {
       return false;
@@ -68,6 +71,19 @@ export class StandardCombatResolver implements ICombatResolver {
         // Attack succeeds, ownership transfers
         target.owner = attacker;
         target.troopCount = movingTroops - targetTroops;
+
+        if (
+          target.terrain === Terrain.GENERAL &&
+          targetOwnerId &&
+          targetOwnerId !== attacker.playerId
+        ) {
+          this.transferDefeatedPlayerResources(
+            targetOwnerId,
+            attacker,
+            grid,
+            players,
+          );
+        }
       } else if (movingTroops === targetTroops) {
         // Tie, ownership stays with defender but troops are depleted
         target.troopCount = 0;
@@ -78,5 +94,23 @@ export class StandardCombatResolver implements ICombatResolver {
     }
 
     return true;
+  }
+
+  private transferDefeatedPlayerResources(
+    defeatedPlayerId: string,
+    attacker: IPlayer,
+    grid: IGrid,
+    players: Map<string, IPlayer>,
+  ): void {
+    const defeatedPlayer = players.get(defeatedPlayerId);
+    if (defeatedPlayer) {
+      defeatedPlayer.status = PlayerStatus.ELIMINATED;
+    }
+
+    grid.forEach((cell) => {
+      if (cell.owner?.playerId === defeatedPlayerId) {
+        cell.owner = attacker;
+      }
+    });
   }
 }
