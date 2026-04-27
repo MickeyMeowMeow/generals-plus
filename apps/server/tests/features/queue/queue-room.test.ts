@@ -4,7 +4,7 @@ import { GameMode } from "@generals-plus/engine";
 import { RoomNames } from "@generals-plus/shared-types";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import type { MatchQueueRoom } from "#features/queue/queue-room";
+import type { MatchQueueRoom } from "#/features/queue/queue-room";
 import { createTestServer, createTestToken } from "../../helpers";
 
 describe("MatchQueueRoom", () => {

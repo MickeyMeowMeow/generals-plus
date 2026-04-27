@@ -8,9 +8,9 @@ import type {
   RoomData,
 } from "@generals-plus/shared-types";
 
-import { MatchRoom } from "#features/match/match-room";
-import { MatchQueueRoom } from "#features/queue/queue-room";
-import { SetupRoom } from "#features/setup/setup-room";
+import { MatchRoom } from "#/features/match/match-room";
+import { MatchQueueRoom } from "#/features/queue/queue-room";
+import { SetupRoom } from "#/features/setup/setup-room";
 
 function buildDefaultMapConfig(): MapConfig {
   const width = 16;

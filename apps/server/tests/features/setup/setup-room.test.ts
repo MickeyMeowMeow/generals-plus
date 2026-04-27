@@ -4,7 +4,7 @@ import { GameMode } from "@generals-plus/engine";
 import { RoomNames } from "@generals-plus/shared-types";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import type { SetupRoom } from "#features/setup/setup-room";
+import type { SetupRoom } from "#/features/setup/setup-room";
 import { createTestServer, createTestToken } from "../../helpers";
 
 describe("SetupRoom", () => {

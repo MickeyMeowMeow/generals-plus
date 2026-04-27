@@ -1,7 +1,7 @@
 import type { ColyseusTestServer } from "@colyseus/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import type { MatchRoom } from "#features/match/match-room";
+import type { MatchRoom } from "#/features/match/match-room";
 import { createTestServer, createValidRoomData } from "../../helpers";
 
 describe("MatchRoom", () => {
