@@ -19,6 +19,11 @@ export class StandardGame extends BaseGame implements IStandardGame {
       return false;
     }
 
+    if (action.type === ActionType.CLEAR_QUEUE) {
+      //Should not be processed by engine
+      return false;
+    }
+
     if (action.type === ActionType.SURRENDER) {
       return this.handleSurrender(action.playerId);
     }
