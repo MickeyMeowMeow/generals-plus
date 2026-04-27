@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 
 import { RequireAuthenticated } from "#/common/guards";
+import { MatchHeader } from "#/components/match/match-header";
+import { PlayerPanel } from "#/components/match/player-panel";
 import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
-// In-game page for an active match room. Auto-joins by roomId on mount and leaves on unmount.
+/** In-game page for an active match room. Auto-joins by roomId on mount and leaves on unmount. */
 function MatchPage() {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
@@ -25,14 +27,12 @@ function MatchPage() {
   const setError = useMatchConnectionStore((state) => state.setError);
   const hasLeftRef = useRef(false);
 
-  // Auto-join the room when the page loads or the route changes.
   useEffect(() => {
     if (!resolvedRoomId) {
       setError("Route does not contain a room ID");
       return;
     }
 
-    // Already connected or connecting to the correct room — nothing to do.
     if (
       activeRoomId === resolvedRoomId &&
       (status === "connected" ||
@@ -42,7 +42,6 @@ function MatchPage() {
       return;
     }
 
-    // Attempt reconnection before fresh join when idle/disconnected.
     if (status === "idle" || status === "disconnected") {
       void reconnect().then(() => {
         const { status: s, roomId: r } = useMatchConnectionStore.getState();
@@ -53,11 +52,9 @@ function MatchPage() {
       return;
     }
 
-    // Not connected to the target room — join by ID.
     void joinById(resolvedRoomId);
   }, [activeRoomId, joinById, reconnect, resolvedRoomId, setError, status]);
 
-  // Leave the room on unmount, unless handleLeave already did.
   useEffect(() => {
     return () => {
       if (!hasLeftRef.current) {
@@ -75,46 +72,25 @@ function MatchPage() {
   const room = getRoom();
 
   return (
-    <section className="page" aria-label="Match Page">
-      <h2>Match Room</h2>
-      <p>Room ID: {resolvedRoomId || "unknown"}</p>
-      <p>Player: {displayName ?? "anonymous"}</p>
-      <p className="status-line" role="status">
-        Connection status: {isReconnecting ? "reconnecting" : status}
-      </p>
-      {sessionId ? <p>Session ID: {sessionId}</p> : null}
-
-      {lastError ? (
-        <p className="error-text" role="alert">
-          {lastError}
-        </p>
-      ) : null}
-
-      {isReconnecting ? (
-        <p className="reconnect-text" role="alert">
-          Connection lost. Attempting to reconnect...
-        </p>
-      ) : null}
-
-      <p className="state-preview">Room state: {room ? "connected" : "none"}</p>
-
-      <div className="actions">
-        <button type="button" onClick={handleLeave}>
-          Leave room
-        </button>
+    <div className="flex flex-1 flex-col">
+      <MatchHeader
+        roomId={resolvedRoomId}
+        connectionStatus={isReconnecting ? "reconnecting" : status}
+        isReconnecting={isReconnecting}
+      />
+      <div className="relative flex-1">
+        {/* PixiJS game board mounts here — not our concern */}
+        <div className="absolute right-4 top-4 z-10">
+          <PlayerPanel
+            displayName={displayName ?? "anonymous"}
+            sessionId={sessionId}
+            roomState={room ? "connected" : "none"}
+            lastError={lastError}
+            onLeave={handleLeave}
+          />
+        </div>
       </div>
-      <p>
-        <Link
-          to="/lobby"
-          onClick={(event) => {
-            event.preventDefault();
-            void handleLeave();
-          }}
-        >
-          Back to lobby
-        </Link>
-      </p>
-    </section>
+    </div>
   );
 }
 
