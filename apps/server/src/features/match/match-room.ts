@@ -1,6 +1,6 @@
 import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
-import { Room } from "@colyseus/core";
+import { logger, Room } from "@colyseus/core";
 import type { Terrain } from "@generals-plus/engine";
 import { PlayerStatus } from "@generals-plus/engine";
 import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
@@ -52,7 +52,7 @@ export class MatchRoom extends Room<{
 
     this.state = state;
 
-    console.log(
+    logger.info(
       "[MatchRoom] Room:",
       this.roomId,
       "mode:",
@@ -74,27 +74,27 @@ export class MatchRoom extends Room<{
   }
 
   onJoin(client: Client, _options: unknown) {
-    console.log(`[MatchRoom] ${client.sessionId} joined`);
+    logger.info(`[MatchRoom] ${client.sessionId} joined`);
     const userdata = client.auth as ClientAuth | undefined;
 
     if (userdata) {
-      console.log(`[MatchRoom] User Joined: ${userdata.username}`);
+      logger.info(`[MatchRoom] User Joined: ${userdata.username}`);
 
       const player = this.state.players.get(userdata.id);
       if (player) {
         player.sessionId = client.sessionId;
         player.status = PlayerStatus.ACTIVE;
 
-        console.log(
+        logger.info(
           `[MatchRoom] Player ${userdata.username} bound to session ${client.sessionId}`,
         );
       } else {
-        console.log(
+        logger.warn(
           `[MatchRoom] Error: Player data not found for user: ${userdata.username}`,
         );
       }
     } else {
-      console.log(
+      logger.warn(
         `[MatchRoom] Joining user not found in room data: ${client.sessionId}`,
       );
     }
@@ -103,11 +103,11 @@ export class MatchRoom extends Room<{
 
   onLeave(client: Client, _code?: number) {
     // handle player leaving the room, cleanup, etc.
-    console.log(`[MatchRoom] ${client.sessionId} left`);
+    logger.info(`[MatchRoom] ${client.sessionId} left`);
   }
 
   onDispose() {
     // cleanup resources, save state, etc.
-    console.log("[MatchRoom] Room disposed");
+    logger.info("[MatchRoom] Room disposed");
   }
 }

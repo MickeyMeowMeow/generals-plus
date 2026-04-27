@@ -2,6 +2,8 @@
  * Entry point of the server application.
  */
 
+import { logger } from "@colyseus/core";
+
 import server from "#/app.config";
 import { ENV } from "#/env";
 
@@ -15,9 +17,9 @@ const port = ENV.PORT;
 server
   .listen(port)
   .then(() => {
-    console.log(`✅ Server: Listening on http://localhost:${port}`);
+    logger.info(`✅ Server: Listening on http://localhost:${port}`);
   })
   .catch((err) => {
-    console.error("❌ Server: Failed to start!", err);
+    logger.error("❌ Server: Failed to start!", err);
     process.exit(1);
   });
