@@ -1,12 +1,12 @@
-import type { IAction } from "#domain/action/interfaces";
-import type { GameMode } from "#domain/game/game-mode";
-import type { IGameResult } from "#domain/game/game-result";
-import type { GameStatus } from "#domain/game/game-status";
-import type { IGrid } from "#domain/grid/interfaces";
-import type { IItem } from "#domain/item/interfaces";
-import type { IPlayer } from "#domain/player/interfaces";
-import type { Team } from "#domain/team/interfaces";
-import type { ICoordinate } from "#math/coordinate";
+import type { IAction } from "#/domain/action/interfaces";
+import type { GameMode } from "#/domain/game/game-mode";
+import type { IGameResult } from "#/domain/game/game-result";
+import type { GameStatus } from "#/domain/game/game-status";
+import type { IGrid } from "#/domain/grid/interfaces";
+import type { IItem } from "#/domain/item/interfaces";
+import type { IPlayer } from "#/domain/player/interfaces";
+import type { Team } from "#/domain/team/interfaces";
+import type { ICoordinate } from "#/math/coordinate";
 
 /**
  * The root state of the Game Engine.

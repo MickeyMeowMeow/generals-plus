@@ -4,7 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "imports": {
-    "#/*": "./src/*"
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
   },
   "scripts": {
     "dev": "vite",
@@ -15,6 +21,10 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@generals-plus/engine": "workspace:*",
+    "@pixi/react": "^8.0.5",
+    "pixi-viewport": "^6.0.3",
+    "pixi.js": "^8.18.1",
     "@colyseus/sdk": "^0.17.42",
     "@fontsource-variable/geist": "^5.2.8",
     "@react-router/node": "^7.14.2",
@@ -38,6 +48,7 @@
     "@generals-plus/vitest-config": "workspace:*",
     "@react-router/dev": "^7.14.2",
     "@react-router/fs-routes": "^7.14.2",
+    "@react-router/node": "^7.14.2",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tailwindcss/vite": "^4.2.4",
     "@testing-library/jest-dom": "^6.9.1",

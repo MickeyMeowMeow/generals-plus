@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "exports": {
     ".": {
-      "default": "./dist/index.js",
+      "default": "./dist/index.mjs",
       "types": "./src/index.ts"
     }
   },

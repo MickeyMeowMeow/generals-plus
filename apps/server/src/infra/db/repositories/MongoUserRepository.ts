@@ -2,9 +2,9 @@ import type {
   IUser,
   IUserRepository,
   UserCreateOptions,
-} from "#infra/db/interfaces";
-import type { IUserDocument } from "#infra/db/models/user-model";
-import { UserModel } from "#infra/db/models/user-model";
+} from "#/infra/db/interfaces";
+import type { IUserDocument } from "#/infra/db/models/user-model";
+import { UserModel } from "#/infra/db/models/user-model";
 
 /**
  * MongoDB implementation of the IUserRepository using Mongoose.
@@ -18,6 +18,7 @@ export class MongoUserRepository implements IUserRepository {
       id: doc._id.toString(),
       email: doc.email,
       password: doc.password,
+      username: doc.username,
       anonymous: doc.anonymous,
       verified: doc.verified,
       elo: doc.elo,
