@@ -1,6 +1,7 @@
 import { ActionType } from "#/domain/action/action-type";
 import type { IAction } from "#/domain/action/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
+import type { CombatResolver } from "#/domain/combat/interfaces";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { IPlayer } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
@@ -11,7 +12,7 @@ import { PlayerStatus } from "#/domain/player/player-status";
  * - Attacking enemies/neutrals subtracts troops.
  * - Ownership changes if moving troops > defending troops.
  */
-export class StandardCombatResolver {
+export class StandardCombatResolver implements CombatResolver {
   public execute(
     action: IAction,
     grid: IGrid,
