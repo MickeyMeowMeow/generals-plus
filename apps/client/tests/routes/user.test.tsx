@@ -65,7 +65,7 @@ describe("user route", () => {
 
     renderRoute("/user");
 
-    expect(screen.getByRole("heading", { name: "User" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Sign In" })).toBeTruthy();
     expect(screen.getByLabelText("Display name")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Sign in anonymously" }),

@@ -51,7 +51,9 @@ describe("app routes", () => {
 
   it("redirects root path to user page", async () => {
     renderRoute("/");
-    expect(await screen.findByRole("heading", { name: "User" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Sign In" }),
+    ).toBeTruthy();
   });
 
   it("renders lobby for authenticated players", async () => {
@@ -79,7 +81,9 @@ describe("app routes", () => {
     });
 
     renderRoute("/match/alpha-room");
-    expect(await screen.findByRole("heading", { name: "User" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Sign In" }),
+    ).toBeTruthy();
   });
 
   it("renders not found page for unknown path", async () => {

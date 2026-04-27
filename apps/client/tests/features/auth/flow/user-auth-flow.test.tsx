@@ -64,7 +64,9 @@ describe("user auth flow", () => {
     });
 
     renderRoute("/lobby");
-    expect(await screen.findByRole("heading", { name: "User" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Sign In" }),
+    ).toBeTruthy();
   });
 
   it("signs in from user page and enters lobby", async () => {
