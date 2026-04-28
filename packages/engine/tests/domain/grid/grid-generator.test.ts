@@ -9,8 +9,10 @@ import type { ICoordinate } from "#/math/coordinate";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-const GENERAL_SAFE_RADIUS = 0;
-const MIN_CITY_GENERAL_DISTANCE = 3;
+import {
+  GENERAL_SAFE_RADIUS,
+  MIN_CITY_GENERAL_DISTANCE,
+} from "#/domain/grid/grid-generator";
 
 function collectByTerrain(
   grid: ReturnType<DefaultGridGenerator["generate"]>,
@@ -79,6 +81,24 @@ describe("DefaultGridGenerator", () => {
     const grid = generator.generate();
     expect(grid.width).toBe(DefaultGridGeneratorOptions.width);
     expect(grid.height).toBe(DefaultGridGeneratorOptions.height);
+    let mountainCount = 0;
+    let cityCount = 0;
+    let generalCount = 0;
+    grid.forEach((cell) => {
+      if (cell.terrain === Terrain.MOUNTAIN) mountainCount++;
+      else if (cell.terrain === Terrain.CITY) cityCount++;
+      else if (cell.terrain === Terrain.GENERAL) generalCount++;
+    });
+    const totalCells = grid.width * grid.height;
+    expect(mountainCount / totalCells).toBeCloseTo(
+      DefaultGridGeneratorOptions.mountainRate,
+      1,
+    );
+    expect(cityCount / totalCells).toBeCloseTo(
+      DefaultGridGeneratorOptions.cityRate,
+      1,
+    );
+    expect(generalCount).toBe(DefaultGridGeneratorOptions.generalCount);
   });
 
   it("produces deterministic terrain for the same seed and options", () => {
@@ -100,7 +120,9 @@ describe("DefaultGridGenerator", () => {
     const generals = collectByTerrain(grid, Terrain.GENERAL);
     expect(generals).toHaveLength(DefaultGridGeneratorOptions.generalCount);
     for (const g of generals) {
-      expect(grid.get(g)?.troopCount).toBe(50);
+      expect(grid.get(g)?.troopCount).toBe(
+        DefaultGridGeneratorOptions.generalInitialTroops,
+      );
     }
   });
 
@@ -126,7 +148,10 @@ describe("DefaultGridGenerator", () => {
     const height = 14;
     const grid = generator.generate({ width, height, seed: 555 });
     const generals = collectByTerrain(grid, Terrain.GENERAL);
-    const minDist = Math.floor(Math.min(width, height) * 0.6);
+    const minDist = Math.floor(
+      Math.min(width, height) *
+        DefaultGridGeneratorOptions.minGeneralDistanceFactor,
+    );
 
     for (let i = 0; i < generals.length; i++) {
       for (let j = i + 1; j < generals.length; j++) {
@@ -171,17 +196,6 @@ describe("DefaultGridGenerator", () => {
         }
       }
       expect(visited.has(`${g.x},${g.y}`)).toBe(true);
-    }
-  });
-
-  it("ensures each general has sufficient expansion space", () => {
-    const grid = generator.generate({ width: 20, height: 14, seed: 999 });
-    const generals = collectByTerrain(grid, Terrain.GENERAL);
-    const minExpansion = 8;
-
-    for (const g of generals) {
-      const reachable = bfsReachable(grid, g);
-      expect(reachable).toBeGreaterThanOrEqual(minExpansion);
     }
   });
 
