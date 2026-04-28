@@ -64,6 +64,14 @@ export class StandardGame extends BaseGame implements IStandardGame {
     this.grid.forEach((cell) => {
       if (cell.terrain === Terrain.GENERAL) {
         cell.troopCount = (cell.troopCount ?? 0) + 1;
+      } else if (cell.terrain === Terrain.CITY && cell.owner) {
+        cell.troopCount = (cell.troopCount ?? 0) + 1;
+      } else if (
+        cell.terrain === Terrain.PLAIN &&
+        cell.owner &&
+        this.tick % 25 === 0
+      ) {
+        cell.troopCount = (cell.troopCount ?? 0) + 1;
       }
     });
 
