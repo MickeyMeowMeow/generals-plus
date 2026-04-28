@@ -181,6 +181,7 @@ export class MatchRoom extends Room<{
     this.game.nextTick();
     this.state.tick = this.game.tick;
 
+    this.detectEliminations();
     this.syncPlayerStats();
     this.updateClientViews();
 
@@ -189,6 +190,42 @@ export class MatchRoom extends Room<{
       this.state.status = GameStatus.FINISHED;
       this.broadcast(MatchMessage.GAME_END, result);
       this.disconnect();
+    }
+  }
+
+  private detectEliminations() {
+    if (!this.game) {
+      logger.error(
+        `[MatchRoom] Error: Game instance not found on detectEliminations`,
+      );
+      throw new Error("Game instance not found");
+    }
+
+    for (const [playerId, enginePlayer] of this.game.players) {
+      if (enginePlayer.status !== PlayerStatus.ELIMINATED) continue;
+
+      const statePlayer = this.state.players.get(playerId);
+      if (!statePlayer || statePlayer.status === PlayerStatus.ELIMINATED)
+        continue;
+
+      statePlayer.status = PlayerStatus.ELIMINATED;
+
+      const sessionId = this.playerToSessionId.get(playerId);
+      if (sessionId) {
+        this.state.clientActionQueues.delete(sessionId);
+        this.state.clientVisions.delete(sessionId);
+        this.sessionToPlayerId.delete(sessionId);
+        this.playerToSessionId.delete(playerId);
+
+        const client = this.clients.find((c) => c.sessionId === sessionId);
+        if (client) {
+          client.leave();
+        }
+      }
+
+      logger.info(
+        `[MatchRoom] Player ${statePlayer.username} eliminated at tick ${this.game.tick}`,
+      );
     }
   }
 
