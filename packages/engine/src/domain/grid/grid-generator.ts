@@ -114,6 +114,9 @@ interface ResolvedConfig {
   readonly mountainRate: number;
   readonly cityRate: number;
   readonly generalCount: number;
+  readonly minGeneralDistanceFactor: number;
+  readonly generalInitialTroops: number;
+  readonly cityInitialTroops: number;
 }
 
 // ── DefaultGridGenerator ─────────────────────────────────────────────
@@ -129,10 +132,12 @@ interface ResolvedConfig {
 export class DefaultGridGenerator implements GridGenerator {
   generate(options: GridGeneratorOptions = {}): IGrid {
     const config = this.resolveOptions(options);
+    const baseSeed = options.seed ?? DEFAULT_SEED;
     const baseRng = new SeededRandom(options.seed ?? DEFAULT_SEED);
 
     for (let attempt = 0; attempt <= MAX_RETRY_COUNT; attempt++) {
-      const rng = attempt === 0 ? baseRng : baseRng.derive();
+      const rng =
+        attempt === 0 ? baseRng : new SeededRandom(baseSeed + attempt);
       const result = this.tryGenerate(config, rng);
       if (result) {
         return result;
@@ -171,7 +176,7 @@ export class DefaultGridGenerator implements GridGenerator {
       return null;
     }
 
-    const grid = this.materializeCells(terrain, width, height);
+    const grid = this.materializeCells(terrain, width, height, config);
 
     return grid;
   }
@@ -184,6 +189,11 @@ export class DefaultGridGenerator implements GridGenerator {
     const mountainRate = options.mountainRate ?? DEFAULT_MOUNTAIN_RATE;
     const cityRate = options.cityRate ?? DEFAULT_CITY_RATE;
     const generalCount = options.generalCount ?? DEFAULT_GENERAL_COUNT;
+    const minGeneralDistanceFactor =
+      options.minGeneralDistanceFactor ?? MIN_GENERAL_DISTANCE_FACTOR;
+    const generalInitialTroops =
+      options.generalInitialTroops ?? GENERAL_INITIAL_TROOPS;
+    const cityInitialTroops = options.cityInitialTroops ?? CITY_INITIAL_TROOPS;
 
     if (width < MIN_WIDTH || height < MIN_HEIGHT) {
       throw new Error(
@@ -204,7 +214,16 @@ export class DefaultGridGenerator implements GridGenerator {
       throw new Error(`General count must be at least 1, got ${generalCount}.`);
     }
 
-    return { width, height, mountainRate, cityRate, generalCount };
+    return {
+      width,
+      height,
+      mountainRate,
+      cityRate,
+      generalCount,
+      minGeneralDistanceFactor,
+      generalInitialTroops,
+      cityInitialTroops,
+    };
   }
 
   // ── Step 1: place generals ───────────────────────────────────────
@@ -215,7 +234,7 @@ export class DefaultGridGenerator implements GridGenerator {
   ): ICoordinate[] | null {
     const { width, height, generalCount } = config;
     const minDistance = Math.floor(
-      Math.min(width, height) * MIN_GENERAL_DISTANCE_FACTOR,
+      Math.min(width, height) * config.minGeneralDistanceFactor,
     );
 
     // Build shuffled candidate pool (interior cells only)
@@ -365,6 +384,7 @@ export class DefaultGridGenerator implements GridGenerator {
     terrain: Terrain[][],
     width: number,
     height: number,
+    options: GridGeneratorOptions,
   ): IGrid {
     const cells = Array.from({ length: height }, (_, y) =>
       Array.from(
@@ -373,7 +393,7 @@ export class DefaultGridGenerator implements GridGenerator {
           new Cell({
             coordinate: { x, y },
             terrain: terrain[y][x],
-            troopCount: this.initialTroops(terrain[y][x]),
+            troopCount: this.initialTroops(terrain[y][x], options),
           }),
       ),
     );
@@ -455,9 +475,14 @@ export class DefaultGridGenerator implements GridGenerator {
     return generals.every((g) => visited[g.y][g.x]);
   }
 
-  private initialTroops(terrain: Terrain): number | null {
-    if (terrain === Terrain.GENERAL) return GENERAL_INITIAL_TROOPS;
-    if (terrain === Terrain.CITY) return CITY_INITIAL_TROOPS;
+  private initialTroops(
+    terrain: Terrain,
+    options: GridGeneratorOptions,
+  ): number | null {
+    if (terrain === Terrain.GENERAL)
+      return options.generalInitialTroops ?? GENERAL_INITIAL_TROOPS;
+    if (terrain === Terrain.CITY)
+      return options.cityInitialTroops ?? CITY_INITIAL_TROOPS;
     return null;
   }
 }
