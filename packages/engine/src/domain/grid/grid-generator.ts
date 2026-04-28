@@ -29,7 +29,6 @@ const GENERAL_INITIAL_TROOPS = 50;
 const CITY_INITIAL_TROOPS = 50;
 const EDGE_MARGIN = 1;
 const MAX_RETRY_COUNT = 100;
-const MIN_EXPANSION_CELLS = 8;
 const MOUNTAIN_CLUSTER_MAX_SIZE = 1;
 
 // ── PRNG ─────────────────────────────────────────────────────────────
@@ -82,6 +81,9 @@ export interface GridGeneratorOptions {
   readonly mountainRate?: number;
   readonly cityRate?: number;
   readonly generalCount?: number;
+  readonly minGeneralDistanceFactor?: number; // expected to be in a narrower range, but TBD
+  readonly generalInitialTroops?: number;
+  readonly cityInitialTroops?: number;
 }
 
 /** Default options exposed for external reference. */
@@ -92,6 +94,9 @@ export const DefaultGridGeneratorOptions: Required<GridGeneratorOptions> = {
   mountainRate: DEFAULT_MOUNTAIN_RATE,
   cityRate: DEFAULT_CITY_RATE,
   generalCount: DEFAULT_GENERAL_COUNT,
+  minGeneralDistanceFactor: MIN_GENERAL_DISTANCE_FACTOR,
+  generalInitialTroops: GENERAL_INITIAL_TROOPS,
+  cityInitialTroops: CITY_INITIAL_TROOPS,
 };
 
 /**
@@ -160,17 +165,13 @@ export class DefaultGridGenerator implements GridGenerator {
 
     this.paintMountains(config, rng, terrain, protectedZone);
 
+    this.placeCities(config, rng, terrain, protectedZone, generals);
+
     if (!this.areAllGeneralsConnected(terrain, generals)) {
       return null;
     }
 
-    this.placeCities(config, rng, terrain, protectedZone, generals);
-
     const grid = this.materializeCells(terrain, width, height);
-
-    if (!this.validateGrid(terrain, generals, config)) {
-      return null;
-    }
 
     return grid;
   }
@@ -379,29 +380,6 @@ export class DefaultGridGenerator implements GridGenerator {
     return new Grid(width, height, cells);
   }
 
-  // ── Step 6: validate ─────────────────────────────────────────────
-
-  private validateGrid(
-    terrain: Terrain[][],
-    generals: ICoordinate[],
-    config: ResolvedConfig,
-  ): boolean {
-    // Check each general has enough expansion space
-    for (const g of generals) {
-      const reachable = this.bfsCount(
-        terrain,
-        g,
-        config.width,
-        config.height,
-        GENERAL_SAFE_RADIUS + MIN_EXPANSION_CELLS,
-      );
-      if (reachable < MIN_EXPANSION_CELLS) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   // ── Helpers ──────────────────────────────────────────────────────
 
   private createTerrainMatrix(width: number, height: number): Terrain[][] {
@@ -450,7 +428,7 @@ export class DefaultGridGenerator implements GridGenerator {
     visited[generals[0].y][generals[0].x] = true;
 
     while (queue.length > 0) {
-      const current = queue.shift()!;
+      const current = queue?.shift() ?? { x: 0, y: 0 };
       for (const [dx, dy] of [
         [0, -1],
         [1, 0],
@@ -465,7 +443,8 @@ export class DefaultGridGenerator implements GridGenerator {
           ny >= 0 &&
           ny < height &&
           !visited[ny][nx] &&
-          terrain[ny][nx] !== Terrain.MOUNTAIN
+          terrain[ny][nx] !== Terrain.MOUNTAIN &&
+          terrain[ny][nx] !== Terrain.CITY
         ) {
           visited[ny][nx] = true;
           queue.push({ x: nx, y: ny });
@@ -474,48 +453,6 @@ export class DefaultGridGenerator implements GridGenerator {
     }
 
     return generals.every((g) => visited[g.y][g.x]);
-  }
-
-  private bfsCount(
-    terrain: Terrain[][],
-    start: ICoordinate,
-    width: number,
-    height: number,
-    limit: number,
-  ): number {
-    const visited = Array.from({ length: height }, () =>
-      Array.from({ length: width }, () => false),
-    );
-    const queue: ICoordinate[] = [start];
-    visited[start.y][start.x] = true;
-    let count = 0;
-
-    while (queue.length > 0 && count < limit) {
-      const current = queue.shift()!;
-      count++;
-      for (const [dx, dy] of [
-        [0, -1],
-        [1, 0],
-        [0, 1],
-        [-1, 0],
-      ]) {
-        const nx = current.x + dx;
-        const ny = current.y + dy;
-        if (
-          nx >= 0 &&
-          nx < width &&
-          ny >= 0 &&
-          ny < height &&
-          !visited[ny][nx] &&
-          terrain[ny][nx] !== Terrain.MOUNTAIN
-        ) {
-          visited[ny][nx] = true;
-          queue.push({ x: nx, y: ny });
-        }
-      }
-    }
-
-    return count;
   }
 
   private initialTroops(terrain: Terrain): number | null {
