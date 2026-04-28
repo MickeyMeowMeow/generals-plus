@@ -78,7 +78,7 @@ export class VisibilityMap {
 
     // Step 1: Compute visibility first. Everything starts as shrouded.
     const visibilityData: Visibility[][] = Array.from({ length: height }, () =>
-      Array(width).fill(Visibility.VISIBLE),
+      Array(width).fill(Visibility.SHROUDED),
     );
 
     this.gameGrid.forEach((cell, coord) => {
@@ -111,7 +111,7 @@ export class VisibilityMap {
     const gridData: IVisionCell[][] = Array.from({ length: height }, () =>
       Array.from({ length: width }, () => ({
         coordinate: { x: 0, y: 0 },
-        visibility: Visibility.VISIBLE,
+        visibility: Visibility.SHROUDED,
         terrain: null,
         troopCount: null,
         owner: null,
