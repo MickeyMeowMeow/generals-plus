@@ -65,7 +65,9 @@ export function GridLayer({
         const x = cell.coordinate.x * stride;
         const y = cell.coordinate.y * stride;
 
-        let color = TerrainTheme[cell.terrain]?.color || 0xffffff;
+        let color = cell.ownerIndex
+          ? 0x000022 + (parseInt(cell.ownerIndex) + 1) * 0x003300
+          : TerrainTheme[cell.terrain]?.color || 0xffffff;
 
         // Handle visibility
         if (cell.visibility === Visibility.HIDDEN) {
