@@ -202,6 +202,10 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       seed: this.state.seed,
       mountainRate: this.state.mountainRate,
       cityRate: this.state.cityRate,
+      generalCount: this.state.players.length,
+      minGeneralDistanceFactor: this.state.minGeneralDistanceFactor,
+      generalInitialTroops: this.state.generalInitialTroops,
+      cityInitialTroops: this.state.cityInitialTroops,
     };
   }
 

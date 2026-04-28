@@ -19,4 +19,7 @@ export class SetupState extends Schema {
   @type("number") seed: number = 0;
   @type("number") mountainRate: number = 0.12;
   @type("number") cityRate: number = 0.06;
+  @type("number") minGeneralDistanceFactor: number = 0.6;
+  @type("number") generalInitialTroops: number = 50;
+  @type("number") cityInitialTroops: number = 50;
 }
