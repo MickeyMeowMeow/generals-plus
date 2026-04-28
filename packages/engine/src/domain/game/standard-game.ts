@@ -14,6 +14,19 @@ export class StandardGame extends BaseGame implements IStandardGame {
   public readonly mode = GameMode.CLASSIC;
   private readonly combatResolver = new StandardCombatResolver();
 
+  public startGame(): void {
+    super.startGame();
+    let index = 0;
+    const playersArray = Array.from(this.players.values());
+    console.log("playersArray:", playersArray);
+    this.grid.forEach((cell) => {
+      if (cell.terrain === Terrain.GENERAL) {
+        cell.owner = playersArray[index] ?? null;
+        index += 1;
+      }
+    });
+  }
+
   public handleAction(action: Action): boolean {
     if (this.status !== GameStatus.PLAYING) {
       return false;
@@ -47,6 +60,12 @@ export class StandardGame extends BaseGame implements IStandardGame {
     if (this.status !== GameStatus.PLAYING) {
       return;
     }
+
+    this.grid.forEach((cell) => {
+      if (cell.terrain === Terrain.GENERAL) {
+        cell.troopCount = (cell.troopCount ?? 0) + 1;
+      }
+    });
 
     // Process all grid, player, and team effects (e.g. troop generation)
     super.nextTick();

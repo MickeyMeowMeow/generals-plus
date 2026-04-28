@@ -1,10 +1,10 @@
 import { RequireAuthenticated } from "#/common/guards";
-import { GamePage } from "#/features/game/pages/game-page";
+import { GameManager } from "#/features/game/pages/game-manager";
 
 export default function MatchScreenRoute() {
   return (
     <RequireAuthenticated>
-      <GamePage />
+      <GameManager />
     </RequireAuthenticated>
   );
 }

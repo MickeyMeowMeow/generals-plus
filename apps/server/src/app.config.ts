@@ -6,6 +6,7 @@ import "dotenv/config";
 
 import { defineRoom, LobbyRoom, logger } from "@colyseus/core";
 import { monitor } from "@colyseus/monitor";
+import { Encoder } from "@colyseus/schema";
 import { defineServer, matchMaker } from "colyseus";
 import mongoose from "mongoose";
 
@@ -14,6 +15,8 @@ import { auth } from "#/features/auth/auth-config";
 import { MatchRoom } from "#/features/match/match-room";
 import { MatchQueueRoom } from "#/features/queue/queue-room";
 import { SetupRoom } from "#/features/setup/setup-room";
+
+Encoder.BUFFER_SIZE = 1024 * 1024;
 
 matchMaker.controller.exposedMethods = [
   "joinById",

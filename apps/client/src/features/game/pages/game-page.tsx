@@ -1,46 +1,50 @@
+import type { ISeatReservation } from "@colyseus/sdk/Client";
 import type { ICoordinate } from "@generals-plus/engine";
-import { DefaultGridGenerator } from "@generals-plus/engine";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
+import { useGameRoom } from "#/features/game/api/use-game-room";
 import { GameApp } from "#/features/game/renderer/game-app";
-import type { MoveDirection, MoveIntent } from "#/features/game/renderer/move";
+import type { MoveDirection } from "#/features/game/renderer/move";
 import { getTargetCoord } from "#/features/game/renderer/move";
 
-export function GamePage() {
-  const [tick, setTick] = useState(0);
-  const [selection, setSelection] = useState<ICoordinate | null>(null);
-  const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
+export function GamePage({ reservation }: { reservation: ISeatReservation }) {
+  const { room, renderGrid, moveQueue, gameState, sendMove } =
+    useGameRoom(reservation);
 
-  const onSelectCell = useCallback((coord: ICoordinate) => {
+  const [_tick, setTick] = useState(0);
+  const [selection, setSelection] = useState<ICoordinate | null>(null);
+  // const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
+
+  const handleSelectCell = useCallback((coord: ICoordinate) => {
     setSelection(coord);
   }, []);
 
   const handleQueueMove = useCallback(
     (direction: MoveDirection) => {
-      if (!selection) return;
+      if (!selection || !room) return;
       const from = selection;
-      const newMove = { from, direction };
+      const to = getTargetCoord({ from, direction });
 
-      setSelection(getTargetCoord(newMove));
-      setMoveQueue((prev) => [...prev, newMove]);
+      setSelection(to);
+      // setMoveQueue((prev) => [...prev, newMove]);
 
-      // TODO: Sync with colyseus
+      sendMove(from, to);
     },
-    [selection],
+    [selection, room, sendMove],
   );
 
   // TODO: Load generator from config
-  const generator = useMemo(() => new DefaultGridGenerator(), []);
+  // const generator = useMemo(() => new DefaultGridGenerator(), []);
 
-  const grid = useMemo(
-    () =>
-      generator.generate({
-        width: 28,
-        height: 18,
-        seed: tick,
-      }),
-    [generator, tick],
-  );
+  // const grid = useMemo(
+  //   () =>
+  //     generator.generate({
+  //       width: 28,
+  //       height: 18,
+  //       seed: tick,
+  //     }),
+  //   [generator, tick],
+  // );
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -49,13 +53,21 @@ export function GamePage() {
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    console.log("Game grid updated:", renderGrid);
+  }, [renderGrid]);
+
+  if (!gameState) return <div className="loading">Connecting to Server...</div>;
+
+  if (!renderGrid) return <div className="loading">Loading Game State...</div>;
+
   return (
     <div className="flex justify-center">
       <GameApp
-        grid={grid}
+        grid={renderGrid}
         selection={selection}
         moveQueue={moveQueue}
-        onSelectCell={onSelectCell}
+        onSelectCell={handleSelectCell}
         onQueueMove={handleQueueMove}
       />
     </div>

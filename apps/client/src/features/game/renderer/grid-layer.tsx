@@ -1,4 +1,5 @@
-import type { ICoordinate, IGrid2D, Terrain } from "@generals-plus/engine";
+import type { ICoordinate, Terrain } from "@generals-plus/engine";
+import { Grid2D, Visibility } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import type { FederatedPointerEvent } from "pixi.js";
 import { Container, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
@@ -15,9 +16,11 @@ export interface RenderGridCell {
   coordinate: ICoordinate;
   terrain: Terrain;
   troopCount: number | null;
+  visibility: Visibility;
+  ownerIndex: string | null;
 }
 
-export interface RenderGrid extends IGrid2D<RenderGridCell> {}
+export class RenderGrid extends Grid2D<RenderGridCell> {}
 
 interface GridLayerProps {
   grid: RenderGrid;
@@ -25,6 +28,13 @@ interface GridLayerProps {
   selection: ICoordinate | null;
   moveQueue: MoveIntent[];
   onCellClick: (coordinate: ICoordinate) => void;
+}
+
+function tintColor(color: number, alpha: number): number {
+  const r = ((color >> 16) & 0xff) * alpha;
+  const g = ((color >> 8) & 0xff) * alpha;
+  const b = (color & 0xff) * alpha;
+  return (r << 16) | (g << 8) | b;
 }
 
 export function GridLayer({
@@ -54,7 +64,17 @@ export function GridLayer({
       grid.forEach((cell) => {
         const x = cell.coordinate.x * stride;
         const y = cell.coordinate.y * stride;
-        const color = TerrainTheme[cell.terrain].color;
+
+        let color = TerrainTheme[cell.terrain]?.color || 0xffffff;
+
+        // Handle visibility
+        if (cell.visibility === Visibility.HIDDEN) {
+          color = 0x000000; // Total black for undiscovered
+        } else if (cell.visibility === Visibility.SHROUDED) {
+          // Simple way to "tint" for fog: darken the color
+          color = tintColor(color, 0.5);
+        }
+
         g.rect(x, y, cellSize, cellSize).fill(color);
       });
     },
@@ -157,7 +177,7 @@ export function GridLayer({
   const iconCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; icon: string }> = [];
     grid.forEach((cell) => {
-      const icon = TerrainTheme[cell.terrain].icon;
+      const icon = TerrainTheme[cell.terrain]?.icon;
       if (icon) cells.push({ cell, icon });
     });
     return cells;
