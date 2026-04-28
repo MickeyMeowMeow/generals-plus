@@ -188,7 +188,7 @@ export function GridLayer({
   const troopCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; count: number }> = [];
     grid.forEach((cell) => {
-      if (cell.troopCount !== null && cell.troopCount !== undefined) {
+      if (cell.troopCount) {
         cells.push({ cell, count: cell.troopCount });
       }
     });
