@@ -3,13 +3,13 @@ import { Application } from "@pixi/react";
 import { Assets } from "pixi.js";
 import { useEffect, useState } from "react";
 
-import type { RenderGrid } from "#/features/game/renderer/grid-layer.tsx";
-import { GridLayer } from "#/features/game/renderer/grid-layer.tsx";
-import type { MoveDirection, MoveIntent } from "#/features/game/renderer/move";
-import { KeyToDirection } from "#/features/game/renderer/move";
+import { MapRenderer } from "#/features/game/renderer/map-renderer";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 import { Viewport } from "#/features/game/renderer/viewport";
+import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
+import { KeyToDirection } from "#/features/game/utils/move";
 
 interface GameAppProps {
   /** Grid snapshot to render. */
@@ -75,7 +75,7 @@ export function GameApp({
         minScale={RenderConfig.minScale}
         maxScale={RenderConfig.maxScale}
       >
-        <GridLayer
+        <MapRenderer
           grid={grid}
           stride={RenderConfig.cellStride}
           selection={selection}

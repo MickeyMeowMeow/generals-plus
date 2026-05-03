@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useGameRoom } from "#/features/game/api/use-game-room";
 import { GameApp } from "#/features/game/renderer/game-app";
-import type { MoveDirection } from "#/features/game/renderer/move";
-import { getTargetCoord } from "#/features/game/renderer/move";
+import type { MoveDirection } from "#/features/game/utils/move";
+import { getTargetCoord } from "#/features/game/utils/move";
 
 export function GamePage({ reservation }: { reservation: ISeatReservation }) {
   const { room, renderGrid, moveQueue, gameState, sendMove } =

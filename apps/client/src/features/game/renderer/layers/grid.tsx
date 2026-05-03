@@ -1,0 +1,51 @@
+import { Visibility } from "@generals-plus/engine";
+import { extend } from "@pixi/react";
+import { Graphics } from "pixi.js";
+import { useCallback } from "react";
+
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
+import { TerrainTheme } from "#/features/game/renderer/theme.ts";
+
+extend({ Graphics });
+
+interface GridLayerProps {
+  grid: RenderGrid;
+  stride: number;
+  cellSize: number;
+}
+
+function tintColor(color: number, alpha: number): number {
+  const r = ((color >> 16) & 0xff) * alpha;
+  const g = ((color >> 8) & 0xff) * alpha;
+  const b = (color & 0xff) * alpha;
+  return (r << 16) | (g << 8) | b;
+}
+
+export function GridLayer({ grid, stride, cellSize }: GridLayerProps) {
+  const drawGrid = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      grid.forEach((cell) => {
+        const x = cell.coordinate.x * stride;
+        const y = cell.coordinate.y * stride;
+
+        let color = cell.ownerIndex
+          ? 0x000022 + (parseInt(cell.ownerIndex) + 1) * 0x003300
+          : TerrainTheme[cell.terrain]?.color || 0xffffff;
+
+        // Handle visibility
+        if (cell.visibility === Visibility.HIDDEN) {
+          color = 0x000000; // Total black for undiscovered
+        } else if (cell.visibility === Visibility.SHROUDED) {
+          // Simple way to "tint" for fog: darken the color
+          color = tintColor(color, 0.5);
+        }
+
+        g.rect(x, y, cellSize, cellSize).fill(color);
+      });
+    },
+    [grid, stride, cellSize],
+  );
+
+  return <pixiGraphics draw={drawGrid} />;
+}

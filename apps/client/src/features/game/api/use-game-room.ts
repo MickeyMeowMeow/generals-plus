@@ -6,10 +6,10 @@ import type { ActionData } from "@generals-plus/shared-types";
 import { useEffect, useState } from "react";
 
 import { colyseusClient } from "#/features/game/api/colyseus-client";
-import type { RenderGrid } from "#/features/game/renderer/grid-layer";
-import type { MoveIntent } from "#/features/game/renderer/move";
-import { MoveDirection } from "#/features/game/renderer/move";
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { createRenderGrid } from "#/features/game/utils/grid-adapter";
+import type { MoveIntent } from "#/features/game/utils/move";
+import { MoveDirection } from "#/features/game/utils/move";
 
 function getDirection(from: ICoordinate, to: ICoordinate): MoveDirection {
   if (to.y < from.y) return MoveDirection.UP;

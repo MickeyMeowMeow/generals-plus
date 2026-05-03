@@ -1,8 +1,8 @@
 import type { Terrain, Visibility } from "@generals-plus/engine";
 import type { ClientVision } from "@generals-plus/shared-types";
 
-import type { RenderGridCell } from "#/features/game/renderer/grid-layer";
-import { RenderGrid } from "#/features/game/renderer/grid-layer";
+import type { RenderGridCell } from "#/features/game/renderer/render-grid";
+import { RenderGrid } from "#/features/game/renderer/render-grid";
 
 /**
  * Adapts the flat Colyseus ClientVision arrays into a structure
@@ -14,14 +14,6 @@ export function createRenderGrid(
   height: number,
 ): RenderGrid {
   const cellGrid: RenderGridCell[][] = [];
-
-  console.log(
-    "Creating render grid with vision data:",
-    vision.terrain.length,
-    vision.troopCount.length,
-    vision.ownerIndex.length,
-    vision.visibility.length,
-  );
 
   for (let y = 0; y < height; y++) {
     cellGrid[y] = [];
@@ -38,8 +30,6 @@ export function createRenderGrid(
       });
     }
   }
-
-  console.log("Constructed cell grid:", cellGrid);
 
   return new RenderGrid(width, height, cellGrid);
 }
