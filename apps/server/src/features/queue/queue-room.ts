@@ -1,6 +1,6 @@
 import { JWT } from "@colyseus/auth";
 import type { Client, QueueOptions } from "@colyseus/core";
-import { matchMaker, QueueRoom } from "@colyseus/core";
+import { logger, matchMaker, QueueRoom } from "@colyseus/core";
 import { GameMode } from "@generals-plus/engine";
 import type {
   ClientAuth,
@@ -79,6 +79,19 @@ export class MatchQueueRoom extends QueueRoom {
   }
 
   onJoin(client: Client, options: { rank?: number }) {
+    const auth = client.auth as ClientAuth;
+    const existingClient = this.clients.find(
+      (c) =>
+        c.sessionId !== client.sessionId &&
+        (c.auth as ClientAuth).id === auth.id,
+    );
+    if (existingClient) {
+      logger.info(
+        `[MatchQueueRoom] Duplicate connection for ${auth.username}, kicking old session ${existingClient.sessionId}`,
+      );
+      existingClient.leave(4000);
+    }
+
     super.onJoin(client, { rank: options.rank ?? 0 });
   }
 }

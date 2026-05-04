@@ -111,6 +111,25 @@ export class MatchRoom extends Room<{
     if (userdata) {
       const player = this.state.players.get(userdata.id);
       if (player) {
+        // Deduplicate: clean up old session if this player already has one.
+        const oldSessionId = this.playerToSessionId.get(userdata.id);
+        if (oldSessionId && oldSessionId !== client.sessionId) {
+          logger.info(
+            `[MatchRoom] Duplicate connection for ${userdata.username}, replacing session ${oldSessionId} with ${client.sessionId}`,
+          );
+
+          this.sessionToPlayerId.delete(oldSessionId);
+          this.state.clientVisions.delete(oldSessionId);
+          this.state.clientActionQueues.delete(oldSessionId);
+
+          const oldClient = this.clients.find(
+            (c) => c.sessionId === oldSessionId,
+          );
+          if (oldClient) {
+            oldClient.leave(4000);
+          }
+        }
+
         player.sessionId = client.sessionId;
         player.status = PlayerStatus.ACTIVE;
 
