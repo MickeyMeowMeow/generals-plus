@@ -23,6 +23,9 @@ export function useGameRoom(reservation: ISeatReservation) {
   const [renderGrid, setRenderGrid] = useState<RenderGrid | null>(null);
   const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
   const [gameState, setGameState] = useState(null);
+  const [playerColors, setPlayerColors] = useState<Map<string, number>>(
+    new Map(),
+  );
 
   useEffect(() => {
     if (!reservation) return;
@@ -40,6 +43,13 @@ export function useGameRoom(reservation: ISeatReservation) {
 
         currentRoom.onStateChange((state) => {
           setGameState(state);
+
+          const colorMap = new Map<string, number>();
+          state.players.forEach((player: any) => {
+            colorMap.set(player.id, player.color);
+          });
+          setPlayerColors(colorMap);
+
           const myId = currentRoom.sessionId;
 
           const myVision = state.clientVisions.get(myId);
@@ -86,5 +96,5 @@ export function useGameRoom(reservation: ISeatReservation) {
     });
   };
 
-  return { room, renderGrid, moveQueue, gameState, sendMove };
+  return { room, renderGrid, moveQueue, gameState, sendMove, playerColors };
 }

@@ -1,35 +1,37 @@
 import { ColorPicker } from "#/components/game/color-picker";
 import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
-import { useSetupRoom } from "#/features/game/api/use-setup-room";
+import { useQueueRoom } from "#/features/game/api/use-queue-room";
 import { GamePage } from "#/features/game/pages/game-page";
 
-export function GameManager() {
-  const { room, setupState, seatReservation, startGame } = useSetupRoom();
+export function QueueManager() {
+  const { room, queueState, seatReservation } = useQueueRoom();
   const user = useUserAuthStore((s) => s.user as { id: string } | null);
 
-  // If we received a seat reservation, unmount Lobby and mount the actual Game
   if (seatReservation) {
     return <GamePage reservation={seatReservation} />;
   }
 
-  // Otherwise, show the Setup/Lobby Room
-  if (!setupState) {
-    return <div>Connecting to Lobby...</div>;
+  if (!queueState) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+        Connecting to Queue...
+      </div>
+    );
   }
 
-  const myPlayer = setupState.players.find((p) => p.id === user?.id);
-  const takenColors = setupState.players.map((p) => p.color);
+  const myPlayer = queueState.players.find((p) => p.id === user?.id);
+  const takenColors = queueState.players.map((p) => p.color);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
-      <h1 className="text-3xl mb-6">Game Lobby</h1>
+      <h1 className="text-3xl mb-6">Matchmaking Queue</h1>
 
       <div className="mb-6">
         <h2 className="text-xl border-b mb-2">
-          Players ({setupState.players.length} / {setupState.maxPlayers})
+          Players in Queue ({queueState.players.length})
         </h2>
         <ul className="space-y-2">
-          {setupState.players.map((player) => (
+          {queueState.players.map((player) => (
             <li key={player.id} className="flex items-center gap-2">
               <span
                 className="inline-block h-4 w-4 rounded-full"
@@ -37,7 +39,7 @@ export function GameManager() {
                   backgroundColor: `#${player.color.toString(16).padStart(6, "0")}`,
                 }}
               />
-              {player.username} {player.isHost && "(Host)"}
+              {player.username}
             </li>
           ))}
         </ul>
@@ -54,14 +56,7 @@ export function GameManager() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={startGame}
-        disabled={setupState.players.length < 2}
-        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded disabled:opacity-50"
-      >
-        Start Game
-      </button>
+      <p className="text-gray-400">Waiting for players...</p>
     </div>
   );
 }

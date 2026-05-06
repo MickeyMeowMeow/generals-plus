@@ -4,6 +4,7 @@ export interface PlayerInit {
   id: string;
   username: string;
   teamId: string;
+  color: number;
 }
 
 export interface ClientAuth {

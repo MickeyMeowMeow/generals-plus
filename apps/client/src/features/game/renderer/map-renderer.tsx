@@ -21,6 +21,7 @@ interface MapRendererProps {
   selection: ICoordinate | null;
   moveQueue: MoveIntent[];
   onCellClick: (coordinate: ICoordinate) => void;
+  playerColors: Map<string, number>;
 }
 
 export function MapRenderer({
@@ -29,6 +30,7 @@ export function MapRenderer({
   selection,
   moveQueue,
   onCellClick,
+  playerColors,
 }: MapRendererProps) {
   const cellSize = stride - RenderConfig.cellGap;
 
@@ -46,7 +48,12 @@ export function MapRenderer({
 
   return (
     <pixiContainer eventMode="static" onPointerDown={onPointerDown}>
-      <GridLayer grid={grid} stride={stride} cellSize={cellSize} />
+      <GridLayer
+        grid={grid}
+        stride={stride}
+        cellSize={cellSize}
+        playerColors={playerColors}
+      />
       <IconLayer grid={grid} stride={stride} />
       <TroopLayer grid={grid} stride={stride} cellSize={cellSize} />
       <HighlightLayer

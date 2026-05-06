@@ -12,6 +12,7 @@ interface GridLayerProps {
   grid: RenderGrid;
   stride: number;
   cellSize: number;
+  playerColors: Map<string, number>;
 }
 
 function tintColor(color: number, alpha: number): number {
@@ -21,7 +22,12 @@ function tintColor(color: number, alpha: number): number {
   return (r << 16) | (g << 8) | b;
 }
 
-export function GridLayer({ grid, stride, cellSize }: GridLayerProps) {
+export function GridLayer({
+  grid,
+  stride,
+  cellSize,
+  playerColors,
+}: GridLayerProps) {
   const drawGrid = useCallback(
     (g: Graphics) => {
       g.clear();
@@ -30,7 +36,7 @@ export function GridLayer({ grid, stride, cellSize }: GridLayerProps) {
         const y = cell.coordinate.y * stride;
 
         let color = cell.ownerIndex
-          ? 0x000022 + (parseInt(cell.ownerIndex) + 1) * 0x003300
+          ? (playerColors.get(cell.ownerIndex) ?? 0x333333)
           : TerrainTheme[cell.terrain]?.color || 0xffffff;
 
         // Handle visibility
@@ -44,7 +50,7 @@ export function GridLayer({ grid, stride, cellSize }: GridLayerProps) {
         g.rect(x, y, cellSize, cellSize).fill(color);
       });
     },
-    [grid, stride, cellSize],
+    [grid, stride, cellSize, playerColors],
   );
 
   return <pixiGraphics draw={drawGrid} />;

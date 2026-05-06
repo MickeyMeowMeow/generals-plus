@@ -18,6 +18,7 @@ interface GameAppProps {
   readonly moveQueue: MoveIntent[];
   readonly onSelectCell: (coord: ICoordinate) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
+  readonly playerColors: Map<string, number>;
 }
 
 export function GameApp({
@@ -26,6 +27,7 @@ export function GameApp({
   moveQueue,
   onSelectCell,
   onQueueMove,
+  playerColors,
 }: GameAppProps) {
   const [isReady, setIsReady] = useState(false);
 
@@ -81,6 +83,7 @@ export function GameApp({
           selection={selection}
           moveQueue={moveQueue}
           onCellClick={onSelectCell}
+          playerColors={playerColors}
         />
       </Viewport>
     </Application>

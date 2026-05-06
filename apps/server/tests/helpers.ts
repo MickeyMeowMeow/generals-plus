@@ -9,7 +9,7 @@ import type {
 } from "@generals-plus/engine";
 import { GameMode as GameModeEnum, GameStatus } from "@generals-plus/engine";
 import type { PlayerInit, RoomData } from "@generals-plus/shared-types";
-import { ROOM_NAMES } from "@generals-plus/shared-types";
+import { PLAYER_COLOR_PALETTE, ROOM_NAMES } from "@generals-plus/shared-types";
 
 import { MatchRoom } from "#/features/match/match-room";
 import { MatchQueueRoom } from "#/features/queue/queue-room";
@@ -66,8 +66,18 @@ export function createValidRoomData(overrides?: Partial<RoomData>): RoomData {
     game: createMockGame(),
     isPublic: true,
     playerInit: [
-      { id: "p1", username: "Player1", teamId: "team_0" } satisfies PlayerInit,
-      { id: "p2", username: "Player2", teamId: "team_1" } satisfies PlayerInit,
+      {
+        id: "p1",
+        username: "Player1",
+        teamId: "team_0",
+        color: PLAYER_COLOR_PALETTE[0],
+      } satisfies PlayerInit,
+      {
+        id: "p2",
+        username: "Player2",
+        teamId: "team_1",
+        color: PLAYER_COLOR_PALETTE[1],
+      } satisfies PlayerInit,
     ],
     ...overrides,
   };

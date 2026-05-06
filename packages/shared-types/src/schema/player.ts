@@ -6,6 +6,7 @@ export class Player extends Schema {
   @type("string") status: PlayerStatus = PlayerStatus.ACTIVE;
   @type("string") teamId: string = "";
   @type("string") username: string = "";
+  @type("number") color: number = 0;
   @view() @type("number") land: number = 0;
   @view() @type("number") troops: number = 0;
   @type("string") sessionId: string = "";

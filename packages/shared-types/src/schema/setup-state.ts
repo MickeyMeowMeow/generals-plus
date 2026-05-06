@@ -5,6 +5,7 @@ export class SetupPlayer extends Schema {
   @type("string") id: string = "";
   @type("string") username: string = "";
   @type("boolean") isHost: boolean = false;
+  @type("number") color: number = 0;
 }
 
 export class SetupState extends Schema {

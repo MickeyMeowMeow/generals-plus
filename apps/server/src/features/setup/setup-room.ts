@@ -5,6 +5,8 @@ import type { GridGeneratorOptions } from "@generals-plus/engine";
 import { DefaultGridGeneratorOptions, GameMode } from "@generals-plus/engine";
 import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
 import {
+  isPaletteColor,
+  nextAvailableColor,
   ROOM_NAMES,
   SetupPlayer,
   SetupState,
@@ -89,6 +91,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     player.id = id;
     player.username = username;
     player.isHost = isFirst;
+    player.color =
+      nextAvailableColor(this.state.players.map((p) => p.color)) ?? 0;
     this.state.players.push(player);
 
     if (isFirst) {
@@ -201,6 +205,27 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         target.leave(4000);
       }
     },
+
+    pickColor: (client: Client, message: { color: number }) => {
+      const auth = client.auth as ClientAuth;
+      const player = this.state.players.find((p) => p.id === auth.id);
+      if (!player) return;
+
+      if (!isPaletteColor(message.color)) {
+        client.send("error", "invalid color");
+        return;
+      }
+
+      const taken = this.state.players.find(
+        (p) => p.id !== auth.id && p.color === message.color,
+      );
+      if (taken) {
+        client.send("error", "color already taken");
+        return;
+      }
+
+      player.color = message.color;
+    },
   };
 
   private isHost(client: Client): boolean {
@@ -226,6 +251,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       id: p.id,
       username: p.username,
       teamId: `team_${i}`,
+      color: p.color,
     }));
 
     const game = createGame({

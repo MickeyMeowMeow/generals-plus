@@ -7,7 +7,14 @@ import type {
   PlayerInit,
   RoomData,
 } from "@generals-plus/shared-types";
-import { ROOM_NAMES } from "@generals-plus/shared-types";
+import {
+  isPaletteColor,
+  nextAvailableColor,
+  PLAYER_COLOR_PALETTE,
+  QueuePlayer,
+  QueueState,
+  ROOM_NAMES,
+} from "@generals-plus/shared-types";
 
 import { createGame } from "#/features/game-factory";
 
@@ -16,8 +23,11 @@ const DEFAULT_MIN_PLAYERS = 2;
 const DEFAULT_COUNTDOWN_CYCLES = 20;
 
 export class MatchQueueRoom extends QueueRoom {
+  declare state: QueueState;
+
   private gameMode: GameMode = GameMode.CLASSIC;
   private minPlayers = DEFAULT_MIN_PLAYERS;
+  private queueState = new QueueState();
 
   onCreate(
     options: QueueOptions & {
@@ -28,6 +38,8 @@ export class MatchQueueRoom extends QueueRoom {
     this.gameMode = options.gameMode;
     this.minPlayers = DEFAULT_MIN_PLAYERS;
 
+    this.state = this.queueState;
+
     const queueOptions: QueueOptions = {
       matchRoomName: ROOM_NAMES.MATCH,
       maxPlayers: DEFAULT_MAX_PLAYERS,
@@ -36,10 +48,16 @@ export class MatchQueueRoom extends QueueRoom {
       onGroupReady: async (group) => {
         const playerInit: PlayerInit[] = group.clients.map((client, i) => {
           const auth = client.auth as ClientAuth;
+          const queuePlayer = this.queueState.players.find(
+            (p: QueuePlayer) => p.id === auth.id,
+          );
           return {
             id: auth.id,
             username: auth.username ?? `Player_${i + 1}`,
             teamId: `team_${i}`,
+            color:
+              queuePlayer?.color ??
+              PLAYER_COLOR_PALETTE[i % PLAYER_COLOR_PALETTE.length],
           };
         });
 
@@ -59,6 +77,29 @@ export class MatchQueueRoom extends QueueRoom {
     };
 
     super.onCreate(queueOptions);
+
+    this.onMessage("pickColor", (client, message: { color: number }) => {
+      const auth = client.auth as ClientAuth;
+      const player = this.queueState.players.find(
+        (p: QueuePlayer) => p.id === auth.id,
+      );
+      if (!player) return;
+
+      if (!isPaletteColor(message.color)) {
+        client.send("error", "invalid color");
+        return;
+      }
+
+      const taken = this.queueState.players.find(
+        (p: QueuePlayer) => p.id !== auth.id && p.color === message.color,
+      );
+      if (taken) {
+        client.send("error", "color already taken");
+        return;
+      }
+
+      player.color = message.color;
+    });
   }
 
   reassignMatchGroups() {
@@ -92,6 +133,25 @@ export class MatchQueueRoom extends QueueRoom {
       existingClient.leave(4000);
     }
 
+    const player = new QueuePlayer();
+    player.id = auth.id;
+    player.username = auth.username ?? "Player";
+    player.color =
+      nextAvailableColor(
+        this.queueState.players.map((p: QueuePlayer) => p.color),
+      ) ?? 0;
+    this.queueState.players.push(player);
+
     super.onJoin(client, { rank: options.rank ?? 0 });
+  }
+
+  onLeave(client: Client) {
+    const auth = client.auth as ClientAuth;
+    const idx = this.queueState.players.findIndex(
+      (p: QueuePlayer) => p.id === auth.id,
+    );
+    if (idx !== -1) {
+      this.queueState.players.splice(idx, 1);
+    }
   }
 }

@@ -54,6 +54,7 @@ export class MatchRoom extends Room<{
       player.id = playerInit.id;
       player.username = playerInit.username;
       player.teamId = playerInit.teamId;
+      player.color = playerInit.color;
       player.status = PlayerStatus.ACTIVE;
       state.players.set(playerInit.id, player);
     }

@@ -9,7 +9,11 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [
     reactRouter(),
-    babel({ presets: [reactCompilerPreset()] }),
+    babel({
+      presets: [reactCompilerPreset(), "@babel/preset-typescript"],
+      plugins: [["@babel/plugin-proposal-decorators", { version: "legacy" }]],
+      include: ["**/*.{ts,tsx,js,jsx}"],
+    }),
     tailwindcss(),
   ],
   resolve: {

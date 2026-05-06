@@ -8,7 +8,7 @@ import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 
 export function GamePage({ reservation }: { reservation: ISeatReservation }) {
-  const { room, renderGrid, moveQueue, gameState, sendMove } =
+  const { room, renderGrid, moveQueue, gameState, sendMove, playerColors } =
     useGameRoom(reservation);
 
   const [_tick, setTick] = useState(0);
@@ -69,6 +69,7 @@ export function GamePage({ reservation }: { reservation: ISeatReservation }) {
         moveQueue={moveQueue}
         onSelectCell={handleSelectCell}
         onQueueMove={handleQueueMove}
+        playerColors={playerColors}
       />
     </div>
   );
