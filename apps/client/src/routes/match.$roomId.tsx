@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 
 import { RequireAuthenticated } from "#/common/guards";
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useUser } from "#/features/auth/hooks";
 import { MatchHeader } from "#/features/match/components/match-header";
 import { PlayerPanel } from "#/features/match/components/player-panel";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
@@ -13,7 +13,7 @@ function MatchPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const resolvedRoomId = roomId ?? "";
   const status = useMatchConnectionStore((state) => state.status);
-  const displayName = useUserAuthStore((state) => state.displayName);
+  const displayName = useUser((user) => user?.displayName);
   const activeRoomId = useMatchConnectionStore((state) => state.roomId);
   const sessionId = useMatchConnectionStore((state) => state.sessionId);
   const isReconnecting = useMatchConnectionStore(

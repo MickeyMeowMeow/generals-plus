@@ -1,11 +1,11 @@
 import { ColorPicker } from "#/components/game/color-picker";
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useUser } from "#/features/auth/hooks";
 import { useSetupRoom } from "#/features/game/api/use-setup-room";
 import { GamePage } from "#/features/game/pages/game-page";
 
 export function GameManager() {
   const { room, setupState, seatReservation, startGame } = useSetupRoom();
-  const user = useUserAuthStore((s) => s.user as { id: string } | null);
+  const userId = useUser((user) => user?.id);
 
   // If we received a seat reservation, unmount Lobby and mount the actual Game
   if (seatReservation) {
@@ -17,7 +17,7 @@ export function GameManager() {
     return <div>Connecting to Lobby...</div>;
   }
 
-  const myPlayer = setupState.players.find((p) => p.id === user?.id);
+  const myPlayer = setupState.players.find((p) => p.id === userId);
   const takenColors = setupState.players.map((p) => p.color);
 
   return (

@@ -3,10 +3,10 @@ import { Outlet } from "react-router";
 
 import { AppHeader } from "#/components/layout/app-header";
 import { PageContainer } from "#/components/layout/page-container";
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useAuthStore } from "#/features/auth/hooks";
 
 export default function AppLayout() {
-  const hydrateUser = useUserAuthStore((state) => state.hydrateUser);
+  const hydrateUser = useAuthStore((state) => state.hydrate);
 
   useEffect(() => {
     void hydrateUser();

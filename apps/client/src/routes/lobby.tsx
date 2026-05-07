@@ -1,9 +1,9 @@
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
 import { RequireAuthenticated } from "#/common/guards";
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useAuthStore, useUser } from "#/features/auth/hooks";
 import { PlayerInfo } from "#/features/lobby/components/player-info";
 import { RoomJoinForm } from "#/features/lobby/components/room-join-form";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
@@ -23,11 +23,11 @@ function LobbyPage() {
   const sessionId = useMatchConnectionStore((state) => state.sessionId);
   const lastError = useMatchConnectionStore((state) => state.lastError);
 
-  const authStatus = useUserAuthStore((state) => state.status);
-  const displayName = useUserAuthStore((state) => state.displayName);
-  const signOut = useUserAuthStore((state) => state.signOut);
+  const authStatus = useAuthStore((state) => state.status);
+  const signOut = useAuthStore((state) => state.signOut);
+  const displayName = useUser((state) => state?.displayName);
 
-  const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
+  const handleJoin = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextRoom = roomName.trim();

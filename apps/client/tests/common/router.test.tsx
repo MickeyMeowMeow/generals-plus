@@ -4,7 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useAuthStore } from "#/features/auth/hooks";
 import AppLayout from "#/routes/_app";
 import IndexRoute from "#/routes/_index";
 import LobbyRoute from "#/routes/lobby";
@@ -36,12 +36,12 @@ function renderRoute(initialPath: string) {
 }
 
 describe("app routes", () => {
-  const initialAuthState = useUserAuthStore.getInitialState();
+  const initialAuthState = useAuthStore.getInitialState();
 
   beforeEach(() => {
-    useUserAuthStore.setState(initialAuthState, true);
-    useUserAuthStore.setState({
-      hydrateUser: vi.fn().mockResolvedValue(undefined),
+    useAuthStore.setState(initialAuthState, true);
+    useAuthStore.setState({
+      hydrate: vi.fn().mockResolvedValue(undefined),
     });
   });
 
@@ -57,13 +57,15 @@ describe("app routes", () => {
   });
 
   it("renders lobby for authenticated players", async () => {
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "authenticated",
-      hasHydrated: true,
-      displayName: "Scout",
-      user: { name: "Scout" },
+      isHydrated: true,
+      user: {
+        id: "scout",
+        displayName: "Scout",
+      },
       token: "token-1",
-      lastError: null,
+      error: null,
     });
 
     renderRoute("/lobby");
@@ -71,13 +73,12 @@ describe("app routes", () => {
   });
 
   it("redirects unauthenticated players away from protected routes", async () => {
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "idle",
-      hasHydrated: true,
-      displayName: null,
+      isHydrated: true,
       user: null,
       token: null,
-      lastError: null,
+      error: null,
     });
 
     renderRoute("/match/alpha-room");

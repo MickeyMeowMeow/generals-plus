@@ -1,11 +1,11 @@
 import { ColorPicker } from "#/components/game/color-picker";
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useUser } from "#/features/auth/hooks";
 import { useQueueRoom } from "#/features/game/api/use-queue-room";
 import { GamePage } from "#/features/game/pages/game-page";
 
 export function QueueManager() {
   const { room, queueState, seatReservation } = useQueueRoom();
-  const user = useUserAuthStore((s) => s.user as { id: string } | null);
+  const userId = useUser((user) => user?.id);
 
   if (seatReservation) {
     return <GamePage reservation={seatReservation} />;
@@ -19,7 +19,7 @@ export function QueueManager() {
     );
   }
 
-  const myPlayer = queueState.players.find((p) => p.id === user?.id);
+  const myPlayer = queueState.players.find((p) => p.id === userId);
   const takenColors = queueState.players.map((p) => p.color);
 
   return (

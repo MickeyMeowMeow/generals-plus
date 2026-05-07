@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useAuthStore } from "#/features/auth/hooks";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 import AppLayout from "#/routes/_app";
 import IndexRoute from "#/routes/_index";
@@ -15,7 +15,7 @@ import NotFoundRoute from "#/routes/not-found";
 import UserRoute from "#/routes/user";
 
 const initialMatchState = useMatchConnectionStore.getInitialState();
-const initialAuthState = useUserAuthStore.getInitialState();
+const initialAuthState = useAuthStore.getInitialState();
 
 function renderRoute(initialPath: string) {
   const router = createMemoryRouter(
@@ -43,9 +43,9 @@ function renderRoute(initialPath: string) {
 describe("client connection flow", () => {
   beforeEach(() => {
     useMatchConnectionStore.setState(initialMatchState, true);
-    useUserAuthStore.setState(initialAuthState, true);
-    useUserAuthStore.setState({
-      hydrateUser: vi.fn().mockResolvedValue(undefined),
+    useAuthStore.setState(initialAuthState, true);
+    useAuthStore.setState({
+      hydrate: vi.fn().mockResolvedValue(undefined),
     });
   });
 
@@ -56,13 +56,12 @@ describe("client connection flow", () => {
   it("calls connect action from lobby", async () => {
     const connect = vi.fn();
 
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "authenticated",
-      hasHydrated: true,
-      displayName: "Scout",
-      user: { name: "Scout" },
+      isHydrated: true,
+      user: { id: "scout", displayName: "Scout" },
       token: "token-scout",
-      lastError: null,
+      error: null,
     });
 
     useMatchConnectionStore.setState({
@@ -100,13 +99,12 @@ describe("client connection flow", () => {
       });
     });
 
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "authenticated",
-      hasHydrated: true,
-      displayName: "Rogue",
-      user: { displayName: "Rogue" },
+      isHydrated: true,
+      user: { id: "rogue", displayName: "Rogue" },
       token: "token-rogue",
-      lastError: null,
+      error: null,
     });
 
     useMatchConnectionStore.setState({
@@ -147,13 +145,12 @@ describe("client connection flow", () => {
   it("leaves room when match page unmounts", async () => {
     const leaveRoom = vi.fn().mockResolvedValue(undefined);
 
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "authenticated",
-      hasHydrated: true,
-      displayName: "Scout",
-      user: { name: "Scout" },
+      isHydrated: true,
+      user: { id: "scout", displayName: "Scout" },
       token: "token-scout",
-      lastError: null,
+      error: null,
     });
 
     useMatchConnectionStore.setState({
@@ -189,13 +186,12 @@ describe("client connection flow", () => {
   it("sends room access code when provided", async () => {
     const joinRoom = vi.fn().mockResolvedValue(undefined);
 
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "authenticated",
-      hasHydrated: true,
-      displayName: "Cipher",
-      user: { name: "Cipher" },
+      isHydrated: true,
+      user: { id: "cipher", displayName: "Cipher" },
       token: "token-cipher",
-      lastError: null,
+      error: null,
     });
 
     useMatchConnectionStore.setState({

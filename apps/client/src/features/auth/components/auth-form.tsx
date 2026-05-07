@@ -1,5 +1,5 @@
 import { Loader2, LogIn, LogOut } from "lucide-react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 
 import { ErrorAlert } from "#/components/feedback/error-alert";
 import { StatusBadge } from "#/components/feedback/status-badge";
@@ -22,7 +22,7 @@ interface AuthFormProps {
   lastError: string | null;
   authStatus: string;
   currentDisplayName: string | null;
-  onSignIn: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  onSignIn: (event: SubmitEvent<HTMLFormElement>) => Promise<void>;
   onSignOut: () => Promise<void>;
   onEnterLobby: () => void;
 }

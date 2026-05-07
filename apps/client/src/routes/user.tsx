@@ -1,9 +1,10 @@
-import type { FormEvent } from "react";
-import { useState } from "react";
+import type { SubmitEvent } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 
+import { AuthStatus } from "#/features/auth/auth-store";
 import { AuthForm } from "#/features/auth/components/auth-form";
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useAuthStore, useUser } from "#/features/auth/hooks";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
 /** Authentication page where players create or manage their anonymous session. */
@@ -11,22 +12,23 @@ export default function UserPage() {
   const navigate = useNavigate();
   const [displayNameInput, setDisplayNameInput] = useState("Commander");
 
-  const status = useUserAuthStore((state) => state.status);
-  const currentDisplayName = useUserAuthStore((state) => state.displayName);
-  const lastError = useUserAuthStore((state) => state.lastError);
-  const signInAnonymously = useUserAuthStore(
-    (state) => state.signInAnonymously,
-  );
-  const signOut = useUserAuthStore((state) => state.signOut);
+  const status = useAuthStore((state) => state.status);
+  const currentDisplayName = useUser((state) => state?.displayName ?? null);
+  const lastError = useAuthStore((state) => state.error);
+  const signInAnonymously = useAuthStore((state) => state.signInAnonymously);
+  const signOut = useAuthStore((state) => state.signOut);
   const resetMatchConnection = useMatchConnectionStore((state) => state.reset);
 
-  const handleSignIn = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await signInAnonymously(displayNameInput);
-    if (useUserAuthStore.getState().status === "authenticated") {
-      navigate("/lobby");
-    }
-  };
+  const handleSignIn = useCallback(
+    async (event: SubmitEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      await signInAnonymously(displayNameInput);
+      if (useAuthStore.getState().status === AuthStatus.AUTHENTICATED) {
+        navigate("/lobby");
+      }
+    },
+    [signInAnonymously, displayNameInput, navigate],
+  );
 
   const handleSignOut = async () => {
     await resetMatchConnection();
@@ -37,8 +39,8 @@ export default function UserPage() {
     <AuthForm
       displayName={displayNameInput}
       onDisplayNameChange={setDisplayNameInput}
-      isBusy={status === "authenticating"}
-      isAuthenticated={status === "authenticated"}
+      isBusy={status === AuthStatus.AUTHENTICATING}
+      isAuthenticated={status === AuthStatus.AUTHENTICATED}
       lastError={lastError}
       authStatus={status}
       currentDisplayName={currentDisplayName}

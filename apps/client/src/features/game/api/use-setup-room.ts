@@ -1,22 +1,37 @@
-import type { Room, SeatReservation } from "@colyseus/sdk";
-import type { SetupState } from "@generals-plus/shared-types";
+import type {
+  SeatReservation,
+  SetupClientMessagePayload,
+  SetupServerMessagePayload,
+  SetupState,
+} from "@generals-plus/shared-types";
 import { useEffect, useState } from "react";
 
-import { colyseusClient } from "#/features/game/api/colyseus-client";
+import { networkProvider } from "#/infra/network/provider";
+import type { RoomClient } from "#/infra/network/room";
+
+type SetupRoomClient = RoomClient<
+  SetupState,
+  SetupClientMessagePayload,
+  SetupServerMessagePayload
+>;
 
 export function useSetupRoom() {
-  const [room, setRoom] = useState<Room<SetupState> | null>(null);
+  const [room, setRoom] = useState<SetupRoomClient | null>(null);
   const [setupState, setSetupState] = useState<SetupState | null>(null);
 
   const [seatReservation, setSeatReservation] =
     useState<SeatReservation | null>(null);
 
   useEffect(() => {
-    let currentRoom: Room<SetupState>;
+    let currentRoom: SetupRoomClient;
 
     const connect = async () => {
       try {
-        currentRoom = await colyseusClient.joinOrCreate<SetupState>("setup");
+        currentRoom = await networkProvider.joinOrCreate<
+          SetupState,
+          SetupClientMessagePayload,
+          SetupServerMessagePayload
+        >("setup");
 
         setRoom(currentRoom);
 

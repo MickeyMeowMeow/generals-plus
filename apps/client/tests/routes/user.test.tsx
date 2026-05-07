@@ -5,7 +5,8 @@ import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { AuthStatus } from "#/features/auth/auth-store";
+import { useAuthStore } from "#/features/auth/hooks";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 import AppLayout from "#/routes/_app";
 import IndexRoute from "#/routes/_index";
@@ -14,7 +15,7 @@ import MatchRoute from "#/routes/match.$roomId";
 import NotFoundRoute from "#/routes/not-found";
 import UserRoute from "#/routes/user";
 
-const initialAuthState = useUserAuthStore.getInitialState();
+const initialAuthState = useAuthStore.getInitialState();
 const initialMatchState = useMatchConnectionStore.getInitialState();
 
 function renderRoute(initialPath: string) {
@@ -42,10 +43,10 @@ function renderRoute(initialPath: string) {
 
 describe("user route", () => {
   beforeEach(() => {
-    useUserAuthStore.setState(initialAuthState, true);
+    useAuthStore.setState(initialAuthState, true);
     useMatchConnectionStore.setState(initialMatchState, true);
-    useUserAuthStore.setState({
-      hydrateUser: vi.fn().mockResolvedValue(undefined),
+    useAuthStore.setState({
+      hydrate: vi.fn().mockResolvedValue(undefined),
     });
   });
 
@@ -54,13 +55,12 @@ describe("user route", () => {
   });
 
   it("renders user page with sign-in form", () => {
-    useUserAuthStore.setState({
-      status: "idle",
-      hasHydrated: true,
-      displayName: null,
+    useAuthStore.setState({
+      status: AuthStatus.IDLE,
+      isHydrated: true,
       user: null,
       token: null,
-      lastError: null,
+      error: null,
     });
 
     renderRoute("/user");
@@ -73,9 +73,9 @@ describe("user route", () => {
   });
 
   it("shows default display name in input", () => {
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "idle",
-      hasHydrated: true,
+      isHydrated: true,
     });
 
     renderRoute("/user");
@@ -86,9 +86,9 @@ describe("user route", () => {
   });
 
   it("disables sign-in button while authenticating", () => {
-    useUserAuthStore.setState({
-      status: "authenticating",
-      hasHydrated: true,
+    useAuthStore.setState({
+      status: AuthStatus.AUTHENTICATING,
+      isHydrated: true,
     });
 
     renderRoute("/user");
@@ -103,10 +103,10 @@ describe("user route", () => {
   });
 
   it("displays error message when auth fails", () => {
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "error",
-      hasHydrated: true,
-      lastError: "Network error",
+      isHydrated: true,
+      error: "Network error",
     });
 
     renderRoute("/user");
@@ -115,13 +115,12 @@ describe("user route", () => {
   });
 
   it("shows active player name when authenticated", () => {
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Nova",
-      user: { displayName: "Nova" },
+    useAuthStore.setState({
+      status: AuthStatus.AUTHENTICATED,
+      isHydrated: true,
+      user: { id: "nova", displayName: "Nova" },
       token: "tok",
-      lastError: null,
+      error: null,
     });
 
     renderRoute("/user");
@@ -132,13 +131,12 @@ describe("user route", () => {
   });
 
   it("navigates to lobby when clicking Enter lobby button", async () => {
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Scout",
-      user: { displayName: "Scout" },
+    useAuthStore.setState({
+      status: AuthStatus.AUTHENTICATED,
+      isHydrated: true,
+      user: { id: "scout", displayName: "Scout" },
       token: "tok",
-      lastError: null,
+      error: null,
     });
 
     const user = userEvent.setup();
@@ -149,9 +147,9 @@ describe("user route", () => {
   });
 
   it("updates display name input on typing", async () => {
-    useUserAuthStore.setState({
-      status: "idle",
-      hasHydrated: true,
+    useAuthStore.setState({
+      status: AuthStatus.IDLE,
+      isHydrated: true,
     });
 
     const user = userEvent.setup();
@@ -168,13 +166,12 @@ describe("user route", () => {
     const signOut = vi.fn().mockResolvedValue(undefined);
     const resetMatchConnection = vi.fn().mockResolvedValue(undefined);
 
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Helix",
-      user: { displayName: "Helix" },
+    useAuthStore.setState({
+      status: AuthStatus.AUTHENTICATED,
+      isHydrated: true,
+      user: { id: "helix", displayName: "Helix" },
       token: "tok",
-      lastError: null,
+      error: null,
       signOut,
     });
     useMatchConnectionStore.setState({ reset: resetMatchConnection });

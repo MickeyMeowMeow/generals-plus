@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useAuthStore } from "#/features/auth/hooks";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 import AppLayout from "#/routes/_app";
 import IndexRoute from "#/routes/_index";
@@ -14,7 +14,7 @@ import MatchRoute from "#/routes/match.$roomId";
 import NotFoundRoute from "#/routes/not-found";
 import UserRoute from "#/routes/user";
 
-const initialAuthState = useUserAuthStore.getInitialState();
+const initialAuthState = useAuthStore.getInitialState();
 const initialMatchState = useMatchConnectionStore.getInitialState();
 
 function renderRoute(initialPath: string) {
@@ -42,10 +42,10 @@ function renderRoute(initialPath: string) {
 
 describe("user auth flow", () => {
   beforeEach(() => {
-    useUserAuthStore.setState(initialAuthState, true);
+    useAuthStore.setState(initialAuthState, true);
     useMatchConnectionStore.setState(initialMatchState, true);
-    useUserAuthStore.setState({
-      hydrateUser: vi.fn().mockResolvedValue(undefined),
+    useAuthStore.setState({
+      hydrate: vi.fn().mockResolvedValue(undefined),
     });
   });
 
@@ -54,13 +54,12 @@ describe("user auth flow", () => {
   });
 
   it("redirects unauthenticated players to user page", async () => {
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "idle",
-      hasHydrated: true,
-      displayName: null,
+      isHydrated: true,
       user: null,
       token: null,
-      lastError: null,
+      error: null,
     });
 
     renderRoute("/lobby");
@@ -73,23 +72,21 @@ describe("user auth flow", () => {
     const signInAnonymously = vi
       .fn()
       .mockImplementation(async (name: string) => {
-        useUserAuthStore.setState({
+        useAuthStore.setState({
           status: "authenticated",
-          hasHydrated: true,
-          displayName: name,
-          user: { displayName: name },
+          isHydrated: true,
+          user: { id: name, displayName: name },
           token: "token-1",
-          lastError: null,
+          error: null,
         });
       });
 
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "idle",
-      hasHydrated: true,
-      displayName: null,
+      isHydrated: true,
       user: null,
       token: null,
-      lastError: null,
+      error: null,
       signInAnonymously,
     });
 
@@ -111,13 +108,12 @@ describe("user auth flow", () => {
     const signOut = vi.fn().mockResolvedValue(undefined);
     const resetMatchConnection = vi.fn().mockResolvedValue(undefined);
 
-    useUserAuthStore.setState({
+    useAuthStore.setState({
       status: "authenticated",
-      hasHydrated: true,
-      displayName: "Helix",
-      user: { displayName: "Helix" },
+      isHydrated: true,
+      user: { id: "helix", displayName: "Helix" },
       token: "token-2",
-      lastError: null,
+      error: null,
       signOut,
     });
 

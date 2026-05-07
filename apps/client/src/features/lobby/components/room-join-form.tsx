@@ -1,5 +1,5 @@
 import { Loader2, LogOut, Plug } from "lucide-react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 
 import { ErrorAlert } from "#/components/feedback/error-alert";
 import { StatusBadge } from "#/components/feedback/status-badge";
@@ -24,7 +24,7 @@ interface RoomJoinFormProps {
   lastError: string | null;
   connectionStatus: string;
   onConnect: () => void;
-  onJoin: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  onJoin: (event: SubmitEvent<HTMLFormElement>) => Promise<void>;
   onSignOut: () => Promise<void>;
 }
 
