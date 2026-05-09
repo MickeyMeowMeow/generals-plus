@@ -17,18 +17,10 @@ export interface IPlayer extends EffectTarget {
 }
 
 /**
- * Base statistics for a player at a given point in time.
+ * Fundamental state of a player, excluding dynamic scores like troops and land.
  */
-export interface IPlayerStats {
+export interface IPlayerState {
   readonly playerId: string;
-  readonly troops: number;
-  readonly land: number;
-}
-
-/**
- * Statistics specific to standard/classic mode.
- */
-export interface IClassicPlayerStats extends IPlayerStats {
-  /** Whether the player's general is still alive on the map. */
-  readonly isGeneralAlive: boolean;
+  readonly teamId: string;
+  readonly status: PlayerStatus;
 }

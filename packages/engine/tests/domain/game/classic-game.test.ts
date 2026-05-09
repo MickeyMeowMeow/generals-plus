@@ -185,8 +185,16 @@ describe("ClassicGame", () => {
     c1.owner = p1;
     c2.owner = p1;
 
-    expect(game.getPlayerStats("missing")).toBeNull();
-    expect(game.getPlayerStats("p1")).toEqual({
+    expect(game.getPlayerState("missing")).toBeNull();
+    expect(game.getPlayerState("p1")).toEqual({
+      playerId: "p1",
+      teamId: "t1",
+      status: PlayerStatus.ACTIVE,
+    });
+
+    const scoreboard = game.getScoreboard();
+    expect(scoreboard.mode).toBe(GameMode.CLASSIC);
+    expect(scoreboard.players).toContainEqual({
       playerId: "p1",
       troops: 10,
       land: 2,

@@ -6,9 +6,8 @@ import type { GameStatus } from "#/domain/game/game-status";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { IItem } from "#/domain/item/interfaces";
 import type {
-  IClassicPlayerStats,
   IPlayer,
-  IPlayerStats,
+  IPlayerState,
 } from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
@@ -98,12 +97,54 @@ export interface IBaseGame {
   getVisionGrid(playerId: string): IVisionGrid | null;
 
   /**
-   * Retrieves the current statistics (troops, land, etc.) for a specific player.
+   * Retrieves the fundamental state for a specific player (ID, team, status).
+   * Note: This does not include dynamic scores like troops or land.
    *
    * @param playerId The ID of the player.
-   * @returns The statistics for the player, or null if the player doesn't exist.
+   * @returns The player's state, or null if the player doesn't exist.
    */
-  getPlayerStats(playerId: string): IPlayerStats | null;
+  getPlayerState(playerId: string): IPlayerState | null;
+
+  /**
+   * Retrieves the current scoreboard, containing scores (troops, land, etc.) for all active players
+   * and any global score metrics. The specific type returned depends on the game mode.
+   *
+   * @returns The unified scoreboard for the current mode.
+   */
+  getScoreboard(): IBaseScoreboard;
+}
+
+export interface IBaseScoreboard {
+  readonly mode: GameMode;
+}
+
+export interface IClassicScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.CLASSIC;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+    readonly isGeneralAlive: boolean;
+  }>;
+}
+
+export interface ITurfWarScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.TURF_WAR;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+  }>;
+}
+
+export interface IDominationScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.DOMINATION;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+  }>;
+  readonly teamScores: Map<string, number>;
 }
 
 /**
@@ -113,13 +154,7 @@ export interface IBaseGame {
 export interface IClassicGame extends IBaseGame {
   readonly mode: typeof GameMode.CLASSIC;
 
-  /**
-   * Overridden covariant return type specific to classic games.
-   *
-   * @param playerId The ID of the player.
-   * @returns The classic player statistics for the player, or null if the player doesn't exist.
-   */
-  getPlayerStats(playerId: string): IClassicPlayerStats | null;
+  getScoreboard(): IClassicScoreboard;
 }
 
 /**
@@ -128,6 +163,8 @@ export interface IClassicGame extends IBaseGame {
  */
 export interface ITurfWarGame extends IBaseGame {
   readonly mode: typeof GameMode.TURF_WAR;
+
+  getScoreboard(): ITurfWarScoreboard;
 }
 
 /**
@@ -188,6 +225,8 @@ export interface IDominationGame extends IBaseGame {
   shrineLocations: Array<ICoordinate>;
   /** Scores of each team. */
   readonly teamScores: Map<string, number>;
+
+  getScoreboard(): IDominationScoreboard;
 }
 
 /**

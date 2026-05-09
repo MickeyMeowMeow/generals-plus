@@ -1,4 +1,3 @@
-import { ActionType } from "#/domain/action/action-type";
 import type { Action } from "#/domain/action/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
@@ -8,9 +7,8 @@ import { BaseGame } from "#/domain/game/base-game";
 import { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import { GameStatus } from "#/domain/game/game-status";
-import type { IClassicGame } from "#/domain/game/interfaces";
-import type { IClassicPlayerStats } from "#/domain/player/interfaces";
-import { PlayerStatus } from "#/domain/player/player-status";
+import type { IClassicGame, IClassicScoreboard } from "#/domain/game/interfaces";
+import { ActionType } from "#/domain/action/action-type";
 
 export class ClassicGame extends BaseGame implements IClassicGame {
   readonly mode = GameMode.CLASSIC;
@@ -18,15 +16,7 @@ export class ClassicGame extends BaseGame implements IClassicGame {
 
   startGame(): void {
     super.startGame();
-
-    let index = 0;
-    const playersArray = Array.from(this.players.values());
-    this.grid.forEach((cell) => {
-      if (cell.terrain === Terrain.GENERAL) {
-        cell.owner = playersArray[index] ?? null;
-        index += 1;
-      }
-    });
+    this.assignStartPositions();
 
     this.effectRegistry.register(
       this.tick,
@@ -65,21 +55,10 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     );
   }
 
-  handleAction(action: Action): boolean {
-    if (this.status !== GameStatus.PLAYING) {
+  protected executeAction(action: Action): boolean {
+    if (action.type !== ActionType.MOVE) {
       return false;
     }
-
-    if (action.type === ActionType.CLEAR_QUEUE) {
-      // Should not be processed by engine
-      return false;
-    }
-
-    if (action.type === ActionType.SURRENDER) {
-      return this.handleSurrender(action.playerId);
-    }
-
-    // The action must be a MoveAction at this point
     const success = this.combatResolver.execute(
       action,
       this.grid,
@@ -112,13 +91,7 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     }
 
     // Basic logic for classic: if only one team has active players.
-    const aliveTeams = new Set<string>();
-
-    for (const player of this.players.values()) {
-      if (player.status === PlayerStatus.ACTIVE) {
-        aliveTeams.add(player.team.teamId);
-      }
-    }
+    const aliveTeams = this.getAliveTeams();
 
     if (aliveTeams.size <= 1) {
       this.status = GameStatus.FINISHED;
@@ -131,29 +104,26 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     return null;
   }
 
-  getPlayerStats(playerId: string): IClassicPlayerStats | null {
-    const player = this.players.get(playerId);
-    if (!player) return null;
-
-    let troops = 0;
-    let land = 0;
-    let isGeneralAlive = false;
+  getScoreboard(): IClassicScoreboard {
+    const baseScores = this.calculateBaseScores();
+    const generals = new Set<string>();
 
     this.grid.forEach((cell) => {
-      if (cell.owner?.playerId === playerId) {
-        land++;
-        troops += cell.troopCount ?? 0;
-        if (cell.terrain === Terrain.GENERAL) {
-          isGeneralAlive = true;
-        }
+      if (cell.terrain === Terrain.GENERAL && cell.owner) {
+        generals.add(cell.owner.playerId);
       }
     });
 
-    return {
+    const players = Array.from(baseScores.entries()).map(([playerId, score]) => ({
       playerId,
-      troops,
-      land,
-      isGeneralAlive,
+      troops: score.troops,
+      land: score.land,
+      isGeneralAlive: generals.has(playerId),
+    }));
+
+    return {
+      mode: this.mode,
+      players,
     };
   }
 
@@ -162,21 +132,4 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     return { mode: this.mode, winnerTeamId: null };
   }
 
-  private handleSurrender(playerId: string): boolean {
-    const player = this.players.get(playerId);
-    if (!player) {
-      return false;
-    }
-
-    player.status = PlayerStatus.ELIMINATED;
-    this.grid.forEach((cell) => {
-      if (cell.owner?.playerId === playerId) {
-        // Surrender keeps troop count but clears ownership to neutralize the army.
-        cell.owner = null;
-      }
-    });
-
-    this.checkGameEnd();
-    return true;
-  }
 }
