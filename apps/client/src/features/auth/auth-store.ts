@@ -91,7 +91,7 @@ export const initialAuthState: AuthState = {
 export type AuthAction =
   | { type: "HYDRATING" }
   | { type: "AUTHENTICATING" }
-  | { type: "AUTHENTICATED"; user: UserProfile; token: string | null }
+  | { type: "AUTHENTICATED"; user: UserProfile | null; token: string | null }
   | { type: "HYDRATED"; user: UserProfile | null; token: string | null }
   | { type: "SIGN_OUT" }
   | { type: "ERROR"; error: string }

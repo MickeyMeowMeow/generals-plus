@@ -1,8 +1,20 @@
-import { createContext, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type { ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+} from "react";
 
 import type { UserProfile } from "#/common/types/user-profile";
-import { type AuthAction, type AuthContextValue, type AuthState, AuthStatus, authReducer, initialAuthState } from "#/features/auth/auth-store";
+import type { AuthContextValue, AuthState } from "#/features/auth/auth-store";
+import {
+  AuthStatus,
+  authReducer,
+  initialAuthState,
+} from "#/features/auth/auth-store";
 import type { AuthData } from "#/infra/network/auth";
 import type { NetworkProvider } from "#/infra/network/provider";
 import { networkProvider } from "#/infra/network/provider";
@@ -84,7 +96,11 @@ interface AuthProviderProps {
  * const { state, actions } = useAuth();
  * ```
  */
-export function AuthProvider({ value: externalValue, provider = networkProvider, children }: AuthProviderProps) {
+export function AuthProvider({
+  value: externalValue,
+  provider = networkProvider,
+  children,
+}: AuthProviderProps) {
   const [state, dispatch] = useReducer(authReducer, initialAuthState);
 
   /**
@@ -126,7 +142,11 @@ export function AuthProvider({ value: externalValue, provider = networkProvider,
         dispatch({ type: "HYDRATED", user, token: provider.getAuthToken() });
       } catch {
         // A failure to hydrate simply means no active session exists.
-        dispatch({ type: "HYDRATED", user: null, token: provider.getAuthToken() });
+        dispatch({
+          type: "HYDRATED",
+          user: null,
+          token: provider.getAuthToken(),
+        });
       }
     })();
 
@@ -137,34 +157,37 @@ export function AuthProvider({ value: externalValue, provider = networkProvider,
     }
   }, [provider]);
 
-  const signInAnonymously = useCallback(async (displayName: string, metadata: Record<string, unknown> = {}) => {
-    const trimmedName = displayName.trim();
-    if (trimmedName.length === 0) {
-      dispatch({ type: "ERROR", error: "Display name cannot be empty." });
-      return;
-    }
+  const signInAnonymously = useCallback(
+    async (displayName: string, metadata: Record<string, unknown> = {}) => {
+      const trimmedName = displayName.trim();
+      if (trimmedName.length === 0) {
+        dispatch({ type: "ERROR", error: "Display name cannot be empty." });
+        return;
+      }
 
-    dispatch({ type: "AUTHENTICATING" });
+      dispatch({ type: "AUTHENTICATING" });
 
-    try {
-      const response = await provider.signInAnonymously({
-        name: trimmedName,
-        displayName: trimmedName,
-        ...metadata,
-      });
+      try {
+        const response = await provider.signInAnonymously({
+          name: trimmedName,
+          displayName: trimmedName,
+          ...metadata,
+        });
 
-      dispatch({
-        type: "AUTHENTICATED",
-        user: response.user,
-        token: response.token ?? provider.getAuthToken(),
-      });
-    } catch (error) {
-      dispatch({
-        type: "ERROR",
-        error: normalizeError(error, "Failed to sign in anonymously."),
-      });
-    }
-  }, [provider]);
+        dispatch({
+          type: "AUTHENTICATED",
+          user: response.user,
+          token: response.token ?? provider.getAuthToken(),
+        });
+      } catch (error) {
+        dispatch({
+          type: "ERROR",
+          error: normalizeError(error, "Failed to sign in anonymously."),
+        });
+      }
+    },
+    [provider],
+  );
 
   const signOut = useCallback(async () => {
     try {
@@ -182,19 +205,27 @@ export function AuthProvider({ value: externalValue, provider = networkProvider,
     dispatch({ type: "CLEAR_ERROR" });
   }, []);
 
-  const actions = useMemo(() => ({ hydrate, signInAnonymously, signOut, clearError }), [hydrate, signInAnonymously, signOut, clearError]);
+  const actions = useMemo(
+    () => ({ hydrate, signInAnonymously, signOut, clearError }),
+    [hydrate, signInAnonymously, signOut, clearError],
+  );
 
-  const contextValue = useMemo<AuthContextValue>(() => ({ state, actions }), [state, actions]);
+  const contextValue = useMemo<AuthContextValue>(
+    () => ({ state, actions }),
+    [state, actions],
+  );
 
   // Subscribe to real-time auth state changes pushed by the server.
   useEffect(() => {
-    const unsubscribe = provider.onAuthChange<UserProfile>((response: AuthData<UserProfile>) => {
-      dispatch({
-        type: "HYDRATED",
-        user: response.user,
-        token: response.token,
-      });
-    });
+    const unsubscribe = provider.onAuthChange<UserProfile>(
+      (response: AuthData<UserProfile>) => {
+        dispatch({
+          type: "HYDRATED",
+          user: response.user,
+          token: response.token,
+        });
+      },
+    );
     return unsubscribe;
   }, [provider]);
 
