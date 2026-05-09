@@ -1,8 +1,8 @@
 import { create } from "zustand";
 
+import type { UserProfile } from "#/common/types/user-profile";
 import type { AuthState, AuthStore } from "#/features/auth/auth-store";
 import { AuthStatus } from "#/features/auth/auth-store";
-import type { UserProfile } from "#/features/auth/user-profile";
 import type { AuthData } from "#/infra/network/auth";
 import type { NetworkProvider } from "#/infra/network/provider";
 import { networkProvider } from "#/infra/network/provider";

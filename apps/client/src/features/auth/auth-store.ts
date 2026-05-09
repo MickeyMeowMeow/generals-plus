@@ -1,4 +1,4 @@
-import type { UserProfile } from "#/features/auth/user-profile";
+import type { UserProfile } from "#/common/types/user-profile";
 
 /**
  * Defines the possible lifecycle states of the user's authentication session.

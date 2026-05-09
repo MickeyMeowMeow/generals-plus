@@ -1,4 +1,4 @@
-import type { UserProfile } from "#/features/auth/user-profile";
+import type { UserProfile } from "#/common/types/user-profile";
 import { ColyseusNetworkProvider } from "#/infra/network/provider/colyseus";
 import type { NetworkProvider } from "#/infra/network/provider/interfaces";
 

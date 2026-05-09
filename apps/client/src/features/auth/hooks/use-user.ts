@@ -1,5 +1,5 @@
+import type { UserProfile } from "#/common/types/user-profile";
 import { useAuthStore } from "#/features/auth/hooks/use-auth-store";
-import type { UserProfile } from "#/features/auth/user-profile";
 
 /**
  * A specialized hook to access the currently authenticated user's profile.
