@@ -51,18 +51,6 @@ function normalizeError(error: unknown, fallback: string): string {
  */
 interface AuthProviderProps {
   /**
-   * An optional pre-built context value for dependency injection.
-   *
-   * When provided the provider skips all internal state management and passes
-   * this value through directly. This is primarily useful in tests where full
-   * control over state and actions is required.
-   *
-   * When omitted the provider creates its own reducer-backed state and action
-   * callbacks using the supplied (or default) network provider.
-   */
-  value?: AuthContextValue;
-
-  /**
    * An optional {@link NetworkProvider} used for network operations.
    *
    * Ignored when `value` is provided. Defaults to the global
@@ -97,7 +85,6 @@ interface AuthProviderProps {
  * ```
  */
 export function AuthProvider({
-  value: externalValue,
   provider = networkProvider,
   children,
 }: AuthProviderProps) {
@@ -235,8 +222,6 @@ export function AuthProvider({
   }, [hydrate]);
 
   return (
-    <AuthContext.Provider value={externalValue ?? contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
