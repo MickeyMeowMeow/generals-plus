@@ -53,10 +53,6 @@ export function GamePage({ reservation }: { reservation: ISeatReservation }) {
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    console.log("Game grid updated:", renderGrid);
-  }, [renderGrid]);
-
   if (!gameState) return <div className="loading">Connecting to Server...</div>;
 
   if (!renderGrid) return <div className="loading">Loading Game State...</div>;
