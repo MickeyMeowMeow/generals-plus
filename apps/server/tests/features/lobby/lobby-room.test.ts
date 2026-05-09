@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createRoom, createValidRoomData } from "../../helpers";
+import { createRoom, createValidRoomData } from "#tests/helpers";
 
 describe("LobbyRoom", () => {
   afterEach(async () => {
     const { matchMaker } = await import("@colyseus/core");
-    await matchMaker.disconnectAll();
+    matchMaker.disconnectAll();
   });
 
   it("creates lobby room", async () => {
