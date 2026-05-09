@@ -3,7 +3,7 @@ import type { GameMode } from "@generals-plus/engine";
 
 export class SetupPlayer extends Schema {
   @type("string") id: string = "";
-  @type("string") username: string = "";
+  @type("string") displayName: string = "";
   @type("boolean") isHost: boolean = false;
   @type("number") color: number = 0;
 }

@@ -18,7 +18,7 @@ export class MongoUserRepository implements IUserRepository {
       id: doc._id.toString(),
       email: doc.email,
       password: doc.password,
-      username: doc.username,
+      displayName: doc.displayName,
       anonymous: doc.anonymous,
       verified: doc.verified,
       elo: doc.elo,

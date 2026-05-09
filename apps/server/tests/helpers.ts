@@ -72,13 +72,13 @@ export function createValidRoomData(overrides?: Partial<RoomData>): RoomData {
     playerInit: [
       {
         id: "p1",
-        username: "Player1",
+        displayName: "Player1",
         teamId: "team_0",
         color: PLAYER_COLOR_PALETTE[0],
       } satisfies PlayerInit,
       {
         id: "p2",
-        username: "Player2",
+        displayName: "Player2",
         teamId: "team_1",
         color: PLAYER_COLOR_PALETTE[1],
       } satisfies PlayerInit,
@@ -113,7 +113,7 @@ export async function createRoom<R extends Room>(
 
 export async function connectClient(
   room: Room,
-  authData: { id: string; email: string; username?: string },
+  authData: { id: string; email: string; displayName?: string },
 ) {
   const sessionId = crypto.randomUUID();
 

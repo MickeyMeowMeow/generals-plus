@@ -37,7 +37,7 @@ export function GameManager() {
                   backgroundColor: `#${player.color.toString(16).padStart(6, "0")}`,
                 }}
               />
-              {player.username} {player.isHost && "(Host)"}
+              {player.displayName} {player.isHost && "(Host)"}
             </li>
           ))}
         </ul>

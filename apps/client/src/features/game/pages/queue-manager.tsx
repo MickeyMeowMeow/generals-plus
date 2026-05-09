@@ -39,7 +39,7 @@ export function QueueManager() {
                   backgroundColor: `#${player.color.toString(16).padStart(6, "0")}`,
                 }}
               />
-              {player.username}
+              {player.displayName}
             </li>
           ))}
         </ul>

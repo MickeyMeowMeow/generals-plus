@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const playerInitSchema = z.object({
   id: z.string().min(1),
-  username: z.string().trim().min(1),
+  displayName: z.string().trim().min(1),
   teamId: z.string().min(1),
   color: z.number().int().positive(),
 });

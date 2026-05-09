@@ -116,7 +116,6 @@ export function createAuthStore(
 
         try {
           const response = await provider.signInAnonymously({
-            name: trimmedName,
             displayName: trimmedName,
             ...metadata,
           });

@@ -71,7 +71,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   async onJoin(client: Client) {
     const auth = client.auth as ClientAuth;
     const id = auth.id;
-    const username = auth.username ?? `Player_${this.clients.length + 1}`;
+    const displayName = auth.displayName ?? `Player_${this.clients.length + 1}`;
 
     // Deduplicate: if this player_id already has a connection, kick the old one.
     const existingClient = this.clients.find(
@@ -80,7 +80,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     );
     if (existingClient) {
       logger.info(
-        `[SetupRoom] Duplicate connection for ${username}, kicking old session ${existingClient.sessionId}`,
+        `[SetupRoom] Duplicate connection for ${displayName}, kicking old session ${existingClient.sessionId}`,
       );
       existingClient.leave(4000);
     }
@@ -89,7 +89,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
     const player = new SetupPlayer();
     player.id = id;
-    player.username = username;
+    player.displayName = displayName;
     player.isHost = isFirst;
     player.color =
       nextAvailableColor(this.state.players.map((p) => p.color)) ?? 0;
@@ -249,7 +249,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   private async startGame() {
     const playerInit = this.state.players.map((p, i) => ({
       id: p.id,
-      username: p.username,
+      displayName: p.displayName,
       teamId: `team_${i}`,
       color: p.color,
     }));

@@ -53,7 +53,7 @@ export class MatchRoom extends Room<{
     for (const playerInit of metadata.playerInit) {
       const player = createPlayer(metadata.mode);
       player.id = playerInit.id;
-      player.username = playerInit.username;
+      player.displayName = playerInit.displayName;
       player.teamId = playerInit.teamId;
       player.color = playerInit.color;
       player.status = PlayerStatus.ACTIVE;
@@ -118,7 +118,7 @@ export class MatchRoom extends Room<{
         const oldSessionId = this.playerToSessionId.get(userdata.id);
         if (oldSessionId && oldSessionId !== client.sessionId) {
           logger.info(
-            `[MatchRoom] Duplicate connection for ${userdata.username}, replacing session ${oldSessionId} with ${client.sessionId}`,
+            `[MatchRoom] Duplicate connection for ${userdata.displayName}, replacing session ${oldSessionId} with ${client.sessionId}`,
           );
 
           this.sessionToPlayerId.delete(oldSessionId);
@@ -150,11 +150,11 @@ export class MatchRoom extends Room<{
         client.view.add(actionQueue);
 
         logger.info(
-          `[MatchRoom] Player ${userdata.username} joined (session ${client.sessionId})`,
+          `[MatchRoom] Player ${userdata.displayName} joined (session ${client.sessionId})`,
         );
       } else {
         logger.error(
-          `[MatchRoom] Error: Player data not found for user: ${userdata.username}`,
+          `[MatchRoom] Error: Player data not found for user: ${userdata.displayName}`,
         );
         throw new Error("Player not part of this match");
       }
@@ -247,7 +247,7 @@ export class MatchRoom extends Room<{
       }
 
       logger.info(
-        `[MatchRoom] Player ${statePlayer.username} eliminated at tick ${this.game.tick}`,
+        `[MatchRoom] Player ${statePlayer.displayName} eliminated at tick ${this.game.tick}`,
       );
     }
   }

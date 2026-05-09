@@ -53,7 +53,7 @@ export class MatchQueueRoom extends QueueRoom {
           );
           return {
             id: auth.id,
-            username: auth.username ?? `Player_${i + 1}`,
+            displayName: auth.displayName ?? `Player_${i + 1}`,
             teamId: `team_${i}`,
             color:
               queuePlayer?.color ??
@@ -128,14 +128,14 @@ export class MatchQueueRoom extends QueueRoom {
     );
     if (existingClient) {
       logger.info(
-        `[MatchQueueRoom] Duplicate connection for ${auth.username}, kicking old session ${existingClient.sessionId}`,
+        `[MatchQueueRoom] Duplicate connection for ${auth.displayName}, kicking old session ${existingClient.sessionId}`,
       );
       existingClient.leave(4000);
     }
 
     const player = new QueuePlayer();
     player.id = auth.id;
-    player.username = auth.username ?? "Player";
+    player.displayName = auth.displayName ?? "Player";
     player.color =
       nextAvailableColor(
         this.queueState.players.map((p: QueuePlayer) => p.color),
