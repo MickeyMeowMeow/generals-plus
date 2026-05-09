@@ -38,7 +38,7 @@ export interface AuthState {
 }
 
 /**
- * Represents the operations available to mutate the authentication state.
+ * Represents the operations available to trigger authentication state transitions.
  */
 export interface AuthActions {
   /**
@@ -70,6 +70,87 @@ export interface AuthActions {
 }
 
 /**
- * The complete Zustand store type combining state and actions.
+ * The baseline state applied on initialization or sign-out.
  */
-export type AuthStore = AuthState & AuthActions;
+export const initialAuthState: AuthState = {
+  status: AuthStatus.IDLE,
+  isHydrated: false,
+  user: null,
+  token: null,
+  error: null,
+};
+
+/**
+ * Discriminated union of all actions that can be dispatched to the auth reducer.
+ *
+ * Each variant corresponds to a discrete state transition in the authentication
+ * lifecycle. The reducer is intentionally pure — side effects (network calls,
+ * async orchestration) live in the {@link AuthProvider} action callbacks which
+ * dispatch these actions upon completion.
+ */
+export type AuthAction =
+  | { type: "HYDRATING" }
+  | { type: "AUTHENTICATING" }
+  | { type: "AUTHENTICATED"; user: UserProfile; token: string | null }
+  | { type: "HYDRATED"; user: UserProfile | null; token: string | null }
+  | { type: "SIGN_OUT" }
+  | { type: "ERROR"; error: string }
+  | { type: "CLEAR_ERROR" };
+
+/**
+ * Pure reducer that computes the next authentication state for a given action.
+ *
+ * @param state The current authentication state.
+ * @param action The dispatched action describing the intended transition.
+ *
+ * @returns The new authentication state.
+ */
+export function authReducer(state: AuthState, action: AuthAction): AuthState {
+  switch (action.type) {
+    case "HYDRATING":
+      return { ...state, status: AuthStatus.HYDRATING, error: null };
+
+    case "AUTHENTICATING":
+      return { ...state, status: AuthStatus.AUTHENTICATING, error: null };
+
+    case "AUTHENTICATED":
+      return {
+        status: AuthStatus.AUTHENTICATED,
+        isHydrated: true,
+        user: action.user,
+        token: action.token,
+        error: null,
+      };
+
+    case "HYDRATED":
+      return {
+        status: action.user ? AuthStatus.AUTHENTICATED : AuthStatus.IDLE,
+        isHydrated: true,
+        user: action.user,
+        token: action.token,
+        error: null,
+      };
+
+    case "SIGN_OUT":
+      return { ...initialAuthState, isHydrated: true };
+
+    case "ERROR":
+      return { ...state, status: AuthStatus.ERROR, error: action.error };
+
+    case "CLEAR_ERROR":
+      return { ...state, status: AuthStatus.IDLE, error: null };
+  }
+}
+
+/**
+ * The shape of the value provided by the {@link AuthProvider} through React Context.
+ *
+ * Consumers receive both the current state snapshot and a set of action callbacks
+ * that can be called to trigger state transitions (e.g. sign in, sign out, hydrate).
+ */
+export interface AuthContextValue {
+  /** The current authentication state snapshot. */
+  readonly state: AuthState;
+  /** Stable action callbacks that trigger state transitions. */
+  readonly actions: AuthActions;
+}
