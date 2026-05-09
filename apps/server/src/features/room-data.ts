@@ -22,7 +22,8 @@ const roomDataSchema = z.object({
       handleAction: z.function(),
       checkGameEnd: z.function(),
       getVisionGrid: z.function(),
-      getPlayerStats: z.function(),
+      getPlayerState: z.function(),
+      getScoreboard: z.function(),
     })
     .loose(),
   playerInit: z.array(playerInitSchema),

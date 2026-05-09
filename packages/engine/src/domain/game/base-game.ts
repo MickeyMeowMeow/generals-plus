@@ -1,5 +1,6 @@
 import { ActionType } from "#/domain/action/action-type";
 import type { Action } from "#/domain/action/interfaces";
+import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { EffectRegistry } from "#/domain/effect/effect-registry";
 import type { GameMode } from "#/domain/game/game-mode";
@@ -11,7 +12,6 @@ import type { IItem } from "#/domain/item/interfaces";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
 import type { Team } from "#/domain/team/interfaces";
-import type { ICell } from "#/domain/cell/interfaces";
 import { VisibilityMap } from "#/domain/vision/visibility-map";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
 
@@ -138,7 +138,10 @@ export abstract class BaseGame implements IBaseGame {
 
   abstract getScoreboard(): IBaseScoreboard;
 
-  protected calculateBaseScores(): Map<string, { troops: number; land: number }> {
+  protected calculateBaseScores(): Map<
+    string,
+    { troops: number; land: number }
+  > {
     const scores = new Map<string, { troops: number; land: number }>();
     for (const player of this.players.values()) {
       scores.set(player.playerId, { troops: 0, land: 0 });
@@ -167,7 +170,9 @@ export abstract class BaseGame implements IBaseGame {
     return aliveTeams;
   }
 
-  protected assignStartPositions(targetTerrain: Terrain = Terrain.GENERAL): void {
+  protected assignStartPositions(
+    targetTerrain: Terrain = Terrain.GENERAL,
+  ): void {
     let index = 0;
     const playersArray = Array.from(this.players.values());
     this.grid.forEach((cell) => {

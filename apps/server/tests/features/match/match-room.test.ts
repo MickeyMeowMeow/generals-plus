@@ -1,4 +1,4 @@
-import type { IPlayerStats } from "@generals-plus/engine";
+import type { IPlayerState } from "@generals-plus/engine";
 import {
   GameStatus,
   PlayerStatus,
@@ -204,25 +204,22 @@ describe("MatchRoom", () => {
       expect(room.state.tick).toBeGreaterThan(0);
     });
 
-    it("syncs player stats from engine", async () => {
-      const getPlayerStats = vi.fn(
-        (): IPlayerStats => ({
+    it("syncs player state from engine", async () => {
+      const getPlayerState = vi.fn(
+        (): IPlayerState => ({
           playerId: "p1",
-          land: 5,
-          troops: 42,
+          teamId: "team_0",
+          status: PlayerStatus.ACTIVE,
         }),
       );
       const metadata = createValidRoomData({
-        game: createMockGame({ getPlayerStats }),
+        game: createMockGame({ getPlayerState }),
       });
       room = await createRoom<MatchRoom>("match", { metadata });
 
       await room.waitForNextSimulationTick();
 
-      expect(getPlayerStats).toHaveBeenCalled();
-      const p1 = room.state.players.get("p1");
-      expect(p1?.land).toBe(5);
-      expect(p1?.troops).toBe(42);
+      expect(getPlayerState).toHaveBeenCalled();
     });
 
     it("processes action queue and stops at first valid action", async () => {

@@ -5,11 +5,17 @@ import { EventEmitter } from "node:events";
 
 import type {
   IBaseGame,
+  IClassicScoreboard,
   IGameResult,
   IGrid,
-  IPlayerStats,
+  IPlayerState,
 } from "@generals-plus/engine";
-import { GameMode as GameModeEnum, GameStatus } from "@generals-plus/engine";
+import {
+  EffectRegistry,
+  GameMode as GameModeEnum,
+  GameStatus,
+  PlayerStatus,
+} from "@generals-plus/engine";
 import type { PlayerInit, RoomData } from "@generals-plus/shared-types";
 import { PLAYER_COLOR_PALETTE, ROOM_NAMES } from "@generals-plus/shared-types";
 
@@ -38,6 +44,7 @@ export function createMockGame(overrides?: Partial<IBaseGame>): IBaseGame {
   return {
     mode: GameModeEnum.CLASSIC,
     status: GameStatus.NOT_STARTED,
+    effectRegistry: new EffectRegistry(),
     tick: 0,
     grid: createMockGrid(),
     players: new Map(),
@@ -59,7 +66,15 @@ export function createMockGame(overrides?: Partial<IBaseGame>): IBaseGame {
       isValid: () => true,
       forEach: () => {},
     }),
-    getPlayerStats: (): IPlayerStats => ({ playerId: "", troops: 0, land: 0 }),
+    getPlayerState: (): IPlayerState => ({
+      playerId: "",
+      teamId: "",
+      status: PlayerStatus.ACTIVE,
+    }),
+    getScoreboard: (): IClassicScoreboard => ({
+      mode: GameModeEnum.CLASSIC,
+      players: [],
+    }),
     ...overrides,
   };
 }

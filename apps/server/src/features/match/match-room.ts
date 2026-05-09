@@ -20,6 +20,7 @@ import {
 
 import { createPlayer } from "#/features/player/utils";
 import { parseRoomData } from "#/features/room-data";
+import { createScoreboard, syncScoreboard } from "#/features/scoreboard/utils";
 
 const TICK_INTERVAL = 500;
 
@@ -49,6 +50,7 @@ export class MatchRoom extends Room<{
     state.mode = metadata.mode;
     state.width = this.game.grid.width;
     state.height = this.game.grid.height;
+    state.scoreboard = createScoreboard(metadata.mode);
 
     for (const playerInit of metadata.playerInit) {
       const player = createPlayer(metadata.mode);
@@ -173,15 +175,13 @@ export class MatchRoom extends Room<{
     }
     const playerId = this.sessionToPlayerId.get(client.sessionId);
     if (playerId) {
+      const player = this.state.players.get(playerId);
+      if (player && player.status === PlayerStatus.ACTIVE) {
+        this.game.handleAction({ playerId, type: ActionType.SURRENDER });
+      }
+
       this.sessionToPlayerId.delete(client.sessionId);
       this.playerToSessionId.delete(playerId);
-
-      this.game.handleAction({ playerId, type: ActionType.SURRENDER });
-
-      const player = this.state.players.get(playerId);
-      if (player) {
-        player.status = PlayerStatus.ELIMINATED;
-      }
     }
     this.state.clientVisions.delete(client.sessionId);
     this.state.clientActionQueues.delete(client.sessionId);
@@ -204,8 +204,8 @@ export class MatchRoom extends Room<{
     this.game.nextTick();
     this.state.tick = this.game.tick;
 
-    this.detectEliminations();
-    this.syncPlayerStats();
+    this.syncPlayerState();
+    this.syncScoreboard();
     this.updateClientViews();
 
     const result = this.game.checkGameEnd();
@@ -213,42 +213,6 @@ export class MatchRoom extends Room<{
       this.state.status = GameStatus.FINISHED;
       this.broadcast(MatchServerMessage.GAME_END, result);
       this.disconnect();
-    }
-  }
-
-  private detectEliminations() {
-    if (!this.game) {
-      logger.error(
-        `[MatchRoom] Error: Game instance not found on detectEliminations`,
-      );
-      throw new Error("Game instance not found");
-    }
-
-    for (const [playerId, enginePlayer] of this.game.players) {
-      if (enginePlayer.status !== PlayerStatus.ELIMINATED) continue;
-
-      const statePlayer = this.state.players.get(playerId);
-      if (!statePlayer || statePlayer.status === PlayerStatus.ELIMINATED)
-        continue;
-
-      statePlayer.status = PlayerStatus.ELIMINATED;
-
-      const sessionId = this.playerToSessionId.get(playerId);
-      if (sessionId) {
-        this.state.clientActionQueues.delete(sessionId);
-        this.state.clientVisions.delete(sessionId);
-        this.sessionToPlayerId.delete(sessionId);
-        this.playerToSessionId.delete(playerId);
-
-        const client = this.clients.find((c) => c.sessionId === sessionId);
-        if (client) {
-          client.leave();
-        }
-      }
-
-      logger.info(
-        `[MatchRoom] Player ${statePlayer.displayName} eliminated at tick ${this.game.tick}`,
-      );
     }
   }
 
@@ -289,19 +253,47 @@ export class MatchRoom extends Room<{
     }
   }
 
-  private syncPlayerStats() {
+  private syncPlayerState() {
     if (!this.game) {
       logger.error(
-        `[MatchRoom] Error: Game instance not found on syncPlayerStats`,
+        `[MatchRoom] Error: Game instance not found on syncPlayerState`,
       );
       throw new Error("Game instance not found");
     }
     for (const [playerId, player] of this.state.players) {
-      const stats = this.game.getPlayerStats(playerId);
-      if (!stats) continue;
-      player.land = stats.land;
-      player.troops = stats.troops;
+      const state = this.game.getPlayerState(playerId);
+      if (!state) continue;
+
+      player.teamId = state.teamId;
+
+      const prevStatus = player.status;
+      player.status = state.status;
+
+      if (
+        prevStatus !== PlayerStatus.ELIMINATED &&
+        player.status === PlayerStatus.ELIMINATED
+      ) {
+        const sessionId = this.playerToSessionId.get(playerId);
+        if (sessionId) {
+          this.state.clientActionQueues.delete(sessionId);
+        }
+
+        logger.info(
+          `[MatchRoom] Player ${player.displayName} eliminated at tick ${this.game.tick}`,
+        );
+      }
     }
+  }
+
+  private syncScoreboard() {
+    if (!this.game) {
+      logger.error(
+        `[MatchRoom] Error: Game instance not found on syncScoreboard`,
+      );
+      throw new Error("Game instance not found");
+    }
+
+    syncScoreboard(this.state.scoreboard, this.game.getScoreboard());
   }
 
   private updateClientViews() {

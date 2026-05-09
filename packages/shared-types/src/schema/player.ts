@@ -1,4 +1,4 @@
-import { Schema, type, view } from "@colyseus/schema";
+import { Schema, type } from "@colyseus/schema";
 import { PlayerStatus } from "@generals-plus/engine";
 
 export class Player extends Schema {
@@ -7,7 +7,5 @@ export class Player extends Schema {
   @type("string") teamId: string = "";
   @type("string") displayName: string = "";
   @type("number") color: number = 0;
-  @view() @type("number") land: number = 0;
-  @view() @type("number") troops: number = 0;
   @type("string") sessionId: string = "";
 }

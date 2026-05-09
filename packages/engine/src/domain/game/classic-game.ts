@@ -1,3 +1,4 @@
+import { ActionType } from "#/domain/action/action-type";
 import type { Action } from "#/domain/action/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
@@ -7,8 +8,10 @@ import { BaseGame } from "#/domain/game/base-game";
 import { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import { GameStatus } from "#/domain/game/game-status";
-import type { IClassicGame, IClassicScoreboard } from "#/domain/game/interfaces";
-import { ActionType } from "#/domain/action/action-type";
+import type {
+  IClassicGame,
+  IClassicScoreboard,
+} from "#/domain/game/interfaces";
 
 export class ClassicGame extends BaseGame implements IClassicGame {
   readonly mode = GameMode.CLASSIC;
@@ -114,12 +117,14 @@ export class ClassicGame extends BaseGame implements IClassicGame {
       }
     });
 
-    const players = Array.from(baseScores.entries()).map(([playerId, score]) => ({
-      playerId,
-      troops: score.troops,
-      land: score.land,
-      isGeneralAlive: generals.has(playerId),
-    }));
+    const players = Array.from(baseScores.entries()).map(
+      ([playerId, score]) => ({
+        playerId,
+        troops: score.troops,
+        land: score.land,
+        isGeneralAlive: generals.has(playerId),
+      }),
+    );
 
     return {
       mode: this.mode,
@@ -131,5 +136,4 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     this.status = GameStatus.FINISHED;
     return { mode: this.mode, winnerTeamId: null };
   }
-
 }
