@@ -4,9 +4,9 @@ import { ActionType } from "#/domain/action/action-type";
 import type { Action, MoveAction } from "#/domain/action/interfaces";
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
+import { ClassicGame } from "#/domain/game/classic-game";
 import { GameMode } from "#/domain/game/game-mode";
 import { GameStatus } from "#/domain/game/game-status";
-import { StandardGame } from "#/domain/game/standard-game";
 import { Grid } from "#/domain/grid/grid";
 import { Player } from "#/domain/player/player";
 import { PlayerStatus } from "#/domain/player/player-status";
@@ -37,16 +37,16 @@ function createSurrenderAction(playerId = "p1"): Action {
   };
 }
 
-describe("StandardGame", () => {
+describe("ClassicGame", () => {
   it("rejects actions when game is not playing", () => {
-    const game = new StandardGame(createGridForAction());
+    const game = new ClassicGame(createGridForAction());
 
     expect(game.handleAction(createMoveAction())).toBe(false);
   });
 
   it("processes valid action while playing", () => {
     const grid = createGridForAction();
-    const game = new StandardGame(grid);
+    const game = new ClassicGame(grid);
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1");
@@ -73,7 +73,7 @@ describe("StandardGame", () => {
   });
 
   it("finishes game when one or zero alive teams remain", () => {
-    const game = new StandardGame(createGridForAction());
+    const game = new ClassicGame(createGridForAction());
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.players.set(p1.playerId, p1);
@@ -86,7 +86,7 @@ describe("StandardGame", () => {
   });
 
   test("nextTick increments and can trigger end-check", () => {
-    const game = new StandardGame(createGridForAction());
+    const game = new ClassicGame(createGridForAction());
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.players.set(p1.playerId, p1);
@@ -118,7 +118,7 @@ describe("StandardGame", () => {
         }),
       ],
     ]);
-    const game = new StandardGame(grid);
+    const game = new ClassicGame(grid);
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
@@ -172,7 +172,7 @@ describe("StandardGame", () => {
         }),
       ],
     ]);
-    const game = new StandardGame(grid);
+    const game = new ClassicGame(grid);
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1");
     game.players.set(p1.playerId, p1);
@@ -195,7 +195,7 @@ describe("StandardGame", () => {
   });
 
   test("forceEnd always sets finished with null winner", () => {
-    const game = new StandardGame(createGridForAction());
+    const game = new ClassicGame(createGridForAction());
 
     const result = game.forceEnd();
 
@@ -211,7 +211,7 @@ describe("StandardGame", () => {
         new Cell({ coordinate: { x: 2, y: 0 }, terrain: Terrain.PLAIN }),
       ],
     ]);
-    const game = new StandardGame(grid);
+    const game = new ClassicGame(grid);
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);

@@ -13,6 +13,8 @@ export const Terrain = {
   CITY: "city",
   /** Void terrain. Not part of the playable grid, used for padding. */
   VOID: "void",
+  /** The flag tile in Domination Mode. Generates score for the holding team. */
+  FLAG: "flag",
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];

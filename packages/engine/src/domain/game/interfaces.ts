@@ -6,9 +6,9 @@ import type { GameStatus } from "#/domain/game/game-status";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { IItem } from "#/domain/item/interfaces";
 import type {
+  IClassicPlayerStats,
   IPlayer,
   IPlayerStats,
-  IStandardPlayerStats,
 } from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
@@ -107,19 +107,27 @@ export interface IBaseGame {
 }
 
 /**
- * Classic FFA Mode / Turf War Mode.
+ * Classic FFA Mode.
  * Focuses on capital captures.
  */
-export interface IStandardGame extends IBaseGame {
-  readonly mode: typeof GameMode.CLASSIC | typeof GameMode.TURF_WAR;
+export interface IClassicGame extends IBaseGame {
+  readonly mode: typeof GameMode.CLASSIC;
 
   /**
-   * Overridden covariant return type specific to standard games.
+   * Overridden covariant return type specific to classic games.
    *
    * @param playerId The ID of the player.
-   * @returns The standard player statistics for the player, or null if the player doesn't exist.
+   * @returns The classic player statistics for the player, or null if the player doesn't exist.
    */
-  getPlayerStats(playerId: string): IStandardPlayerStats | null;
+  getPlayerStats(playerId: string): IClassicPlayerStats | null;
+}
+
+/**
+ * Turf War Mode.
+ * High-speed area control. Most tiles owned at the end of time wins.
+ */
+export interface ITurfWarGame extends IBaseGame {
+  readonly mode: typeof GameMode.TURF_WAR;
 }
 
 /**
@@ -178,6 +186,8 @@ export interface IDominationGame extends IBaseGame {
   readonly targetScore: number;
   /** Location of all Shrines on the map. */
   shrineLocations: Array<ICoordinate>;
+  /** Scores of each team. */
+  readonly teamScores: Map<string, number>;
 }
 
 /**
@@ -206,7 +216,8 @@ export interface IRugbyGame extends IBaseGame {
  * Union type representing all possible game states.
  */
 export type GameState =
-  | IStandardGame
+  | IClassicGame
+  | ITurfWarGame
   | IDemolitionGame
   | IPayloadGame
   | IBiohazardGame

@@ -13,7 +13,7 @@ import type { IVisionGrid } from "#/domain/vision/vision-grid";
 
 /**
  * Abstract base implementation for the Game Engine.
- * Subclasses should implement specific modes like StandardGame, DemolitionGame, etc.
+ * Subclasses should implement specific modes like ClassicGame, DemolitionGame, etc.
  */
 export abstract class BaseGame implements IBaseGame {
   public abstract readonly mode: GameMode;

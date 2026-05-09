@@ -8,11 +8,11 @@ import { BaseGame } from "#/domain/game/base-game";
 import { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import { GameStatus } from "#/domain/game/game-status";
-import type { IStandardGame } from "#/domain/game/interfaces";
-import type { IStandardPlayerStats } from "#/domain/player/interfaces";
+import type { IClassicGame } from "#/domain/game/interfaces";
+import type { IClassicPlayerStats } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
 
-export class StandardGame extends BaseGame implements IStandardGame {
+export class ClassicGame extends BaseGame implements IClassicGame {
   public readonly mode = GameMode.CLASSIC;
   private readonly combatResolver = new StandardCombatResolver();
 
@@ -31,7 +31,7 @@ export class StandardGame extends BaseGame implements IStandardGame {
     this.effectRegistry.register(
       this.tick,
       new TroopModifierEffect(this.tick, {
-        id: "standard-general-troop-gen",
+        id: "classic-general-troop-gen",
         type: EffectType.TROOP_GENERATION,
         target: this.grid,
         terrain: Terrain.GENERAL,
@@ -43,7 +43,7 @@ export class StandardGame extends BaseGame implements IStandardGame {
     this.effectRegistry.register(
       this.tick,
       new TroopModifierEffect(this.tick, {
-        id: "standard-city-troop-gen",
+        id: "classic-city-troop-gen",
         type: EffectType.TROOP_GENERATION,
         target: this.grid,
         terrain: Terrain.CITY,
@@ -55,7 +55,7 @@ export class StandardGame extends BaseGame implements IStandardGame {
     this.effectRegistry.register(
       this.tick,
       new TroopModifierEffect(this.tick, {
-        id: "standard-plain-troop-gen",
+        id: "classic-plain-troop-gen",
         type: EffectType.TROOP_GENERATION,
         target: this.grid,
         terrain: Terrain.PLAIN,
@@ -131,7 +131,7 @@ export class StandardGame extends BaseGame implements IStandardGame {
     return null;
   }
 
-  public getPlayerStats(playerId: string): IStandardPlayerStats | null {
+  public getPlayerStats(playerId: string): IClassicPlayerStats | null {
     const player = this.players.get(playerId);
     if (!player) return null;
 

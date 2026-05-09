@@ -28,7 +28,7 @@ export interface IPlayerStats {
 /**
  * Statistics specific to standard/classic mode.
  */
-export interface IStandardPlayerStats extends IPlayerStats {
+export interface IClassicPlayerStats extends IPlayerStats {
   /** Whether the player's general is still alive on the map. */
   readonly isGeneralAlive: boolean;
 }
