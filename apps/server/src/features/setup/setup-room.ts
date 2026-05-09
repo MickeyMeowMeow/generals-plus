@@ -12,7 +12,7 @@ import {
   SetupState,
 } from "@generals-plus/shared-types";
 
-import { createGame } from "#/features/game-factory";
+import { createGame } from "#/features/game/utils";
 
 const DEFAULT_MAX_PLAYERS = 8;
 

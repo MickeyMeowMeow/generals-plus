@@ -13,6 +13,8 @@ export class MatchState extends Schema {
   @type("number") width: number = 0;
   @type("number") height: number = 0;
 
+  @type({ map: "number" }) playerColors = new MapSchema<number>();
+
   @view() @type({ map: ClientActionQueue }) clientActionQueues =
     new MapSchema<ClientActionQueue>();
   @view() @type({ map: ClientVision }) clientVisions =

@@ -18,7 +18,7 @@ import {
   MatchState,
 } from "@generals-plus/shared-types";
 
-import { createPlayer } from "#/features/factory";
+import { createPlayer } from "#/features/player/utils";
 import { parseRoomData } from "#/features/room-data";
 
 const TICK_INTERVAL = 500;
@@ -58,6 +58,7 @@ export class MatchRoom extends Room<{
       player.color = playerInit.color;
       player.status = PlayerStatus.ACTIVE;
       state.players.set(playerInit.id, player);
+      state.playerColors.set(playerInit.id, playerInit.color);
     }
 
     this.state = state;

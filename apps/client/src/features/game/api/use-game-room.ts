@@ -6,7 +6,6 @@ import type {
   MatchClientMessagePayload,
   MatchServerMessagePayload,
   MatchState,
-  Player,
 } from "@generals-plus/shared-types";
 import { useEffect, useState } from "react";
 
@@ -57,8 +56,8 @@ export function useGameRoom(reservation: ISeatReservation) {
           setGameState(state);
 
           const colorMap = new Map<string, number>();
-          state.players.forEach((player: Player) => {
-            colorMap.set(player.id, player.color);
+          state.playerColors.forEach((color, playerId) => {
+            colorMap.set(playerId, color);
           });
           setPlayerColors(colorMap);
 
