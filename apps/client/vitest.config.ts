@@ -29,6 +29,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: /^#\/tests\/(.*)/,
+        replacement: path.join(import.meta.dirname, "tests", "$1"),
+      },
+      {
         find: /^@generals-plus\/(.*)/,
         replacement: path.join(
           import.meta.dirname,

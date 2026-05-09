@@ -4,6 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "imports": {
+    "#/tests/*": [
+      "./tests/*",
+      "./tests/*.ts",
+      "./tests/*.tsx",
+      "./tests/*/index.ts",
+      "./tests/*/index.tsx"
+    ],
     "#/*": [
       "./src/*",
       "./src/*.ts",
