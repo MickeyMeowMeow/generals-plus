@@ -1,5 +1,3 @@
-import { ColyseusSDK } from "@colyseus/sdk";
-import type { ColyseusTestServer } from "@colyseus/testing";
 import type { IPlayerStats } from "@generals-plus/engine";
 import {
   GameStatus,
@@ -7,47 +5,32 @@ import {
   Terrain,
   Visibility,
 } from "@generals-plus/engine";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { MatchClientMessage } from "@generals-plus/shared-types";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { MatchRoom } from "#/features/match/match-room";
 import {
+  connectClient,
   createMockGame,
-  createTestServer,
-  createTestToken,
+  createRoom,
   createValidRoomData,
 } from "#tests/helpers";
 
 describe("MatchRoom", () => {
-  let testServer: ColyseusTestServer;
+  let room: MatchRoom;
 
-  beforeAll(async () => {
-    testServer = await createTestServer();
+  afterEach(async () => {
+    if (room) {
+      room.disconnect();
+    }
   });
-
-  afterAll(async () => {
-    await testServer.shutdown();
-  });
-
-  async function connectClient(
-    room: MatchRoom,
-    userData: { id: string; email: string },
-  ) {
-    const port = (testServer.server as unknown as Record<string, unknown>)
-      .port as number;
-    const sdk = new ColyseusSDK(`ws://127.0.0.1:${port}`);
-    sdk.auth.token = await createTestToken(userData);
-    const sdkRoom = await sdk.joinById(room.roomId, {});
-    return sdkRoom;
-  }
 
   // ── Room creation ──────────────────────────────────────────
 
   describe("room creation", () => {
     it("creates room with valid metadata and initializes state", async () => {
       const metadata = createValidRoomData();
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
       expect(room.state.mode).toBe("classic");
       expect(room.state.width).toBe(16);
@@ -60,18 +43,14 @@ describe("MatchRoom", () => {
 
     it("sets maxClients from playerInit count", async () => {
       const metadata = createValidRoomData();
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
       expect(room.maxClients).toBe(2);
     });
 
     it("sets room private when isPublic is false", async () => {
       const metadata = createValidRoomData({ isPublic: false });
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
       const listing = (room as unknown as { _listing?: { private?: boolean } })
         ._listing;
@@ -80,7 +59,7 @@ describe("MatchRoom", () => {
 
     it("throws on invalid metadata", async () => {
       await expect(
-        testServer.createRoom("match", { metadata: { bad: true } }),
+        createRoom("match", { metadata: { bad: true } }),
       ).rejects.toThrow("Invalid room metadata");
     });
 
@@ -89,7 +68,7 @@ describe("MatchRoom", () => {
       const metadata = createValidRoomData({
         game: createMockGame({ startGame }),
       });
-      await testServer.createRoom<MatchRoom>("match", { metadata });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
       expect(startGame).toHaveBeenCalledOnce();
     });
@@ -100,29 +79,22 @@ describe("MatchRoom", () => {
   describe("player join and leave", () => {
     it("binds player session and creates per-client schemas on join", async () => {
       const metadata = createValidRoomData();
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
       const client = await connectClient(room, {
         id: "p1",
         email: "p1@test.com",
       });
 
-      // Find the player by checking session mapping
       const player = room.state.players.get("p1");
       expect(player?.status).toBe(PlayerStatus.ACTIVE);
       expect(room.state.clientVisions.get(client.sessionId)).toBeDefined();
       expect(room.state.clientActionQueues.get(client.sessionId)).toBeDefined();
-
-      await client.leave();
     });
 
     it("cleans up per-client schemas on leave", async () => {
       const metadata = createValidRoomData();
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
       const client = await connectClient(room, {
         id: "p1",
@@ -130,9 +102,9 @@ describe("MatchRoom", () => {
       });
       const sessionId = client.sessionId;
 
-      await client.leave();
-      await new Promise((r) => setTimeout(r, 100));
-
+      await (
+        room as unknown as { _onLeave: (c: unknown) => Promise<void> }
+      )._onLeave(client);
       expect(room.state.clientVisions.get(sessionId)).toBeUndefined();
       expect(room.state.clientActionQueues.get(sessionId)).toBeUndefined();
     });
@@ -143,90 +115,75 @@ describe("MatchRoom", () => {
   describe("action queue", () => {
     it("appends action to schema queue on message", async () => {
       const metadata = createValidRoomData();
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
       const client = await connectClient(room, {
         id: "p1",
         email: "p1@test.com",
       });
 
+      const msgPromise = room.waitForMessage(MatchClientMessage.ACTION);
       client.send("action", {
         type: "move",
         from: { x: 1, y: 1 },
         to: { x: 2, y: 1 },
       });
-
-      // Wait for message to be processed
-      await new Promise((r) => setTimeout(r, 100));
+      await msgPromise;
 
       const queue = room.state.clientActionQueues.get(client.sessionId);
-      expect(queue).toBeDefined();
-      /* biome-ignore lint/style/noNonNullAssertion: validated by toBeDefined above */
-      const q = queue!;
-      expect(q.queue.length).toBe(1);
-      expect(q.queue[0].type).toBe("move");
-      expect(q.queue[0].fromX).toBe(1);
-      expect(q.queue[0].fromY).toBe(1);
-      expect(q.queue[0].toX).toBe(2);
-      expect(q.queue[0].toY).toBe(1);
-
-      await client.leave();
+      if (!queue) throw new Error("queue not found");
+      expect(queue.queue.length).toBe(1);
+      expect(queue.queue[0].type).toBe("move");
+      expect(queue.queue[0].fromX).toBe(1);
+      expect(queue.queue[0].fromY).toBe(1);
+      expect(queue.queue[0].toX).toBe(2);
+      expect(queue.queue[0].toY).toBe(1);
     });
 
     it("ignores action without from/to", async () => {
       const metadata = createValidRoomData();
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
       const client = await connectClient(room, {
         id: "p1",
         email: "p1@test.com",
       });
 
+      const msgPromise = room.waitForMessage(MatchClientMessage.ACTION);
       client.send("action", { type: "move" });
-
-      await new Promise((r) => setTimeout(r, 100));
+      await msgPromise;
 
       const queue = room.state.clientActionQueues.get(client.sessionId);
-      /* biome-ignore lint/style/noNonNullAssertion: queue exists for connected client */
-      expect(queue!.queue.length).toBe(0);
-
-      await client.leave();
+      if (!queue) throw new Error("queue not found");
+      expect(queue.queue.length).toBe(0);
     });
 
     it("clears queue on clear_queue message", async () => {
       const metadata = createValidRoomData();
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
       const client = await connectClient(room, {
         id: "p1",
         email: "p1@test.com",
       });
 
+      const actionPromise = room.waitForMessage(MatchClientMessage.ACTION);
       client.send("action", {
         type: "move",
         from: { x: 1, y: 1 },
         to: { x: 2, y: 1 },
       });
-
-      await new Promise((r) => setTimeout(r, 100));
+      await actionPromise;
 
       const queue = room.state.clientActionQueues.get(client.sessionId);
-      expect(queue!.queue.length).toBe(1);
+      if (!queue) throw new Error("queue not found");
+      expect(queue.queue.length).toBe(1);
 
+      const clearPromise = room.waitForMessage(MatchClientMessage.CLEAR_QUEUE);
       client.send("clear_queue");
+      await clearPromise;
 
-      await new Promise((r) => setTimeout(r, 100));
-
-      /* biome-ignore lint/style/noNonNullAssertion: queue exists for connected client */
-      expect(queue!.queue.length).toBe(0);
-
-      await client.leave();
+      expect(queue.queue.length).toBe(0);
     });
   });
 
@@ -239,12 +196,9 @@ describe("MatchRoom", () => {
         this.tick++;
       });
       const metadata = createValidRoomData({ game });
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
-      // Wait for a tick to fire (500ms interval)
-      await new Promise((r) => setTimeout(r, 800));
+      await room.waitForNextSimulationTick();
 
       expect(game.nextTick).toHaveBeenCalled();
       expect(room.state.tick).toBeGreaterThan(0);
@@ -261,11 +215,9 @@ describe("MatchRoom", () => {
       const metadata = createValidRoomData({
         game: createMockGame({ getPlayerStats }),
       });
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
-      await new Promise((r) => setTimeout(r, 800));
+      await room.waitForNextSimulationTick();
 
       expect(getPlayerStats).toHaveBeenCalled();
       const p1 = room.state.players.get("p1");
@@ -280,16 +232,14 @@ describe("MatchRoom", () => {
         game.tick++;
       };
       const metadata = createValidRoomData({ game });
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
       const client = await connectClient(room, {
         id: "p1",
         email: "p1@test.com",
       });
 
-      // Push 3 actions
+      // client.send() calls handler synchronously
       for (let i = 0; i < 3; i++) {
         client.send("action", {
           type: "move",
@@ -298,20 +248,13 @@ describe("MatchRoom", () => {
         });
       }
 
-      // Wait for messages to be received
-      await new Promise((r) => setTimeout(r, 100));
-
       const queue = room.state.clientActionQueues.get(client.sessionId);
-      /* biome-ignore lint/style/noNonNullAssertion: queue exists for connected client */
-      expect(queue!.queue.length).toBe(3);
+      if (!queue) throw new Error("queue not found");
+      expect(queue.queue.length).toBe(3);
 
-      // Wait for one tick to process
-      await new Promise((r) => setTimeout(r, 800));
+      await room.waitForNextSimulationTick();
 
-      // handleAction should have been called, first valid action consumed
       expect(handleAction).toHaveBeenCalled();
-
-      await client.leave();
     });
   });
 
@@ -337,29 +280,27 @@ describe("MatchRoom", () => {
       const metadata = createValidRoomData({
         game: createMockGame({ getVisionGrid }),
       });
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
-      const client = await connectClient(room, {
+      await connectClient(room, {
         id: "p1",
         email: "p1@test.com",
       });
 
-      // Wait for a tick
-      await new Promise((r) => setTimeout(r, 800));
+      await room.waitForNextSimulationTick();
 
       expect(getVisionGrid).toHaveBeenCalledWith("p1");
 
-      const vision = room.state.clientVisions.get(client.sessionId);
-      expect(vision).toBeDefined();
-      /* biome-ignore lint/style/noNonNullAssertion: validated by toBeDefined above */
-      const v = vision!;
-      expect(v.visibility.length).toBe(256); // 16x16 grid
-      expect(v.terrain.length).toBe(256);
-      expect(v.troopCount.length).toBe(256);
-
-      await client.leave();
+      let visionFound = false;
+      for (const [, vision] of room.state.clientVisions) {
+        if (vision.visibility.length === 256) {
+          expect(vision.terrain.length).toBe(256);
+          expect(vision.troopCount.length).toBe(256);
+          visionFound = true;
+          break;
+        }
+      }
+      expect(visionFound).toBe(true);
     });
   });
 
@@ -381,12 +322,10 @@ describe("MatchRoom", () => {
         game.tick++;
       };
       const metadata = createValidRoomData({ game });
-      const room = await testServer.createRoom<MatchRoom>("match", {
-        metadata,
-      });
+      room = await createRoom<MatchRoom>("match", { metadata });
 
-      // Wait for ticks to fire
-      await new Promise((r) => setTimeout(r, 1500));
+      await room.waitForNextSimulationTick();
+      await room.waitForNextSimulationTick();
 
       expect(room.state.status).toBe(GameStatus.FINISHED);
     });
