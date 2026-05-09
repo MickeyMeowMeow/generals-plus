@@ -69,7 +69,7 @@ export class VisibilityMap {
    * @param team The team to evaluate visibility for.
    * @returns An IVisionGrid representing the visibility of each cell.
    */
-  public evaluate(team: Team): IVisionGrid {
+  evaluate(team: Team): IVisionGrid {
     const width = this.gameGrid.width;
     const height = this.gameGrid.height;
     const teamPlayerIds = new Set(

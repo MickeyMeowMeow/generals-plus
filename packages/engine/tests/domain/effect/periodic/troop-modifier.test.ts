@@ -31,7 +31,7 @@ class MockCell {
  * Mock implementation of the grid.
  */
 class MockGrid extends EffectTarget {
-  public cells: MockCell[] = [];
+  cells: MockCell[] = [];
 
   constructor() {
     super("main-grid");

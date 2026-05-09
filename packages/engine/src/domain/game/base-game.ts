@@ -16,16 +16,16 @@ import type { IVisionGrid } from "#/domain/vision/vision-grid";
  * Subclasses should implement specific modes like ClassicGame, DemolitionGame, etc.
  */
 export abstract class BaseGame implements IBaseGame {
-  public abstract readonly mode: GameMode;
+  abstract readonly mode: GameMode;
 
-  public status: GameStatus = GameStatus.NOT_STARTED;
-  public tick: number = 0;
+  status: GameStatus = GameStatus.NOT_STARTED;
+  tick: number = 0;
 
-  public readonly grid: IGrid;
-  public readonly players: Map<string, IPlayer> = new Map();
-  public readonly teams: Map<string, Team> = new Map();
-  public readonly items: IItem[] = [];
-  public readonly effectRegistry = new EffectRegistry();
+  readonly grid: IGrid;
+  readonly players: Map<string, IPlayer> = new Map();
+  readonly teams: Map<string, Team> = new Map();
+  readonly items: IItem[] = [];
+  readonly effectRegistry = new EffectRegistry();
   protected readonly visibilityMap: VisibilityMap;
 
   constructor(grid: IGrid) {
@@ -33,7 +33,7 @@ export abstract class BaseGame implements IBaseGame {
     this.visibilityMap = new VisibilityMap(this.grid);
   }
 
-  public startGame(): void {
+  startGame(): void {
     console.log(`[BaseGame] Starting game in mode ${this.mode}`);
     if (this.status !== GameStatus.NOT_STARTED) {
       return;
@@ -42,7 +42,7 @@ export abstract class BaseGame implements IBaseGame {
     this.tick = 0;
   }
 
-  public nextTick(): void {
+  nextTick(): void {
     if (this.status !== GameStatus.PLAYING) {
       return;
     }
@@ -61,22 +61,22 @@ export abstract class BaseGame implements IBaseGame {
    * @param _action The action to process.
    * @returns Whether the action was successfully processed.
    */
-  public handleAction(_action: Action): boolean {
+  handleAction(_action: Action): boolean {
     if (this.status !== GameStatus.PLAYING) {
       return false;
     }
     return false; // To be overridden by specific modes
   }
 
-  public abstract checkGameEnd(): IGameResult | null;
+  abstract checkGameEnd(): IGameResult | null;
 
-  public abstract forceEnd(): IGameResult;
+  abstract forceEnd(): IGameResult;
 
-  public getVisionGrid(playerId: string): IVisionGrid | null {
+  getVisionGrid(playerId: string): IVisionGrid | null {
     const player = this.players.get(playerId);
     if (!player) return null;
     return this.visibilityMap.evaluate(player.team);
   }
 
-  public abstract getPlayerStats(playerId: string): IPlayerStats | null;
+  abstract getPlayerStats(playerId: string): IPlayerStats | null;
 }

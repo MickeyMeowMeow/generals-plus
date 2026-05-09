@@ -25,7 +25,7 @@ export class MongoUserRepository implements IUserRepository {
     };
   }
 
-  public async findByEmail(email: string): Promise<IUser | null> {
+  async findByEmail(email: string): Promise<IUser | null> {
     const user = await UserModel.findOne({ email }).exec();
     if (!user) {
       return null;
@@ -34,7 +34,7 @@ export class MongoUserRepository implements IUserRepository {
     return this.mapToEntity(user);
   }
 
-  public async createWithEmailAndPassword(
+  async createWithEmailAndPassword(
     email: string,
     passwordHash: string,
     options?: UserCreateOptions,
@@ -60,7 +60,7 @@ export class MongoUserRepository implements IUserRepository {
     return this.mapToEntity(savedUser);
   }
 
-  public async createAnonymous(options?: UserCreateOptions): Promise<IUser> {
+  async createAnonymous(options?: UserCreateOptions): Promise<IUser> {
     // Strip privileged fields from caller-supplied options to prevent
     // callers from overriding security-sensitive values.
     const {
@@ -80,7 +80,7 @@ export class MongoUserRepository implements IUserRepository {
     return this.mapToEntity(savedUser);
   }
 
-  public async updatePassword(
+  async updatePassword(
     email: string,
     newPasswordHash: string,
   ): Promise<boolean> {
@@ -91,7 +91,7 @@ export class MongoUserRepository implements IUserRepository {
     return result.acknowledged && result.matchedCount > 0;
   }
 
-  public async verifyEmail(email: string): Promise<boolean> {
+  async verifyEmail(email: string): Promise<boolean> {
     const result = await UserModel.updateOne(
       { email },
       { verified: true },

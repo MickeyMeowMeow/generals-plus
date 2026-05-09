@@ -48,8 +48,8 @@ export interface IGrid2D<T> {
  * Base implementation of IGrid2D providing default behavior for common operations.
  */
 export abstract class Grid2D<T> implements IGrid2D<T> {
-  public readonly width: number;
-  public readonly height: number;
+  readonly width: number;
+  readonly height: number;
   protected readonly gridData: T[][];
 
   constructor(width: number, height: number, gridData: T[][]) {
@@ -58,14 +58,14 @@ export abstract class Grid2D<T> implements IGrid2D<T> {
     this.gridData = gridData;
   }
 
-  public get(coordinate: ICoordinate): T | null {
+  get(coordinate: ICoordinate): T | null {
     if (!this.isValid(coordinate)) {
       return null;
     }
     return this.gridData[coordinate.y][coordinate.x];
   }
 
-  public getNeighbors(coordinate: ICoordinate): T[] {
+  getNeighbors(coordinate: ICoordinate): T[] {
     const neighbors: T[] = [];
     const offsets = [
       { x: 0, y: -1 },
@@ -85,7 +85,7 @@ export abstract class Grid2D<T> implements IGrid2D<T> {
     return neighbors;
   }
 
-  public isValid(coordinate: ICoordinate): boolean {
+  isValid(coordinate: ICoordinate): boolean {
     return (
       coordinate.x >= 0 &&
       coordinate.x < this.width &&
@@ -94,9 +94,7 @@ export abstract class Grid2D<T> implements IGrid2D<T> {
     );
   }
 
-  public forEach(
-    callback: (element: T, coordinate: ICoordinate) => void,
-  ): void {
+  forEach(callback: (element: T, coordinate: ICoordinate) => void): void {
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         const cell = this.get({ x, y });

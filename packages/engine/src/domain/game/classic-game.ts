@@ -13,14 +13,14 @@ import type { IClassicPlayerStats } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
 
 export class ClassicGame extends BaseGame implements IClassicGame {
-  public readonly mode = GameMode.CLASSIC;
+  readonly mode = GameMode.CLASSIC;
   private readonly combatResolver = new StandardCombatResolver();
 
-  public startGame(): void {
+  startGame(): void {
     super.startGame();
+
     let index = 0;
     const playersArray = Array.from(this.players.values());
-    console.log("playersArray:", playersArray);
     this.grid.forEach((cell) => {
       if (cell.terrain === Terrain.GENERAL) {
         cell.owner = playersArray[index] ?? null;
@@ -65,7 +65,7 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     );
   }
 
-  public handleAction(action: Action): boolean {
+  handleAction(action: Action): boolean {
     if (this.status !== GameStatus.PLAYING) {
       return false;
     }
@@ -94,7 +94,7 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     return success;
   }
 
-  public nextTick(): void {
+  nextTick(): void {
     if (this.status !== GameStatus.PLAYING) {
       return;
     }
@@ -106,7 +106,7 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     this.checkGameEnd();
   }
 
-  public checkGameEnd(): IGameResult | null {
+  checkGameEnd(): IGameResult | null {
     if (this.status !== GameStatus.PLAYING) {
       return null;
     }
@@ -131,7 +131,7 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     return null;
   }
 
-  public getPlayerStats(playerId: string): IClassicPlayerStats | null {
+  getPlayerStats(playerId: string): IClassicPlayerStats | null {
     const player = this.players.get(playerId);
     if (!player) return null;
 
@@ -157,7 +157,7 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     };
   }
 
-  public forceEnd(): IGameResult {
+  forceEnd(): IGameResult {
     this.status = GameStatus.FINISHED;
     return { mode: this.mode, winnerTeamId: null };
   }

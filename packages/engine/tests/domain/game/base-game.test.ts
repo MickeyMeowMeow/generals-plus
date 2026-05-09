@@ -13,18 +13,18 @@ import { Player } from "#/domain/player/player";
 import { StandardTeam } from "#/domain/team/team";
 
 class TestGame extends BaseGame {
-  public readonly mode = GameMode.CLASSIC;
+  readonly mode = GameMode.CLASSIC;
 
-  public checkGameEnd() {
+  checkGameEnd() {
     return null;
   }
 
-  public forceEnd() {
+  forceEnd() {
     this.status = GameStatus.FINISHED;
     return { mode: this.mode, winnerTeamId: null };
   }
 
-  public getPlayerStats(playerId: string): IPlayerStats | null {
+  getPlayerStats(playerId: string): IPlayerStats | null {
     const player = this.players.get(playerId);
     if (!player) {
       return null;

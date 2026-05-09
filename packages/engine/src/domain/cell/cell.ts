@@ -53,11 +53,11 @@ export class Cell extends EffectTarget implements ICell {
     this.vision = options.vision ?? { radius: 1 };
   }
 
-  public get terrain() {
+  get terrain() {
     return this.terrain_;
   }
 
-  public set terrain(newTerrain: Terrain) {
+  set terrain(newTerrain: Terrain) {
     this.onTerrianChange?.(this, this.terrain_, newTerrain);
     this.terrain_ = newTerrain;
   }
