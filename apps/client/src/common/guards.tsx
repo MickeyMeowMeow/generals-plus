@@ -10,17 +10,16 @@ import {
   CardTitle,
 } from "#/components/ui/card";
 import { AuthStatus } from "#/features/auth/auth-store";
-import { useAuthStore } from "#/features/auth/hooks";
+import { useAuth } from "#/features/auth/hooks";
 
 /** Route guard that redirects unauthenticated users to /user. */
 export function RequireAuthenticated({ children }: { children: ReactElement }) {
-  const isHydrated = useAuthStore((state) => state.isHydrated);
-  const status = useAuthStore((state) => state.status);
+  const { state } = useAuth();
 
   if (
-    !isHydrated ||
-    status === AuthStatus.HYDRATING ||
-    status === AuthStatus.AUTHENTICATING
+    !state.isHydrated ||
+    state.status === AuthStatus.HYDRATING ||
+    state.status === AuthStatus.AUTHENTICATING
   ) {
     return (
       <div className="flex flex-1 items-center justify-center p-5">
@@ -42,7 +41,7 @@ export function RequireAuthenticated({ children }: { children: ReactElement }) {
     );
   }
 
-  if (status !== AuthStatus.AUTHENTICATED) {
+  if (state.status !== AuthStatus.AUTHENTICATED) {
     return <Navigate to="/user" replace />;
   }
 

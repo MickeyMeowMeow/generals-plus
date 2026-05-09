@@ -1,23 +1,27 @@
-import { useEffect } from "react";
+import type { AuthContextValue } from "#/features/auth/auth-store";
 import { Outlet } from "react-router";
 
 import { AppHeader } from "#/components/layout/app-header";
 import { PageContainer } from "#/components/layout/page-container";
-import { useAuthStore } from "#/features/auth/hooks";
+import { AuthProvider } from "#/features/auth/hooks";
 
-export default function AppLayout() {
-  const hydrateUser = useAuthStore((state) => state.hydrate);
+interface AppLayoutProps {
+  /**
+   * An optional pre-built auth context value for dependency injection.
+   * Used primarily in tests to control initial state and mock actions.
+   */
+  authValue?: AuthContextValue;
+}
 
-  useEffect(() => {
-    void hydrateUser();
-  }, [hydrateUser]);
-
+export default function AppLayout({ authValue }: AppLayoutProps) {
   return (
-    <div className="flex min-h-svh flex-col">
-      <AppHeader />
-      <PageContainer>
-        <Outlet />
-      </PageContainer>
-    </div>
+    <AuthProvider value={authValue}>
+      <div className="flex min-h-svh flex-col">
+        <AppHeader />
+        <PageContainer>
+          <Outlet />
+        </PageContainer>
+      </div>
+    </AuthProvider>
   );
 }
