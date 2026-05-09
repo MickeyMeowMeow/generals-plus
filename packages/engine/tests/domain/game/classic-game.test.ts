@@ -211,6 +211,199 @@ describe("ClassicGame", () => {
     expect(result).toEqual({ mode: GameMode.CLASSIC, winnerTeamId: null });
   });
 
+  // ── Scoreboard ──────────────────────────────────────────────
+
+  describe("getScoreboard", () => {
+    it("returns correct scoreboard for multiple players", () => {
+      const grid = new Grid(4, 1, [
+        [
+          new Cell({
+            coordinate: { x: 0, y: 0 },
+            terrain: Terrain.GENERAL,
+            troopCount: 5,
+          }),
+          new Cell({
+            coordinate: { x: 1, y: 0 },
+            terrain: Terrain.CITY,
+            troopCount: 3,
+          }),
+          new Cell({
+            coordinate: { x: 2, y: 0 },
+            terrain: Terrain.GENERAL,
+            troopCount: 4,
+          }),
+          new Cell({
+            coordinate: { x: 3, y: 0 },
+            terrain: Terrain.PLAIN,
+            troopCount: 1,
+          }),
+        ],
+      ]);
+      const game = new ClassicGame(grid);
+      const t1 = new StandardTeam("t1");
+      const t2 = new StandardTeam("t2");
+      const p1 = new Player(t1, "p1");
+      const p2 = new Player(t2, "p2");
+      game.players.set(p1.playerId, p1);
+      game.players.set(p2.playerId, p2);
+
+      const c0 = grid.get({ x: 0, y: 0 });
+      const c1 = grid.get({ x: 1, y: 0 });
+      const c2 = grid.get({ x: 2, y: 0 });
+      const c3 = grid.get({ x: 3, y: 0 });
+      if (!c0 || !c1 || !c2 || !c3) throw new Error("cells should exist");
+
+      c0.owner = p1;
+      c1.owner = p1;
+      c2.owner = p2;
+      c3.owner = p2;
+
+      const scoreboard = game.getScoreboard();
+
+      expect(scoreboard.mode).toBe(GameMode.CLASSIC);
+      expect(scoreboard.players).toContainEqual({
+        playerId: "p1",
+        troops: 8,
+        land: 2,
+        isGeneralAlive: true,
+      });
+      expect(scoreboard.players).toContainEqual({
+        playerId: "p2",
+        troops: 5,
+        land: 2,
+        isGeneralAlive: true,
+      });
+    });
+
+    it("returns zero stats for player with no cells", () => {
+      const grid = new Grid(2, 1, [
+        [
+          new Cell({
+            coordinate: { x: 0, y: 0 },
+            terrain: Terrain.GENERAL,
+            troopCount: 5,
+          }),
+          new Cell({
+            coordinate: { x: 1, y: 0 },
+            terrain: Terrain.GENERAL,
+            troopCount: 0,
+          }),
+        ],
+      ]);
+      const game = new ClassicGame(grid);
+      const t1 = new StandardTeam("t1");
+      const t2 = new StandardTeam("t2");
+      const p1 = new Player(t1, "p1");
+      const p2 = new Player(t2, "p2");
+      game.players.set(p1.playerId, p1);
+      game.players.set(p2.playerId, p2);
+
+      const c0 = grid.get({ x: 0, y: 0 });
+      if (!c0) throw new Error("cell should exist");
+      c0.owner = p1;
+
+      const scoreboard = game.getScoreboard();
+
+      expect(scoreboard.players).toContainEqual({
+        playerId: "p2",
+        troops: 0,
+        land: 0,
+        isGeneralAlive: false,
+      });
+    });
+
+    it("reports isGeneralAlive as false when general is captured", () => {
+      const grid = new Grid(3, 1, [
+        [
+          new Cell({
+            coordinate: { x: 0, y: 0 },
+            terrain: Terrain.GENERAL,
+            troopCount: 5,
+          }),
+          new Cell({
+            coordinate: { x: 1, y: 0 },
+            terrain: Terrain.PLAIN,
+            troopCount: 2,
+          }),
+          new Cell({
+            coordinate: { x: 2, y: 0 },
+            terrain: Terrain.PLAIN,
+            troopCount: 0,
+          }),
+        ],
+      ]);
+      const game = new ClassicGame(grid);
+      const t1 = new StandardTeam("t1");
+      const t2 = new StandardTeam("t2");
+      const p1 = new Player(t1, "p1");
+      const p2 = new Player(t2, "p2");
+      game.players.set(p1.playerId, p1);
+      game.players.set(p2.playerId, p2);
+
+      const generalCell = grid.get({ x: 0, y: 0 });
+      const plainCell = grid.get({ x: 1, y: 0 });
+      if (!generalCell || !plainCell) throw new Error("cells should exist");
+
+      generalCell.owner = p2;
+      plainCell.owner = p1;
+
+      const scoreboard = game.getScoreboard();
+
+      const p1Entry = scoreboard.players.find((e) => e.playerId === "p1");
+      expect(p1Entry?.isGeneralAlive).toBe(false);
+
+      const p2Entry = scoreboard.players.find((e) => e.playerId === "p2");
+      expect(p2Entry?.isGeneralAlive).toBe(true);
+    });
+
+    it("reflects live changes to cell ownership and troops", () => {
+      const grid = new Grid(2, 1, [
+        [
+          new Cell({
+            coordinate: { x: 0, y: 0 },
+            terrain: Terrain.GENERAL,
+            troopCount: 5,
+          }),
+          new Cell({
+            coordinate: { x: 1, y: 0 },
+            terrain: Terrain.PLAIN,
+            troopCount: 3,
+          }),
+        ],
+      ]);
+      const game = new ClassicGame(grid);
+      const t1 = new StandardTeam("t1");
+      const p1 = new Player(t1, "p1");
+      game.players.set(p1.playerId, p1);
+
+      const c0 = grid.get({ x: 0, y: 0 });
+      const c1 = grid.get({ x: 1, y: 0 });
+      if (!c0 || !c1) throw new Error("cells should exist");
+
+      c0.owner = p1;
+      c1.owner = p1;
+
+      const first = game.getScoreboard();
+      expect(first.players[0]).toEqual({
+        playerId: "p1",
+        troops: 8,
+        land: 2,
+        isGeneralAlive: true,
+      });
+
+      c1.owner = null;
+      c0.troopCount = 10;
+
+      const updated = game.getScoreboard();
+      expect(updated.players[0]).toEqual({
+        playerId: "p1",
+        troops: 10,
+        land: 1,
+        isGeneralAlive: true,
+      });
+    });
+  });
+
   test("surrender neutralizes all owned troops and can end the game", () => {
     const grid = new Grid(3, 1, [
       [

@@ -5,6 +5,7 @@ import {
   Terrain,
   Visibility,
 } from "@generals-plus/engine";
+import type { ClassicScoreboard } from "@generals-plus/shared-types";
 import { MatchClientMessage } from "@generals-plus/shared-types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -220,6 +221,33 @@ describe("MatchRoom", () => {
       await room.waitForNextSimulationTick();
 
       expect(getPlayerState).toHaveBeenCalled();
+    });
+
+    it("syncs scoreboard from engine on tick", async () => {
+      const getScoreboard = vi.fn(() => ({
+        mode: "classic" as const,
+        players: [
+          { playerId: "p1", troops: 10, land: 5, isGeneralAlive: true },
+          { playerId: "p2", troops: 3, land: 1, isGeneralAlive: false },
+        ],
+      }));
+      const metadata = createValidRoomData({
+        game: createMockGame({ getScoreboard }),
+      });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      await room.waitForNextSimulationTick();
+
+      expect(getScoreboard).toHaveBeenCalled();
+      const scoreboard = room.state.scoreboard as ClassicScoreboard;
+      expect(scoreboard.mode).toBe("classic");
+      expect(scoreboard.players.length).toBe(2);
+      expect(scoreboard.players.at(0)).toMatchObject({
+        playerId: "p1",
+        troops: 10,
+        land: 5,
+        isGeneralAlive: true,
+      });
     });
 
     it("processes action queue and stops at first valid action", async () => {
