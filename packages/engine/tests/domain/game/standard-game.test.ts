@@ -98,6 +98,65 @@ describe("StandardGame", () => {
     expect(game.status).toBe(GameStatus.FINISHED);
   });
 
+  test("generates troops via effects during nextTick", () => {
+    const grid = new Grid(3, 1, [
+      [
+        new Cell({
+          coordinate: { x: 0, y: 0 },
+          terrain: Terrain.GENERAL,
+          troopCount: 1,
+        }),
+        new Cell({
+          coordinate: { x: 1, y: 0 },
+          terrain: Terrain.CITY,
+          troopCount: 0,
+        }),
+        new Cell({
+          coordinate: { x: 2, y: 0 },
+          terrain: Terrain.PLAIN,
+          troopCount: 0,
+        }),
+      ],
+    ]);
+    const game = new StandardGame(grid);
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+
+    const generalCell = grid.get({ x: 0, y: 0 })!;
+    const cityCell = grid.get({ x: 1, y: 0 })!;
+    const plainCell = grid.get({ x: 2, y: 0 })!;
+
+    // Make p1 own everything
+    cityCell.owner = p1;
+    plainCell.owner = p1;
+
+    // startGame overrides General owner to playersArray[0] which is p1
+    game.startGame();
+    expect(generalCell.owner).toBe(p1);
+
+    game.nextTick(); // tick 1: general +1, city +1, plain +0
+    expect(generalCell.troopCount).toBe(2);
+    expect(cityCell.troopCount).toBe(1);
+    expect(plainCell.troopCount).toBe(0);
+
+    // Run until tick 25
+    for (let i = 2; i <= 25; i++) {
+      game.nextTick();
+    }
+
+    // At tick 25:
+    // General generated 25 times total (1 initial + 25 = 26)
+    // City generated 25 times total (0 initial + 25 = 25)
+    // Plain generated 1 time total (0 initial + 1 = 1)
+    expect(generalCell.troopCount).toBe(26);
+    expect(cityCell.troopCount).toBe(25);
+    expect(plainCell.troopCount).toBe(1);
+  });
+
   it("computes player stats from owned cells", () => {
     const grid = new Grid(2, 1, [
       [

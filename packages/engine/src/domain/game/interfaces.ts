@@ -1,4 +1,5 @@
 import type { Action } from "#/domain/action/interfaces";
+import type { EffectRegistry } from "#/domain/effect/effect-registry";
 import type { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import type { GameStatus } from "#/domain/game/game-status";
@@ -25,6 +26,9 @@ export interface IBaseGame {
 
   status: GameStatus;
   tick: number;
+
+  /** The registry that handles ticking and expiring effects. */
+  readonly effectRegistry: EffectRegistry;
 
   /** The 2D grid of cells. */
   readonly grid: IGrid;

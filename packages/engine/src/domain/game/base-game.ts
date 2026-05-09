@@ -1,4 +1,5 @@
 import type { Action } from "#/domain/action/interfaces";
+import { EffectRegistry } from "#/domain/effect/effect-registry";
 import type { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import { GameStatus } from "#/domain/game/game-status";
@@ -24,6 +25,7 @@ export abstract class BaseGame implements IBaseGame {
   public readonly players: Map<string, IPlayer> = new Map();
   public readonly teams: Map<string, Team> = new Map();
   public readonly items: IItem[] = [];
+  public readonly effectRegistry = new EffectRegistry();
   protected readonly visibilityMap: VisibilityMap;
 
   constructor(grid: IGrid) {
@@ -46,6 +48,8 @@ export abstract class BaseGame implements IBaseGame {
     }
 
     this.tick++;
+
+    this.effectRegistry.processTick(this.tick);
 
     // Next, specific modes will evaluate rules, e.g., checkGameEnd.
   }

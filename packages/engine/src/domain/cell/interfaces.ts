@@ -34,6 +34,13 @@ export interface ICell extends EffectTarget {
   /** Vision modifier applied to this cell, affecting the sight radius of its owner. */
   vision: IVisionModifier;
 
+  /** Triggered when the terrain changes, allowing external systems to react to this change. */
+  onTerrianChange?: (
+    cell: ICell,
+    oldTerrian: Terrain,
+    newTerrian: Terrain,
+  ) => void;
+
   /**
    * Adds or removes troops from the cell.
    *

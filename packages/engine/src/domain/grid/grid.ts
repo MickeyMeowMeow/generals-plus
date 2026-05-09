@@ -1,5 +1,5 @@
 import type { ICell } from "#/domain/cell/interfaces";
-import type { Terrain } from "#/domain/cell/terrain";
+import { Terrain } from "#/domain/cell/terrain";
 import { EffectTarget } from "#/domain/effect/effect-target";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { ICoordinate } from "#/math/coordinate";
@@ -11,6 +11,7 @@ export class Grid extends EffectTarget implements IGrid {
   readonly width: number;
   readonly height: number;
   private readonly cells: ICell[][];
+  private readonly terrainMap: Map<Terrain, Set<ICell>> = new Map();
 
   /**
    * Creates a grid only when dimensions and the provided cell matrix agree.
@@ -31,6 +32,16 @@ export class Grid extends EffectTarget implements IGrid {
     this.width = width;
     this.height = height;
     this.cells = cells;
+    for (const terrain of Object.values(Terrain)) {
+      this.terrainMap.set(terrain, new Set<ICell>());
+    }
+    this.forEach((cell, _coordinate) => {
+      this.terrainMap.get(cell.terrain)?.add(cell);
+      cell.onTerrianChange = (cell, oldTerrain, newTerrain) => {
+        this.terrainMap.get(oldTerrain)?.delete(cell);
+        this.terrainMap.get(newTerrain)?.add(cell);
+      };
+    });
   }
 
   /**
@@ -92,12 +103,8 @@ export class Grid extends EffectTarget implements IGrid {
     terrain: Terrain,
     callback: (cell: ICell, coordinate: ICoordinate) => void,
   ): void {
-    for (let y = 0; y < this.height; y += 1) {
-      for (let x = 0; x < this.width; x += 1) {
-        if (this.cells[y][x].terrain === terrain) {
-          callback(this.cells[y][x], { x, y });
-        }
-      }
-    }
+    this.terrainMap.get(terrain)?.forEach((cell) => {
+      callback(cell, cell.coordinate);
+    });
   }
 }

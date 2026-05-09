@@ -2,6 +2,8 @@ import { ActionType } from "#/domain/action/action-type";
 import type { Action } from "#/domain/action/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
+import { EffectType } from "#/domain/effect/effect-type";
+import { TroopModifierEffect } from "#/domain/effect/periodic/troop-modifier";
 import { BaseGame } from "#/domain/game/base-game";
 import { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
@@ -25,6 +27,42 @@ export class StandardGame extends BaseGame implements IStandardGame {
         index += 1;
       }
     });
+
+    this.effectRegistry.register(
+      this.tick,
+      new TroopModifierEffect(this.tick, {
+        id: "standard-general-troop-gen",
+        type: EffectType.TROOP_GENERATION,
+        target: this.grid,
+        terrain: Terrain.GENERAL,
+        delta: 1,
+        interval: 1,
+      }),
+    );
+
+    this.effectRegistry.register(
+      this.tick,
+      new TroopModifierEffect(this.tick, {
+        id: "standard-city-troop-gen",
+        type: EffectType.TROOP_GENERATION,
+        target: this.grid,
+        terrain: Terrain.CITY,
+        delta: 1,
+        interval: 1,
+      }),
+    );
+
+    this.effectRegistry.register(
+      this.tick,
+      new TroopModifierEffect(this.tick, {
+        id: "standard-plain-troop-gen",
+        type: EffectType.TROOP_GENERATION,
+        target: this.grid,
+        terrain: Terrain.PLAIN,
+        delta: 1,
+        interval: 25,
+      }),
+    );
   }
 
   public handleAction(action: Action): boolean {
@@ -60,20 +98,6 @@ export class StandardGame extends BaseGame implements IStandardGame {
     if (this.status !== GameStatus.PLAYING) {
       return;
     }
-
-    this.grid.forEach((cell) => {
-      if (cell.terrain === Terrain.GENERAL) {
-        cell.troopCount = (cell.troopCount ?? 0) + 1;
-      } else if (cell.terrain === Terrain.CITY && cell.owner) {
-        cell.troopCount = (cell.troopCount ?? 0) + 1;
-      } else if (
-        cell.terrain === Terrain.PLAIN &&
-        cell.owner &&
-        this.tick % 25 === 0
-      ) {
-        cell.troopCount = (cell.troopCount ?? 0) + 1;
-      }
-    });
 
     // Process all grid, player, and team effects (e.g. troop generation)
     super.nextTick();
