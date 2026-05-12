@@ -1,14 +1,11 @@
 import type { Action } from "#/domain/action/interfaces";
+import type { EffectRegistry } from "#/domain/effect/effect-registry";
 import type { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import type { GameStatus } from "#/domain/game/game-status";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { IItem } from "#/domain/item/interfaces";
-import type {
-  IPlayer,
-  IPlayerStats,
-  IStandardPlayerStats,
-} from "#/domain/player/interfaces";
+import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
 import type { ICoordinate } from "#/math/coordinate";
@@ -25,6 +22,9 @@ export interface IBaseGame {
 
   status: GameStatus;
   tick: number;
+
+  /** The registry that handles ticking and expiring effects. */
+  readonly effectRegistry: EffectRegistry;
 
   /** The 2D grid of cells. */
   readonly grid: IGrid;
@@ -94,28 +94,74 @@ export interface IBaseGame {
   getVisionGrid(playerId: string): IVisionGrid | null;
 
   /**
-   * Retrieves the current statistics (troops, land, etc.) for a specific player.
+   * Retrieves the fundamental state for a specific player (ID, team, status).
+   * Note: This does not include dynamic scores like troops or land.
    *
    * @param playerId The ID of the player.
-   * @returns The statistics for the player, or null if the player doesn't exist.
+   * @returns The player's state, or null if the player doesn't exist.
    */
-  getPlayerStats(playerId: string): IPlayerStats | null;
+  getPlayerState(playerId: string): IPlayerState | null;
+
+  /**
+   * Retrieves the current scoreboard, containing scores (troops, land, etc.) for all active players
+   * and any global score metrics. The specific type returned depends on the game mode.
+   *
+   * @returns The unified scoreboard for the current mode.
+   */
+  getScoreboard(): IBaseScoreboard;
+}
+
+export interface IBaseScoreboard {
+  readonly mode: GameMode;
+}
+
+export interface IClassicScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.CLASSIC;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+    readonly isGeneralAlive: boolean;
+  }>;
+}
+
+export interface ITurfWarScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.TURF_WAR;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+  }>;
+}
+
+export interface IDominationScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.DOMINATION;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+  }>;
+  readonly teamScores: Map<string, number>;
 }
 
 /**
- * Classic FFA Mode / Turf War Mode.
+ * Classic FFA Mode.
  * Focuses on capital captures.
  */
-export interface IStandardGame extends IBaseGame {
-  readonly mode: typeof GameMode.CLASSIC | typeof GameMode.TURF_WAR;
+export interface IClassicGame extends IBaseGame {
+  readonly mode: typeof GameMode.CLASSIC;
 
-  /**
-   * Overridden covariant return type specific to standard games.
-   *
-   * @param playerId The ID of the player.
-   * @returns The standard player statistics for the player, or null if the player doesn't exist.
-   */
-  getPlayerStats(playerId: string): IStandardPlayerStats | null;
+  getScoreboard(): IClassicScoreboard;
+}
+
+/**
+ * Turf War Mode.
+ * High-speed area control. Most tiles owned at the end of time wins.
+ */
+export interface ITurfWarGame extends IBaseGame {
+  readonly mode: typeof GameMode.TURF_WAR;
+
+  getScoreboard(): ITurfWarScoreboard;
 }
 
 /**
@@ -174,6 +220,10 @@ export interface IDominationGame extends IBaseGame {
   readonly targetScore: number;
   /** Location of all Shrines on the map. */
   shrineLocations: Array<ICoordinate>;
+  /** Scores of each team. */
+  readonly teamScores: Map<string, number>;
+
+  getScoreboard(): IDominationScoreboard;
 }
 
 /**
@@ -202,7 +252,8 @@ export interface IRugbyGame extends IBaseGame {
  * Union type representing all possible game states.
  */
 export type GameState =
-  | IStandardGame
+  | IClassicGame
+  | ITurfWarGame
   | IDemolitionGame
   | IPayloadGame
   | IBiohazardGame

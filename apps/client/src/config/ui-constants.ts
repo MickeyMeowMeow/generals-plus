@@ -1,5 +1,5 @@
 import type { LucideProps } from "lucide-react";
-import { LogIn, User } from "lucide-react";
+import { Gamepad2, LogIn, User } from "lucide-react";
 
 /** Maximum content width for standard page layouts. */
 export const PAGE_MAX_WIDTH = "max-w-3xl";
@@ -18,4 +18,5 @@ export const NAV_LINKS: readonly {
 }[] = [
   { to: "/user", label: "User", icon: User },
   { to: "/lobby", label: "Lobby", icon: LogIn },
+  { to: "/match-screen", label: "Match Screen", icon: Gamepad2 },
 ] as const;

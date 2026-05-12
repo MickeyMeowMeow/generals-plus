@@ -1,49 +1,14 @@
+// @vitest-environment jsdom
+
 import { describe, expect, it, vi } from "vitest";
 
 import type { MatchConnectionGateway } from "#/features/match/store/match-connection-store";
 import { createMatchConnectionStore } from "#/features/match/store/match-connection-store";
-import type {
-  ColyseusRoom,
-  RoomLifecycleHandlers,
-} from "#/infra/colyseus/connection";
+import type { RoomLifecycleHandlers } from "#/infra/colyseus/connection";
+import { createRoom } from "#/tests/helpers/colyseus";
 
 interface MatchState {
   turn: number;
-}
-
-function createRoom(name = "skirmish-room"): ColyseusRoom<MatchState, unknown> {
-  return {
-    roomId: "room-1",
-    name,
-    sessionId: "session-1",
-    reconnectionToken: "room-1:token-abc",
-    reconnection: {
-      enabled: true,
-      maxRetries: 15,
-      minDelay: 100,
-      maxDelay: 5000,
-      minUptime: 5000,
-      delay: 100,
-      backoff: vi.fn(),
-      maxEnqueuedMessages: 10,
-      enqueuedMessages: [],
-      retryCount: 0,
-      isReconnecting: false,
-    },
-    state: { turn: 0 },
-    leave: vi.fn().mockResolvedValue(1000),
-    send: vi.fn(),
-    sendBytes: vi.fn(),
-    sendUnreliable: vi.fn(),
-    ping: vi.fn(),
-    removeAllListeners: vi.fn(),
-    onStateChange: vi.fn().mockReturnValue({ clear: vi.fn() }),
-    onMessage: vi.fn().mockReturnValue(() => {}),
-    onError: vi.fn().mockReturnValue({ clear: vi.fn() }),
-    onLeave: vi.fn().mockReturnValue({ clear: vi.fn() }),
-    onDrop: vi.fn().mockReturnValue({ clear: vi.fn() }),
-    onReconnect: vi.fn().mockReturnValue({ clear: vi.fn() }),
-  };
 }
 
 describe("match connection store", () => {
@@ -84,7 +49,7 @@ describe("match connection store", () => {
   });
 
   it("joins room and tracks room metadata", async () => {
-    const room = createRoom("alpha-room");
+    const room = createRoom<MatchState>("alpha-room");
 
     const gateway: MatchConnectionGateway = {
       joinRoom: vi.fn().mockResolvedValue(room),

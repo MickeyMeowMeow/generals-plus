@@ -1,52 +1,18 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
-import AppLayout from "#/routes/_app";
-import IndexRoute from "#/routes/_index";
-import LobbyRoute from "#/routes/lobby";
-import MatchRoute from "#/routes/match.$roomId";
-import NotFoundRoute from "#/routes/not-found";
-import UserRoute from "#/routes/user";
+import { createMockAuth } from "#/tests/helpers/auth";
+import { renderRoute } from "#/tests/helpers/render";
 
 const initialMatchState = useMatchConnectionStore.getInitialState();
-const initialAuthState = useUserAuthStore.getInitialState();
-
-function renderRoute(initialPath: string) {
-  const router = createMemoryRouter(
-    [
-      {
-        path: "/",
-        element: <AppLayout />,
-        children: [
-          { index: true, element: <IndexRoute /> },
-          { path: "user", element: <UserRoute /> },
-          { path: "lobby", element: <LobbyRoute /> },
-          { path: "match/:roomId", element: <MatchRoute /> },
-          { path: "*", element: <NotFoundRoute /> },
-        ],
-      },
-    ],
-    {
-      initialEntries: [initialPath],
-    },
-  );
-
-  return render(<RouterProvider router={router} />);
-}
 
 describe("client connection flow", () => {
   beforeEach(() => {
     useMatchConnectionStore.setState(initialMatchState, true);
-    useUserAuthStore.setState(initialAuthState, true);
-    useUserAuthStore.setState({
-      hydrateUser: vi.fn().mockResolvedValue(undefined),
-    });
   });
 
   afterEach(() => {
@@ -55,15 +21,6 @@ describe("client connection flow", () => {
 
   it("calls connect action from lobby", async () => {
     const connect = vi.fn();
-
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Scout",
-      user: { name: "Scout" },
-      token: "token-scout",
-      lastError: null,
-    });
 
     useMatchConnectionStore.setState({
       connect,
@@ -82,9 +39,16 @@ describe("client connection flow", () => {
       getRoom: () => null,
     });
 
-    const user = userEvent.setup();
-    renderRoute("/lobby");
+    renderRoute(
+      "/lobby",
+      createMockAuth({
+        status: "authenticated",
+        user: { id: "scout", displayName: "Scout" },
+        token: "token-scout",
+      }),
+    );
 
+    const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Connect" }));
 
     expect(connect).toHaveBeenCalledTimes(1);
@@ -98,15 +62,6 @@ describe("client connection flow", () => {
         roomId: "room-123",
         sessionId: "session-123",
       });
-    });
-
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Rogue",
-      user: { displayName: "Rogue" },
-      token: "token-rogue",
-      lastError: null,
     });
 
     useMatchConnectionStore.setState({
@@ -126,9 +81,16 @@ describe("client connection flow", () => {
       getRoom: () => null,
     });
 
-    const user = userEvent.setup();
-    renderRoute("/lobby");
+    renderRoute(
+      "/lobby",
+      createMockAuth({
+        status: "authenticated",
+        user: { id: "rogue", displayName: "Rogue" },
+        token: "token-rogue",
+      }),
+    );
 
+    const user = userEvent.setup();
     const input = screen.getByLabelText("Room name");
     await user.clear(input);
     await user.type(input, "alpha-room");
@@ -147,15 +109,6 @@ describe("client connection flow", () => {
   it("leaves room when match page unmounts", async () => {
     const leaveRoom = vi.fn().mockResolvedValue(undefined);
 
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Scout",
-      user: { name: "Scout" },
-      token: "token-scout",
-      lastError: null,
-    });
-
     useMatchConnectionStore.setState({
       connect: vi.fn(),
       joinRoom: vi.fn().mockResolvedValue(undefined),
@@ -173,7 +126,14 @@ describe("client connection flow", () => {
       getRoom: () => null,
     });
 
-    const view = renderRoute("/match/room-9");
+    const view = renderRoute(
+      "/match/room-9",
+      createMockAuth({
+        status: "authenticated",
+        user: { id: "scout", displayName: "Scout" },
+        token: "token-scout",
+      }),
+    );
 
     expect(
       await screen.findByRole("heading", { name: "Match Room" }),
@@ -188,15 +148,6 @@ describe("client connection flow", () => {
 
   it("sends room access code when provided", async () => {
     const joinRoom = vi.fn().mockResolvedValue(undefined);
-
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Cipher",
-      user: { name: "Cipher" },
-      token: "token-cipher",
-      lastError: null,
-    });
 
     useMatchConnectionStore.setState({
       connect: vi.fn(),
@@ -215,9 +166,16 @@ describe("client connection flow", () => {
       getRoom: () => null,
     });
 
-    const user = userEvent.setup();
-    renderRoute("/lobby");
+    renderRoute(
+      "/lobby",
+      createMockAuth({
+        status: "authenticated",
+        user: { id: "cipher", displayName: "Cipher" },
+        token: "token-cipher",
+      }),
+    );
 
+    const user = userEvent.setup();
     await user.type(screen.getByLabelText("Access code (optional)"), "abc123");
     await user.click(screen.getByRole("button", { name: "Join room" }));
 

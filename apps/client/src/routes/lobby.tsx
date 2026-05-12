@@ -1,9 +1,9 @@
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
 import { RequireAuthenticated } from "#/common/guards";
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { useAuth, useUser } from "#/features/auth/hooks";
 import { PlayerInfo } from "#/features/lobby/components/player-info";
 import { RoomJoinForm } from "#/features/lobby/components/room-join-form";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
@@ -14,20 +14,19 @@ function LobbyPage() {
   const [roomName, setRoomName] = useState("skirmish-room");
   const [roomAccessCode, setRoomAccessCode] = useState("");
 
-  const connect = useMatchConnectionStore((state) => state.connect);
-  const joinRoom = useMatchConnectionStore((state) => state.joinRoom);
-  const resetMatchConnection = useMatchConnectionStore((state) => state.reset);
-  const setError = useMatchConnectionStore((state) => state.setError);
-  const status = useMatchConnectionStore((state) => state.status);
-  const roomId = useMatchConnectionStore((state) => state.roomId);
-  const sessionId = useMatchConnectionStore((state) => state.sessionId);
-  const lastError = useMatchConnectionStore((state) => state.lastError);
+  const { state: authState, actions: authActions } = useAuth();
+  const displayName = useUser((user) => user?.displayName);
 
-  const authStatus = useUserAuthStore((state) => state.status);
-  const displayName = useUserAuthStore((state) => state.displayName);
-  const signOut = useUserAuthStore((state) => state.signOut);
+  const connect = useMatchConnectionStore((s) => s.connect);
+  const joinRoom = useMatchConnectionStore((s) => s.joinRoom);
+  const resetMatchConnection = useMatchConnectionStore((s) => s.reset);
+  const setError = useMatchConnectionStore((s) => s.setError);
+  const status = useMatchConnectionStore((s) => s.status);
+  const roomId = useMatchConnectionStore((s) => s.roomId);
+  const sessionId = useMatchConnectionStore((s) => s.sessionId);
+  const lastError = useMatchConnectionStore((s) => s.lastError);
 
-  const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
+  const handleJoin = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextRoom = roomName.trim();
@@ -54,7 +53,7 @@ function LobbyPage() {
 
   const handleSignOut = async () => {
     await resetMatchConnection();
-    await signOut();
+    await authActions.signOut();
     navigate("/user");
   };
 
@@ -62,7 +61,7 @@ function LobbyPage() {
     <div className="space-y-6">
       <PlayerInfo
         displayName={displayName ?? "anonymous"}
-        authStatus={authStatus}
+        authStatus={authState.status}
         roomId={roomId}
         sessionId={sessionId}
       />

@@ -22,7 +22,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^4.1.5
-        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
+        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
 
   apps/client:
     dependencies:
@@ -35,6 +35,9 @@ importers:
       '@generals-plus/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@generals-plus/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@pixi/react':
         specifier: ^8.0.5
         version: 8.0.5(@types/react@19.2.14)(pixi.js@8.18.1)(react@19.2.5)
@@ -93,6 +96,12 @@ importers:
       '@babel/core':
         specifier: ^7.29.0
         version: 7.29.0
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.29.0
+        version: 7.29.0(@babel/core@7.29.0)
+      '@babel/preset-typescript':
+        specifier: ^7.28.5
+        version: 7.28.5(@babel/core@7.29.0)
       '@generals-plus/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
@@ -141,6 +150,9 @@ importers:
       babel-plugin-react-compiler:
         specifier: ^1.0.0
         version: 1.0.0
+      happy-dom:
+        specifier: ^20.9.0
+        version: 20.9.0
       jsdom:
         specifier: ^29.0.2
         version: 29.0.2(@noble/hashes@1.8.0)
@@ -155,7 +167,7 @@ importers:
         version: 8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)
       vitest:
         specifier: ^4.1.5
-        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
+        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
 
   apps/server:
     dependencies:
@@ -164,7 +176,7 @@ importers:
         version: 0.17.9(@colyseus/core@0.17.42)(express@5.2.1)
       '@colyseus/core':
         specifier: ^0.17.42
-        version: 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+        version: 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       '@colyseus/monitor':
         specifier: ^0.17.8
         version: 0.17.8(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(zod@4.3.6)
@@ -231,7 +243,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^4.1.5
-        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
+        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
 
   packages/engine:
     dependencies:
@@ -250,7 +262,7 @@ importers:
         version: 0.21.10(typescript@6.0.3)
       vitest:
         specifier: ^4.1.5
-        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
+        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
 
   packages/shared-types:
     dependencies:
@@ -275,7 +287,7 @@ importers:
         version: 0.21.10(typescript@6.0.3)
       vitest:
         specifier: ^4.1.5
-        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
+        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
 
   packages/typescript-config: {}
 
@@ -283,7 +295,7 @@ importers:
     dependencies:
       vitest:
         specifier: ^4.1.5
-        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
+        version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
     devDependencies:
       '@generals-plus/typescript-config':
         specifier: workspace:*
@@ -415,6 +427,18 @@ packages:
     resolution: {integrity: sha512-B20dvP3MfNc/XS5KKCHy/oyWl5IA6Cn9YjXRdDlCjNmUFrjvLXMNUfQq/QUy9fnG2gYkKKcrto2YaF9B32ToOQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
+
+  '@babel/plugin-proposal-decorators@7.29.0':
+    resolution: {integrity: sha512-CVBVv3VY/XRMxRYq5dwr2DS7/MvqPm23cOCjbwNnVrfOqcWlnefua1uUs0sjdKOGjvPUG633o07uWzJq4oI6dA==}
+    engines: {node: '>=6.9.0'}
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
+
+  '@babel/plugin-syntax-decorators@7.28.6':
+    resolution: {integrity: sha512-71EYI0ONURHJBL4rSFXnITXqXrrY8q4P0q006DPfN+Rk+ASM+++IBXem/ruokgBZR8YNEWZ8R6B+rCb8VcUTqA==}
+    engines: {node: '>=6.9.0'}
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
 
   '@babel/plugin-syntax-jsx@7.28.6':
     resolution: {integrity: sha512-wgEmr06G6sIpqr8YDwA2dSRTE3bJ+V0IfpzfSY3Lfgd7YWOaAdlykvJi13ZKBt8cZHfgH1IXN+CL656W3uUa4w==}
@@ -2436,6 +2460,9 @@ packages:
   '@types/webidl-conversions@7.0.3':
     resolution: {integrity: sha512-CiJJvcRtIgzadHCYXw7dqEnMNRjhGZlYK05Mj9OyktqV8uVT8fD2BFOB7S1uwBE3Kj2Z+4UyPmFw/Ixgw/LAlA==}
 
+  '@types/whatwg-mimetype@3.0.2':
+    resolution: {integrity: sha512-c2AKvDT8ToxLIOUlN51gTiHXflsfIFisS4pO7pDPoKouJCESkhZnEy623gwP9laCy5lnLDAw1vAzu2vM2YLOrA==}
+
   '@types/whatwg-url@13.0.0':
     resolution: {integrity: sha512-N8WXpbE6Wgri7KUSvrmQcqrMllKZ9uxkYWMt+mCSGwNc0Hsw9VQTW7ApqI4XNrx6/SaM2QQJCzMPDEXE058s+Q==}
 
@@ -2956,6 +2983,10 @@ packages:
     resolution: {integrity: sha512-otxSQPw4lkOZWkHpB3zaEQs6gWYEsmX4xQF68ElXC/TWvGxGMSGOvoNbaLXm6/cS/fSfHtsEdw90y20PCd+sCA==}
     engines: {node: '>=10.13.0'}
 
+  entities@7.0.1:
+    resolution: {integrity: sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA==}
+    engines: {node: '>=0.12'}
+
   entities@8.0.0:
     resolution: {integrity: sha512-zwfzJecQ/Uej6tusMqwAqU/6KL2XaB2VZ2Jg54Je6ahNBGNH6Ek6g3jjNCF0fG9EWQKGZNddNjU5F1ZQn/sBnA==}
     engines: {node: '>=20.19.0'}
@@ -3197,6 +3228,10 @@ packages:
   graphql@16.13.2:
     resolution: {integrity: sha512-5bJ+nf/UCpAjHM8i06fl7eLyVC9iuNAjm9qzkiu2ZGhM0VscSvS6WDPfAwkdkBuoXGM9FJSbKl6wylMwP9Ktig==}
     engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
+
+  happy-dom@20.9.0:
+    resolution: {integrity: sha512-GZZ9mKe8r646NUAf/zemnGbjYh4Bt8/MqASJY+pSm5ZDtc3YQox+4gsLI7yi1hba6o+eCsGxpHn5+iEVn31/FQ==}
+    engines: {node: '>=20.0.0'}
 
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
@@ -4768,6 +4803,10 @@ packages:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
     engines: {node: '>=20'}
 
+  whatwg-mimetype@3.0.0:
+    resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
+    engines: {node: '>=12'}
+
   whatwg-mimetype@5.0.0:
     resolution: {integrity: sha512-sXcNcHOC51uPGF0P/D4NVtrkjSU2fNsm9iog4ZvZJsL3rjoDAzXZhkm2MWt1y+PUdggKAYVoMAIYcs78wJ51Cw==}
     engines: {node: '>=20'}
@@ -5044,6 +5083,20 @@ snapshots:
     dependencies:
       '@babel/types': 8.0.0-rc.3
 
+  '@babel/plugin-proposal-decorators@7.29.0(@babel/core@7.29.0)':
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/helper-create-class-features-plugin': 7.28.6(@babel/core@7.29.0)
+      '@babel/helper-plugin-utils': 7.28.6
+      '@babel/plugin-syntax-decorators': 7.28.6(@babel/core@7.29.0)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@babel/plugin-syntax-decorators@7.28.6(@babel/core@7.29.0)':
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/helper-plugin-utils': 7.28.6
+
   '@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0)':
     dependencies:
       '@babel/core': 7.29.0
@@ -5161,7 +5214,7 @@ snapshots:
 
   '@colyseus/auth@0.17.9(@colyseus/core@0.17.42)(express@5.2.1)':
     dependencies:
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       '@types/jsonwebtoken': 9.0.10
       connect-redis: 7.1.1(express-session@1.19.0)
       express: 5.2.1
@@ -5183,7 +5236,7 @@ snapshots:
 
   '@colyseus/clock@2.0.3': {}
 
-  '@colyseus/core@0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)':
+  '@colyseus/core@0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)':
     dependencies:
       '@colyseus/better-call': 1.3.3(zod@4.3.6)
       '@colyseus/greeting-banner': 3.0.8
@@ -5206,7 +5259,7 @@ snapshots:
 
   '@colyseus/monitor@0.17.8(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(zod@4.3.6)':
     dependencies:
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       express: 5.2.1
       node-os-utils: 2.0.3
     transitivePeerDependencies:
@@ -5225,14 +5278,14 @@ snapshots:
     dependencies:
       '@colyseus/auth': 0.17.9(@colyseus/core@0.17.42)(express@5.2.1)
       '@colyseus/better-call': 1.3.3(zod@4.3.6)
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       express: 5.2.1
     optionalDependencies:
       zod: 4.3.6
 
   '@colyseus/redis-driver@0.17.7(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)':
     dependencies:
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       ioredis: 5.10.1
     transitivePeerDependencies:
       - '@colyseus/better-call'
@@ -5245,7 +5298,7 @@ snapshots:
 
   '@colyseus/redis-presence@0.17.7(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)':
     dependencies:
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       ioredis: 5.10.1
     transitivePeerDependencies:
       - '@colyseus/better-call'
@@ -5269,7 +5322,7 @@ snapshots:
       tslib: 2.8.1
       ws: 8.20.0
     optionalDependencies:
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
     transitivePeerDependencies:
       - bufferutil
       - typescript
@@ -5282,7 +5335,7 @@ snapshots:
 
   '@colyseus/testing@0.17.11(@colyseus/core@0.17.42)(@colyseus/sdk@0.17.42(@colyseus/core@0.17.42)(typescript@6.0.3)(zod@4.3.6))(@colyseus/tools@0.17.19(@colyseus/core@0.17.42)(@colyseus/ws-transport@0.17.13))':
     dependencies:
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       '@colyseus/sdk': 0.17.42(@colyseus/core@0.17.42)(typescript@6.0.3)(zod@4.3.6)
       '@colyseus/tools': 0.17.19(@colyseus/core@0.17.42)(@colyseus/ws-transport@0.17.13)
       httpie: 2.0.0-next.13
@@ -5293,7 +5346,7 @@ snapshots:
 
   '@colyseus/tools@0.17.19(@colyseus/core@0.17.42)(@colyseus/ws-transport@0.17.13)':
     dependencies:
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       '@colyseus/ws-transport': 0.17.13(@colyseus/core@0.17.42)(express@5.2.1)
       '@pm2/io': 6.1.0
       dotenv: 17.4.2
@@ -5302,12 +5355,12 @@ snapshots:
 
   '@colyseus/uwebsockets-transport@0.17.20(@colyseus/core@0.17.42)':
     dependencies:
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       uWebSockets.js: https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/fcfc622a4286909593b7f390056d89e0ca3b56b9
 
   '@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1)':
     dependencies:
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       '@types/ws': 8.18.1
       ws: 8.20.0
     optionalDependencies:
@@ -6923,6 +6976,8 @@ snapshots:
 
   '@types/webidl-conversions@7.0.3': {}
 
+  '@types/whatwg-mimetype@3.0.2': {}
+
   '@types/whatwg-url@13.0.0':
     dependencies:
       '@types/webidl-conversions': 7.0.3
@@ -6951,7 +7006,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
+      vitest: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
 
   '@vitest/expect@4.1.5':
     dependencies:
@@ -7207,7 +7262,7 @@ snapshots:
   colyseus@0.17.10(@colyseus/auth@0.17.9(@colyseus/core@0.17.42)(express@5.2.1))(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/core@0.17.42)(@colyseus/redis-driver@0.17.7(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6))(@colyseus/redis-presence@0.17.7(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/uwebsockets-transport@0.17.20(@colyseus/core@0.17.42))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))(zod@4.3.6):
     dependencies:
       '@colyseus/auth': 0.17.9(@colyseus/core@0.17.42)(express@5.2.1)
-      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
+      '@colyseus/core': 0.17.42(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13(@colyseus/core@0.17.42)(express@5.2.1))(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
       '@colyseus/monitor': 0.17.8(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(zod@4.3.6)
       '@colyseus/playground': 0.17.12(@colyseus/auth@0.17.9(@colyseus/core@0.17.42)(express@5.2.1))(@colyseus/core@0.17.42)(express@5.2.1)(zod@4.3.6)
       '@colyseus/redis-driver': 0.17.7(@colyseus/better-call@1.3.3(zod@4.3.6))(@colyseus/schema@4.0.20(typescript@6.0.3))(@colyseus/ws-transport@0.17.13)(@pm2/io@6.1.0)(express@5.2.1)(zod@4.3.6)
@@ -7386,6 +7441,8 @@ snapshots:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3
+
+  entities@7.0.1: {}
 
   entities@8.0.0: {}
 
@@ -7688,6 +7745,18 @@ snapshots:
       jws: 4.0.1
 
   graphql@16.13.2: {}
+
+  happy-dom@20.9.0:
+    dependencies:
+      '@types/node': 24.12.2
+      '@types/whatwg-mimetype': 3.0.2
+      '@types/ws': 8.18.1
+      entities: 7.0.1
+      whatwg-mimetype: 3.0.0
+      ws: 8.20.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   has-flag@4.0.0: {}
 
@@ -9159,7 +9228,7 @@ snapshots:
       jiti: 2.6.1
       tsx: 4.21.0
 
-  vitest@4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)):
+  vitest@4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(happy-dom@20.9.0)(jsdom@29.0.2(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)):
     dependencies:
       '@vitest/expect': 4.1.5
       '@vitest/mocker': 4.1.5(msw@2.13.6(@types/node@24.12.2)(typescript@6.0.3))(vite@8.0.9(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
@@ -9184,6 +9253,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 24.12.2
       '@vitest/coverage-v8': 4.1.5(vitest@4.1.5)
+      happy-dom: 20.9.0
       jsdom: 29.0.2(@noble/hashes@1.8.0)
     transitivePeerDependencies:
       - msw
@@ -9197,6 +9267,8 @@ snapshots:
   webidl-conversions@7.0.0: {}
 
   webidl-conversions@8.0.1: {}
+
+  whatwg-mimetype@3.0.0: {}
 
   whatwg-mimetype@5.0.0: {}
 

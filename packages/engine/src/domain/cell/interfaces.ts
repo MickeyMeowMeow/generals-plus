@@ -21,7 +21,7 @@ export interface ICell extends EffectTarget {
 
   /**
    * Whether the cell can be traversed or occupied.
-   * Impassable cells always have zero troops and no owner.
+   * Impassable cells always have null troops and no owner.
    */
   isPassable: boolean;
 
@@ -33,6 +33,13 @@ export interface ICell extends EffectTarget {
 
   /** Vision modifier applied to this cell, affecting the sight radius of its owner. */
   vision: IVisionModifier;
+
+  /** Triggered when the terrain changes, allowing external systems to react to this change. */
+  onTerrainChange?: (
+    cell: ICell,
+    oldTerrain: Terrain,
+    newTerrain: Terrain,
+  ) => void;
 
   /**
    * Adds or removes troops from the cell.

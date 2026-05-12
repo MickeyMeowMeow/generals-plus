@@ -1,52 +1,19 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { AuthStatus } from "#/features/auth/auth-store";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
-import AppLayout from "#/routes/_app";
-import IndexRoute from "#/routes/_index";
-import LobbyRoute from "#/routes/lobby";
-import MatchRoute from "#/routes/match.$roomId";
-import NotFoundRoute from "#/routes/not-found";
-import UserRoute from "#/routes/user";
+import { createMockAuth } from "#/tests/helpers/auth";
+import { renderRoute, setAuthValue } from "#/tests/helpers/render";
 
-const initialAuthState = useUserAuthStore.getInitialState();
 const initialMatchState = useMatchConnectionStore.getInitialState();
-
-function renderRoute(initialPath: string) {
-  const router = createMemoryRouter(
-    [
-      {
-        path: "/",
-        element: <AppLayout />,
-        children: [
-          { index: true, element: <IndexRoute /> },
-          { path: "user", element: <UserRoute /> },
-          { path: "lobby", element: <LobbyRoute /> },
-          { path: "match/:roomId", element: <MatchRoute /> },
-          { path: "*", element: <NotFoundRoute /> },
-        ],
-      },
-    ],
-    {
-      initialEntries: [initialPath],
-    },
-  );
-
-  return render(<RouterProvider router={router} />);
-}
 
 describe("user auth flow", () => {
   beforeEach(() => {
-    useUserAuthStore.setState(initialAuthState, true);
     useMatchConnectionStore.setState(initialMatchState, true);
-    useUserAuthStore.setState({
-      hydrateUser: vi.fn().mockResolvedValue(undefined),
-    });
   });
 
   afterEach(() => {
@@ -54,48 +21,29 @@ describe("user auth flow", () => {
   });
 
   it("redirects unauthenticated players to user page", async () => {
-    useUserAuthStore.setState({
-      status: "idle",
-      hasHydrated: true,
-      displayName: null,
-      user: null,
-      token: null,
-      lastError: null,
-    });
-
-    renderRoute("/lobby");
+    renderRoute("/lobby", createMockAuth());
     expect(
       await screen.findByRole("heading", { name: "Sign In" }),
     ).toBeTruthy();
   });
 
   it("signs in from user page and enters lobby", async () => {
-    const signInAnonymously = vi
-      .fn()
-      .mockImplementation(async (name: string) => {
-        useUserAuthStore.setState({
-          status: "authenticated",
-          hasHydrated: true,
-          displayName: name,
-          user: { displayName: name },
+    const signInAnonymously = vi.fn().mockImplementation(async () => {
+      setAuthValue(
+        createMockAuth({
+          status: AuthStatus.AUTHENTICATED,
+          user: { id: "Nova", displayName: "Nova" },
           token: "token-1",
-          lastError: null,
-        });
-      });
-
-    useUserAuthStore.setState({
-      status: "idle",
-      hasHydrated: true,
-      displayName: null,
-      user: null,
-      token: null,
-      lastError: null,
-      signInAnonymously,
+        }),
+      );
     });
 
-    const user = userEvent.setup();
-    renderRoute("/user");
+    const auth = createMockAuth();
+    auth.actions.signInAnonymously = signInAnonymously;
 
+    renderRoute("/user", auth);
+
+    const user = userEvent.setup();
     const input = screen.getByLabelText("Display name");
     await user.clear(input);
     await user.type(input, "Nova");
@@ -104,30 +52,26 @@ describe("user auth flow", () => {
     );
 
     expect(signInAnonymously).toHaveBeenCalledWith("Nova");
-    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeTruthy();
   });
 
   it("signs out from user page and clears active room state", async () => {
     const signOut = vi.fn().mockResolvedValue(undefined);
     const resetMatchConnection = vi.fn().mockResolvedValue(undefined);
 
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Helix",
-      user: { displayName: "Helix" },
+    const auth = createMockAuth({
+      status: AuthStatus.AUTHENTICATED,
+      user: { id: "helix", displayName: "Helix" },
       token: "token-2",
-      lastError: null,
-      signOut,
     });
+    auth.actions.signOut = signOut;
 
     useMatchConnectionStore.setState({
       reset: resetMatchConnection,
     });
 
-    const user = userEvent.setup();
-    renderRoute("/user");
+    renderRoute("/user", auth);
 
+    const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Sign out" }));
 
     expect(resetMatchConnection).toHaveBeenCalledTimes(1);

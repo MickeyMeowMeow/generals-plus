@@ -1,16 +1,18 @@
 import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
-import { matchMaker, Room } from "@colyseus/core";
+import { logger, matchMaker, Room } from "@colyseus/core";
 import type { GridGeneratorOptions } from "@generals-plus/engine";
 import { DefaultGridGeneratorOptions, GameMode } from "@generals-plus/engine";
 import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
 import {
+  isPaletteColor,
+  nextAvailableColor,
   ROOM_NAMES,
   SetupPlayer,
   SetupState,
 } from "@generals-plus/shared-types";
 
-import { createGame } from "#/features/game-factory";
+import { createGame } from "#/features/game/utils";
 
 const DEFAULT_MAX_PLAYERS = 8;
 
@@ -69,14 +71,28 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   async onJoin(client: Client) {
     const auth = client.auth as ClientAuth;
     const id = auth.id;
-    const username = auth.username ?? `Player_${this.clients.length + 1}`;
+    const displayName = auth.displayName ?? `Player_${this.clients.length + 1}`;
+
+    // Deduplicate: if this player_id already has a connection, kick the old one.
+    const existingClient = this.clients.find(
+      (c) =>
+        c.sessionId !== client.sessionId && (c.auth as ClientAuth).id === id,
+    );
+    if (existingClient) {
+      logger.info(
+        `[SetupRoom] Duplicate connection for ${displayName}, kicking old session ${existingClient.sessionId}`,
+      );
+      existingClient.leave(4000);
+    }
 
     const isFirst = this.state.players.length === 0;
 
     const player = new SetupPlayer();
     player.id = id;
-    player.username = username;
+    player.displayName = displayName;
     player.isHost = isFirst;
+    player.color =
+      nextAvailableColor(this.state.players.map((p) => p.color)) ?? 0;
     this.state.players.push(player);
 
     if (isFirst) {
@@ -189,6 +205,27 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         target.leave(4000);
       }
     },
+
+    pickColor: (client: Client, message: { color: number }) => {
+      const auth = client.auth as ClientAuth;
+      const player = this.state.players.find((p) => p.id === auth.id);
+      if (!player) return;
+
+      if (!isPaletteColor(message.color)) {
+        client.send("error", "invalid color");
+        return;
+      }
+
+      const taken = this.state.players.find(
+        (p) => p.id !== auth.id && p.color === message.color,
+      );
+      if (taken) {
+        client.send("error", "color already taken");
+        return;
+      }
+
+      player.color = message.color;
+    },
   };
 
   private isHost(client: Client): boolean {
@@ -212,8 +249,9 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   private async startGame() {
     const playerInit = this.state.players.map((p, i) => ({
       id: p.id,
-      username: p.username,
+      displayName: p.displayName,
       teamId: `team_${i}`,
+      color: p.color,
     }));
 
     const game = createGame({

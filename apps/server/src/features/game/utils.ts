@@ -1,9 +1,9 @@
 import type { GridGeneratorOptions, IBaseGame } from "@generals-plus/engine";
 import {
+  ClassicGame,
   DefaultGridGenerator,
   GameMode,
   Player,
-  StandardGame,
   StandardTeam,
 } from "@generals-plus/engine";
 
@@ -24,7 +24,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
 
   switch (options.mode) {
     case GameMode.CLASSIC: {
-      const game = new StandardGame(grid);
+      const game = new ClassicGame(grid);
 
       for (let i = 0; i < options.playerIds.length; i++) {
         const playerId = options.playerIds[i];

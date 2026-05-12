@@ -2,13 +2,14 @@ import type { GameMode, IBaseGame } from "@generals-plus/engine";
 
 export interface PlayerInit {
   id: string;
-  username: string;
+  displayName: string;
   teamId: string;
+  color: number;
 }
 
 export interface ClientAuth {
   id: string;
-  username: string;
+  displayName: string;
 }
 
 export const ROOM_NAMES = {

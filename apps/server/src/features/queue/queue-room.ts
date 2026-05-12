@@ -1,23 +1,33 @@
 import { JWT } from "@colyseus/auth";
 import type { Client, QueueOptions } from "@colyseus/core";
-import { matchMaker, QueueRoom } from "@colyseus/core";
+import { logger, matchMaker, QueueRoom } from "@colyseus/core";
 import { GameMode } from "@generals-plus/engine";
 import type {
   ClientAuth,
   PlayerInit,
   RoomData,
 } from "@generals-plus/shared-types";
-import { ROOM_NAMES } from "@generals-plus/shared-types";
+import {
+  isPaletteColor,
+  nextAvailableColor,
+  PLAYER_COLOR_PALETTE,
+  QueuePlayer,
+  QueueState,
+  ROOM_NAMES,
+} from "@generals-plus/shared-types";
 
-import { createGame } from "#/features/game-factory";
+import { createGame } from "#/features/game/utils";
 
 const DEFAULT_MAX_PLAYERS = 8;
 const DEFAULT_MIN_PLAYERS = 2;
 const DEFAULT_COUNTDOWN_CYCLES = 20;
 
 export class MatchQueueRoom extends QueueRoom {
+  declare state: QueueState;
+
   private gameMode: GameMode = GameMode.CLASSIC;
   private minPlayers = DEFAULT_MIN_PLAYERS;
+  private queueState = new QueueState();
 
   onCreate(
     options: QueueOptions & {
@@ -25,8 +35,10 @@ export class MatchQueueRoom extends QueueRoom {
       countdownCycles?: number;
     },
   ) {
-    this.gameMode = options.gameMode;
+    this.gameMode = options.gameMode ?? GameMode.CLASSIC;
     this.minPlayers = DEFAULT_MIN_PLAYERS;
+
+    this.state = this.queueState;
 
     const queueOptions: QueueOptions = {
       matchRoomName: ROOM_NAMES.MATCH,
@@ -36,10 +48,16 @@ export class MatchQueueRoom extends QueueRoom {
       onGroupReady: async (group) => {
         const playerInit: PlayerInit[] = group.clients.map((client, i) => {
           const auth = client.auth as ClientAuth;
+          const queuePlayer = this.queueState.players.find(
+            (p: QueuePlayer) => p.id === auth.id,
+          );
           return {
             id: auth.id,
-            username: auth.username ?? `Player_${i + 1}`,
+            displayName: auth.displayName ?? `Player_${i + 1}`,
             teamId: `team_${i}`,
+            color:
+              queuePlayer?.color ??
+              PLAYER_COLOR_PALETTE[i % PLAYER_COLOR_PALETTE.length],
           };
         });
 
@@ -59,6 +77,29 @@ export class MatchQueueRoom extends QueueRoom {
     };
 
     super.onCreate(queueOptions);
+
+    this.onMessage("pickColor", (client, message: { color: number }) => {
+      const auth = client.auth as ClientAuth;
+      const player = this.queueState.players.find(
+        (p: QueuePlayer) => p.id === auth.id,
+      );
+      if (!player) return;
+
+      if (!isPaletteColor(message.color)) {
+        client.send("error", "invalid color");
+        return;
+      }
+
+      const taken = this.queueState.players.find(
+        (p: QueuePlayer) => p.id !== auth.id && p.color === message.color,
+      );
+      if (taken) {
+        client.send("error", "color already taken");
+        return;
+      }
+
+      player.color = message.color;
+    });
   }
 
   reassignMatchGroups() {
@@ -79,6 +120,38 @@ export class MatchQueueRoom extends QueueRoom {
   }
 
   onJoin(client: Client, options: { rank?: number }) {
+    const auth = client.auth as ClientAuth;
+    const existingClient = this.clients.find(
+      (c) =>
+        c.sessionId !== client.sessionId &&
+        (c.auth as ClientAuth).id === auth.id,
+    );
+    if (existingClient) {
+      logger.info(
+        `[MatchQueueRoom] Duplicate connection for ${auth.displayName}, kicking old session ${existingClient.sessionId}`,
+      );
+      existingClient.leave(4000);
+    }
+
+    const player = new QueuePlayer();
+    player.id = auth.id;
+    player.displayName = auth.displayName ?? "Player";
+    player.color =
+      nextAvailableColor(
+        this.queueState.players.map((p: QueuePlayer) => p.color),
+      ) ?? 0;
+    this.queueState.players.push(player);
+
     super.onJoin(client, { rank: options.rank ?? 0 });
+  }
+
+  onLeave(client: Client) {
+    const auth = client.auth as ClientAuth;
+    const idx = this.queueState.players.findIndex(
+      (p: QueuePlayer) => p.id === auth.id,
+    );
+    if (idx !== -1) {
+      this.queueState.players.splice(idx, 1);
+    }
   }
 }

@@ -92,4 +92,30 @@ describe("Grid", () => {
       { coordinate: { x: 1, y: 1 }, x: 1, y: 1 },
     ]);
   });
+
+  it("updates terrainMap correctly when cell terrain changes", () => {
+    const grid = createGrid(1, 1);
+    const cell = grid.get({ x: 0, y: 0 });
+    if (!cell) throw new Error("cell should exist");
+
+    // Initially plain
+    let plains: Cell[] = [];
+    grid.forEachTerrain(Terrain.PLAIN, (c) => plains.push(c as Cell));
+    expect(plains).toContain(cell);
+
+    let mountains: Cell[] = [];
+    grid.forEachTerrain(Terrain.MOUNTAIN, (c) => mountains.push(c as Cell));
+    expect(mountains).not.toContain(cell);
+
+    // Change terrain to mountain
+    cell.terrain = Terrain.MOUNTAIN;
+
+    plains = [];
+    grid.forEachTerrain(Terrain.PLAIN, (c) => plains.push(c as Cell));
+    expect(plains).not.toContain(cell);
+
+    mountains = [];
+    grid.forEachTerrain(Terrain.MOUNTAIN, (c) => mountains.push(c as Cell));
+    expect(mountains).toContain(cell);
+  });
 });

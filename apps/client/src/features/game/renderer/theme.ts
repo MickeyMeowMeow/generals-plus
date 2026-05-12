@@ -1,4 +1,6 @@
-import { Terrain } from "@generals-plus/engine";
+import type { VisionTerrain } from "@generals-plus/engine";
+import { MaskedTerrain, Terrain } from "@generals-plus/engine";
+import type { TextStyle } from "pixi.js";
 
 import {
   cityIcon,
@@ -17,7 +19,9 @@ interface CellTheme {
 /**
  * Theme configuration for each terrain type, combining both color and icon information.
  */
-export const TerrainTheme: Record<Terrain, CellTheme> = {
+export const TerrainTheme: Partial<
+  Record<NonNullable<VisionTerrain>, CellTheme>
+> = {
   [Terrain.PLAIN]: {
     color: 0xd8dde3,
   },
@@ -41,9 +45,13 @@ export const TerrainTheme: Record<Terrain, CellTheme> = {
     color: 0x8aa4c8,
     icon: cityIcon,
   },
-  [Terrain.VOID]: {
-    color: 0x171717,
-    // FIX: This icon is not used for void terrain but for `VisionTerrain.MAYBE_MOUNTAIN` instead.
+  [MaskedTerrain.MAYBE_PLAIN]: {
+    color: 0xd8dde3,
+  },
+  [MaskedTerrain.MAYBE_MOUNTAIN]: {
+    color: 0xd8dde3,
     icon: obstacleIcon,
   },
 };
+
+export const TextStyleConfig: Record<string, Partial<TextStyle>> = {};

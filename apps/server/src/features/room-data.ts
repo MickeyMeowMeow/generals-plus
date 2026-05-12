@@ -4,8 +4,9 @@ import { z } from "zod";
 
 const playerInitSchema = z.object({
   id: z.string().min(1),
-  username: z.string().trim().min(1),
+  displayName: z.string().trim().min(1),
   teamId: z.string().min(1),
+  color: z.number().int().positive(),
 });
 
 const roomDataSchema = z.object({
@@ -21,7 +22,8 @@ const roomDataSchema = z.object({
       handleAction: z.function(),
       checkGameEnd: z.function(),
       getVisionGrid: z.function(),
-      getPlayerStats: z.function(),
+      getPlayerState: z.function(),
+      getScoreboard: z.function(),
     })
     .loose(),
   playerInit: z.array(playerInitSchema),

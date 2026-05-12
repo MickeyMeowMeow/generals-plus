@@ -1,52 +1,19 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserAuthStore } from "#/features/auth/store/user-auth-store";
+import { AuthStatus } from "#/features/auth/auth-store";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
-import AppLayout from "#/routes/_app";
-import IndexRoute from "#/routes/_index";
-import LobbyRoute from "#/routes/lobby";
-import MatchRoute from "#/routes/match.$roomId";
-import NotFoundRoute from "#/routes/not-found";
-import UserRoute from "#/routes/user";
+import { createMockAuth } from "#/tests/helpers/auth";
+import { renderRoute } from "#/tests/helpers/render";
 
-const initialAuthState = useUserAuthStore.getInitialState();
 const initialMatchState = useMatchConnectionStore.getInitialState();
-
-function renderRoute(initialPath: string) {
-  const router = createMemoryRouter(
-    [
-      {
-        path: "/",
-        element: <AppLayout />,
-        children: [
-          { index: true, element: <IndexRoute /> },
-          { path: "user", element: <UserRoute /> },
-          { path: "lobby", element: <LobbyRoute /> },
-          { path: "match/:roomId", element: <MatchRoute /> },
-          { path: "*", element: <NotFoundRoute /> },
-        ],
-      },
-    ],
-    {
-      initialEntries: [initialPath],
-    },
-  );
-
-  return render(<RouterProvider router={router} />);
-}
 
 describe("user route", () => {
   beforeEach(() => {
-    useUserAuthStore.setState(initialAuthState, true);
     useMatchConnectionStore.setState(initialMatchState, true);
-    useUserAuthStore.setState({
-      hydrateUser: vi.fn().mockResolvedValue(undefined),
-    });
   });
 
   afterEach(() => {
@@ -54,16 +21,7 @@ describe("user route", () => {
   });
 
   it("renders user page with sign-in form", () => {
-    useUserAuthStore.setState({
-      status: "idle",
-      hasHydrated: true,
-      displayName: null,
-      user: null,
-      token: null,
-      lastError: null,
-    });
-
-    renderRoute("/user");
+    renderRoute("/user", createMockAuth());
 
     expect(screen.getByRole("heading", { name: "Sign In" })).toBeTruthy();
     expect(screen.getByLabelText("Display name")).toBeTruthy();
@@ -73,12 +31,7 @@ describe("user route", () => {
   });
 
   it("shows default display name in input", () => {
-    useUserAuthStore.setState({
-      status: "idle",
-      hasHydrated: true,
-    });
-
-    renderRoute("/user");
+    renderRoute("/user", createMockAuth());
 
     expect(
       (screen.getByLabelText("Display name") as HTMLInputElement).value,
@@ -86,12 +39,7 @@ describe("user route", () => {
   });
 
   it("disables sign-in button while authenticating", () => {
-    useUserAuthStore.setState({
-      status: "authenticating",
-      hasHydrated: true,
-    });
-
-    renderRoute("/user");
+    renderRoute("/user", createMockAuth({ status: AuthStatus.AUTHENTICATING }));
 
     expect(
       (
@@ -103,28 +51,23 @@ describe("user route", () => {
   });
 
   it("displays error message when auth fails", () => {
-    useUserAuthStore.setState({
-      status: "error",
-      hasHydrated: true,
-      lastError: "Network error",
-    });
-
-    renderRoute("/user");
+    renderRoute(
+      "/user",
+      createMockAuth({ status: "error", error: "Network error" }),
+    );
 
     expect(screen.getByRole("alert").textContent).toContain("Network error");
   });
 
   it("shows active player name when authenticated", () => {
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Nova",
-      user: { displayName: "Nova" },
-      token: "tok",
-      lastError: null,
-    });
-
-    renderRoute("/user");
+    renderRoute(
+      "/user",
+      createMockAuth({
+        status: AuthStatus.AUTHENTICATED,
+        user: { id: "nova", displayName: "Nova" },
+        token: "tok",
+      }),
+    );
 
     expect(screen.getByText("Nova")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Enter lobby" })).toBeTruthy();
@@ -132,31 +75,24 @@ describe("user route", () => {
   });
 
   it("navigates to lobby when clicking Enter lobby button", async () => {
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Scout",
-      user: { displayName: "Scout" },
-      token: "tok",
-      lastError: null,
-    });
+    renderRoute(
+      "/user",
+      createMockAuth({
+        status: AuthStatus.AUTHENTICATED,
+        user: { id: "scout", displayName: "Scout" },
+        token: "tok",
+      }),
+    );
 
     const user = userEvent.setup();
-    renderRoute("/user");
-
     await user.click(screen.getByRole("button", { name: "Enter lobby" }));
     expect(await screen.findByRole("heading", { name: "Lobby" })).toBeTruthy();
   });
 
   it("updates display name input on typing", async () => {
-    useUserAuthStore.setState({
-      status: "idle",
-      hasHydrated: true,
-    });
+    renderRoute("/user", createMockAuth());
 
     const user = userEvent.setup();
-    renderRoute("/user");
-
     const input = screen.getByLabelText("Display name");
     await user.clear(input);
     await user.type(input, "Ace");
@@ -168,20 +104,17 @@ describe("user route", () => {
     const signOut = vi.fn().mockResolvedValue(undefined);
     const resetMatchConnection = vi.fn().mockResolvedValue(undefined);
 
-    useUserAuthStore.setState({
-      status: "authenticated",
-      hasHydrated: true,
-      displayName: "Helix",
-      user: { displayName: "Helix" },
+    const auth = createMockAuth({
+      status: AuthStatus.AUTHENTICATED,
+      user: { id: "helix", displayName: "Helix" },
       token: "tok",
-      lastError: null,
-      signOut,
     });
+    auth.actions.signOut = signOut;
     useMatchConnectionStore.setState({ reset: resetMatchConnection });
 
-    const user = userEvent.setup();
-    renderRoute("/user");
+    renderRoute("/user", auth);
 
+    const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Sign out" }));
 
     expect(resetMatchConnection).toHaveBeenCalledTimes(1);

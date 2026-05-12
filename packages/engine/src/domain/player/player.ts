@@ -4,9 +4,9 @@ import { PlayerStatus } from "#/domain/player/player-status";
 import type { Team } from "#/domain/team/interfaces";
 
 export class Player extends EffectTarget implements IPlayer {
-  public readonly playerId: string;
-  public team: Team;
-  public status: PlayerStatus;
+  readonly playerId: string;
+  team: Team;
+  status: PlayerStatus;
 
   constructor(
     team: Team,

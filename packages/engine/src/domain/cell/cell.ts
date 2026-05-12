@@ -27,11 +27,16 @@ export interface CellOptions {
 export class Cell extends EffectTarget implements ICell {
   /** Coordinate is fixed for the lifetime of a cell. */
   readonly coordinate: ICoordinate;
-  terrain: Terrain;
+  private terrain_: Terrain;
   isPassable: boolean;
   troopCount: number | null;
   owner: ICellOwner | null;
   vision: IVisionModifier;
+  onTerrainChange?: (
+    cell: ICell,
+    oldTerrain: Terrain,
+    newTerrain: Terrain,
+  ) => void;
 
   /**
    * Creates a cell and derives passability/troop defaults from the terrain.
@@ -40,12 +45,25 @@ export class Cell extends EffectTarget implements ICell {
     super(`cell:${options.coordinate.x},${options.coordinate.y}`);
 
     this.coordinate = options.coordinate;
-    this.terrain = options.terrain;
+    this.terrain_ = options.terrain;
     this.isPassable =
       this.terrain !== Terrain.MOUNTAIN && this.terrain !== Terrain.VOID;
     this.owner = options.owner ?? null;
-    this.troopCount = this.isPassable ? (options.troopCount ?? null) : 0;
+    this.troopCount = this.isPassable ? (options.troopCount ?? null) : null;
     this.vision = options.vision ?? { radius: 1 };
+  }
+
+  get terrain() {
+    return this.terrain_;
+  }
+
+  set terrain(newTerrain: Terrain) {
+    this.onTerrainChange?.(this, this.terrain_, newTerrain);
+    this.terrain_ = newTerrain;
+    this.isPassable =
+      this.terrain !== Terrain.MOUNTAIN && this.terrain !== Terrain.VOID;
+    this.troopCount = this.isPassable ? this.troopCount : null;
+    this.owner = this.isPassable ? this.owner : null;
   }
 
   /**
