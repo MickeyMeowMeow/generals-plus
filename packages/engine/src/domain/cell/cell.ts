@@ -60,7 +60,8 @@ export class Cell extends EffectTarget implements ICell {
   set terrain(newTerrain: Terrain) {
     this.onTerrianChange?.(this, this.terrain_, newTerrain);
     this.terrain_ = newTerrain;
-    this.isPassable = this.terrain !== Terrain.MOUNTAIN && this.terrain !== Terrain.VOID;
+    this.isPassable =
+      this.terrain !== Terrain.MOUNTAIN && this.terrain !== Terrain.VOID;
     this.troopCount = this.isPassable ? this.troopCount : null;
     this.owner = this.isPassable ? this.owner : null;
   }
