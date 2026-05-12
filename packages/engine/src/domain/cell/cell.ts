@@ -32,10 +32,10 @@ export class Cell extends EffectTarget implements ICell {
   troopCount: number | null;
   owner: ICellOwner | null;
   vision: IVisionModifier;
-  onTerrianChange?: (
+  onTerrainChange?: (
     cell: ICell,
-    oldTerrian: Terrain,
-    newTerrian: Terrain,
+    oldTerrain: Terrain,
+    newTerrain: Terrain,
   ) => void;
 
   /**
@@ -58,7 +58,7 @@ export class Cell extends EffectTarget implements ICell {
   }
 
   set terrain(newTerrain: Terrain) {
-    this.onTerrianChange?.(this, this.terrain_, newTerrain);
+    this.onTerrainChange?.(this, this.terrain_, newTerrain);
     this.terrain_ = newTerrain;
     this.isPassable =
       this.terrain !== Terrain.MOUNTAIN && this.terrain !== Terrain.VOID;

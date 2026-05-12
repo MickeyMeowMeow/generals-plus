@@ -38,7 +38,6 @@ export abstract class BaseGame implements IBaseGame {
   }
 
   startGame(): void {
-    console.log(`[BaseGame] Starting game in mode ${this.mode}`);
     if (this.status !== GameStatus.NOT_STARTED) {
       return;
     }

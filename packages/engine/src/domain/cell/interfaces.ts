@@ -35,10 +35,10 @@ export interface ICell extends EffectTarget {
   vision: IVisionModifier;
 
   /** Triggered when the terrain changes, allowing external systems to react to this change. */
-  onTerrianChange?: (
+  onTerrainChange?: (
     cell: ICell,
-    oldTerrian: Terrain,
-    newTerrian: Terrain,
+    oldTerrain: Terrain,
+    newTerrain: Terrain,
   ) => void;
 
   /**

@@ -37,7 +37,7 @@ export class Grid extends EffectTarget implements IGrid {
     }
     this.forEach((cell, _coordinate) => {
       this.terrainMap.get(cell.terrain)?.add(cell);
-      cell.onTerrianChange = (cell, oldTerrain, newTerrain) => {
+      cell.onTerrainChange = (cell, oldTerrain, newTerrain) => {
         this.terrainMap.get(oldTerrain)?.delete(cell);
         this.terrainMap.get(newTerrain)?.add(cell);
       };
