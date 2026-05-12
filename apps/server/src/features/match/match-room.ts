@@ -66,7 +66,7 @@ export class MatchRoom extends Room<{
     this.state = state;
 
     this.onMessage(MatchClientMessage.ACTION, (client, action: MoveAction) => {
-      console.log("Received action:", action);
+      logger.debug(`[MatchRoom] Received action: ${JSON.stringify(action)}`);
       const playerId = this.sessionToPlayerId.get(client.sessionId);
       if (!playerId) return;
 
@@ -242,8 +242,12 @@ export class MatchRoom extends Room<{
           from: { x: entry.fromX, y: entry.fromY },
           to: { x: entry.toX, y: entry.toY },
         };
-        console.log("Processing action:", action);
-        console.log(this.game.grid.get({ x: entry.fromX, y: entry.fromY }));
+        logger.debug(
+          `[MatchRoom] Processing action: ${JSON.stringify(action)}`,
+        );
+        logger.debug(
+          `[MatchRoom] Cell: ${JSON.stringify(this.game.grid.get({ x: entry.fromX, y: entry.fromY }))}`,
+        );
 
         const executed = this.game.handleAction(action);
         if (executed) {
