@@ -1,3 +1,5 @@
+import { QueueClientMessage } from "@generals-plus/shared-types";
+
 import { ColorPicker } from "#/components/game/color-picker";
 import { useUser } from "#/features/auth/hooks";
 import { useQueueRoom } from "#/features/game/api/use-queue-room";
@@ -51,7 +53,9 @@ export function QueueManager() {
           <ColorPicker
             takenColors={takenColors}
             currentColor={myPlayer.color}
-            onSelect={(color) => room?.send("pickColor", { color })}
+            onSelect={(color) =>
+              room?.send(QueueClientMessage.PICK_COLOR, { color })
+            }
           />
         </div>
       )}

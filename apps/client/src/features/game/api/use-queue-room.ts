@@ -1,9 +1,10 @@
 import type {
+  QueueClientMessagePayload,
+  QueueServerMessagePayload,
   QueueState,
   SeatReservation,
-  SetupClientMessagePayload,
-  SetupServerMessagePayload,
 } from "@generals-plus/shared-types";
+import { QueueServerMessage } from "@generals-plus/shared-types";
 import { useEffect, useState } from "react";
 
 import { networkProvider } from "#/infra/network/provider";
@@ -11,8 +12,8 @@ import type { RoomClient } from "#/infra/network/room";
 
 type QueueRoomClient = RoomClient<
   QueueState,
-  SetupClientMessagePayload,
-  SetupServerMessagePayload
+  QueueClientMessagePayload,
+  QueueServerMessagePayload
 >;
 
 export function useQueueRoom() {
@@ -28,8 +29,8 @@ export function useQueueRoom() {
       try {
         currentRoom = await networkProvider.joinOrCreate<
           QueueState,
-          never,
-          SetupServerMessagePayload
+          QueueClientMessagePayload,
+          QueueServerMessagePayload
         >("queue");
 
         setRoom(currentRoom);
@@ -38,9 +39,12 @@ export function useQueueRoom() {
           setQueueState(state.clone());
         });
 
-        currentRoom.onMessage("seat", (reservation) => {
-          setSeatReservation(reservation);
-        });
+        currentRoom.onMessage(
+          QueueServerMessage.SEAT_RESERVATION,
+          (reservation) => {
+            setSeatReservation(reservation);
+          },
+        );
       } catch (e) {
         console.error("Failed to join queue room", e);
       }
