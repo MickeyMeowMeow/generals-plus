@@ -21,7 +21,7 @@ export interface ICell extends EffectTarget {
 
   /**
    * Whether the cell can be traversed or occupied.
-   * Impassable cells always have zero troops and no owner.
+   * Impassable cells always have null troops and no owner.
    */
   isPassable: boolean;
 

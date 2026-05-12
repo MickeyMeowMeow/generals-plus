@@ -17,7 +17,7 @@ describe("Cell", () => {
     expect(cell.vision).toEqual({ radius: 1 });
   });
 
-  it("forces impassable cells to zero troops", () => {
+  it("forces impassable cells to null troops", () => {
     const mountain = new Cell({
       coordinate: { x: 0, y: 0 },
       terrain: Terrain.MOUNTAIN,
@@ -30,9 +30,9 @@ describe("Cell", () => {
     });
 
     expect(mountain.isPassable).toBe(false);
-    expect(mountain.troopCount).toBe(0);
+    expect(mountain.troopCount).toBeNull();
     expect(voidCell.isPassable).toBe(false);
-    expect(voidCell.troopCount).toBe(0);
+    expect(voidCell.troopCount).toBeNull();
   });
 
   it("adds and removes troops while clamping at zero", () => {
@@ -58,6 +58,27 @@ describe("Cell", () => {
     });
 
     cell.addTroops(10);
-    expect(cell.troopCount).toBe(0);
+    expect(cell.troopCount).toBeNull();
+  });
+
+  it("updates properties correctly when terrain changes", () => {
+    const cell = new Cell({
+      coordinate: { x: 0, y: 0 },
+      terrain: Terrain.PLAIN,
+    });
+    cell.troopCount = 10;
+    cell.owner = { playerId: "player1" } as any;
+
+    // Change to impassable
+    cell.terrain = Terrain.MOUNTAIN;
+    expect(cell.isPassable).toBe(false);
+    expect(cell.troopCount).toBeNull();
+    expect(cell.owner).toBeNull();
+
+    // Change back to passable
+    cell.terrain = Terrain.PLAIN;
+    expect(cell.isPassable).toBe(true);
+    expect(cell.troopCount).toBeNull(); // Should keep null since it became null
+    expect(cell.owner).toBeNull();
   });
 });
