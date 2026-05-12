@@ -1,7 +1,7 @@
 /**
  * Represents a collection of message identifiers and their associated data.
  */
-export type MessagePayload = Record<string | number, unknown>;
+export type MessagePayload = object;
 
 /**
  * Utility to extract keys from a `MessageMap` for type-safe messaging.

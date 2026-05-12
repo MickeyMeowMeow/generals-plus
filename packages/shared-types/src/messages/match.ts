@@ -1,4 +1,4 @@
-import type { Action } from "@generals-plus/engine";
+import type { Action, IGameResult } from "@generals-plus/engine";
 
 import type { MessagePayload } from "#/messages";
 
@@ -23,5 +23,5 @@ export type MatchServerMessage =
   (typeof MatchServerMessage)[keyof typeof MatchServerMessage];
 
 export interface MatchServerMessagePayload extends MessagePayload {
-  [MatchServerMessage.GAME_END]: never;
+  [MatchServerMessage.GAME_END]: IGameResult;
 }
