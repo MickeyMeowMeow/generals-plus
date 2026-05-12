@@ -34,6 +34,7 @@ function createMockGrid(width = 16, height = 16): IGrid {
     getNeighbors: () => [],
     isValid: () => true,
     forEach: () => {},
+    forEachTerrain: () => {},
     effects: [],
     attachEffect: () => {},
     removeEffect: () => {},

@@ -35,7 +35,7 @@ export class MatchQueueRoom extends QueueRoom {
       countdownCycles?: number;
     },
   ) {
-    this.gameMode = options.gameMode;
+    this.gameMode = options.gameMode ?? GameMode.CLASSIC;
     this.minPlayers = DEFAULT_MIN_PLAYERS;
 
     this.state = this.queueState;
