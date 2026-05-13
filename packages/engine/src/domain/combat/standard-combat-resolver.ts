@@ -81,6 +81,7 @@ export class StandardCombatResolver implements CombatResolver {
           targetOwnerId &&
           targetOwnerId !== attacker.playerId
         ) {
+          target.terrain = Terrain.CITY;
           this.transferDefeatedPlayerResources(
             targetOwnerId,
             attacker,

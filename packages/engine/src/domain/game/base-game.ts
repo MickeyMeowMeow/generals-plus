@@ -122,7 +122,10 @@ export abstract class BaseGame implements IBaseGame {
   getVisionGrid(playerId: string): IVisionGrid | null {
     const player = this.players.get(playerId);
     if (!player) return null;
-    return this.visibilityMap.evaluate(player.team);
+    return this.visibilityMap.evaluate(
+      player.team,
+      this.status === GameStatus.FINISHED,
+    );
   }
 
   getPlayerState(playerId: string): IPlayerState | null {
