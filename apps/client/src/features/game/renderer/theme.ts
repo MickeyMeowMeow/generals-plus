@@ -30,7 +30,7 @@ export const TerrainTheme: Partial<
     icon: crownIcon,
   },
   [Terrain.MOUNTAIN]: {
-    color: 0x4b5563,
+    color: 0x9da8b6,
     icon: mountainIcon,
   },
   [Terrain.SWAMP]: {
