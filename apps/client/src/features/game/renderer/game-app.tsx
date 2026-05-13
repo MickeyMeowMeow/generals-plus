@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { MapRenderer } from "#/features/game/renderer/map-renderer";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
+import { ScoreboardOverlay } from "#/features/game/renderer/scoreboard-overlay";
+import type { RenderScoreboardData } from "#/features/game/renderer/scoreboard-types";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 import { Viewport } from "#/features/game/renderer/viewport";
 import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
@@ -16,6 +18,7 @@ interface GameAppProps {
   readonly grid: RenderGrid;
   readonly selection: ICoordinate | null;
   readonly moveQueue: MoveIntent[];
+  readonly scoreboard: RenderScoreboardData | null;
   readonly onSelectCell: (coord: ICoordinate) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
   readonly playerColors: Map<string, number>;
@@ -25,6 +28,7 @@ export function GameApp({
   grid,
   selection,
   moveQueue,
+  scoreboard,
   onSelectCell,
   onQueueMove,
   playerColors,
@@ -86,6 +90,7 @@ export function GameApp({
           playerColors={playerColors}
         />
       </Viewport>
+      <ScoreboardOverlay data={scoreboard} />
     </Application>
   );
 }

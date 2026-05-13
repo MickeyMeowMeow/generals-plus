@@ -10,9 +10,11 @@ import type {
 import { useEffect, useState } from "react";
 
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
+import type { RenderScoreboardData } from "#/features/game/renderer/scoreboard-types";
 import { createRenderGrid } from "#/features/game/utils/grid-adapter";
 import type { MoveIntent } from "#/features/game/utils/move";
 import { MoveDirection } from "#/features/game/utils/move";
+import { scoreboardAdapter } from "#/features/game/utils/scoreboard-adapter";
 import { networkProvider } from "#/infra/network/provider";
 import type { RoomClient } from "#/infra/network/room";
 
@@ -29,11 +31,17 @@ function getDirection(from: ICoordinate, to: ICoordinate): MoveDirection {
   return MoveDirection.RIGHT;
 }
 
-export function useGameRoom(reservation: ISeatReservation) {
+export function useGameRoom(
+  reservation: ISeatReservation,
+  currentUserId: string | null,
+) {
   const [room, setRoom] = useState<GameRoomClient | null>(null);
   const [renderGrid, setRenderGrid] = useState<RenderGrid | null>(null);
   const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
   const [gameState, setGameState] = useState<MatchState | null>(null);
+  const [scoreboard, setScoreboard] = useState<RenderScoreboardData | null>(
+    null,
+  );
   const [playerColors, setPlayerColors] = useState<Map<string, number>>(
     new Map(),
   );
@@ -56,10 +64,15 @@ export function useGameRoom(reservation: ISeatReservation) {
           setGameState(state);
 
           const colorMap = new Map<string, number>();
-          state.playerColors.forEach((color, playerId) => {
-            colorMap.set(playerId, color);
+          // The renderer only needs public identity/color metadata here; the
+          // private `players` view is not available to other clients.
+          state.publicPlayers.forEach((player, playerId) => {
+            colorMap.set(playerId, player.color);
           });
           setPlayerColors(colorMap);
+          // Scoreboard rows are derived client-side so we can highlight the
+          // local user without changing the shared room schema.
+          setScoreboard(scoreboardAdapter.fromMatchState(state, currentUserId));
 
           const myId = currentRoom.sessionId;
 
@@ -95,7 +108,7 @@ export function useGameRoom(reservation: ISeatReservation) {
     return () => {
       if (currentRoom) currentRoom.leave();
     };
-  }, [reservation]);
+  }, [currentUserId, reservation]);
 
   const sendMove = (from: ICoordinate, to: ICoordinate) => {
     if (!room) return;
@@ -107,5 +120,13 @@ export function useGameRoom(reservation: ISeatReservation) {
     });
   };
 
-  return { room, renderGrid, moveQueue, gameState, sendMove, playerColors };
+  return {
+    room,
+    renderGrid,
+    moveQueue,
+    gameState,
+    scoreboard,
+    sendMove,
+    playerColors,
+  };
 }

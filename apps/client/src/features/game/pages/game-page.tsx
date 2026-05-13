@@ -2,14 +2,23 @@ import type { ISeatReservation } from "@colyseus/sdk/Client";
 import type { ICoordinate } from "@generals-plus/engine";
 import { useCallback, useEffect, useState } from "react";
 
+import { useUser } from "#/features/auth/hooks";
 import { useGameRoom } from "#/features/game/api/use-game-room";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 
 export function GamePage({ reservation }: { reservation: ISeatReservation }) {
-  const { room, renderGrid, moveQueue, gameState, sendMove, playerColors } =
-    useGameRoom(reservation);
+  const currentUserId = useUser((user) => user?.id ?? null);
+  const {
+    room,
+    renderGrid,
+    moveQueue,
+    gameState,
+    scoreboard,
+    sendMove,
+    playerColors,
+  } = useGameRoom(reservation, currentUserId);
 
   const [_tick, setTick] = useState(0);
   const [selection, setSelection] = useState<ICoordinate | null>(null);
@@ -63,6 +72,7 @@ export function GamePage({ reservation }: { reservation: ISeatReservation }) {
         grid={renderGrid}
         selection={selection}
         moveQueue={moveQueue}
+        scoreboard={scoreboard}
         onSelectCell={handleSelectCell}
         onQueueMove={handleQueueMove}
         playerColors={playerColors}
