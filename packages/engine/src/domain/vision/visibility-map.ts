@@ -38,9 +38,7 @@ export function createVisionCell(
         coordinate: cell.coordinate,
         visibility,
         terrain:
-          cell.terrain === Terrain.MOUNTAIN ||
-          cell.terrain === Terrain.CITY ||
-          cell.terrain === Terrain.GENERAL
+          cell.terrain === Terrain.MOUNTAIN || cell.terrain === Terrain.CITY
             ? MaskedTerrain.MAYBE_MOUNTAIN
             : MaskedTerrain.MAYBE_PLAIN,
         troopCount: null,

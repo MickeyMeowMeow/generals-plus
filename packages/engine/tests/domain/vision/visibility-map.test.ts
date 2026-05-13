@@ -67,6 +67,21 @@ describe("VisibilityMap", () => {
     expect(hidden.owner).toBeNull();
   });
 
+  it("renders shrouded generals as empty unknown terrain", () => {
+    const cell = new Cell({
+      coordinate: { x: 1, y: 1 },
+      terrain: Terrain.GENERAL,
+      troopCount: 7,
+    });
+
+    const shrouded = createVisionCell(cell, Visibility.SHROUDED);
+
+    expect(shrouded.visibility).toBe(Visibility.SHROUDED);
+    expect(shrouded.terrain).toBe(MaskedTerrain.MAYBE_PLAIN);
+    expect(shrouded.troopCount).toBeNull();
+    expect(shrouded.owner).toBeNull();
+  });
+
   it("marks cells visible around owned cells using vision radius", () => {
     const grid = createVisionGrid();
     const team = new StandardTeam("t1");
