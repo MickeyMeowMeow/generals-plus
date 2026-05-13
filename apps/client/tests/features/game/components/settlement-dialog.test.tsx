@@ -85,4 +85,20 @@ describe("SettlementDialog", () => {
     expect(onSpectate).toHaveBeenCalledOnce();
     expect(onExit).toHaveBeenCalledOnce();
   });
+
+  it("uses a transparent overlay instead of blur", () => {
+    render(
+      <SettlementDialog
+        open={true}
+        kind={SettlementDialogKind.GAME_ENDED}
+        winnerName={WinnerName}
+        onSpectate={vi.fn()}
+        onExit={vi.fn()}
+      />,
+    );
+
+    const overlay = document.querySelector('[data-slot="dialog-overlay"]');
+    expect(overlay?.className).toContain("bg-transparent");
+    expect(overlay?.className).toContain("backdrop-blur-none");
+  });
 });

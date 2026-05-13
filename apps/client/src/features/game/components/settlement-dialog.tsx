@@ -57,6 +57,7 @@ export function SettlementDialog({
         // The match screen decides when the player can leave or spectate; the
         // dialog itself stays modal so accidental outside clicks do not bypass
         // that flow.
+        overlayClassName="bg-transparent backdrop-blur-none"
         onEscapeKeyDown={(event) => event.preventDefault()}
         onPointerDownOutside={(event) => event.preventDefault()}
       >
