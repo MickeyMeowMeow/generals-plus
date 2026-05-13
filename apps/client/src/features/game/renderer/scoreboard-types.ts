@@ -4,6 +4,7 @@ export type ScoreboardBaseFields<TMode> = {
   readonly mode: TMode;
   readonly playerId: string;
   readonly displayName: string;
+  readonly teamId?: string;
   readonly color: number;
   readonly status: PlayerStatus | string;
   readonly isCurrentPlayer: boolean;

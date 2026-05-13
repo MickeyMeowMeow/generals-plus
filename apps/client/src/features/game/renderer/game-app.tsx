@@ -19,6 +19,7 @@ interface GameAppProps {
   readonly selection: ICoordinate | null;
   readonly moveQueue: MoveIntent[];
   readonly scoreboard: RenderScoreboardData | null;
+  readonly canQueueMove: boolean;
   readonly onSelectCell: (coord: ICoordinate) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
   readonly playerColors: Map<string, number>;
@@ -29,6 +30,7 @@ export function GameApp({
   selection,
   moveQueue,
   scoreboard,
+  canQueueMove,
   onSelectCell,
   onQueueMove,
   playerColors,
@@ -56,13 +58,14 @@ export function GameApp({
       const key = e.key.toLowerCase();
       if (KeyToDirection[key]) {
         e.preventDefault();
+        if (!canQueueMove) return;
         onQueueMove(KeyToDirection[key]);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onQueueMove]);
+  }, [canQueueMove, onQueueMove]);
 
   if (!isReady) {
     return <div>Loading...</div>;

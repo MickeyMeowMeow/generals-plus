@@ -41,6 +41,7 @@ export const scoreboardAdapter = {
         mode: GameMode.CLASSIC,
         playerId: score.playerId,
         displayName: publicPlayer?.displayName ?? score.playerId,
+        ...(publicPlayer ? { teamId: publicPlayer.teamId } : {}),
         color: publicPlayer?.color ?? 0x8b949e,
         // Older snapshots may briefly lack public metadata, so fall back to the
         // scoreboard payload to keep the overlay renderable.
