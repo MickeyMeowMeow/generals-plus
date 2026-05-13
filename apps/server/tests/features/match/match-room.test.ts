@@ -38,8 +38,11 @@ describe("MatchRoom", () => {
       expect(room.state.height).toBe(16);
       expect(room.state.status).toBe(GameStatus.PLAYING);
       expect(room.state.players.size).toBe(2);
+      expect(room.state.publicPlayers.size).toBe(2);
       expect(room.state.players.get("p1")).toBeDefined();
       expect(room.state.players.get("p2")).toBeDefined();
+      expect(room.state.publicPlayers.get("p1")?.displayName).toBe("Player1");
+      expect(room.state.publicPlayers.get("p2")?.color).toBeDefined();
     });
 
     it("sets maxClients from playerInit count", async () => {
@@ -221,6 +224,9 @@ describe("MatchRoom", () => {
       await room.waitForNextSimulationTick();
 
       expect(getPlayerState).toHaveBeenCalled();
+      expect(room.state.publicPlayers.get("p1")?.status).toBe(
+        PlayerStatus.ACTIVE,
+      );
     });
 
     it("syncs scoreboard from engine on tick", async () => {
