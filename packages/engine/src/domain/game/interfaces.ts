@@ -218,8 +218,6 @@ export interface IDominationGame extends IBaseGame {
   readonly mode: typeof GameMode.DOMINATION;
   /** Points required to win the match. */
   readonly targetScore: number;
-  /** Location of all Shrines on the map. */
-  shrineLocations: Array<ICoordinate>;
   /** Scores of each team. */
   readonly teamScores: Map<string, number>;
 

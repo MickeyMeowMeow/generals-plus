@@ -88,16 +88,11 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     this.checkGameEnd();
   }
 
-  checkGameEnd(): IGameResult | null {
-    if (this.status !== GameStatus.PLAYING) {
-      return null;
-    }
-
+  protected evaluateGameEnd(): IGameResult | null {
     // Basic logic for classic: if only one team has active players.
     const aliveTeams = this.getAliveTeams();
 
     if (aliveTeams.size <= 1) {
-      this.status = GameStatus.FINISHED;
       return {
         mode: this.mode,
         winnerTeamId: aliveTeams.values().next().value ?? null,
@@ -130,10 +125,5 @@ export class ClassicGame extends BaseGame implements IClassicGame {
       mode: this.mode,
       players,
     };
-  }
-
-  forceEnd(): IGameResult {
-    this.status = GameStatus.FINISHED;
-    return { mode: this.mode, winnerTeamId: null };
   }
 }
