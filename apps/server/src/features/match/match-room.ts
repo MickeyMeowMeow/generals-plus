@@ -200,7 +200,6 @@ export class MatchRoom extends Room<{
     this.state.clientActionQueues.delete(client.sessionId);
     logger.info(`[MatchRoom] ${client.sessionId} left`);
   }
-
   onDispose() {
     this.sessionToPlayerId.clear();
     this.playerToSessionId.clear();
@@ -240,7 +239,6 @@ export class MatchRoom extends Room<{
   private finishMatch(result: IGameResult) {
     this.state.status = GameStatus.FINISHED;
     this.broadcast(MatchServerMessage.GAME_END, result);
-    this.disconnect();
   }
 
   private createFinishedResultFromState(): IGameResult {
