@@ -16,6 +16,7 @@ import {
   MatchClientMessage,
   MatchServerMessage,
   MatchState,
+  PublicPlayer,
 } from "@generals-plus/shared-types";
 
 import { createPlayer } from "#/features/player/utils";
@@ -54,13 +55,24 @@ export class MatchRoom extends Room<{
 
     for (const playerInit of metadata.playerInit) {
       const player = createPlayer(metadata.mode);
+      // Mirror the public subset separately so Colyseus views can expose
+      // identities, colors, and elimination state without leaking hidden data.
+      const publicPlayer = new PublicPlayer();
+
       player.id = playerInit.id;
       player.displayName = playerInit.displayName;
       player.teamId = playerInit.teamId;
       player.color = playerInit.color;
       player.status = PlayerStatus.ACTIVE;
+
+      publicPlayer.id = playerInit.id;
+      publicPlayer.status = PlayerStatus.ACTIVE;
+      publicPlayer.teamId = playerInit.teamId;
+      publicPlayer.displayName = playerInit.displayName;
+      publicPlayer.color = playerInit.color;
+
       state.players.set(playerInit.id, player);
-      state.playerColors.set(playerInit.id, playerInit.color);
+      state.publicPlayers.set(playerInit.id, publicPlayer);
     }
 
     this.state = state;
@@ -269,9 +281,18 @@ export class MatchRoom extends Room<{
       if (!state) continue;
 
       player.teamId = state.teamId;
+      const publicPlayer = this.state.publicPlayers.get(playerId);
+      // Keep the public projection in lockstep with the authoritative engine
+      // state so the scoreboard stays accurate for every connected client.
+      if (publicPlayer) {
+        publicPlayer.teamId = state.teamId;
+      }
 
       const prevStatus = player.status;
       player.status = state.status;
+      if (publicPlayer) {
+        publicPlayer.status = state.status;
+      }
 
       if (
         prevStatus !== PlayerStatus.ELIMINATED &&
