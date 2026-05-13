@@ -14,6 +14,7 @@ export class SetupState extends Schema {
   @type("boolean") isPublic: boolean = true;
   @type([SetupPlayer]) players = new ArraySchema<SetupPlayer>();
   @type("number") maxPlayers: number = 8;
+  @type("number") playersPerTeam: number = 2;
 
   @type("number") mapWidth: number = 24;
   @type("number") mapHeight: number = 16;
