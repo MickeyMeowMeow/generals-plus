@@ -4,6 +4,7 @@ import { logger, Room } from "@colyseus/core";
 import { StateView } from "@colyseus/schema";
 import type {
   IBaseGame,
+  IGameResult,
   MoveAction,
   MoveActionType,
 } from "@generals-plus/engine";
@@ -211,6 +212,8 @@ export class MatchRoom extends Room<{
       logger.error(`[MatchRoom] Error: Game instance not found on tick`);
       throw new Error("Game instance not found");
     }
+    if (this.state.status === GameStatus.FINISHED) return;
+
     this.processActionQueues();
 
     this.game.nextTick();
@@ -222,10 +225,43 @@ export class MatchRoom extends Room<{
 
     const result = this.game.checkGameEnd();
     if (result) {
-      this.state.status = GameStatus.FINISHED;
-      this.broadcast(MatchServerMessage.GAME_END, result);
-      this.disconnect();
+      this.finishMatch(result);
+      return;
     }
+
+    // Some engine flows can flip the game status during `nextTick()` without
+    // returning a fresh result payload here, so derive a minimal final result
+    // from synced room state before disconnecting clients.
+    if (this.game.status === GameStatus.FINISHED) {
+      this.finishMatch(this.createFinishedResultFromState());
+    }
+  }
+
+  private finishMatch(result: IGameResult) {
+    this.state.status = GameStatus.FINISHED;
+    this.broadcast(MatchServerMessage.GAME_END, result);
+    this.disconnect();
+  }
+
+  private createFinishedResultFromState(): IGameResult {
+    const activeTeamIds = new Set<string>();
+    for (const [, player] of this.state.players) {
+      if (player.status === PlayerStatus.ACTIVE) {
+        activeTeamIds.add(player.teamId);
+      }
+    }
+
+    let winnerTeamId: string | null = null;
+    if (activeTeamIds.size === 1) {
+      for (const teamId of activeTeamIds) {
+        winnerTeamId = teamId;
+      }
+    }
+
+    return {
+      mode: this.state.mode,
+      winnerTeamId,
+    };
   }
 
   private processActionQueues() {
