@@ -156,4 +156,52 @@ describe("scoreboardAdapter", () => {
       },
     ]);
   });
+
+  it("sorts active classic rows by army before land", () => {
+    const state = new MatchState();
+    const scoreboard = new ClassicScoreboard();
+    state.mode = GameMode.CLASSIC;
+    state.scoreboard = scoreboard;
+    scoreboard.mode = GameMode.CLASSIC;
+    state.publicPlayers.set(
+      "p1",
+      createPublicPlayer({
+        id: "p1",
+        displayName: "Alpha",
+        color: 0xff0000,
+        teamId: "team_0",
+        status: PlayerStatus.ACTIVE,
+      }),
+    );
+    state.publicPlayers.set(
+      "p2",
+      createPublicPlayer({
+        id: "p2",
+        displayName: "Beta",
+        color: 0x00ff00,
+        teamId: "team_1",
+        status: PlayerStatus.ACTIVE,
+      }),
+    );
+    scoreboard.players.push(
+      createScoreEntry({
+        playerId: "p1",
+        troops: 15,
+        land: 5,
+        isGeneralAlive: true,
+      }),
+    );
+    scoreboard.players.push(
+      createScoreEntry({
+        playerId: "p2",
+        troops: 12,
+        land: 40,
+        isGeneralAlive: true,
+      }),
+    );
+
+    const result = scoreboardAdapter.fromMatchState(state, null);
+
+    expect(result?.rows.map((row) => row.playerId)).toEqual(["p1", "p2"]);
+  });
 });

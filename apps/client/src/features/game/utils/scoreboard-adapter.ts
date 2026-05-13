@@ -20,8 +20,8 @@ function compareClassicRows(
     if (right.status === PlayerStatus.ACTIVE) return 1;
   }
 
-  if (left.land !== right.land) return right.land - left.land;
   if (left.troops !== right.troops) return right.troops - left.troops;
+  if (left.land !== right.land) return right.land - left.land;
   return left.displayName.localeCompare(right.displayName);
 }
 
