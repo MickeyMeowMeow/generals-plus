@@ -23,19 +23,54 @@ type GameRoomClient = RoomClient<
   MatchServerMessagePayload
 >;
 
+/**
+ * Shared client-side handle for one consumed match-room seat reservation.
+ *
+ * Colyseus seat reservations are a one-time handoff from queue/setup into the
+ * match room. React can briefly mount, unmount, and remount the game page around
+ * that handoff, especially during route transitions or StrictMode. This handle
+ * ensures the reservation is consumed once and every current consumer shares the
+ * same resulting room connection.
+ */
 interface SharedGameConnection {
+  /** Resolves to the game room created by consuming the seat reservation. */
   promise: Promise<GameRoomClient>;
+  /** The resolved game room instance, available after `promise` completes. */
   room: GameRoomClient | null;
+  /** Number of mounted `useGameRoom` consumers using this connection. */
   refs: number;
+  /** Delayed room leave scheduled when the last consumer releases it. */
   leaveTimer: ReturnType<typeof setTimeout> | null;
 }
 
+/**
+ * In-memory cache of consumed game-room reservations.
+ *
+ * The cache is scoped to the current page session because seat reservations are
+ * ephemeral. It prevents duplicate `consumeSeatReservation()` calls for the
+ * same `{ name, roomId, sessionId }` tuple, which would otherwise surface as
+ * "seat reservation expired" even though the first consume succeeded.
+ */
 const gameConnections = new Map<string, SharedGameConnection>();
 
+/**
+ * Build a stable cache key for one reserved match seat.
+ *
+ * `roomId` alone is not sufficient because different players consume different
+ * seats in the same room. Including `sessionId` keeps each player's reservation
+ * isolated while still deduplicating remounts for that exact player.
+ */
 function getReservationKey(reservation: ISeatReservation) {
   return `${reservation.name}:${reservation.roomId}:${reservation.sessionId}`;
 }
 
+/**
+ * Consume or reuse a match-room seat reservation.
+ *
+ * The first caller starts the Colyseus consume request and stores its promise.
+ * Later callers with the same reservation key reuse that promise/room, canceling
+ * any pending delayed leave if the connection was about to be released.
+ */
 function acquireGameRoom(reservation: ISeatReservation) {
   const key = getReservationKey(reservation);
   let entry = gameConnections.get(key);
@@ -69,6 +104,13 @@ function acquireGameRoom(reservation: ISeatReservation) {
   return entry.promise;
 }
 
+/**
+ * Release one mounted game page's reference to a consumed match room.
+ *
+ * The connection is left only after the final consumer has been gone for a short
+ * delay. That delay keeps a valid match socket alive through fast remounts while
+ * still cleaning up when the user actually leaves the game view.
+ */
 function releaseGameRoom(reservation: ISeatReservation) {
   const key = getReservationKey(reservation);
   const entry = gameConnections.get(key);
@@ -85,6 +127,11 @@ function releaseGameRoom(reservation: ISeatReservation) {
   }, 500);
 }
 
+/**
+ * Convert a pair of adjacent grid coordinates into the renderer's move intent
+ * direction. The server protocol stores moves as from/to coordinates; the Pixi
+ * move-queue overlay renders them as directional arrows.
+ */
 function getDirection(from: ICoordinate, to: ICoordinate): MoveDirection {
   if (to.y < from.y) return MoveDirection.UP;
   if (to.y > from.y) return MoveDirection.DOWN;
@@ -92,6 +139,14 @@ function getDirection(from: ICoordinate, to: ICoordinate): MoveDirection {
   return MoveDirection.RIGHT;
 }
 
+/**
+ * Connect the game page to a reserved Colyseus match room.
+ *
+ * The hook consumes the seat reservation, subscribes to authoritative match
+ * state, adapts the current client's vision schema into a render grid, mirrors
+ * the player's server-side action queue for the movement overlay, and exposes a
+ * typed `sendMove` command for user input.
+ */
 export function useGameRoom(reservation: ISeatReservation) {
   const [room, setRoom] = useState<GameRoomClient | null>(null);
   const [renderGrid, setRenderGrid] = useState<RenderGrid | null>(null);

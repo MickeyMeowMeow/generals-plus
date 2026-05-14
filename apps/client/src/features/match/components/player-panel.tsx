@@ -7,14 +7,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Separator } from "#/components/ui/separator";
 
 interface PlayerPanelProps {
+  /** Display name for the connected player. */
   displayName: string;
+  /** Active Colyseus session id, shown when a room connection exists. */
   sessionId: string | null;
+  /** Human-readable room lifecycle state for diagnostics. */
   roomState: string;
+  /** Last room-level error to surface near the leave controls. */
   lastError: string | null;
+  /** Leaves the current room and clears any associated connection state. */
   onLeave: () => Promise<void>;
 }
 
-/** Side panel showing player info, session details, and leave controls. */
+/**
+ * Compact player diagnostics panel for room-based flows.
+ *
+ * The main UI now uses stage-specific HUDs, but this panel remains as a reusable
+ * room-control surface for tests or secondary tooling that needs session state,
+ * errors, and an explicit leave action in one place.
+ */
 export function PlayerPanel({
   displayName,
   sessionId,

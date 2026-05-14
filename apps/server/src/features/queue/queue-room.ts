@@ -21,6 +21,15 @@ import { createGame } from "#/features/game/utils";
 const DEFAULT_MIN_PLAYERS = 2;
 const DEFAULT_COUNTDOWN_CYCLES = 0;
 
+/**
+ * Official matchmaking queue room.
+ *
+ * The client joins this room from the root `/` flow with a shared `ROOM_NAMES`
+ * value and a concrete `GameMode`. The room tracks queue-only player state
+ * (display name and selected color), groups ready clients through Colyseus'
+ * `QueueRoom`, creates the authoritative match room metadata, and hands clients
+ * off via seat reservations.
+ */
 export class MatchQueueRoom extends QueueRoom {
   declare state: QueueState;
 
@@ -30,7 +39,9 @@ export class MatchQueueRoom extends QueueRoom {
 
   onCreate(
     options: QueueOptions & {
+      /** Official mode requested by the client, currently Classic only. */
       gameMode: GameMode;
+      /** Test/dev override for how many queue cycles to wait before matching. */
       countdownCycles?: number;
     },
   ) {
@@ -44,6 +55,13 @@ export class MatchQueueRoom extends QueueRoom {
       maxPlayers: options.maxPlayers ?? this.minPlayers,
       maxWaitingCycles: options.countdownCycles ?? DEFAULT_COUNTDOWN_CYCLES,
       allowIncompleteGroups: true,
+      /**
+       * Convert the queued Colyseus clients into match-room metadata.
+       *
+       * Queue membership is the source of truth for official matches. The match
+       * room receives a pre-created engine game plus `playerInit` so colors and
+       * display names remain aligned with the queue UI during the seat handoff.
+       */
       onGroupReady: async (group) => {
         const playerInit: PlayerInit[] = group.clients.map((client, i) => {
           const auth = client.auth as ClientAuth;
@@ -101,6 +119,13 @@ export class MatchQueueRoom extends QueueRoom {
     });
   }
 
+  /**
+   * Prevent Colyseus from forming a group until the official minimum is reached.
+   *
+   * `allowIncompleteGroups` is still enabled so a group can start without
+   * filling the room to its max size after the minimum threshold has been met.
+   * While below the threshold we reset client cycles to keep everyone queued.
+   */
   reassignMatchGroups() {
     if (this.clients.length < this.minPlayers) {
       for (const client of this.clients) {
@@ -114,10 +139,17 @@ export class MatchQueueRoom extends QueueRoom {
     super.reassignMatchGroups();
   }
 
+  /** Verify the client auth token before allowing queue participation. */
   static async onAuth(token: string) {
     return JWT.verify(token);
   }
 
+  /**
+   * Add a player to queue state and kick older duplicate sessions.
+   *
+   * Queue state is intentionally smaller than match state; it only contains the
+   * information needed by the lobby UI before a real match room exists.
+   */
   onJoin(client: Client, options: { rank?: number }) {
     const auth = client.auth as ClientAuth;
     const existingClient = this.clients.find(
@@ -144,6 +176,7 @@ export class MatchQueueRoom extends QueueRoom {
     super.onJoin(client, { rank: options.rank ?? 0 });
   }
 
+  /** Remove a leaving player's queue presentation state. */
   onLeave(client: Client) {
     const auth = client.auth as ClientAuth;
     const idx = this.queueState.players.findIndex(

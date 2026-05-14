@@ -12,6 +12,15 @@ import { GameApp } from "#/features/game/renderer/game-app";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 
+/**
+ * Match view rendered after queue/setup hands the client a seat reservation.
+ *
+ * The page delegates socket ownership and state adaptation to `useGameRoom`,
+ * keeps local-only selection state for map input, and renders the Pixi board
+ * with the floating match HUD. It is intentionally route-agnostic so both `/`
+ * official matches and `/match/:roomId` custom matches can reuse the same game
+ * surface after their respective seat-reservation handoff.
+ */
 export function GamePage({ reservation }: { reservation: ISeatReservation }) {
   const {
     room,

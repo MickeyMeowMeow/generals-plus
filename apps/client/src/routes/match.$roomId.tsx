@@ -22,6 +22,13 @@ import {
 import { GamePage } from "#/features/game/pages/game-page";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
+/**
+ * Auth scene shown on custom room URLs before the user has a session.
+ *
+ * The route stays on `/match/:roomId` while auth completes so shared room links
+ * remain valid. Once authenticated, `MatchRoute` continues into the setup-room
+ * connection using the same URL parameter.
+ */
 function MatchAuthScreen() {
   const [displayNameInput, setDisplayNameInput] = useState("Commander");
   const { state, actions } = useAuth();
@@ -72,6 +79,14 @@ function MatchAuthScreen() {
   );
 }
 
+/**
+ * Custom-room setup/game scene for `/match/:roomId`.
+ *
+ * The route first joins the setup room identified by the URL. While setup is
+ * active it renders the room lobby, host-only start control, player list, and
+ * color picker. When the setup room emits a seat reservation, the same route
+ * swaps into `GamePage` and consumes that reservation to enter the match room.
+ */
 function CustomSetupRoom({ roomId }: { roomId: string }) {
   const navigate = useNavigate();
   const userId = useUser((user) => user?.id);
@@ -199,6 +214,13 @@ function CustomSetupRoom({ roomId }: { roomId: string }) {
   );
 }
 
+/**
+ * Custom-room route container.
+ *
+ * This is the only supported custom-room entry point. It deliberately handles
+ * unauthenticated users in place, invalid URLs as staged errors, and setup/game
+ * phase switching without redirecting to the old `match-screen` route.
+ */
 export default function MatchRoute() {
   const { roomId } = useParams<{ roomId: string }>();
   const { state } = useAuth();

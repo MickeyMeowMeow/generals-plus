@@ -12,7 +12,14 @@ import {
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth } from "#/features/auth/hooks";
 
-/** Route guard that redirects unauthenticated users to the root auth surface. */
+/**
+ * Legacy-compatible authenticated route guard.
+ *
+ * The rebuilt primary flows handle unauthenticated users inside `/` and
+ * `/match/:roomId`, but tests and any future protected utility routes can still
+ * use this guard. Unauthenticated users are sent to the root auth surface rather
+ * than to the removed `/user` route.
+ */
 export function RequireAuthenticated({ children }: { children: ReactElement }) {
   const { state } = useAuth();
 

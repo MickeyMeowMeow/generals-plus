@@ -23,8 +23,23 @@ import {
 import { GamePage } from "#/features/game/pages/game-page";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
+/**
+ * Client-only phase for the official `/` route.
+ *
+ * Auth is handled separately by `AuthStatus`; once authenticated, the root route
+ * intentionally keeps the URL stable and switches between the lobby scene and
+ * queue scene in memory. The actual match phase is driven by a Colyseus seat
+ * reservation, not by another route.
+ */
 type OfficialPhase = "lobby" | "queue";
 
+/**
+ * Root-route unauthenticated scene.
+ *
+ * The rebuilt client no longer has a `/user` route, so login/register behavior
+ * lives directly inside `/`. Successful auth simply allows the root route to
+ * render the official lobby without navigating.
+ */
 function AuthScreen() {
   const [displayNameInput, setDisplayNameInput] = useState("Commander");
   const { state, actions } = useAuth();
@@ -75,6 +90,13 @@ function AuthScreen() {
   );
 }
 
+/**
+ * Authenticated official lobby scene.
+ *
+ * This screen exposes only the supported Classic official mode and a create-only
+ * custom-room entry. Joining custom rooms is intentionally URL-based, so the
+ * lobby creates a private setup room and then navigates to `/match/:roomId`.
+ */
 function LobbyScreen({ onQueue }: { onQueue: () => void }) {
   const navigate = useNavigate();
   const { actions } = useAuth();
@@ -186,6 +208,13 @@ function LobbyScreen({ onQueue }: { onQueue: () => void }) {
   );
 }
 
+/**
+ * Official queue scene inside the root route.
+ *
+ * The scene owns the queue-room hook while it is mounted. Color selection sends
+ * queue protocol messages, and receipt of a seat reservation swaps the scene
+ * directly into `GamePage` without changing the URL.
+ */
 function QueueScreen({ onLeave }: { onLeave: () => void }) {
   const { room, queueState, seatReservation, error, isConnecting } =
     useQueueRoom();
@@ -272,6 +301,13 @@ function QueueScreen({ onLeave }: { onLeave: () => void }) {
   );
 }
 
+/**
+ * Official-flow route container.
+ *
+ * `/` is the single entry point for unauthenticated auth, official lobby,
+ * official queue, and official match rendering. Keeping these states in one
+ * route avoids stale legacy URLs and matches the backend room lifecycle.
+ */
 export default function Index() {
   const { state } = useAuth();
   const [phase, setPhase] = useState<OfficialPhase>("lobby");

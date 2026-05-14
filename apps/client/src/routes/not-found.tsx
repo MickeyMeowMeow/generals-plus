@@ -8,6 +8,13 @@ import {
   StagePanel,
 } from "#/features/game/components/game-stage";
 
+/**
+ * Stage-styled 404 for removed legacy routes and bad URLs.
+ *
+ * `/user`, `/lobby`, `/queue`, and `/match-screen` are intentionally no longer
+ * compatibility redirects. Rendering the same game shell here makes those
+ * misses explicit without bringing back the old business pages.
+ */
 export default function NotFoundPage() {
   return (
     <GameStage>

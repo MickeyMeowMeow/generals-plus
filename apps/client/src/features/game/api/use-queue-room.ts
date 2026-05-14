@@ -22,10 +22,21 @@ type QueueRoomClient = RoomClient<
 >;
 
 interface UseQueueRoomOptions {
+  /** Whether the hook should open the Colyseus queue room connection. */
   enabled?: boolean;
+  /** Official game mode requested by the root-route lobby. */
   gameMode?: GameMode;
 }
 
+/**
+ * Connect the official root-route flow to the Colyseus queue room.
+ *
+ * This hook owns the official matchmaking socket for `/`: it joins or creates
+ * the queue room with the selected game mode, mirrors queue state for the color
+ * picker and player list, listens for the server seat reservation that promotes
+ * the user into a match room, and confirms the handoff with the shared protocol
+ * enum. Leaving the queue unmounts the hook and closes the queue socket.
+ */
 export function useQueueRoom({
   enabled = true,
   gameMode = GameMode.CLASSIC,

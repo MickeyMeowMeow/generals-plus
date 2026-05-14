@@ -15,19 +15,35 @@ import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 
 interface AuthFormProps {
+  /** Draft commander name controlled by the route-level auth scene. */
   displayName: string;
+  /** Updates the draft commander name before anonymous sign-in. */
   onDisplayNameChange: (value: string) => void;
+  /** Disables submit affordances while an auth request is running. */
   isBusy: boolean;
+  /** Whether the auth provider currently has a signed-in player. */
   isAuthenticated: boolean;
+  /** Last auth error surfaced by the provider, if any. */
   lastError: string | null;
+  /** Raw auth status label rendered through the shared status badge. */
   authStatus: string;
+  /** Display name for the active player session. */
   currentDisplayName: string | null;
+  /** Form submit handler supplied by the route that owns auth actions. */
   onSignIn: (event: SubmitEvent<HTMLFormElement>) => Promise<void>;
+  /** Signs out the current player and clears route-level connection state. */
   onSignOut: () => Promise<void>;
+  /** Optional authenticated continuation; root routes currently stay in place. */
   onEnterLobby: () => void;
 }
 
-/** Sign-in / sign-out form with display name input. */
+/**
+ * Stage-styled anonymous auth form used by both root and custom-room URLs.
+ *
+ * The form contains no routing assumptions. `/` uses it as the first official
+ * flow scene, while `/match/:roomId` uses the same component so a shared custom
+ * room URL can authenticate in place and continue joining that room afterward.
+ */
 export function AuthForm({
   displayName,
   onDisplayNameChange,

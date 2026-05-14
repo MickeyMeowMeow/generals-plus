@@ -7,6 +7,13 @@ export type { NetworkProvider };
 
 let networkProviderInstance: NetworkProvider<UserProfile> | null = null;
 
+/**
+ * Lazily create the concrete network provider from the configured Colyseus URL.
+ *
+ * Tests can import the exported facade without immediately resolving endpoints
+ * or opening provider state. The first real network call constructs the provider
+ * once, and every route/hook then talks through the same auth and room gateway.
+ */
 function getNetworkProvider(): NetworkProvider<UserProfile> {
   networkProviderInstance ??= ColyseusNetworkProvider.fromEndpoint(
     resolveColyseusEndpoint(),
@@ -14,6 +21,13 @@ function getNetworkProvider(): NetworkProvider<UserProfile> {
   return networkProviderInstance;
 }
 
+/**
+ * Stable network facade used by auth, queue, setup, and match hooks.
+ *
+ * The facade keeps callers decoupled from the Colyseus implementation and makes
+ * room operations (`joinOrCreate`, `joinById`, `create`, seat consumption, and
+ * reconnect) share one endpoint/auth source.
+ */
 export const networkProvider: NetworkProvider<UserProfile> = {
   signInAnonymously: (...args) =>
     getNetworkProvider().signInAnonymously(...args),

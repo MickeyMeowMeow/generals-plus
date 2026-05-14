@@ -21,13 +21,40 @@ type SetupRoomClient = RoomClient<
   SetupServerMessagePayload
 >;
 
+/**
+ * Shared client-side handle for one setup room connection.
+ *
+ * The custom-room flow creates a Colyseus setup room from `/` and immediately
+ * navigates to `/match/:roomId`, where the route-level setup screen should take
+ * over the same socket. Keeping this handle in module scope prevents the
+ * creating component from leaving the room during that handoff and avoids a
+ * second `joinById()` against a room that may be closing.
+ *
+ * The handle stores both the in-flight `promise` and the resolved `room` so
+ * concurrent React mounts reuse the same connection attempt. `refs` counts
+ * mounted consumers, while `leaveTimer` provides a short grace period for route
+ * transitions and StrictMode remounts before the socket is actually closed.
+ */
 interface SharedSetupConnection {
+  /** Resolves to the setup room connection shared by all current consumers. */
   promise: Promise<SetupRoomClient>;
+  /** The resolved room instance, filled after `promise` completes. */
   room: SetupRoomClient | null;
+  /** Number of mounted hooks currently using this connection. */
   refs: number;
+  /** Delayed leave scheduled when the last consumer unmounts. */
   leaveTimer: ReturnType<typeof setTimeout> | null;
 }
 
+/**
+ * In-memory setup connection pool.
+ *
+ * Entries are first registered under the requested room id or a temporary
+ * default key, then normalized to the actual Colyseus `room.roomId` after the
+ * connection resolves. The pool intentionally lives only for the current page
+ * session; a full refresh should reconnect through the URL instead of restoring
+ * stale socket state.
+ */
 const setupConnections = new Map<string, SharedSetupConnection>();
 
 interface SetupRoomOptions {
@@ -35,6 +62,14 @@ interface SetupRoomOptions {
   roomId?: string;
 }
 
+/**
+ * Create a private custom setup room and cache its live connection for the
+ * upcoming `/match/:roomId` navigation.
+ *
+ * The lobby only exposes room creation, not a manual join form. After creation
+ * the returned `roomId` becomes the shareable URL, and `useSetupRoom({ roomId })`
+ * can adopt this already-open connection from `setupConnections`.
+ */
 export async function createCustomSetupRoom() {
   const room = await networkProvider.create<
     SetupState,
@@ -54,6 +89,14 @@ export async function createCustomSetupRoom() {
   return room;
 }
 
+/**
+ * Acquire a setup room for the current route.
+ *
+ * If the room was created moments earlier by `createCustomSetupRoom`, this
+ * returns the cached socket instead of reconnecting. Otherwise it joins the
+ * provided URL room id. The room-id-less branch remains for internal callers and
+ * mirrors the old join-or-create behavior without exposing a UI route for it.
+ */
 function acquireSetupRoom(roomId: string | undefined) {
   if (roomId) {
     const existing = setupConnections.get(roomId);
@@ -99,6 +142,14 @@ function acquireSetupRoom(roomId: string | undefined) {
   return entry.promise;
 }
 
+/**
+ * Release one hook's claim on a setup room.
+ *
+ * When the reference count reaches zero, the room is left after a short delay
+ * rather than immediately. That delay is the small bridge between "old component
+ * unmounted" and "new route component mounted", and it also absorbs development
+ * StrictMode remounts without closing a valid room.
+ */
 function releaseSetupRoom(room: SetupRoomClient | null, roomId?: string) {
   const key = room?.roomId ?? roomId;
   if (!key) return;
@@ -117,6 +168,15 @@ function releaseSetupRoom(room: SetupRoomClient | null, roomId?: string) {
   }, 500);
 }
 
+/**
+ * React hook for the `/match/:roomId` setup phase.
+ *
+ * It owns the setup-room lifecycle, exposes cloned setup state for rendering,
+ * listens for the server seat reservation that starts the match phase, and
+ * returns a `startGame` command that uses the shared protocol enum. The hook is
+ * disabled until auth/routing is ready so custom-room URLs can show login first
+ * and then continue connecting on the same URL.
+ */
 export function useSetupRoom({
   enabled = true,
   roomId,
