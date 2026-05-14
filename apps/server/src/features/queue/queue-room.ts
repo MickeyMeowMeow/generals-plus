@@ -21,6 +21,7 @@ import { createGame } from "#/features/game/utils";
 const DEFAULT_MAX_PLAYERS = 8;
 const DEFAULT_MIN_PLAYERS = 2;
 const DEFAULT_COUNTDOWN_CYCLES = 20;
+const DEFAULT_PLAYERS_PER_TEAM = 2;
 
 export class MatchQueueRoom extends QueueRoom {
   declare state: QueueState;
@@ -64,6 +65,7 @@ export class MatchQueueRoom extends QueueRoom {
         const game = createGame({
           mode: this.gameMode,
           playerIds: playerInit.map((p) => p.id),
+          playerPerTeam: DEFAULT_PLAYERS_PER_TEAM,
         });
 
         const metadata: RoomData = {
