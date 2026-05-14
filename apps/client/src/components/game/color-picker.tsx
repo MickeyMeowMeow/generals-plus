@@ -12,28 +12,34 @@ export function ColorPicker({
   onSelect,
 }: ColorPickerProps) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <fieldset
+      className="flex flex-wrap gap-3 border-0 p-0"
+      aria-label="Color picker"
+    >
       {PLAYER_COLOR_PALETTE.map((c) => {
         const taken = takenColors.includes(c) && c !== currentColor;
+        const colorHex = `#${c.toString(16).padStart(6, "0")}`;
         return (
           <button
             key={c}
             type="button"
             disabled={taken}
+            aria-label={`Pick color ${colorHex}`}
+            aria-pressed={c === currentColor}
             onClick={() => onSelect(c)}
-            className={`h-8 w-8 rounded-full border-2 ${
+            className={`size-10 rounded-full border-2 shadow-lg transition ${
               c === currentColor
-                ? "border-white"
+                ? "scale-110 border-white ring-2 ring-amber-200/70"
                 : taken
-                  ? "border-transparent opacity-30 cursor-not-allowed"
-                  : "border-transparent cursor-pointer hover:border-white/50"
+                  ? "cursor-not-allowed border-transparent opacity-25 grayscale"
+                  : "cursor-pointer border-white/10 hover:scale-105 hover:border-white/70"
             }`}
             style={{
-              backgroundColor: `#${c.toString(16).padStart(6, "0")}`,
+              backgroundColor: colorHex,
             }}
           />
         );
       })}
-    </div>
+    </fieldset>
   );
 }
