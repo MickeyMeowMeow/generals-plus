@@ -1,13 +1,17 @@
 import type { IBaseGame } from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
-import type { PlayerInit, SetupPlayer } from "@generals-plus/shared-types";
+import type {
+  PlayerInit,
+  QueuePlayer,
+  SetupPlayer,
+} from "@generals-plus/shared-types";
 import { ClassicPlayer, Player } from "@generals-plus/shared-types";
 
 export function createPlayerInit(
-  setupPlayers: SetupPlayer[],
+  players: SetupPlayer[] | QueuePlayer[],
   game: IBaseGame,
 ): PlayerInit[] {
-  return setupPlayers.map((setupPlayer) => {
+  return players.map((setupPlayer) => {
     const gamePlayer = game.players.get(setupPlayer.id);
     if (!gamePlayer) {
       throw new Error(`Player with id ${setupPlayer.id} not found in game.`);
