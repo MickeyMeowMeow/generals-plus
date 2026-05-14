@@ -101,6 +101,12 @@ function acquireGameRoom(reservation: ISeatReservation) {
         const current = gameConnections.get(key);
         if (current) current.room = room;
         return room;
+      })
+      .catch((error) => {
+        if (gameConnections.get(key) === entry) {
+          gameConnections.delete(key);
+        }
+        throw error;
       }),
   };
   gameConnections.set(key, entry);

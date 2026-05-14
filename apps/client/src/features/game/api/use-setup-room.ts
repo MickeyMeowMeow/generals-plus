@@ -127,16 +127,23 @@ function acquireSetupRoom(roomId: string | undefined) {
     refs: 1,
     room: null,
     leaveTimer: null,
-    promise: promise.then((room) => {
-      setupConnections.delete(key);
-      const roomEntry = setupConnections.get(room.roomId);
-      if (roomEntry && roomEntry !== entry) {
-        return roomEntry.promise;
-      }
-      entry.room = room;
-      setupConnections.set(room.roomId, entry);
-      return room;
-    }),
+    promise: promise
+      .then((room) => {
+        setupConnections.delete(key);
+        const roomEntry = setupConnections.get(room.roomId);
+        if (roomEntry && roomEntry !== entry) {
+          return roomEntry.promise;
+        }
+        entry.room = room;
+        setupConnections.set(room.roomId, entry);
+        return room;
+      })
+      .catch((error) => {
+        if (setupConnections.get(key) === entry) {
+          setupConnections.delete(key);
+        }
+        throw error;
+      }),
   };
   setupConnections.set(key, entry);
   return entry.promise;

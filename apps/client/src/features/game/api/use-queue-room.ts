@@ -21,11 +21,83 @@ type QueueRoomClient = RoomClient<
   QueueServerMessagePayload
 >;
 
+interface SharedQueueConnection {
+  promise: Promise<QueueRoomClient>;
+  room: QueueRoomClient | null;
+  refs: number;
+  leaveTimer: ReturnType<typeof setTimeout> | null;
+}
+
+const queueConnections = new Map<string, SharedQueueConnection>();
+
+export function resetQueueConnectionsForTesting() {
+  queueConnections.clear();
+}
+
 interface UseQueueRoomOptions {
   /** Whether the hook should open the Colyseus queue room connection. */
   enabled?: boolean;
   /** Official game mode requested by the root-route lobby. */
   gameMode?: GameMode;
+}
+
+function getQueueKey(gameMode: GameMode) {
+  return `${ROOM_NAMES.QUEUE}:${gameMode}`;
+}
+
+function acquireQueueRoom(gameMode: GameMode) {
+  const key = getQueueKey(gameMode);
+  let entry = queueConnections.get(key);
+
+  if (entry) {
+    entry.refs++;
+    if (entry.leaveTimer) {
+      clearTimeout(entry.leaveTimer);
+      entry.leaveTimer = null;
+    }
+    return entry.promise;
+  }
+
+  entry = {
+    refs: 1,
+    room: null,
+    leaveTimer: null,
+    promise: networkProvider
+      .joinOrCreate<
+        QueueState,
+        QueueClientMessagePayload,
+        QueueServerMessagePayload
+      >(ROOM_NAMES.QUEUE, { gameMode })
+      .then((room) => {
+        const current = queueConnections.get(key);
+        if (current) current.room = room;
+        return room;
+      })
+      .catch((error) => {
+        if (queueConnections.get(key) === entry) {
+          queueConnections.delete(key);
+        }
+        throw error;
+      }),
+  };
+  queueConnections.set(key, entry);
+  return entry.promise;
+}
+
+function releaseQueueRoom(gameMode: GameMode) {
+  const key = getQueueKey(gameMode);
+  const entry = queueConnections.get(key);
+  if (!entry) return;
+
+  entry.refs = Math.max(0, entry.refs - 1);
+  if (entry.refs > 0 || entry.leaveTimer) return;
+
+  entry.leaveTimer = setTimeout(() => {
+    const current = queueConnections.get(key);
+    if (!current || current.refs > 0) return;
+    queueConnections.delete(key);
+    void current.promise.then((room) => room.leave()).catch(() => {});
+  }, 500);
 }
 
 /**
@@ -51,40 +123,41 @@ export function useQueueRoom({
   useEffect(() => {
     if (!enabled) return;
 
-    let currentRoom: QueueRoomClient;
     let isCurrent = true;
+    const unsubscribers: Array<() => void> = [];
 
     const connect = async () => {
       setIsConnecting(true);
       setError(null);
       try {
-        currentRoom = await networkProvider.joinOrCreate<
-          QueueState,
-          QueueClientMessagePayload,
-          QueueServerMessagePayload
-        >(ROOM_NAMES.QUEUE, { gameMode });
+        const currentRoom = await acquireQueueRoom(gameMode);
 
         if (!isCurrent) {
-          await currentRoom.leave();
           return;
         }
         setRoom(currentRoom);
         setIsConnecting(false);
 
-        currentRoom.onStateChange((state) => {
-          setQueueState(state.clone());
-        });
-
-        currentRoom.onMessage(
-          QueueServerMessage.SEAT_RESERVATION,
-          (reservation) => {
-            setSeatReservation(reservation);
-            currentRoom.send(QueueClientMessage.CONFIRM);
-          },
+        unsubscribers.push(
+          currentRoom.onStateChange((state) => {
+            setQueueState(state.clone());
+          }),
         );
-        currentRoom.onMessage(QueueServerMessage.ERROR, (message) => {
-          setError(message);
-        });
+
+        unsubscribers.push(
+          currentRoom.onMessage(
+            QueueServerMessage.SEAT_RESERVATION,
+            (reservation) => {
+              setSeatReservation(reservation);
+              currentRoom.send(QueueClientMessage.CONFIRM);
+            },
+          ),
+        );
+        unsubscribers.push(
+          currentRoom.onMessage(QueueServerMessage.ERROR, (message) => {
+            setError(message);
+          }),
+        );
       } catch (e) {
         if (!isCurrent) return;
         setIsConnecting(false);
@@ -96,7 +169,10 @@ export function useQueueRoom({
 
     return () => {
       isCurrent = false;
-      if (currentRoom) void currentRoom.leave();
+      for (const unsubscribe of unsubscribers) {
+        unsubscribe();
+      }
+      releaseQueueRoom(gameMode);
     };
   }, [enabled, gameMode]);
 

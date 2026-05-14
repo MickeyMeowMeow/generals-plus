@@ -9,11 +9,21 @@ import {
   SetupClientMessage,
   SetupServerMessage,
 } from "@generals-plus/shared-types";
-import { cleanup, screen, waitFor, within } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthStatus } from "#/features/auth/auth-store";
+import { AuthContext } from "#/features/auth/providers/auth-provider";
+import { resetQueueConnectionsForTesting } from "#/features/game/api/use-queue-room";
+import { QueuePage } from "#/features/game/pages/queue-page";
 import { createMockAuth } from "#/tests/helpers/auth";
 import { renderRoute } from "#/tests/helpers/render";
 
@@ -146,6 +156,7 @@ function createRoom({
 describe("client room flows", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetQueueConnectionsForTesting();
   });
 
   afterEach(() => {
@@ -194,6 +205,35 @@ describe("client room flows", () => {
     );
     expect(queueRoom.send).toHaveBeenCalledWith(QueueClientMessage.PICK_COLOR, {
       color: PLAYER_COLOR_PALETTE[0],
+    });
+  });
+
+  it("deduplicates official queue joins across StrictMode remounts", async () => {
+    const queueRoom = createRoom({
+      state: createState({
+        players: [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+          },
+        ],
+      }),
+    });
+    networkMocks.joinOrCreate.mockResolvedValue(queueRoom);
+
+    render(
+      <AuthContext.Provider value={auth()}>
+        <StrictMode>
+          <QueuePage gameMode={GameMode.CLASSIC} onLeave={vi.fn()} />
+        </StrictMode>
+      </AuthContext.Provider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Color" })).toBeTruthy();
+    expect(networkMocks.joinOrCreate).toHaveBeenCalledTimes(1);
+    expect(networkMocks.joinOrCreate).toHaveBeenCalledWith(ROOM_NAMES.QUEUE, {
+      gameMode: GameMode.CLASSIC,
     });
   });
 
