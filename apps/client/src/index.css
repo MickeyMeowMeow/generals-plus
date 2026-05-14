@@ -48,14 +48,14 @@
 :root {
   --radius: 0.625rem;
 
-  --success: oklch(0.75 0.15 175);
-  --warning: oklch(0.82 0.16 85);
-  --game-bg: #10110f;
-  --game-surface: #1b1d19;
-  --game-border: #3a4036;
-  --game-text: #f3f0e7;
-  --game-text-dim: #b4b0a4;
-  --game-accent: #24d6b0;
+  --success: #3da577;
+  --warning: #c9892b;
+  --game-bg: #111111;
+  --game-surface: #1b1b1b;
+  --game-border: #343434;
+  --game-text: #eeeeee;
+  --game-text-dim: #a7a7a7;
+  --game-accent: #d8d8d8;
 
   --background: oklch(1 0 0);
   --foreground: oklch(0.148 0.004 228.8);
@@ -103,66 +103,16 @@ body {
 
 .game-stage {
   position: relative;
-  background:
-    linear-gradient(135deg, rgba(36, 214, 176, 0.13), transparent 28%),
-    linear-gradient(315deg, rgba(234, 179, 8, 0.12), transparent 30%),
-    linear-gradient(180deg, #11130f 0%, #171711 48%, #0f100d 100%);
-}
-
-.game-stage::before {
-  position: absolute;
-  inset: 0;
-  content: "";
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 86%);
-}
-
-.game-stage::after {
-  position: absolute;
-  inset: 0;
-  content: "";
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.045),
-    transparent 13%,
-    rgba(0, 0, 0, 0.24)
-  );
-}
-
-.game-stage__grid {
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      transparent 0,
-      transparent 11px,
-      rgba(255, 255, 255, 0.018) 12px
-    ),
-    linear-gradient(90deg, rgba(127, 29, 29, 0.14), transparent 42%);
+  background: var(--game-bg);
 }
 
 .game-panel {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.09), transparent),
-    rgba(16, 17, 15, 0.72);
-  box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(16px);
+  border: 1px solid var(--game-border);
+  background: var(--game-surface);
 }
 
 .game-brand {
-  color: #f8f1df;
-  text-shadow:
-    0 2px 0 #5b2f17,
-    0 8px 24px rgba(0, 0, 0, 0.5),
-    0 0 22px rgba(36, 214, 176, 0.22);
+  color: var(--game-text);
 }
 
 @layer base {

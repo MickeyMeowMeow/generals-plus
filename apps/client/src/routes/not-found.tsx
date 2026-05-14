@@ -22,7 +22,7 @@ export default function NotFoundPage() {
         <div className="mx-auto grid max-w-xl gap-6">
           <BrandTitle compact />
           <StagePanel className="text-center">
-            <h2 className="text-3xl font-black uppercase">Page not found</h2>
+            <h2 className="text-2xl font-semibold">Page not found</h2>
             <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-game-text-dim">
               This route is outside the current command map.
             </p>

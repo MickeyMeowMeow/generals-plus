@@ -38,12 +38,12 @@ export function ColorPicker({
             aria-label={`Pick color ${colorHex}`}
             aria-pressed={c === currentColor}
             onClick={() => onSelect(c)}
-            className={`size-10 rounded-full border-2 shadow-lg transition ${
+            className={`size-9 rounded-full border transition ${
               c === currentColor
-                ? "scale-110 border-white ring-2 ring-amber-200/70"
+                ? "border-white ring-2 ring-white/50"
                 : taken
                   ? "cursor-not-allowed border-transparent opacity-25 grayscale"
-                  : "cursor-pointer border-white/10 hover:scale-105 hover:border-white/70"
+                  : "cursor-pointer border-white/20 hover:border-white/70"
             }`}
             style={{
               backgroundColor: colorHex,
