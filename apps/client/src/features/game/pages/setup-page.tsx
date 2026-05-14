@@ -59,7 +59,11 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
   }
 
   if (isConnecting || !setupState) {
-    return <LoadingPanel message="Joining custom room" />;
+    return (
+      <StageCenter>
+        <LoadingPanel message="Joining custom room" />
+      </StageCenter>
+    );
   }
 
   const myPlayer = setupState.players.find((player) => player.id === userId);

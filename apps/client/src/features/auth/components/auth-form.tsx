@@ -36,7 +36,7 @@ export function AuthForm({
   return (
     <form
       onSubmit={onSignIn}
-      className="game-panel space-y-4 rounded-lg p-5 text-game-text"
+      className="game-panel space-y-4 rounded-none p-5 text-game-text"
     >
       <div className="space-y-1">
         <h2 className="text-2xl font-semibold">Sign in</h2>

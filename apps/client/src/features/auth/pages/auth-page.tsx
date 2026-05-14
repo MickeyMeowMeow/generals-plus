@@ -30,7 +30,11 @@ export function AuthPage() {
     state.status === AuthStatus.HYDRATING ||
     state.status === AuthStatus.AUTHENTICATING
   ) {
-    return <LoadingPanel message="Checking session" />;
+    return (
+      <StageCenter>
+        <LoadingPanel message="Checking session" />
+      </StageCenter>
+    );
   }
 
   return (

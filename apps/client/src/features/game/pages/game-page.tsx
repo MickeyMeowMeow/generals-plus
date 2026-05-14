@@ -2,7 +2,7 @@ import type { ISeatReservation } from "@colyseus/sdk/Client";
 import type { ICoordinate } from "@generals-plus/engine";
 import { useCallback, useState } from "react";
 
-import { ErrorPanel, LoadingPanel } from "#/components/layout";
+import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useGameRoom } from "#/features/game/api/use-game-room";
@@ -77,10 +77,19 @@ export function GamePage({ reservation, source }: GamePageProps) {
   if (error) return <ErrorPanel message={error} />;
 
   if (isConnecting || !gameState) {
-    return <LoadingPanel message="Connecting to match" />;
+    return (
+      <StageCenter>
+        <LoadingPanel message="Connecting to match" />
+      </StageCenter>
+    );
   }
 
-  if (!renderGrid) return <LoadingPanel message="Loading battlefield" />;
+  if (!renderGrid)
+    return (
+      <StageCenter>
+        <LoadingPanel message="Loading battlefield" />
+      </StageCenter>
+    );
 
   const visiblePlayers = Array.from(gameState.players.values());
   const currentPlayer = visiblePlayers.find(

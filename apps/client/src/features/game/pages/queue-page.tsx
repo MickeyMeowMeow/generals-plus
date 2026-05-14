@@ -46,7 +46,11 @@ export function QueuePage({
   if (error) return <ErrorPanel message={error} />;
 
   if (isConnecting || !queueState) {
-    return <LoadingPanel message="Joining official queue" />;
+    return (
+      <StageCenter>
+        <LoadingPanel message="Joining official queue" />
+      </StageCenter>
+    );
   }
 
   const myPlayer = queueState.players.find((p) => p.id === userId);
