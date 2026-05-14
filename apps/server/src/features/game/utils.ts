@@ -20,7 +20,10 @@ export interface CreateGameOptions {
  * @throws Error if the GameMode has no implementation yet.
  */
 export function createGame(options: CreateGameOptions): IBaseGame {
-  const grid = new DefaultGridGenerator().generate(options.gridOptions);
+  const grid = new DefaultGridGenerator().generate({
+    ...options.gridOptions,
+    generalCount: options.gridOptions?.generalCount ?? options.playerIds.length,
+  });
 
   switch (options.mode) {
     case GameMode.CLASSIC: {
