@@ -1,5 +1,3 @@
-import type { GameMode } from "@generals-plus/engine";
-
 import type { MessagePayload } from "#/messages";
 import type { SeatReservation } from "#/seat";
 import type { SetupSettings } from "#/setup-settings";
