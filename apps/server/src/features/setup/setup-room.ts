@@ -18,11 +18,9 @@ import {
 
 import { createGame } from "#/features/game/utils";
 import { createPlayerInit } from "#/features/player/utils";
+import { setupSettingsUpdateSchema } from "./schemas";
 
 const DEFAULT_MAX_PLAYERS = 8;
-
-const MIN_MAP_DIM = 5;
-const MAX_MAP_DIM = 100;
 
 interface SetupRoomOptions {
   gameMode?: GameMode;
@@ -119,80 +117,43 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         return;
       }
 
-      // TODO: Validate using Zod
-      if (message.gameMode) {
-        this.state.gameMode = message.gameMode;
+      const result = setupSettingsUpdateSchema.safeParse(message);
+      if (!result.success) {
+        client.send(
+          "error",
+          `invalid settings update: ${result.error.message}`,
+        );
+        return;
       }
-      if (message.maxPlayers) {
-        this.state.maxPlayers = message.maxPlayers;
-        this.maxClients = message.maxPlayers;
+
+      const update = result.data;
+
+      // playersPerTeam must be < maxPlayers
+      if (update.playersPerTeam !== undefined) {
+        const activeMaxPlayers = update.maxPlayers ?? this.state.maxPlayers;
+        if (update.playersPerTeam > activeMaxPlayers - 1) {
+          client.send("error", "playersPerTeam must be less than maxPlayers");
+          return;
+        }
       }
-      if (message.isPublic !== undefined) {
-        this.state.isPublic = message.isPublic;
-        await this.setPrivate(!message.isPublic);
+
+      // city + mountain rates must be <= 1.0
+      if (update.cityRate !== undefined || update.mountainRate !== undefined) {
+        const activeCityRate = update.cityRate ?? this.state.cityRate;
+        const activeMountainRate =
+          update.mountainRate ?? this.state.mountainRate;
+        if (activeCityRate + activeMountainRate > 1) {
+          client.send("error", "cityRate + mountainRate cannot exceed 1.0");
+          return;
+        }
       }
-      if (
-        typeof message.playersPerTeam === "number" &&
-        Number.isInteger(message.playersPerTeam) &&
-        message.playersPerTeam >= 1 &&
-        message.playersPerTeam <= this.state.maxPlayers - 1
-      ) {
-        this.state.playersPerTeam = message.playersPerTeam;
-      }
-      if (
-        typeof message.mapWidth === "number" &&
-        Number.isInteger(message.mapWidth) &&
-        message.mapWidth >= MIN_MAP_DIM &&
-        message.mapWidth <= MAX_MAP_DIM
-      ) {
-        this.state.mapWidth = message.mapWidth;
-      }
-      if (
-        typeof message.mapHeight === "number" &&
-        Number.isInteger(message.mapHeight) &&
-        message.mapHeight >= MIN_MAP_DIM &&
-        message.mapHeight <= MAX_MAP_DIM
-      ) {
-        this.state.mapHeight = message.mapHeight;
-      }
-      if (typeof message.seed === "number" && Number.isInteger(message.seed)) {
-        this.state.seed = message.seed;
-      }
-      if (
-        typeof message.mountainRate === "number" &&
-        message.mountainRate >= 0 &&
-        message.mountainRate <= 1
-      ) {
-        this.state.mountainRate = message.mountainRate;
-      }
-      if (
-        typeof message.cityRate === "number" &&
-        message.cityRate >= 0 &&
-        message.cityRate <= 1 &&
-        message.cityRate + this.state.mountainRate <= 1
-      ) {
-        this.state.cityRate = message.cityRate;
-      }
-      if (
-        typeof message.minGeneralDistanceFactor === "number" &&
-        message.minGeneralDistanceFactor >= 0 &&
-        message.minGeneralDistanceFactor <= 1
-      ) {
-        this.state.minGeneralDistanceFactor = message.minGeneralDistanceFactor;
-      }
-      if (
-        typeof message.generalInitialTroops === "number" &&
-        Number.isInteger(message.generalInitialTroops) &&
-        message.generalInitialTroops >= 1
-      ) {
-        this.state.generalInitialTroops = message.generalInitialTroops;
-      }
-      if (
-        typeof message.cityInitialTroops === "number" &&
-        Number.isInteger(message.cityInitialTroops) &&
-        message.cityInitialTroops >= 0
-      ) {
-        this.state.cityInitialTroops = message.cityInitialTroops;
+
+      // Apply valid updates to state
+      Object.assign(this.state, update);
+
+      // Synchronize room-level properties and visibility
+      if (update.maxPlayers !== undefined) {
+        this.maxClients = update.maxPlayers;
       }
 
       await this.setMetadata({
