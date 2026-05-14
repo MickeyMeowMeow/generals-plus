@@ -13,7 +13,7 @@ import { cn } from "#/lib/utils";
 export function Stage({ children }: { children: ReactNode }) {
   return (
     <main className="game-stage min-h-svh overflow-hidden text-game-text">
-      <div className="relative flex min-h-svh flex-col px-4 py-5 sm:px-6 lg:px-8">
+      <div className="relative flex min-h-svh flex-col px-2 sm:px-6 lg:px-8">
         {children}
       </div>
     </main>
@@ -46,8 +46,11 @@ export function BrandTitle({ compact = false }: { compact?: boolean }) {
  */
 export function StageCenter({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-1 items-center justify-center py-4">
-      <div className="w-full max-w-2xl">{children}</div>
+    <div className="stage-center">
+      <div className="stage-center-backdrop" aria-hidden="true" />
+      <div className="stage-center-content">
+        <div className="px-8 sm:px-12 lg:px-14">{children}</div>
+      </div>
     </div>
   );
 }

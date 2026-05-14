@@ -62,7 +62,7 @@ export function QueuePage({
 
         <div className="grid gap-8 border-t border-game-border pt-8 md:grid-cols-[1fr_20rem]">
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">Color</h2>
+            <h2 className="text-xl font-semibold">Pick Your Color</h2>
             {myPlayer ? (
               <ColorPicker
                 takenColors={takenColors}

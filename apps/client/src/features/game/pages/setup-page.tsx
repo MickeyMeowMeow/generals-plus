@@ -88,7 +88,7 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
             />
 
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold">Color</h2>
+              <h2 className="text-xl font-semibold">Pick Your Color</h2>
               {myPlayer ? (
                 <ColorPicker
                   takenColors={takenColors}

@@ -204,7 +204,9 @@ describe("client room flows", () => {
 
     await user.click(screen.getByRole("button", { name: /Classic/ }));
 
-    expect(await screen.findByRole("heading", { name: "Color" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Pick Your Color" }),
+    ).toBeTruthy();
     expect(screen.getByText("Mode: Classic")).toBeTruthy();
     expect(screen.getByText("Nova").closest("li")).toHaveClass("font-semibold");
     expect(networkMocks.joinOrCreate).toHaveBeenCalledWith(ROOM_NAMES.QUEUE, {
@@ -245,7 +247,9 @@ describe("client room flows", () => {
       </AuthContext.Provider>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Color" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Pick Your Color" }),
+    ).toBeTruthy();
     expect(networkMocks.joinOrCreate).toHaveBeenCalledTimes(1);
     expect(networkMocks.joinOrCreate).toHaveBeenCalledWith(ROOM_NAMES.QUEUE, {
       gameMode: GameMode.CLASSIC,
@@ -281,7 +285,7 @@ describe("client room flows", () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Start" }));
     await user.click(await screen.findByRole("button", { name: /Classic/ }));
-    await screen.findByRole("heading", { name: "Color" });
+    await screen.findByRole("heading", { name: "Pick Your Color" });
 
     queueRoom.emitMessage("seat", reservation);
 
