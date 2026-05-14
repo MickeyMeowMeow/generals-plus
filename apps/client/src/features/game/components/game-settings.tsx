@@ -1,10 +1,10 @@
 import { GameMode } from "@generals-plus/engine";
 import type { SetupSettings } from "@generals-plus/shared-types";
+import { Check, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
-import { Label } from "#/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -13,10 +13,14 @@ import {
   SelectValue,
 } from "#/components/ui/select";
 import { Switch } from "#/components/ui/switch";
+import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 
 interface GameSettingsProps {
+  /** Whether the current player can edit setup-room settings. */
   isHost: boolean;
+  /** Authoritative setup settings mirrored from the Colyseus room state. */
   currentSettings: SetupSettings;
+  /** Sends a validated settings patch to the setup room. */
   onChangeSettings: (settings: Partial<SetupSettings>) => void;
 }
 
@@ -45,13 +49,12 @@ const NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "cityInitialTroops", label: "City Troops" },
 ];
 
-/** Formats enum strings like "TURF_WAR" into "Turf War". */
-const formatMode = (mode: string): string =>
-  mode.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-
 /**
- * Displays and manages game configuration.
- * Host edits are buffered in a local draft state and explicitly submitted to prevent network sync conflicts.
+ * Host-editable setup settings panel.
+ *
+ * The host edits a local draft and submits one patch, while guests continue to
+ * see the live room state. This avoids fighting Colyseus state updates while a
+ * numeric field is mid-edit.
  */
 export function GameSettings({
   isHost,
@@ -105,58 +108,68 @@ export function GameSettings({
 
   // Guests see the live server state. The host sees their active draft.
   const displayed = isHost ? draft : currentSettings;
+  const labelClassName = "text-sm text-game-text-dim";
+  const fieldClassName = "grid gap-1.5";
+  const inputClassName =
+    "border-game-border bg-game-bg text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
   return (
-    <div className="mb-6 w-full max-w-2xl rounded-xl border border-gray-800 bg-gray-900/50 p-6 shadow-lg">
-      <div className="mb-6 flex items-center justify-between border-b border-gray-800 pb-3">
-        <h2 className="text-xl font-semibold text-gray-200">Game Settings</h2>
-        {!isHost && (
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Read Only
+    <section aria-labelledby="game-settings-title" className="space-y-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="game-settings-title" className="text-xl font-semibold">
+          Game settings
+        </h2>
+        {!isHost ? (
+          <span className="text-xs uppercase tracking-wide text-game-text-dim">
+            read only
           </span>
-        )}
+        ) : null}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-5 text-left">
-        {/* Enum Field: Game Mode */}
-        <div className="space-y-2">
-          <Label className="text-xs font-medium text-gray-400">Game Mode</Label>
+      <div className="grid gap-3 text-left sm:grid-cols-2 lg:grid-cols-3">
+        <div className={fieldClassName}>
+          <span id="game-mode-label" className={labelClassName}>
+            Game mode
+          </span>
           <Select
             disabled={!isHost}
             value={displayed.gameMode ?? GameMode.CLASSIC}
             onValueChange={(val) => handleModeChange(val as GameMode)}
           >
-            <SelectTrigger className="w-full bg-gray-800 border-gray-700 text-white">
-              <SelectValue placeholder="Select mode" />
+            <SelectTrigger
+              aria-labelledby="game-mode-label"
+              size="sm"
+              className="h-7 w-full border-game-border bg-game-bg px-3 text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60"
+            >
+              <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700 text-white">
-              {Object.values(GameMode).map((mode) => (
+            <SelectContent className="border border-game-border bg-game-surface text-game-text">
+              {GAME_MODE_OPTIONS.map((mode) => (
                 <SelectItem
-                  key={mode}
-                  value={mode}
-                  className="focus:bg-gray-700 focus:text-white"
+                  key={mode.id}
+                  value={mode.id}
+                  disabled={!mode.isEnabled}
                 >
-                  {formatMode(mode)}
+                  {mode.label}
+                  {mode.isEnabled ? "" : " (coming soon)"}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Boolean Field: Visibility */}
-        <div className="space-y-2">
-          <Label className="text-xs font-medium text-gray-400">
-            Visibility
-          </Label>
-          <div className="flex h-10 w-full items-center justify-between rounded-md border border-gray-700 bg-gray-800 px-3">
-            <Label
+        <div className={fieldClassName}>
+          <span className={labelClassName}>Visibility</span>
+          <div className="flex h-7 items-center justify-between border border-game-border bg-game-bg px-3 text-sm text-game-text">
+            <label
               htmlFor="isPublic"
-              className={`text-sm text-white ${isHost ? "cursor-pointer" : "cursor-not-allowed opacity-70"}`}
+              className={isHost ? "cursor-pointer" : "cursor-not-allowed"}
             >
               {displayed.isPublic ? "Public" : "Private"}
-            </Label>
+            </label>
             <Switch
               id="isPublic"
+              size="sm"
               disabled={!isHost}
               checked={displayed.isPublic ?? false}
               onCheckedChange={handlePublicToggle}
@@ -164,44 +177,46 @@ export function GameSettings({
           </div>
         </div>
 
-        {/* Numeric Fields */}
         {NUMBER_FIELDS.map(({ key, label }) => (
-          <div key={key} className="space-y-2">
-            <Label htmlFor={key} className="text-xs font-medium text-gray-400">
+          <div key={key} className={fieldClassName}>
+            <label htmlFor={key} className={labelClassName}>
               {label}
-            </Label>
+            </label>
             <Input
               id={key}
               type="number"
               disabled={!isHost}
               value={displayed[key] ?? ""}
               onChange={(e) => handleNumberChange(key, e.target.value)}
-              className="w-full bg-gray-800 border-gray-700 text-white disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className={inputClassName}
             />
           </div>
         ))}
       </div>
 
-      {/* Host Action Buttons */}
       {isHost && (
-        <div className="mt-8 flex justify-end gap-3 border-t border-gray-800 pt-4">
+        <div className="flex justify-end gap-2 border-t border-game-border pt-4">
           <Button
+            type="button"
             variant="outline"
+            size="sm"
             onClick={handleDiscard}
             disabled={!isDirty}
-            className="border-gray-700 bg-transparent text-gray-300 hover:bg-gray-800 hover:text-white"
           >
+            <RotateCcw className="size-3.5" />
             Discard
           </Button>
           <Button
+            type="button"
+            size="sm"
             onClick={handleSave}
             disabled={!isDirty}
-            className="bg-blue-600 text-white hover:bg-blue-500"
           >
+            <Check className="size-3.5" />
             Apply Changes
           </Button>
         </div>
       )}
-    </div>
+    </section>
   );
 }

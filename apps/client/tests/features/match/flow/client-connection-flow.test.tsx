@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { GameMode } from "@generals-plus/engine";
+import type { SetupSettings } from "@generals-plus/shared-types";
 import {
   MatchServerMessage,
   PLAYER_COLOR_PALETTE,
@@ -62,10 +63,24 @@ function createSetupState(
     isHost: boolean;
   }>,
 ) {
-  return createState({
+  const settings: SetupSettings = {
     gameMode: GameMode.CLASSIC,
-    players,
+    isPublic: false,
     maxPlayers: 8,
+    playersPerTeam: 2,
+    mapWidth: 24,
+    mapHeight: 16,
+    seed: 0,
+    mountainRate: 0.12,
+    cityRate: 0.06,
+    minGeneralDistanceFactor: 0.6,
+    generalInitialTroops: 50,
+    cityInitialTroops: 50,
+  };
+
+  return createState({
+    ...settings,
+    players,
   });
 }
 
@@ -345,6 +360,15 @@ describe("client room flows", () => {
     expect(
       screen.getByRole("button", { name: "Force start game" }),
     ).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Max Players"), {
+      target: { value: "6" },
+    });
+    await user.click(screen.getByRole("button", { name: "Apply Changes" }));
+    expect(setupRoom.send).toHaveBeenCalledWith(
+      SetupClientMessage.UPDATE_SETTINGS,
+      expect.objectContaining({ maxPlayers: 6 }),
+    );
 
     await user.click(
       screen.getByRole("button", {

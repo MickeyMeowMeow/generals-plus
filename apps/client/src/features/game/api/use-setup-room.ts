@@ -3,6 +3,7 @@ import type {
   SeatReservation,
   SetupClientMessagePayload,
   SetupServerMessagePayload,
+  SetupSettings,
   SetupState,
 } from "@generals-plus/shared-types";
 import {
@@ -245,7 +246,7 @@ export function useSetupRoom({
     room?.send(SetupClientMessage.START_GAME);
   };
 
-  const updateSettings = (settings: { gameMode?: GameMode }) => {
+  const updateSettings = (settings: Partial<SetupSettings>) => {
     room?.send(SetupClientMessage.UPDATE_SETTINGS, settings);
   };
 

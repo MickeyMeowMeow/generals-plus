@@ -1,4 +1,3 @@
-import type { GameMode } from "@generals-plus/engine";
 import { SetupClientMessage } from "@generals-plus/shared-types";
 import { LogOut, Play } from "lucide-react";
 import { useNavigate } from "react-router";
@@ -7,10 +6,8 @@ import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { useUser } from "#/features/auth/hooks";
 import { useSetupRoom } from "#/features/game/api/use-setup-room";
-import {
-  ModeSelect,
-  RoomPlayerList,
-} from "#/features/game/components/room-controls";
+import { GameSettings } from "#/features/game/components/game-settings";
+import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
 import { ColorPicker } from "../components/color-picker";
 
@@ -80,47 +77,50 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
               {isHost ? "You are host" : "You are guest"}
             </p>
           </div>
-          <ModeSelect
-            value={setupState.gameMode as GameMode}
-            disabled={!isHost}
-            onChange={(gameMode) => updateSettings({ gameMode })}
-          />
         </div>
 
         <div className="grid gap-8 border-t border-game-border pt-8 md:grid-cols-[1fr_20rem]">
-          <section className="space-y-4">
-            <h2 className="text-xl font-semibold">Color</h2>
-            {myPlayer ? (
-              <ColorPicker
-                takenColors={takenColors}
-                currentColor={myPlayer.color}
-                onSelect={(color) =>
-                  room?.send(SetupClientMessage.PICK_COLOR, { color })
-                }
-              />
-            ) : (
-              <p className="text-sm text-game-text-dim">
-                Waiting for player assignment.
-              </p>
-            )}
+          <div className="space-y-8">
+            <GameSettings
+              isHost={isHost}
+              currentSettings={setupState}
+              onChangeSettings={updateSettings}
+            />
 
-            <div className="flex flex-wrap gap-3 pt-2">
-              {canStart ? (
-                <Button type="button" onClick={startGame}>
-                  <Play className="size-4" />
-                  Force start game
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold">Color</h2>
+              {myPlayer ? (
+                <ColorPicker
+                  takenColors={takenColors}
+                  currentColor={myPlayer.color}
+                  onSelect={(color) =>
+                    room?.send(SetupClientMessage.PICK_COLOR, { color })
+                  }
+                />
+              ) : (
+                <p className="text-sm text-game-text-dim">
+                  Waiting for player assignment.
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-3 pt-2">
+                {canStart ? (
+                  <Button type="button" onClick={startGame}>
+                    <Play className="size-4" />
+                    Force start game
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => navigate("/")}
+                >
+                  <LogOut className="size-4" />
+                  Leave room
                 </Button>
-              ) : null}
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => navigate("/")}
-              >
-                <LogOut className="size-4" />
-                Leave room
-              </Button>
-            </div>
-          </section>
+              </div>
+            </section>
+          </div>
 
           <RoomPlayerList
             players={setupState.players}
