@@ -1,12 +1,13 @@
+import type { GameMode } from "@generals-plus/engine";
 import { QueueClientMessage } from "@generals-plus/shared-types";
-import { Shield, Sparkles, Swords } from "lucide-react";
+import { LogOut, Play, Plus, X } from "lucide-react";
 import type { SubmitEvent } from "react";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { ColorPicker } from "#/components/game/color-picker";
 import { Button } from "#/components/ui/button";
-import { OFFICIAL_GAME_MODES } from "#/config/ui-constants";
+import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { AuthForm } from "#/features/auth/components/auth-form";
 import { useAuth, useUser } from "#/features/auth/hooks";
@@ -18,8 +19,8 @@ import {
   GameStage,
   LoadingPanel,
   StageCenter,
-  StagePanel,
 } from "#/features/game/components/game-stage";
+import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
@@ -33,6 +34,10 @@ import { useMatchConnectionStore } from "#/features/match/store/match-connection
  */
 type OfficialPhase = "lobby" | "queue";
 
+function getModeOption(mode: GameMode) {
+  return GAME_MODE_OPTIONS.find((option) => option.id === mode);
+}
+
 /**
  * Root-route unauthenticated scene.
  *
@@ -43,8 +48,6 @@ type OfficialPhase = "lobby" | "queue";
 function AuthScreen() {
   const [displayNameInput, setDisplayNameInput] = useState("Commander");
   const { state, actions } = useAuth();
-  const currentDisplayName = useUser((user) => user?.displayName ?? null);
-  const resetMatchConnection = useMatchConnectionStore((s) => s.reset);
 
   const handleSignIn = useCallback(
     async (event: SubmitEvent<HTMLFormElement>) => {
@@ -53,11 +56,6 @@ function AuthScreen() {
     },
     [actions.signInAnonymously, displayNameInput],
   );
-
-  const handleSignOut = async () => {
-    await resetMatchConnection();
-    await actions.signOut();
-  };
 
   if (
     !state.isHydrated ||
@@ -76,13 +74,8 @@ function AuthScreen() {
             displayName={displayNameInput}
             onDisplayNameChange={setDisplayNameInput}
             isBusy={false}
-            isAuthenticated={state.status === AuthStatus.AUTHENTICATED}
             lastError={state.error}
-            authStatus={state.status}
-            currentDisplayName={currentDisplayName}
             onSignIn={handleSignIn}
-            onSignOut={handleSignOut}
-            onEnterLobby={() => {}}
           />
         </div>
       </div>
@@ -90,20 +83,78 @@ function AuthScreen() {
   );
 }
 
+function ModePickerDialog({
+  onClose,
+  onSelectMode,
+}: {
+  onClose: () => void;
+  onSelectMode: (mode: GameMode) => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 px-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mode-picker-title"
+        className="game-panel max-h-[min(42rem,calc(100svh-2rem))] w-full max-w-3xl overflow-auto rounded-lg p-5"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="mode-picker-title" className="text-xl font-semibold">
+            Choose mode
+          </h2>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close mode picker"
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {GAME_MODE_OPTIONS.map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              disabled={!mode.isEnabled}
+              onClick={() => onSelectMode(mode.id)}
+              className="rounded-lg border border-game-border bg-game-bg p-4 text-left transition hover:border-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <span className="block text-base font-semibold">
+                {mode.label}
+              </span>
+              <span className="mt-2 block text-sm leading-5 text-game-text-dim">
+                {mode.description}
+              </span>
+              {!mode.isEnabled ? (
+                <span className="mt-3 block text-xs text-game-text-dim">
+                  Coming soon
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Authenticated official lobby scene.
  *
- * This screen exposes only the supported Classic official mode and a create-only
- * custom-room entry. Joining custom rooms is intentionally URL-based, so the
- * lobby creates a private setup room and then navigates to `/match/:roomId`.
+ * The lobby keeps the root route stable, offers a mode picker before official
+ * queueing, and creates private custom setup rooms by URL.
  */
-function LobbyScreen({ onQueue }: { onQueue: () => void }) {
+function LobbyScreen({ onQueue }: { onQueue: (mode: GameMode) => void }) {
   const navigate = useNavigate();
   const { actions } = useAuth();
   const displayName = useUser((user) => user?.displayName ?? "Commander");
   const resetMatchConnection = useMatchConnectionStore((s) => s.reset);
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
+  const [isModePickerOpen, setIsModePickerOpen] = useState(false);
 
   const createCustomRoom = async () => {
     setIsCreatingCustom(true);
@@ -125,86 +176,64 @@ function LobbyScreen({ onQueue }: { onQueue: () => void }) {
     await actions.signOut();
   };
 
-  const classic = OFFICIAL_GAME_MODES[0];
-
   return (
-    <StageCenter>
-      <div className="mx-auto grid max-w-5xl gap-7">
-        <BrandTitle />
-        <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
-          <StagePanel className="min-h-80">
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold uppercase text-teal-200/80">
-                    Official queue
-                  </p>
-                  <h2 className="mt-1 text-3xl font-black uppercase">
-                    Choose operation
-                  </h2>
-                </div>
-                <Shield className="size-9 text-amber-300" />
-              </div>
+    <>
+      {isModePickerOpen ? (
+        <ModePickerDialog
+          onClose={() => setIsModePickerOpen(false)}
+          onSelectMode={(mode) => {
+            setIsModePickerOpen(false);
+            onQueue(mode);
+          }}
+        />
+      ) : null}
 
-              <button
-                type="button"
-                onClick={onQueue}
-                className="group relative overflow-hidden rounded-lg border border-white/15 bg-black/30 p-5 text-left transition hover:-translate-y-0.5 hover:border-teal-200/60 hover:bg-teal-200/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-200"
-              >
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-200/80 to-transparent" />
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-semibold uppercase text-amber-200">
-                      Play {classic.label}
-                    </p>
-                    <h3 className="mt-2 text-2xl font-black">
-                      {classic.tagline}
-                    </h3>
-                    <p className="mt-3 max-w-xl text-sm leading-6 text-game-text-dim">
-                      {classic.description}
-                    </p>
-                  </div>
-                  <Swords className="size-8 text-teal-200 transition group-hover:scale-110" />
-                </div>
-              </button>
-            </div>
-          </StagePanel>
+      <StageCenter>
+        <div className="mx-auto grid max-w-5xl gap-8">
+          <BrandTitle />
 
-          <StagePanel className="flex flex-col justify-between gap-5">
-            <div>
-              <p className="text-sm font-semibold uppercase text-teal-200/80">
-                Commander
-              </p>
-              <h2 className="mt-1 text-2xl font-black">{displayName}</h2>
-              <p className="mt-3 text-sm leading-6 text-game-text-dim">
-                Custom rooms are shared by URL after creation.
-              </p>
-            </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-lg font-medium">Hello, {displayName}</p>
+            <Button type="button" variant="ghost" onClick={signOut}>
+              <LogOut className="size-4" />
+              Sign out
+            </Button>
+          </div>
 
-            {customError ? (
-              <p className="rounded-md border border-red-300/30 bg-red-500/10 p-3 text-sm text-red-100">
-                {customError}
-              </p>
-            ) : null}
+          <section className="grid min-h-56 place-items-center border-t border-game-border pt-8">
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => setIsModePickerOpen(true)}
+              className="min-w-36"
+            >
+              <Play className="size-4" />
+              Start
+            </Button>
+          </section>
 
-            <div className="grid gap-2">
+          <section className="grid min-h-44 place-items-center border-t border-game-border pt-8">
+            <div className="grid justify-items-center gap-3">
               <Button
                 type="button"
                 onClick={createCustomRoom}
                 disabled={isCreatingCustom}
-                className="justify-center"
+                className="min-w-48 justify-center"
               >
-                <Sparkles className="size-4" />
+                <Plus className="size-4" />
                 {isCreatingCustom ? "Creating..." : "Create custom room"}
               </Button>
-              <Button type="button" variant="ghost" onClick={signOut}>
-                Sign out
-              </Button>
+
+              {customError ? (
+                <p className="rounded-md border border-destructive/40 p-3 text-sm text-destructive">
+                  {customError}
+                </p>
+              ) : null}
             </div>
-          </StagePanel>
+          </section>
         </div>
-      </div>
-    </StageCenter>
+      </StageCenter>
+    </>
   );
 }
 
@@ -215,13 +244,26 @@ function LobbyScreen({ onQueue }: { onQueue: () => void }) {
  * queue protocol messages, and receipt of a seat reservation swaps the scene
  * directly into `GamePage` without changing the URL.
  */
-function QueueScreen({ onLeave }: { onLeave: () => void }) {
+function QueueScreen({
+  gameMode,
+  onLeave,
+}: {
+  gameMode: GameMode;
+  onLeave: () => void;
+}) {
   const { room, queueState, seatReservation, error, isConnecting } =
-    useQueueRoom();
+    useQueueRoom({ gameMode });
   const userId = useUser((user) => user?.id);
+  const displayName = useUser((user) => user?.displayName ?? "Commander");
+  const modeLabel = getModeOption(gameMode)?.label ?? gameMode;
 
   if (seatReservation) {
-    return <GamePage reservation={seatReservation} />;
+    return (
+      <GamePage
+        reservation={seatReservation}
+        source={{ type: "official", onReturn: onLeave }}
+      />
+    );
   }
 
   if (error) return <ErrorPanel message={error} />;
@@ -235,67 +277,45 @@ function QueueScreen({ onLeave }: { onLeave: () => void }) {
 
   return (
     <StageCenter>
-      <div className="mx-auto grid max-w-4xl gap-5">
-        <BrandTitle compact />
-        <StagePanel>
-          <div className="grid gap-6 md:grid-cols-[1fr_18rem]">
-            <div>
-              <p className="text-sm font-semibold uppercase text-teal-200/80">
-                Official queue
-              </p>
-              <h2 className="mt-1 text-3xl font-black uppercase">
-                Pick your color
-              </h2>
-              <div className="mt-6">
-                {myPlayer ? (
-                  <ColorPicker
-                    takenColors={takenColors}
-                    currentColor={myPlayer.color}
-                    onSelect={(color) =>
-                      room?.send(QueueClientMessage.PICK_COLOR, { color })
-                    }
-                  />
-                ) : (
-                  <p className="text-sm text-game-text-dim">
-                    Waiting for player assignment.
-                  </p>
-                )}
-              </div>
-            </div>
+      <div className="mx-auto grid w-full max-w-5xl gap-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-lg font-medium">Hello, {displayName}</p>
+          <p className="text-sm text-game-text-dim">Mode: {modeLabel}</p>
+        </div>
 
-            <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-              <p className="text-sm font-semibold uppercase text-amber-200">
-                Players {queueState.players.length}
+        <div className="grid gap-8 border-t border-game-border pt-8 md:grid-cols-[1fr_20rem]">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">Color</h2>
+            {myPlayer ? (
+              <ColorPicker
+                takenColors={takenColors}
+                currentColor={myPlayer.color}
+                onSelect={(color) =>
+                  room?.send(QueueClientMessage.PICK_COLOR, { color })
+                }
+              />
+            ) : (
+              <p className="text-sm text-game-text-dim">
+                Waiting for player assignment.
               </p>
-              <ul className="mt-3 space-y-2">
-                {queueState.players.map((player) => (
-                  <li
-                    key={player.id}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    <span
-                      className="size-3 rounded-full"
-                      style={{
-                        backgroundColor: `#${player.color
-                          .toString(16)
-                          .padStart(6, "0")}`,
-                      }}
-                    />
-                    {player.displayName}
-                  </li>
-                ))}
-              </ul>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onLeave}
-                className="mt-5 w-full"
-              >
-                Leave queue
-              </Button>
-            </div>
+            )}
+          </section>
+
+          <div className="space-y-5">
+            <RoomPlayerList
+              players={queueState.players}
+              currentUserId={userId}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onLeave}
+              className="w-full"
+            >
+              Leave queue
+            </Button>
           </div>
-        </StagePanel>
+        </div>
       </div>
     </StageCenter>
   );
@@ -311,15 +331,26 @@ function QueueScreen({ onLeave }: { onLeave: () => void }) {
 export default function Index() {
   const { state } = useAuth();
   const [phase, setPhase] = useState<OfficialPhase>("lobby");
+  const [selectedMode, setSelectedMode] = useState<GameMode>(
+    GAME_MODE_OPTIONS[0].id,
+  );
 
   return (
     <GameStage>
       {state.status !== AuthStatus.AUTHENTICATED ? (
         <AuthScreen />
       ) : phase === "queue" ? (
-        <QueueScreen onLeave={() => setPhase("lobby")} />
+        <QueueScreen
+          gameMode={selectedMode}
+          onLeave={() => setPhase("lobby")}
+        />
       ) : (
-        <LobbyScreen onQueue={() => setPhase("queue")} />
+        <LobbyScreen
+          onQueue={(mode) => {
+            setSelectedMode(mode);
+            setPhase("queue");
+          }}
+        />
       )}
     </GameStage>
   );
