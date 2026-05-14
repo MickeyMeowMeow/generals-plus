@@ -1,7 +1,7 @@
 import type { ICoordinate } from "@generals-plus/engine";
 import { Application } from "@pixi/react";
 import { Assets } from "pixi.js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { MapRenderer } from "#/features/game/renderer/map-renderer";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
@@ -10,6 +10,7 @@ import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 import { Viewport } from "#/features/game/renderer/viewport";
 import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
 import { KeyToDirection } from "#/features/game/utils/move";
+import { cn } from "#/lib/utils";
 
 interface GameAppProps {
   /** Grid snapshot to render. */
@@ -19,8 +20,15 @@ interface GameAppProps {
   readonly onSelectCell: (coord: ICoordinate) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
   readonly playerColors: Map<string, number>;
+  readonly className?: string;
 }
 
+/**
+ * Pixi match canvas sized by its parent container.
+ *
+ * The renderer keeps input logic in Pixi while React owns HUD and result UI
+ * around it, allowing the game page to use the full browser viewport.
+ */
 export function GameApp({
   grid,
   selection,
@@ -28,7 +36,9 @@ export function GameApp({
   onSelectCell,
   onQueueMove,
   playerColors,
+  className,
 }: GameAppProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
 
   const worldWidth =
@@ -60,32 +70,38 @@ export function GameApp({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onQueueMove]);
 
-  if (!isReady) {
-    return <div>Loading...</div>;
-  }
-
   return (
-    <Application
-      backgroundColor={RenderConfig.stageBackground}
-      antialias={true}
-      autoDensity={true}
-      resolution={window.devicePixelRatio}
-    >
-      <Viewport
-        worldWidth={worldWidth}
-        worldHeight={worldHeight}
-        minScale={RenderConfig.minScale}
-        maxScale={RenderConfig.maxScale}
-      >
-        <MapRenderer
-          grid={grid}
-          stride={RenderConfig.cellStride}
-          selection={selection}
-          moveQueue={moveQueue}
-          onCellClick={onSelectCell}
-          playerColors={playerColors}
-        />
-      </Viewport>
-    </Application>
+    <div ref={containerRef} className={cn("h-full w-full", className)}>
+      {!isReady ? (
+        <div className="grid h-full place-items-center text-sm text-game-text-dim">
+          Loading battlefield
+        </div>
+      ) : (
+        <Application
+          resizeTo={containerRef}
+          className="h-full w-full"
+          backgroundColor={RenderConfig.stageBackground}
+          antialias={true}
+          autoDensity={true}
+          resolution={window.devicePixelRatio}
+        >
+          <Viewport
+            worldWidth={worldWidth}
+            worldHeight={worldHeight}
+            minScale={RenderConfig.minScale}
+            maxScale={RenderConfig.maxScale}
+          >
+            <MapRenderer
+              grid={grid}
+              stride={RenderConfig.cellStride}
+              selection={selection}
+              moveQueue={moveQueue}
+              onCellClick={onSelectCell}
+              playerColors={playerColors}
+            />
+          </Viewport>
+        </Application>
+      )}
+    </div>
   );
 }

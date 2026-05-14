@@ -3,7 +3,7 @@
  */
 export const RenderConfig = {
   // Stage
-  stageBackground: 0x101318,
+  stageBackground: 0x111111,
   stagePadding: 24,
   minScale: 0.25,
   maxScale: 1,

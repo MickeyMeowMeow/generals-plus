@@ -1,5 +1,5 @@
 import type { ISeatReservation } from "@colyseus/sdk/Client";
-import type { ICoordinate } from "@generals-plus/engine";
+import type { ICoordinate, IGameResult } from "@generals-plus/engine";
 import { ActionType } from "@generals-plus/engine";
 import type {
   ActionData,
@@ -7,7 +7,10 @@ import type {
   MatchServerMessagePayload,
   MatchState,
 } from "@generals-plus/shared-types";
-import { MatchClientMessage } from "@generals-plus/shared-types";
+import {
+  MatchClientMessage,
+  MatchServerMessage,
+} from "@generals-plus/shared-types";
 import { useEffect, useState } from "react";
 
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
@@ -152,20 +155,25 @@ export function useGameRoom(reservation: ISeatReservation) {
   const [renderGrid, setRenderGrid] = useState<RenderGrid | null>(null);
   const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
   const [gameState, setGameState] = useState<MatchState | null>(null);
+  const [gameResult, setGameResult] = useState<IGameResult | null>(null);
   const [playerColors, setPlayerColors] = useState<Map<string, number>>(
     new Map(),
   );
   const [error, setError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
 
   useEffect(() => {
     if (!reservation) return;
 
     let isCurrent = true;
+    const unsubscribers: Array<() => void> = [];
 
     const connect = async () => {
       setIsConnecting(true);
       setError(null);
+      setGameResult(null);
+      setConnectionStatus("connecting");
       try {
         const currentRoom = await acquireGameRoom(reservation);
         if (!isCurrent) {
@@ -173,40 +181,53 @@ export function useGameRoom(reservation: ISeatReservation) {
         }
         setRoom(currentRoom);
         setIsConnecting(false);
+        setConnectionStatus("connected");
 
-        currentRoom.onStateChange((state) => {
-          setGameState(state);
+        unsubscribers.push(
+          currentRoom.onStateChange((state) => {
+            setGameState(state);
 
-          const colorMap = new Map<string, number>();
-          state.playerColors.forEach((color, playerId) => {
-            colorMap.set(playerId, color);
-          });
-          setPlayerColors(colorMap);
+            const colorMap = new Map<string, number>();
+            state.playerColors.forEach((color, playerId) => {
+              colorMap.set(playerId, color);
+            });
+            setPlayerColors(colorMap);
 
-          const myId = currentRoom.sessionId;
+            const myId = currentRoom.sessionId;
 
-          const myVision = state.clientVisions.get(myId);
-          if (myVision && state.width > 0) {
-            const newGrid = createRenderGrid(
-              myVision,
-              state.width,
-              state.height,
-            );
-            setRenderGrid(newGrid);
-          }
+            const myVision = state.clientVisions.get(myId);
+            if (myVision && state.width > 0) {
+              const newGrid = createRenderGrid(
+                myVision,
+                state.width,
+                state.height,
+              );
+              setRenderGrid(newGrid);
+            }
 
-          const myQueue = state.clientActionQueues.get(myId);
-          if (myQueue) {
-            const newQueue = myQueue.queue.map((action: ActionData) => ({
-              from: { x: action.fromX, y: action.fromY },
-              direction: getDirection(
-                { x: action.fromX, y: action.fromY },
-                { x: action.toX, y: action.toY },
-              ),
-            }));
-            setMoveQueue(newQueue);
-          }
-        });
+            const myQueue = state.clientActionQueues.get(myId);
+            if (myQueue) {
+              const newQueue = myQueue.queue.map((action: ActionData) => ({
+                from: { x: action.fromX, y: action.fromY },
+                direction: getDirection(
+                  { x: action.fromX, y: action.fromY },
+                  { x: action.toX, y: action.toY },
+                ),
+              }));
+              setMoveQueue(newQueue);
+            }
+          }),
+        );
+        unsubscribers.push(
+          currentRoom.onMessage(MatchServerMessage.GAME_END, (result) => {
+            setGameResult(result);
+          }),
+        );
+        unsubscribers.push(
+          currentRoom.onStatusChange((status) => {
+            setConnectionStatus(status);
+          }),
+        );
       } catch (error) {
         if (!isCurrent) return;
         setIsConnecting(false);
@@ -222,6 +243,9 @@ export function useGameRoom(reservation: ISeatReservation) {
 
     return () => {
       isCurrent = false;
+      for (const unsubscribe of unsubscribers) {
+        unsubscribe();
+      }
       releaseGameRoom(reservation);
     };
   }, [reservation]);
@@ -241,8 +265,10 @@ export function useGameRoom(reservation: ISeatReservation) {
     renderGrid,
     moveQueue,
     gameState,
+    gameResult,
     sendMove,
     playerColors,
+    connectionStatus,
     error,
     isConnecting,
   };
