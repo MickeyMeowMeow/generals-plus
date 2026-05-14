@@ -238,5 +238,22 @@ export function useSetupRoom({
     room?.send(SetupClientMessage.START_GAME);
   };
 
-  return { room, setupState, seatReservation, startGame, error, isConnecting };
+  const updateSettings = (settings: { gameMode?: GameMode }) => {
+    room?.send(SetupClientMessage.UPDATE_SETTINGS, settings);
+  };
+
+  const clearSeatReservation = () => {
+    setSeatReservation(null);
+  };
+
+  return {
+    room,
+    setupState,
+    seatReservation,
+    startGame,
+    updateSettings,
+    clearSeatReservation,
+    error,
+    isConnecting,
+  };
 }

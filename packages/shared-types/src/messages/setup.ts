@@ -1,8 +1,11 @@
+import type { GameMode } from "@generals-plus/engine";
+
 import type { MessagePayload } from "#/messages";
 import type { SeatReservation } from "#/seat";
 
 export const SetupClientMessage = {
   PICK_COLOR: "pickColor",
+  UPDATE_SETTINGS: "updateSettings",
   START_GAME: "start",
 } as const;
 
@@ -12,6 +15,9 @@ export type SetupClientMessage =
 export interface SetupClientMessagePayload extends MessagePayload {
   [SetupClientMessage.PICK_COLOR]: {
     color: number;
+  };
+  [SetupClientMessage.UPDATE_SETTINGS]: {
+    gameMode?: GameMode;
   };
   [SetupClientMessage.START_GAME]: never;
 }
