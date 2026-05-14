@@ -56,7 +56,7 @@ export function RoomPlayerList({
             <li
               key={player.id}
               className={cn(
-                "flex items-center justify-between gap-3 rounded-md border border-game-border px-3 py-2 text-sm",
+                "flex items-center justify-between gap-3 border border-game-border px-3 py-2 text-sm",
                 isCurrent && "font-semibold",
               )}
             >
@@ -99,7 +99,7 @@ export function ModeSelect({ value, onChange, disabled }: ModeSelectProps) {
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value as GameMode)}
-        className="h-9 rounded-lg border border-game-border bg-game-bg px-3 text-sm text-game-text outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:opacity-60"
+        className="h-7 border border-game-border bg-game-bg px-3 text-sm text-game-text outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:opacity-60"
       >
         {GAME_MODE_OPTIONS.map((mode) => (
           <option key={mode.id} value={mode.id} disabled={!mode.isEnabled}>

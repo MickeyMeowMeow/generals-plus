@@ -1,24 +1,15 @@
 import type { ISeatReservation } from "@colyseus/sdk/Client";
 import type { ICoordinate } from "@generals-plus/engine";
-import type {
-  MatchState,
-  ScoreboardPlayerEntry,
-} from "@generals-plus/shared-types";
 import { useCallback, useState } from "react";
 
+import { ErrorPanel, LoadingPanel } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useGameRoom } from "#/features/game/api/use-game-room";
-import {
-  ErrorPanel,
-  FloatingHud,
-  LoadingPanel,
-} from "#/features/game/components/game-stage";
-import { colorToHex } from "#/features/game/components/room-controls";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
-import { cn } from "#/lib/utils";
+import { MatchHud } from "#/features/match/components/match-hud";
 
 export type GamePageSource =
   | {
@@ -40,22 +31,6 @@ interface GamePageProps {
 
 function getModeLabel(mode: string | undefined) {
   return GAME_MODE_OPTIONS.find((option) => option.id === mode)?.label ?? mode;
-}
-
-function getScoreEntries(gameState: MatchState | null) {
-  const players = (
-    gameState?.scoreboard as
-      | { players?: Iterable<ScoreboardPlayerEntry> }
-      | undefined
-  )?.players;
-
-  return players
-    ? Array.from(players, (entry) => ({
-        playerId: entry.playerId,
-        land: entry.land,
-        troops: entry.troops,
-      }))
-    : [];
 }
 
 /**
@@ -107,40 +82,17 @@ export function GamePage({ reservation, source }: GamePageProps) {
 
   if (!renderGrid) return <LoadingPanel message="Loading battlefield" />;
 
-  const scoreByPlayer = new Map(
-    getScoreEntries(gameState).map((entry) => [entry.playerId, entry]),
+  const visiblePlayers = Array.from(gameState.players.values());
+  const currentPlayer = visiblePlayers.find(
+    (player) => player.sessionId === room?.sessionId,
   );
-  const players = Array.from(gameState.players.values())
-    .map((player) => {
-      const score = scoreByPlayer.get(player.id);
-      return {
-        id: player.id,
-        displayName: player.displayName,
-        teamId: player.teamId,
-        color: player.color ?? playerColors.get(player.id) ?? 0,
-        land: score?.land ?? 0,
-        troops: score?.troops ?? 0,
-        isCurrent: player.sessionId === room?.sessionId,
-      };
-    })
-    .sort(
-      (a, b) =>
-        b.troops - a.troops || a.displayName.localeCompare(b.displayName),
-    );
-  const currentPlayer = players.find((player) => player.isCurrent);
   const winner = gameResult?.winnerTeamId
-    ? players.find((player) => player.teamId === gameResult.winnerTeamId)
+    ? visiblePlayers.find((player) => player.teamId === gameResult.winnerTeamId)
     : null;
   const didWin = Boolean(
     gameResult?.winnerTeamId &&
       currentPlayer?.teamId === gameResult.winnerTeamId,
   );
-  const shareUrl =
-    source.type === "custom"
-      ? typeof window === "undefined"
-        ? `/match/${source.setupRoomId}`
-        : `${window.location.origin}/match/${source.setupRoomId}`
-      : null;
 
   return (
     <div className="fixed inset-0 z-20 bg-game-bg">
@@ -153,51 +105,14 @@ export function GamePage({ reservation, source }: GamePageProps) {
         playerColors={playerColors}
       />
 
-      <FloatingHud>
-        <div className="space-y-4">
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between gap-3">
-              <span className="text-game-text-dim">Mode</span>
-              <span>{getModeLabel(gameState.mode)}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-game-text-dim">Connection</span>
-              <span>{connectionStatus}</span>
-            </div>
-            {shareUrl ? (
-              <div className="grid gap-1">
-                <span className="text-game-text-dim">Share</span>
-                <span className="break-all font-mono text-xs">{shareUrl}</span>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="space-y-2">
-            <h2 className="text-base font-semibold">Players</h2>
-            <ul className="space-y-1.5">
-              {players.map((player) => (
-                <li
-                  key={player.id}
-                  className={cn(
-                    "grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 text-sm",
-                    player.isCurrent && "font-semibold",
-                  )}
-                >
-                  <span
-                    className="size-3 rounded-full"
-                    style={{ backgroundColor: colorToHex(player.color) }}
-                  />
-                  <span className="truncate">{player.displayName}</span>
-                  <span className="tabular-nums text-game-text-dim">
-                    {player.land}
-                  </span>
-                  <span className="tabular-nums">{player.troops}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </FloatingHud>
+      <MatchHud
+        modeLabel={getModeLabel(gameState.mode)}
+        connectionStatus={connectionStatus}
+        scoreboard={gameState.scoreboard}
+        visiblePlayers={visiblePlayers}
+        playerColors={playerColors}
+        currentSessionId={room?.sessionId}
+      />
 
       {gameResult ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 px-4">
@@ -212,7 +127,9 @@ export function GamePage({ reservation, source }: GamePageProps) {
             </h2>
             <div className="mt-3 space-y-1 text-sm text-game-text-dim">
               <p>Mode: {getModeLabel(gameResult.mode)}</p>
-              {!didWin && winner ? <p>Winner: {winner.displayName}</p> : null}
+              {!didWin && winner?.displayName ? (
+                <p>Winner: {winner.displayName}</p>
+              ) : null}
               {!gameResult.winnerTeamId ? <p>No winner was reported.</p> : null}
             </div>
             <Button type="button" onClick={source.onReturn} className="mt-5">

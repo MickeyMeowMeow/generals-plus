@@ -80,7 +80,7 @@ export function FloatingHud({
   return (
     <aside
       className={cn(
-        "fixed right-4 top-4 z-30 w-[min(28rem,calc(100vw-2rem))] border border-game-border/80 bg-[rgb(27_27_27/0.84)] p-4 shadow-2xl shadow-black/35 backdrop-blur-sm",
+        "fixed right-2 top-2 z-30 max-h-[calc(100svh-1rem)] w-[min(17.5rem,calc(100vw-1rem))] overflow-auto border border-game-border/80 bg-[rgb(27_27_27/0.76)] p-2.5 shadow-xl shadow-black/25 backdrop-blur-sm",
         className,
       )}
     >
