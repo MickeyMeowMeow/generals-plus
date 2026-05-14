@@ -25,6 +25,7 @@ describe("DominationGame", () => {
     const game = new DominationGame(grid);
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    game.teams.set(t1.teamId, t1);
     game.players.set(p1.playerId, p1);
 
     const flagCell = grid.get({ x: 0, y: 0 })!;
@@ -32,7 +33,7 @@ describe("DominationGame", () => {
 
     game.startGame();
 
-    expect(game.teamScores.get("t1")).toBeUndefined(); // Or 0 if initialized differently, but map usually undefined initially
+    expect(game.teamScores.get("t1")).toBe(0);
 
     game.nextTick();
 
@@ -49,6 +50,7 @@ describe("DominationGame", () => {
     const game = new DominationGame(grid);
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    game.teams.set(t1.teamId, t1);
     game.players.set(p1.playerId, p1);
 
     const flagCell = grid.get({ x: 0, y: 0 })!;
@@ -73,6 +75,7 @@ describe("DominationGame", () => {
     const game = new DominationGame(grid);
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    game.teams.set(t1.teamId, t1);
     game.players.set(p1.playerId, p1);
 
     const flagCell = grid.get({ x: 0, y: 0 })!;
@@ -102,6 +105,7 @@ describe("DominationGame", () => {
     const game = new DominationGame(grid);
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    game.teams.set(t1.teamId, t1);
     game.players.set(p1.playerId, p1);
 
     const flagCell = grid.get({ x: 0, y: 0 })!;

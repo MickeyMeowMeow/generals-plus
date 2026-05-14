@@ -108,7 +108,7 @@ export class DominationGame extends BaseGame implements IDominationGame {
 
     // Score generation logic for FLAG
     this.grid.forEachTerrain(Terrain.FLAG, (flagCell) => {
-      const cellId = flagCell.targetId;
+      const cellId = `${flagCell.coordinate.x},${flagCell.coordinate.y}`;
       let currentOwnerTeamId: string | null = null;
 
       if (flagCell.owner && flagCell.owner.status === PlayerStatus.ACTIVE) {
