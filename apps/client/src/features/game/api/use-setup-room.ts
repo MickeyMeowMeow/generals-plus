@@ -58,9 +58,18 @@ interface SharedSetupConnection {
  */
 const setupConnections = new Map<string, SharedSetupConnection>();
 
+export function resetSetupConnectionsForTesting() {
+  setupConnections.clear();
+}
+
 interface SetupRoomOptions {
   enabled?: boolean;
   roomId?: string;
+}
+
+function cloneReadySetupState(state: SetupState): SetupState | null {
+  const cloned = state.clone();
+  return cloned.players ? cloned : null;
 }
 
 /**
@@ -201,6 +210,7 @@ export function useSetupRoom({
 
     let currentRoom: SetupRoomClient | null = null;
     let isCurrent = true;
+    const unsubscribers: Array<() => void> = [];
 
     const connect = async () => {
       setIsConnecting(true);
@@ -212,21 +222,33 @@ export function useSetupRoom({
           return;
         }
         setRoom(currentRoom);
-        setIsConnecting(false);
+        const currentState = cloneReadySetupState(currentRoom.state);
+        if (currentState) {
+          setSetupState(currentState);
+          setIsConnecting(false);
+        }
 
-        currentRoom.onStateChange((state) => {
-          setSetupState(state.clone());
-        });
-
-        currentRoom.onMessage(
-          SetupServerMessage.SEAT_RESERVATION,
-          (reservation) => {
-            setSeatReservation(reservation);
-          },
+        unsubscribers.push(
+          currentRoom.onStateChange((state) => {
+            const nextState = cloneReadySetupState(state);
+            if (!nextState) return;
+            setSetupState(nextState);
+            setIsConnecting(false);
+          }),
         );
-        currentRoom.onMessage(SetupServerMessage.ERROR, (message) => {
-          setError(message);
-        });
+        unsubscribers.push(
+          currentRoom.onMessage(
+            SetupServerMessage.SEAT_RESERVATION,
+            (reservation) => {
+              setSeatReservation(reservation);
+            },
+          ),
+        );
+        unsubscribers.push(
+          currentRoom.onMessage(SetupServerMessage.ERROR, (message) => {
+            setError(message);
+          }),
+        );
       } catch (e) {
         if (!isCurrent) return;
         setIsConnecting(false);
@@ -238,6 +260,9 @@ export function useSetupRoom({
 
     return () => {
       isCurrent = false;
+      for (const unsubscribe of unsubscribers) {
+        unsubscribe();
+      }
       releaseSetupRoom(currentRoom, roomId);
     };
   }, [enabled, roomId]);

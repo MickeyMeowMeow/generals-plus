@@ -24,6 +24,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { AuthContext } from "#/features/auth/providers/auth-provider";
 import { resetQueueConnectionsForTesting } from "#/features/game/api/use-queue-room";
+import { resetSetupConnectionsForTesting } from "#/features/game/api/use-setup-room";
 import { QueuePage } from "#/features/game/pages/queue-page";
 import { createMockAuth } from "#/tests/helpers/auth";
 import { renderRoute } from "#/tests/helpers/render";
@@ -140,20 +141,28 @@ function createMatchState() {
 function createRoom({
   roomId = "room-1",
   state,
+  currentState = state,
+  emitInitialState = true,
 }: {
   roomId?: string;
   state: unknown;
+  currentState?: unknown;
+  emitInitialState?: boolean;
 }) {
   const messageHandlers = new Map<string, (payload: unknown) => void>();
+  const stateHandlers = new Set<(nextState: unknown) => void>();
   const room = {
     roomId,
     sessionId: "session-1",
-    state,
+    state: currentState,
     send: vi.fn(),
     leave: vi.fn().mockResolvedValue(undefined),
     onStateChange: vi.fn((callback: (nextState: unknown) => void) => {
-      callback(state);
-      return () => {};
+      stateHandlers.add(callback);
+      if (emitInitialState) {
+        callback(state);
+      }
+      return () => stateHandlers.delete(callback);
     }),
     onMessage: vi.fn((type: string, callback: (payload: unknown) => void) => {
       messageHandlers.set(type, callback);
@@ -161,6 +170,12 @@ function createRoom({
     }),
     onStatusChange: vi.fn().mockReturnValue(() => {}),
     getRecoveryToken: vi.fn().mockReturnValue(null),
+    emitState(nextState: unknown) {
+      room.state = nextState;
+      for (const callback of stateHandlers) {
+        callback(nextState);
+      }
+    },
     emitMessage(type: string, payload: unknown) {
       messageHandlers.get(type)?.(payload);
     },
@@ -172,6 +187,7 @@ describe("client room flows", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetQueueConnectionsForTesting();
+    resetSetupConnectionsForTesting();
   });
 
   afterEach(() => {
@@ -328,6 +344,32 @@ describe("client room flows", () => {
     });
   });
 
+  it("renders custom setup state when the initial room patch arrived before navigation", async () => {
+    const setupRoom = createRoom({
+      roomId: "setup-cached",
+      emitInitialState: false,
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: true,
+        },
+      ]),
+    });
+    networkMocks.create.mockResolvedValue(setupRoom);
+
+    renderRoute("/", auth());
+
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: "Create custom room" }),
+    );
+
+    expect(await screen.findByText("You are host")).toBeTruthy();
+    expect(screen.queryByText("Joining custom room")).toBeNull();
+  });
+
   it("joins setup room directly from match URL", async () => {
     const setupRoom = createRoom({
       roomId: "setup-456",
@@ -387,6 +429,38 @@ describe("client room flows", () => {
 
     await user.click(screen.getByRole("button", { name: "Force start game" }));
     expect(setupRoom.send).toHaveBeenCalledWith(SetupClientMessage.START_GAME);
+  });
+
+  it("waits for a complete setup state when joining a custom room by link", async () => {
+    const readyState = createSetupState([
+      {
+        id: "player-1",
+        displayName: "Nova",
+        color: PLAYER_COLOR_PALETTE[0],
+        isHost: true,
+      },
+      {
+        id: "player-2",
+        displayName: "Rook",
+        color: PLAYER_COLOR_PALETTE[1],
+        isHost: false,
+      },
+    ]);
+    const setupRoom = createRoom({
+      roomId: "setup-delayed",
+      currentState: createState({}),
+      emitInitialState: false,
+      state: readyState,
+    });
+    networkMocks.joinById.mockResolvedValue(setupRoom);
+
+    renderRoute("/match/setup-delayed", auth());
+
+    expect(await screen.findByText("Joining custom room")).toBeTruthy();
+
+    setupRoom.emitState(readyState);
+
+    expect(await screen.findByText("You are host")).toBeTruthy();
   });
 
   it("consumes seat reservation when setup starts a match", async () => {
