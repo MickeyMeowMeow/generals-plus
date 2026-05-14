@@ -2,25 +2,22 @@ import { JWT } from "@colyseus/auth";
 import type { Client, QueueOptions } from "@colyseus/core";
 import { logger, matchMaker, QueueRoom } from "@colyseus/core";
 import { GameMode } from "@generals-plus/engine";
-import type {
-  ClientAuth,
-  PlayerInit,
-  RoomData,
-} from "@generals-plus/shared-types";
+import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
 import {
   isPaletteColor,
   nextAvailableColor,
-  PLAYER_COLOR_PALETTE,
   QueuePlayer,
   QueueState,
   ROOM_NAMES,
 } from "@generals-plus/shared-types";
 
 import { createGame } from "#/features/game/utils";
+import { createPlayerInit } from "#/features/player/utils";
 
 const DEFAULT_MAX_PLAYERS = 8;
 const DEFAULT_MIN_PLAYERS = 2;
 const DEFAULT_COUNTDOWN_CYCLES = 20;
+const DEFAULT_PLAYERS_PER_TEAM = 2;
 
 export class MatchQueueRoom extends QueueRoom {
   declare state: QueueState;
@@ -45,26 +42,14 @@ export class MatchQueueRoom extends QueueRoom {
       maxPlayers: DEFAULT_MAX_PLAYERS,
       maxWaitingCycles: options.countdownCycles ?? DEFAULT_COUNTDOWN_CYCLES,
       allowIncompleteGroups: true,
-      onGroupReady: async (group) => {
-        const playerInit: PlayerInit[] = group.clients.map((client, i) => {
-          const auth = client.auth as ClientAuth;
-          const queuePlayer = this.queueState.players.find(
-            (p: QueuePlayer) => p.id === auth.id,
-          );
-          return {
-            id: auth.id,
-            displayName: auth.displayName ?? `Player_${i + 1}`,
-            teamId: `team_${i}`,
-            color:
-              queuePlayer?.color ??
-              PLAYER_COLOR_PALETTE[i % PLAYER_COLOR_PALETTE.length],
-          };
-        });
-
+      onGroupReady: async () => {
         const game = createGame({
           mode: this.gameMode,
-          playerIds: playerInit.map((p) => p.id),
+          playerIds: this.state.players.map((p) => p.id),
+          playerPerTeam: DEFAULT_PLAYERS_PER_TEAM,
         });
+
+        const playerInit = createPlayerInit(this.state.players, game);
 
         const metadata: RoomData = {
           mode: this.gameMode,

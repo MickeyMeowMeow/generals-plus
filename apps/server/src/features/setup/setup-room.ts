@@ -13,6 +13,7 @@ import {
 } from "@generals-plus/shared-types";
 
 import { createGame } from "#/features/game/utils";
+import { createPlayerInit } from "#/features/player/utils";
 
 const DEFAULT_MAX_PLAYERS = 8;
 
@@ -201,7 +202,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       const target = this.clients.find(
         (c) => (c.auth as ClientAuth).id === message.playerId,
       );
-      if (target && target.id !== client.id) {
+      if (target && target.sessionId !== client.sessionId) {
         target.leave(4000);
       }
     },
@@ -247,18 +248,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   private async startGame() {
-    const playerInit = this.state.players.map((p, i) => ({
-      id: p.id,
-      displayName: p.displayName,
-      teamId: `team_${i}`,
-      color: p.color,
-    }));
-
     const game = createGame({
       mode: this.state.gameMode,
       gridOptions: this.getGridOptions(),
-      playerIds: playerInit.map((p) => p.id),
+      playerIds: this.state.players.map((p) => p.id),
+      playerPerTeam: this.state.playersPerTeam,
     });
+
+    const playerInit = createPlayerInit(this.state.players, game);
 
     const metadata: RoomData = {
       mode: this.state.gameMode,

@@ -11,6 +11,7 @@ export interface CreateGameOptions {
   mode: GameMode;
   gridOptions?: GridGeneratorOptions;
   playerIds: string[];
+  playerPerTeam: number;
 }
 
 /**
@@ -26,16 +27,27 @@ export function createGame(options: CreateGameOptions): IBaseGame {
     case GameMode.CLASSIC: {
       const game = new ClassicGame(grid);
 
-      for (let i = 0; i < options.playerIds.length; i++) {
-        const playerId = options.playerIds[i];
+      const teamsCount = Math.ceil(
+        options.playerIds.length / options.playerPerTeam,
+      );
+      for (let i = 0; i < teamsCount; i++) {
         const teamId = `team_${i}`;
-
         const team = new StandardTeam(teamId);
-        const player = new Player(team, playerId);
+        game.teams.set(teamId, team);
+      }
 
+      for (const [i, playerId] of options.playerIds.entries()) {
+        const teamId = `team_${i % teamsCount}`;
+        const team = game.teams.get(teamId);
+        if (!team) {
+          throw new Error(
+            `Team with id "${teamId}" not found for player "${playerId}".`,
+          );
+        }
+
+        const player = new Player(team, playerId);
         team.addPlayer(player);
         game.players.set(playerId, player);
-        game.teams.set(teamId, team);
       }
 
       return game;

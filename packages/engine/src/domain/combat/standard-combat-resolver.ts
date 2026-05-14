@@ -64,8 +64,10 @@ export class StandardCombatResolver implements CombatResolver {
     source.addTroops(-movingTroops);
 
     if (isAllied) {
-      // Reinforce (including taking ownership if it was a teammate's tile)
-      target.owner = attacker;
+      // Ownership transfers only if it's not a general, troops are merged regardless
+      if (target.terrain !== Terrain.GENERAL) {
+        target.owner = attacker;
+      }
       target.troopCount = (target.troopCount ?? 0) + movingTroops;
     } else {
       // Attack
