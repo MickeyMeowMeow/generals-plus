@@ -129,9 +129,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       const update = result.data;
 
       // playersPerTeam must be < maxPlayers
-      if (update.playersPerTeam !== undefined) {
+      if (
+        update.maxPlayers !== undefined ||
+        update.playersPerTeam !== undefined
+      ) {
         const activeMaxPlayers = update.maxPlayers ?? this.state.maxPlayers;
-        if (update.playersPerTeam > activeMaxPlayers - 1) {
+        const activePlayersPerTeam =
+          update.playersPerTeam ?? this.state.playersPerTeam;
+        if (activePlayersPerTeam >= activeMaxPlayers) {
           client.send("error", "playersPerTeam must be less than maxPlayers");
           return;
         }
