@@ -2,13 +2,14 @@
 
 import { GameMode } from "@generals-plus/engine";
 import {
+  MatchServerMessage,
   PLAYER_COLOR_PALETTE,
   QueueClientMessage,
   ROOM_NAMES,
   SetupClientMessage,
   SetupServerMessage,
 } from "@generals-plus/shared-types";
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,6 +28,10 @@ vi.mock("#/infra/network/provider", () => ({
   networkProvider: networkMocks,
 }));
 
+vi.mock("#/features/game/renderer/game-app", () => ({
+  GameApp: () => <div data-testid="game-app" />,
+}));
+
 function auth() {
   return createMockAuth({
     status: AuthStatus.AUTHENTICATED,
@@ -37,6 +42,74 @@ function auth() {
 
 function createState<T>(state: T) {
   return { ...state, clone: () => state };
+}
+
+function createSetupState(
+  players: Array<{
+    id: string;
+    displayName: string;
+    color: number;
+    isHost: boolean;
+  }>,
+) {
+  return createState({
+    gameMode: GameMode.CLASSIC,
+    players,
+    maxPlayers: 8,
+  });
+}
+
+function createMatchState() {
+  return {
+    mode: GameMode.CLASSIC,
+    width: 1,
+    height: 1,
+    playerColors: new Map([
+      ["player-1", PLAYER_COLOR_PALETTE[0]],
+      ["player-2", PLAYER_COLOR_PALETTE[1]],
+    ]),
+    clientVisions: new Map([
+      [
+        "session-1",
+        {
+          terrain: ["plain"],
+          troopCount: [5],
+          visibility: ["visible"],
+          ownerIndex: ["player-1"],
+        },
+      ],
+    ]),
+    clientActionQueues: new Map([["session-1", { queue: [] }]]),
+    players: new Map([
+      [
+        "player-1",
+        {
+          id: "player-1",
+          displayName: "Nova",
+          teamId: "team_0",
+          color: PLAYER_COLOR_PALETTE[0],
+          sessionId: "session-1",
+        },
+      ],
+      [
+        "player-2",
+        {
+          id: "player-2",
+          displayName: "Rook",
+          teamId: "team_1",
+          color: PLAYER_COLOR_PALETTE[1],
+          sessionId: "session-2",
+        },
+      ],
+    ]),
+    scoreboard: {
+      mode: GameMode.CLASSIC,
+      players: [
+        { playerId: "player-1", land: 3, troops: 7 },
+        { playerId: "player-2", land: 4, troops: 12 },
+      ],
+    },
+  };
 }
 
 function createRoom({
@@ -96,11 +169,18 @@ describe("client room flows", () => {
     renderRoute("/", auth());
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Play Classic/ }));
+    await user.click(screen.getByRole("button", { name: "Start" }));
 
     expect(
-      await screen.findByRole("heading", { name: "Pick your color" }),
+      await screen.findByRole("dialog", { name: "Choose mode" }),
     ).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Demolition/ })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: /Classic/ }));
+
+    expect(await screen.findByRole("heading", { name: "Color" })).toBeTruthy();
+    expect(screen.getByText("Mode: Classic")).toBeTruthy();
+    expect(screen.getByText("Nova").closest("li")).toHaveClass("font-semibold");
     expect(networkMocks.joinOrCreate).toHaveBeenCalledWith(ROOM_NAMES.QUEUE, {
       gameMode: GameMode.CLASSIC,
     });
@@ -129,7 +209,10 @@ describe("client room flows", () => {
         ],
       }),
     });
-    const matchRoom = createRoom({ roomId: "match-queue-1", state: {} });
+    const matchRoom = createRoom({
+      roomId: "match-queue-1",
+      state: createMatchState(),
+    });
     const reservation = {
       name: ROOM_NAMES.MATCH,
       roomId: "match-queue-1",
@@ -141,8 +224,9 @@ describe("client room flows", () => {
     renderRoute("/", auth());
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Play Classic/ }));
-    await screen.findByRole("heading", { name: "Pick your color" });
+    await user.click(screen.getByRole("button", { name: "Start" }));
+    await user.click(await screen.findByRole("button", { name: /Classic/ }));
+    await screen.findByRole("heading", { name: "Color" });
 
     queueRoom.emitMessage("seat", reservation);
 
@@ -157,17 +241,14 @@ describe("client room flows", () => {
   it("creates a custom setup room and navigates into its URL", async () => {
     const setupRoom = createRoom({
       roomId: "setup-123",
-      state: createState({
-        players: [
-          {
-            id: "player-1",
-            displayName: "Nova",
-            color: PLAYER_COLOR_PALETTE[0],
-            isHost: true,
-          },
-        ],
-        maxPlayers: 8,
-      }),
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: true,
+        },
+      ]),
     });
     networkMocks.create.mockResolvedValue(setupRoom);
 
@@ -178,9 +259,10 @@ describe("client room flows", () => {
       screen.getByRole("button", { name: "Create custom room" }),
     );
 
+    expect(await screen.findByText("You are host")).toBeTruthy();
     expect(
-      await screen.findByRole("heading", { name: "Assemble the room" }),
-    ).toBeTruthy();
+      screen.queryByRole("button", { name: "Force start game" }),
+    ).toBeNull();
     expect(networkMocks.create).toHaveBeenCalledWith(ROOM_NAMES.SETUP, {
       gameMode: GameMode.CLASSIC,
       isPublic: false,
@@ -190,26 +272,35 @@ describe("client room flows", () => {
   it("joins setup room directly from match URL", async () => {
     const setupRoom = createRoom({
       roomId: "setup-456",
-      state: createState({
-        players: [
-          {
-            id: "player-1",
-            displayName: "Nova",
-            color: PLAYER_COLOR_PALETTE[0],
-            isHost: true,
-          },
-        ],
-        maxPlayers: 8,
-      }),
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: true,
+        },
+        {
+          id: "player-2",
+          displayName: "Rook",
+          color: PLAYER_COLOR_PALETTE[1],
+          isHost: false,
+        },
+      ]),
     });
     networkMocks.joinById.mockResolvedValue(setupRoom);
 
     renderRoute("/match/setup-456", auth());
 
-    expect(
-      await screen.findByRole("heading", { name: "Assemble the room" }),
-    ).toBeTruthy();
+    expect(await screen.findByText("You are host")).toBeTruthy();
     expect(networkMocks.joinById).toHaveBeenCalledWith("setup-456");
+    const modeSelect = screen.getByLabelText("Game mode");
+    expect(modeSelect).toBeTruthy();
+    expect(
+      within(modeSelect).getByRole("option", { name: /Demolition/ }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Force start game" }),
+    ).toBeTruthy();
 
     const user = userEvent.setup();
     await user.click(
@@ -222,30 +313,33 @@ describe("client room flows", () => {
     expect(setupRoom.send).toHaveBeenCalledWith(SetupClientMessage.PICK_COLOR, {
       color: PLAYER_COLOR_PALETTE[0],
     });
+
+    await user.click(screen.getByRole("button", { name: "Force start game" }));
+    expect(setupRoom.send).toHaveBeenCalledWith(SetupClientMessage.START_GAME);
   });
 
   it("consumes seat reservation when setup starts a match", async () => {
     const setupRoom = createRoom({
       roomId: "setup-789",
-      state: createState({
-        players: [
-          {
-            id: "player-1",
-            displayName: "Nova",
-            color: PLAYER_COLOR_PALETTE[0],
-            isHost: true,
-          },
-          {
-            id: "player-2",
-            displayName: "Rook",
-            color: PLAYER_COLOR_PALETTE[1],
-            isHost: false,
-          },
-        ],
-        maxPlayers: 8,
-      }),
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: true,
+        },
+        {
+          id: "player-2",
+          displayName: "Rook",
+          color: PLAYER_COLOR_PALETTE[1],
+          isHost: false,
+        },
+      ]),
     });
-    const matchRoom = createRoom({ roomId: "match-1", state: {} });
+    const matchRoom = createRoom({
+      roomId: "match-1",
+      state: createMatchState(),
+    });
     const reservation = {
       name: ROOM_NAMES.MATCH,
       roomId: "match-1",
@@ -256,7 +350,7 @@ describe("client room flows", () => {
 
     renderRoute("/match/setup-789", auth());
 
-    await screen.findByRole("heading", { name: "Assemble the room" });
+    await screen.findByText("You are host");
     setupRoom.emitMessage(SetupServerMessage.SEAT_RESERVATION, reservation);
 
     await waitFor(() => {
@@ -264,6 +358,61 @@ describe("client room flows", () => {
         reservation,
       );
     });
+  });
+
+  it("shows match results and returns custom games to the same setup URL", async () => {
+    const setupRoom = createRoom({
+      roomId: "setup-result",
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: true,
+        },
+        {
+          id: "player-2",
+          displayName: "Rook",
+          color: PLAYER_COLOR_PALETTE[1],
+          isHost: false,
+        },
+      ]),
+    });
+    const matchRoom = createRoom({
+      roomId: "match-result",
+      state: createMatchState(),
+    });
+    const reservation = {
+      name: ROOM_NAMES.MATCH,
+      roomId: "match-result",
+      sessionId: "session-1",
+    };
+    networkMocks.joinById.mockResolvedValue(setupRoom);
+    networkMocks.consumeSeatReservation.mockResolvedValue(matchRoom);
+
+    renderRoute("/match/setup-result", auth());
+
+    await screen.findByText("You are host");
+    setupRoom.emitMessage(SetupServerMessage.SEAT_RESERVATION, reservation);
+    await screen.findByTestId("game-app");
+
+    matchRoom.emitMessage(MatchServerMessage.GAME_END, {
+      mode: GameMode.CLASSIC,
+      winnerTeamId: "team_1",
+    });
+
+    expect(
+      await screen.findByRole("dialog", { name: "You lost" }),
+    ).toBeTruthy();
+    expect(screen.getByText("Winner: Rook")).toBeTruthy();
+
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: "Return to setup room" }),
+    );
+
+    expect(await screen.findByText("You are host")).toBeTruthy();
+    expect(networkMocks.joinById).toHaveBeenCalledTimes(1);
   });
 
   it("shows a clear error for unavailable custom rooms", async () => {

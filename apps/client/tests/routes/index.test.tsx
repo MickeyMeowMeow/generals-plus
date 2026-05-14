@@ -23,11 +23,9 @@ describe("index route", () => {
   it("renders sign-in form on root", () => {
     renderRoute("/", createMockAuth());
 
-    expect(screen.getByRole("heading", { name: "Sign In" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeTruthy();
     expect(screen.getByLabelText("Display name")).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "Sign in anonymously" }),
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeTruthy();
   });
 
   it("shows default display name in input", () => {
@@ -54,10 +52,8 @@ describe("index route", () => {
       }),
     );
 
-    expect(
-      screen.getByRole("heading", { name: "Choose operation" }),
-    ).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Play Classic/ })).toBeTruthy();
+    expect(screen.getByText("Hello, Nova")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Start" })).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Create custom room" }),
     ).toBeTruthy();

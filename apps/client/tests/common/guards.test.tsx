@@ -14,7 +14,7 @@ describe("app routes", () => {
   it("renders root auth surface for unauthenticated players", async () => {
     renderRoute("/", createMockAuth());
     expect(
-      await screen.findByRole("heading", { name: "Sign In" }),
+      await screen.findByRole("heading", { name: "Sign in" }),
     ).toBeTruthy();
   });
 
@@ -27,9 +27,7 @@ describe("app routes", () => {
         token: "token-1",
       }),
     );
-    expect(
-      await screen.findByRole("heading", { name: "Choose operation" }),
-    ).toBeTruthy();
+    expect(await screen.findByText("Hello, Scout")).toBeTruthy();
   });
 
   it("does not register old business routes", async () => {
@@ -49,7 +47,7 @@ describe("app routes", () => {
   it("keeps unauthenticated players on match URL with auth surface", async () => {
     renderRoute("/match/alpha-room", createMockAuth());
     expect(
-      await screen.findByRole("heading", { name: "Sign In" }),
+      await screen.findByRole("heading", { name: "Sign in" }),
     ).toBeTruthy();
   });
 

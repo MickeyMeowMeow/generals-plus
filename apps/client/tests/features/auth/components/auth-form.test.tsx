@@ -10,13 +10,8 @@ const defaultProps = {
   displayName: "Commander",
   onDisplayNameChange: vi.fn(),
   isBusy: false,
-  isAuthenticated: false,
   lastError: null,
-  authStatus: "idle",
-  currentDisplayName: null,
   onSignIn: vi.fn().mockImplementation((e) => e.preventDefault()),
-  onSignOut: vi.fn(),
-  onEnterLobby: vi.fn(),
 };
 
 describe("AuthForm", () => {
@@ -27,7 +22,7 @@ describe("AuthForm", () => {
 
   it("renders sign-in heading", () => {
     render(<AuthForm {...defaultProps} />);
-    expect(screen.getByRole("heading", { name: "Sign In" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeTruthy();
   });
 
   it("renders display name input with provided value", () => {
@@ -42,9 +37,7 @@ describe("AuthForm", () => {
     const user = userEvent.setup();
     render(<AuthForm {...defaultProps} onSignIn={onSignIn} />);
 
-    await user.click(
-      screen.getByRole("button", { name: "Sign in anonymously" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
@@ -64,19 +57,7 @@ describe("AuthForm", () => {
     expect(screen.getByRole("alert").textContent).toContain("Network error");
   });
 
-  it("shows enter war room and sign out buttons when authenticated", () => {
-    render(
-      <AuthForm
-        {...defaultProps}
-        isAuthenticated={true}
-        currentDisplayName="Nova"
-      />,
-    );
-    expect(screen.getByRole("button", { name: "Enter war room" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
-  });
-
-  it("hides auth buttons when not authenticated", () => {
+  it("does not render session controls", () => {
     render(<AuthForm {...defaultProps} />);
     expect(screen.queryByRole("button", { name: "Enter war room" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();

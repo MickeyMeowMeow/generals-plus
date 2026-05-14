@@ -23,7 +23,7 @@ describe("user auth flow", () => {
   it("shows root auth surface for unauthenticated players", async () => {
     renderRoute("/", createMockAuth());
     expect(
-      await screen.findByRole("heading", { name: "Sign In" }),
+      await screen.findByRole("heading", { name: "Sign in" }),
     ).toBeTruthy();
   });
 
@@ -47,9 +47,7 @@ describe("user auth flow", () => {
     const input = screen.getByLabelText("Display name");
     await user.clear(input);
     await user.type(input, "Nova");
-    await user.click(
-      screen.getByRole("button", { name: "Sign in anonymously" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(signInAnonymously).toHaveBeenCalledWith("Nova");
   });
