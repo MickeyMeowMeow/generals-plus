@@ -140,30 +140,23 @@ export class DominationGame extends BaseGame implements IDominationGame {
   }
 
   protected evaluateGameEnd(): IGameResult | null {
-    // Win Condition 1: Target Score Reached
+    let maxScore = -1;
+    let winnerTeamId: string | null = null;
+    let targetReached = false;
+
     for (const [teamId, score] of this.teamScores.entries()) {
       if (score >= this.targetScore) {
-        return {
-          mode: this.mode,
-          winnerTeamId: teamId,
-        };
+        targetReached = true;
+      }
+      if (score > maxScore) {
+        maxScore = score;
+        winnerTeamId = teamId;
+      } else if (score === maxScore) {
+        winnerTeamId = null; // Tie
       }
     }
 
-    // Win Condition 2: Max Time Reached
-    if (this.tick >= this.MAX_TICKS) {
-      let winnerTeamId: string | null = null;
-      let maxScore = -1;
-
-      for (const [teamId, score] of this.teamScores.entries()) {
-        if (score > maxScore) {
-          maxScore = score;
-          winnerTeamId = teamId;
-        } else if (score === maxScore) {
-          winnerTeamId = null; // Tie
-        }
-      }
-
+    if (targetReached || this.tick >= this.MAX_TICKS) {
       return {
         mode: this.mode,
         winnerTeamId,
