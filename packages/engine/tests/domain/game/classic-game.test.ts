@@ -441,6 +441,9 @@ describe("ClassicGame", () => {
     expect(c2.troopCount).toBe(4);
     expect(p1.status).toBe(PlayerStatus.ELIMINATED);
     expect(game.status).toBe(GameStatus.FINISHED);
-    expect(game.checkGameEnd()).toBeNull();
+    expect(game.checkGameEnd()).toEqual({
+      mode: GameMode.CLASSIC,
+      winnerTeamId: "t2",
+    });
   });
 });
