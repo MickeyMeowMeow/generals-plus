@@ -1,3 +1,5 @@
+import { SetupClientMessage } from "@generals-plus/shared-types";
+
 import { ColorPicker } from "#/components/game/color-picker";
 import { useUser } from "#/features/auth/hooks";
 import { useSetupRoom } from "#/features/game/api/use-setup-room";
@@ -49,7 +51,9 @@ export function GameManager() {
           <ColorPicker
             takenColors={takenColors}
             currentColor={myPlayer.color}
-            onSelect={(color) => room?.send("pickColor", { color })}
+            onSelect={(color) =>
+              room?.send(SetupClientMessage.PICK_COLOR, { color })
+            }
           />
         </div>
       )}

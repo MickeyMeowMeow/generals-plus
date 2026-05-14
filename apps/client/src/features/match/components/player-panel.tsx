@@ -49,7 +49,7 @@ export function PlayerPanel({
             Leave room
           </Button>
           <Link
-            to="/lobby"
+            to="/"
             onClick={(event) => {
               event.preventDefault();
               void onLeave();

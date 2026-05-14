@@ -3,13 +3,26 @@ import type { ICoordinate } from "@generals-plus/engine";
 import { useCallback, useEffect, useState } from "react";
 
 import { useGameRoom } from "#/features/game/api/use-game-room";
+import {
+  ErrorPanel,
+  FloatingHud,
+  LoadingPanel,
+} from "#/features/game/components/game-stage";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 
 export function GamePage({ reservation }: { reservation: ISeatReservation }) {
-  const { room, renderGrid, moveQueue, gameState, sendMove, playerColors } =
-    useGameRoom(reservation);
+  const {
+    room,
+    renderGrid,
+    moveQueue,
+    gameState,
+    sendMove,
+    playerColors,
+    error,
+    isConnecting,
+  } = useGameRoom(reservation);
 
   const [_tick, setTick] = useState(0);
   const [selection, setSelection] = useState<ICoordinate | null>(null);
@@ -53,12 +66,29 @@ export function GamePage({ reservation }: { reservation: ISeatReservation }) {
     return () => clearInterval(id);
   }, []);
 
-  if (!gameState) return <div className="loading">Connecting to Server...</div>;
+  if (error) return <ErrorPanel message={error} />;
 
-  if (!renderGrid) return <div className="loading">Loading Game State...</div>;
+  if (isConnecting || !gameState) {
+    return <LoadingPanel message="Connecting to match" />;
+  }
+
+  if (!renderGrid) return <LoadingPanel message="Loading battlefield" />;
 
   return (
-    <div className="flex justify-center">
+    <div className="relative flex min-h-svh items-center justify-center px-3 py-6">
+      <FloatingHud>
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase text-teal-200/80">
+            Live match
+          </p>
+          <p className="font-mono text-sm text-game-text-dim">
+            Room {room?.roomId ?? reservation.roomId}
+          </p>
+          <p className="text-xs text-game-text-dim">
+            Select a tile, then use direction controls to move.
+          </p>
+        </div>
+      </FloatingHud>
       <GameApp
         grid={renderGrid}
         selection={selection}
