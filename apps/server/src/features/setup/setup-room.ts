@@ -3,7 +3,11 @@ import type { Client } from "@colyseus/core";
 import { logger, matchMaker, Room } from "@colyseus/core";
 import type { GridGeneratorOptions } from "@generals-plus/engine";
 import { DefaultGridGeneratorOptions, GameMode } from "@generals-plus/engine";
-import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
+import type {
+  ClientAuth,
+  RoomData,
+  SetupSettings,
+} from "@generals-plus/shared-types";
 import {
   isPaletteColor,
   nextAvailableColor,
@@ -24,17 +28,6 @@ interface SetupRoomOptions {
   gameMode?: GameMode;
   maxPlayers?: number;
   isPublic?: boolean;
-}
-
-interface UpdateSettingsMessage {
-  gameMode?: GameMode;
-  maxPlayers?: number;
-  isPublic?: boolean;
-  mapWidth?: number;
-  mapHeight?: number;
-  seed?: number;
-  mountainRate?: number;
-  cityRate?: number;
 }
 
 export class SetupRoom extends Room<{ state: SetupState }> {
@@ -120,12 +113,13 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   messages = {
-    updateSettings: async (client: Client, message: UpdateSettingsMessage) => {
+    updateSettings: async (client: Client, message: Partial<SetupSettings>) => {
       if (!this.isHost(client)) {
         client.send("error", "only the host can update settings");
         return;
       }
 
+      // TODO: Validate using Zod
       if (message.gameMode) {
         this.state.gameMode = message.gameMode;
       }
@@ -136,6 +130,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       if (message.isPublic !== undefined) {
         this.state.isPublic = message.isPublic;
         await this.setPrivate(!message.isPublic);
+      }
+      if (
+        typeof message.playersPerTeam === "number" &&
+        Number.isInteger(message.playersPerTeam) &&
+        message.playersPerTeam >= 1 &&
+        message.playersPerTeam <= this.state.maxPlayers - 1
+      ) {
+        this.state.playersPerTeam = message.playersPerTeam;
       }
       if (
         typeof message.mapWidth === "number" &&
@@ -170,6 +172,27 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         message.cityRate + this.state.mountainRate <= 1
       ) {
         this.state.cityRate = message.cityRate;
+      }
+      if (
+        typeof message.minGeneralDistanceFactor === "number" &&
+        message.minGeneralDistanceFactor >= 0 &&
+        message.minGeneralDistanceFactor <= 1
+      ) {
+        this.state.minGeneralDistanceFactor = message.minGeneralDistanceFactor;
+      }
+      if (
+        typeof message.generalInitialTroops === "number" &&
+        Number.isInteger(message.generalInitialTroops) &&
+        message.generalInitialTroops >= 1
+      ) {
+        this.state.generalInitialTroops = message.generalInitialTroops;
+      }
+      if (
+        typeof message.cityInitialTroops === "number" &&
+        Number.isInteger(message.cityInitialTroops) &&
+        message.cityInitialTroops >= 0
+      ) {
+        this.state.cityInitialTroops = message.cityInitialTroops;
       }
 
       await this.setMetadata({
