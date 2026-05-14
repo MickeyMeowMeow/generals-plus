@@ -41,13 +41,13 @@ export function AuthForm({
   onEnterLobby,
 }: AuthFormProps) {
   return (
-    <Card>
+    <Card className="game-panel border-white/10 bg-transparent text-game-text shadow-2xl">
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="text-2xl font-black uppercase">
           <h2>Sign In</h2>
         </CardTitle>
-        <CardDescription>
-          Create a player session to enter the lobby and join game rooms.
+        <CardDescription className="text-game-text-dim">
+          Choose your commander name before entering the war room.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -66,13 +66,16 @@ export function AuthForm({
 
         <form onSubmit={onSignIn} className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="display-name">Display name</Label>
+            <Label htmlFor="display-name" className="text-game-text-dim">
+              Display name
+            </Label>
             <Input
               id="display-name"
               name="displayName"
               value={displayName}
               onChange={(event) => onDisplayNameChange(event.target.value)}
               autoComplete="nickname"
+              className="border-white/15 bg-black/30 text-game-text"
             />
           </div>
 
@@ -88,7 +91,7 @@ export function AuthForm({
 
             {isAuthenticated ? (
               <Button type="button" variant="outline" onClick={onEnterLobby}>
-                Enter lobby
+                Enter war room
               </Button>
             ) : null}
 

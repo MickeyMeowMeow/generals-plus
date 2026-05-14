@@ -64,7 +64,7 @@ describe("AuthForm", () => {
     expect(screen.getByRole("alert").textContent).toContain("Network error");
   });
 
-  it("shows enter lobby and sign out buttons when authenticated", () => {
+  it("shows enter war room and sign out buttons when authenticated", () => {
     render(
       <AuthForm
         {...defaultProps}
@@ -72,13 +72,13 @@ describe("AuthForm", () => {
         currentDisplayName="Nova"
       />,
     );
-    expect(screen.getByRole("button", { name: "Enter lobby" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Enter war room" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
   });
 
   it("hides auth buttons when not authenticated", () => {
     render(<AuthForm {...defaultProps} />);
-    expect(screen.queryByRole("button", { name: "Enter lobby" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Enter war room" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
   });
 
