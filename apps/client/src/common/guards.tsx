@@ -12,7 +12,7 @@ import {
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth } from "#/features/auth/hooks";
 
-/** Route guard that redirects unauthenticated users to /user. */
+/** Route guard that redirects unauthenticated users to the root auth surface. */
 export function RequireAuthenticated({ children }: { children: ReactElement }) {
   const { state } = useAuth();
 
@@ -42,7 +42,7 @@ export function RequireAuthenticated({ children }: { children: ReactElement }) {
   }
 
   if (state.status !== AuthStatus.AUTHENTICATED) {
-    return <Navigate to="/user" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return children;

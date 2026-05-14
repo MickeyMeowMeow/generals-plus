@@ -11,14 +11,28 @@ describe("app routes", () => {
     cleanup();
   });
 
-  it("redirects root path to user page", async () => {
+  it("renders root auth surface for unauthenticated players", async () => {
     renderRoute("/", createMockAuth());
     expect(
       await screen.findByRole("heading", { name: "Sign In" }),
     ).toBeTruthy();
   });
 
-  it("renders lobby for authenticated players", async () => {
+  it("renders official lobby for authenticated players", async () => {
+    renderRoute(
+      "/",
+      createMockAuth({
+        status: "authenticated",
+        user: { id: "scout", displayName: "Scout" },
+        token: "token-1",
+      }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Choose operation" }),
+    ).toBeTruthy();
+  });
+
+  it("does not register old business routes", async () => {
     renderRoute(
       "/lobby",
       createMockAuth({
@@ -27,10 +41,12 @@ describe("app routes", () => {
         token: "token-1",
       }),
     );
-    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Page not found" }),
+    ).toBeTruthy();
   });
 
-  it("redirects unauthenticated players away from protected routes", async () => {
+  it("keeps unauthenticated players on match URL with auth surface", async () => {
     renderRoute("/match/alpha-room", createMockAuth());
     expect(
       await screen.findByRole("heading", { name: "Sign In" }),

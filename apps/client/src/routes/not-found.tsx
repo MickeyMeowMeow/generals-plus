@@ -2,29 +2,29 @@ import { Link } from "react-router";
 
 import { Button } from "#/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "#/components/ui/card";
+  BrandTitle,
+  GameStage,
+  StageCenter,
+  StagePanel,
+} from "#/features/game/components/game-stage";
 
 export default function NotFoundPage() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h2>Page not found</h2>
-        </CardTitle>
-        <CardDescription>
-          The route you requested does not exist.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button asChild variant="outline">
-          <Link to="/lobby">Return to lobby</Link>
-        </Button>
-      </CardContent>
-    </Card>
+    <GameStage>
+      <StageCenter>
+        <div className="mx-auto grid max-w-xl gap-6">
+          <BrandTitle compact />
+          <StagePanel className="text-center">
+            <h2 className="text-3xl font-black uppercase">Page not found</h2>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-game-text-dim">
+              This route is outside the current command map.
+            </p>
+            <Button asChild variant="outline" className="mt-5">
+              <Link to="/">Return home</Link>
+            </Button>
+          </StagePanel>
+        </div>
+      </StageCenter>
+    </GameStage>
   );
 }
