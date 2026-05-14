@@ -1,8 +1,10 @@
 import type { MessagePayload } from "#/messages";
 import type { SeatReservation } from "#/seat";
+import type { SetupSettings } from "#/setup-settings";
 
 export const SetupClientMessage = {
   PICK_COLOR: "pickColor",
+  UPDATE_SETTINGS: "updateSettings",
   START_GAME: "start",
 } as const;
 
@@ -13,6 +15,7 @@ export interface SetupClientMessagePayload extends MessagePayload {
   [SetupClientMessage.PICK_COLOR]: {
     color: number;
   };
+  [SetupClientMessage.UPDATE_SETTINGS]: Partial<SetupSettings>;
   [SetupClientMessage.START_GAME]: never;
 }
 

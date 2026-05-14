@@ -1,6 +1,9 @@
+import { SetupClientMessage } from "@generals-plus/shared-types";
+
 import { ColorPicker } from "#/components/game/color-picker";
 import { useUser } from "#/features/auth/hooks";
 import { useSetupRoom } from "#/features/game/api/use-setup-room";
+import { GameSettings } from "#/features/game/components/game-settings";
 import { GamePage } from "#/features/game/pages/game-page";
 
 export function GameManager() {
@@ -54,14 +57,28 @@ export function GameManager() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={startGame}
-        disabled={setupState.players.length < 2}
-        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded disabled:opacity-50"
-      >
-        Start Game
-      </button>
+      <GameSettings
+        isHost={myPlayer?.isHost ?? false}
+        currentSettings={setupState}
+        onChangeSettings={(settings) =>
+          room?.send(SetupClientMessage.UPDATE_SETTINGS, settings)
+        }
+      />
+
+      {myPlayer?.isHost ? (
+        <button
+          type="button"
+          onClick={startGame}
+          disabled={setupState.players.length < 2}
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded disabled:opacity-50"
+        >
+          Start Game
+        </button>
+      ) : (
+        <p className="text-sm text-gray-400">
+          Waiting for host to start the game...
+        </p>
+      )}
     </div>
   );
 }
