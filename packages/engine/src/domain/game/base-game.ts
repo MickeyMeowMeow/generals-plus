@@ -115,9 +115,28 @@ export abstract class BaseGame implements IBaseGame {
     // Default no-op
   }
 
-  abstract checkGameEnd(): IGameResult | null;
+  protected cachedGameResult: IGameResult | null = null;
 
-  abstract forceEnd(): IGameResult;
+  public checkGameEnd(): IGameResult | null {
+    if (this.status !== GameStatus.PLAYING) {
+      return this.cachedGameResult;
+    }
+
+    const result = this.evaluateGameEnd();
+    if (result) {
+      this.status = GameStatus.FINISHED;
+      this.cachedGameResult = result;
+    }
+    return result;
+  }
+
+  protected abstract evaluateGameEnd(): IGameResult | null;
+
+  public forceEnd(): IGameResult {
+    this.status = GameStatus.FINISHED;
+    this.cachedGameResult = { mode: this.mode, winnerTeamId: null };
+    return this.cachedGameResult;
+  }
 
   getVisionGrid(playerId: string): IVisionGrid | null {
     const player = this.players.get(playerId);

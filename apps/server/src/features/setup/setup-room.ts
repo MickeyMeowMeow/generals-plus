@@ -3,7 +3,11 @@ import type { Client } from "@colyseus/core";
 import { logger, matchMaker, Room } from "@colyseus/core";
 import type { GridGeneratorOptions } from "@generals-plus/engine";
 import { DefaultGridGeneratorOptions, GameMode } from "@generals-plus/engine";
-import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
+import type {
+  ClientAuth,
+  RoomData,
+  SetupSettings,
+} from "@generals-plus/shared-types";
 import {
   isPaletteColor,
   nextAvailableColor,
@@ -13,27 +17,15 @@ import {
 } from "@generals-plus/shared-types";
 
 import { createGame } from "#/features/game/utils";
+import { createPlayerInit } from "#/features/player/utils";
+import { setupSettingsUpdateSchema } from "./schemas";
 
 const DEFAULT_MAX_PLAYERS = 8;
-
-const MIN_MAP_DIM = 5;
-const MAX_MAP_DIM = 100;
 
 interface SetupRoomOptions {
   gameMode?: GameMode;
   maxPlayers?: number;
   isPublic?: boolean;
-}
-
-interface UpdateSettingsMessage {
-  gameMode?: GameMode;
-  maxPlayers?: number;
-  isPublic?: boolean;
-  mapWidth?: number;
-  mapHeight?: number;
-  seed?: number;
-  mountainRate?: number;
-  cityRate?: number;
 }
 
 export class SetupRoom extends Room<{ state: SetupState }> {
@@ -119,56 +111,54 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   messages = {
-    updateSettings: async (client: Client, message: UpdateSettingsMessage) => {
+    updateSettings: async (client: Client, message: Partial<SetupSettings>) => {
       if (!this.isHost(client)) {
         client.send("error", "only the host can update settings");
         return;
       }
 
-      if (message.gameMode) {
-        this.state.gameMode = message.gameMode;
+      const result = setupSettingsUpdateSchema.safeParse(message);
+      if (!result.success) {
+        client.send(
+          "error",
+          `invalid settings update: ${result.error.message}`,
+        );
+        return;
       }
-      if (message.maxPlayers) {
-        this.state.maxPlayers = message.maxPlayers;
-        this.maxClients = message.maxPlayers;
-      }
-      if (message.isPublic !== undefined) {
-        this.state.isPublic = message.isPublic;
-        await this.setPrivate(!message.isPublic);
-      }
+
+      const update = result.data;
+
+      // playersPerTeam must be < maxPlayers
       if (
-        typeof message.mapWidth === "number" &&
-        Number.isInteger(message.mapWidth) &&
-        message.mapWidth >= MIN_MAP_DIM &&
-        message.mapWidth <= MAX_MAP_DIM
+        update.maxPlayers !== undefined ||
+        update.playersPerTeam !== undefined
       ) {
-        this.state.mapWidth = message.mapWidth;
+        const activeMaxPlayers = update.maxPlayers ?? this.state.maxPlayers;
+        const activePlayersPerTeam =
+          update.playersPerTeam ?? this.state.playersPerTeam;
+        if (activePlayersPerTeam >= activeMaxPlayers) {
+          client.send("error", "playersPerTeam must be less than maxPlayers");
+          return;
+        }
       }
-      if (
-        typeof message.mapHeight === "number" &&
-        Number.isInteger(message.mapHeight) &&
-        message.mapHeight >= MIN_MAP_DIM &&
-        message.mapHeight <= MAX_MAP_DIM
-      ) {
-        this.state.mapHeight = message.mapHeight;
+
+      // city + mountain rates must be <= 1.0
+      if (update.cityRate !== undefined || update.mountainRate !== undefined) {
+        const activeCityRate = update.cityRate ?? this.state.cityRate;
+        const activeMountainRate =
+          update.mountainRate ?? this.state.mountainRate;
+        if (activeCityRate + activeMountainRate > 1) {
+          client.send("error", "cityRate + mountainRate cannot exceed 1.0");
+          return;
+        }
       }
-      if (typeof message.seed === "number" && Number.isInteger(message.seed)) {
-        this.state.seed = message.seed;
-      }
-      if (
-        typeof message.mountainRate === "number" &&
-        message.mountainRate >= 0 &&
-        message.mountainRate <= 1
-      ) {
-        this.state.mountainRate = message.mountainRate;
-      }
-      if (
-        typeof message.cityRate === "number" &&
-        message.cityRate >= 0 &&
-        message.cityRate <= 1 &&
-        message.cityRate + this.state.mountainRate <= 1
-      ) {
-        this.state.cityRate = message.cityRate;
+
+      // Apply valid updates to state
+      Object.assign(this.state, update);
+
+      // Synchronize room-level properties and visibility
+      if (update.maxPlayers !== undefined) {
+        this.maxClients = update.maxPlayers;
       }
 
       await this.setMetadata({
@@ -201,7 +191,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       const target = this.clients.find(
         (c) => (c.auth as ClientAuth).id === message.playerId,
       );
-      if (target && target.id !== client.id) {
+      if (target && target.sessionId !== client.sessionId) {
         target.leave(4000);
       }
     },
@@ -247,18 +237,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   private async startGame() {
-    const playerInit = this.state.players.map((p, i) => ({
-      id: p.id,
-      displayName: p.displayName,
-      teamId: `team_${i}`,
-      color: p.color,
-    }));
-
     const game = createGame({
       mode: this.state.gameMode,
       gridOptions: this.getGridOptions(),
-      playerIds: playerInit.map((p) => p.id),
+      playerIds: this.state.players.map((p) => p.id),
+      playerPerTeam: this.state.playersPerTeam,
     });
+
+    const playerInit = createPlayerInit(this.state.players, game);
 
     const metadata: RoomData = {
       mode: this.state.gameMode,

@@ -15,6 +15,7 @@ export * from "#/domain/effect/periodic/periodic-effect";
 export * from "#/domain/effect/periodic/troop-modifier";
 export * from "#/domain/game/base-game";
 export * from "#/domain/game/classic-game";
+export * from "#/domain/game/domination-game";
 export * from "#/domain/game/game-mode";
 export * from "#/domain/game/game-result";
 export * from "#/domain/game/game-status";

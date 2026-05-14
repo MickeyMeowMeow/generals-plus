@@ -67,7 +67,7 @@ describe("Cell", () => {
       terrain: Terrain.PLAIN,
     });
     cell.troopCount = 10;
-    cell.owner = { playerId: "player1" } as any;
+    cell.owner = { playerId: "player1" };
 
     // Change to impassable
     cell.terrain = Terrain.MOUNTAIN;
