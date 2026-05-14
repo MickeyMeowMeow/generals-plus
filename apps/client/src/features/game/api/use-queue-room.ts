@@ -1,10 +1,15 @@
+import { GameMode } from "@generals-plus/engine";
 import type {
   QueueClientMessagePayload,
   QueueServerMessagePayload,
   QueueState,
   SeatReservation,
 } from "@generals-plus/shared-types";
-import { QueueServerMessage } from "@generals-plus/shared-types";
+import {
+  QueueClientMessage,
+  QueueServerMessage,
+  ROOM_NAMES,
+} from "@generals-plus/shared-types";
 import { useEffect, useState } from "react";
 
 import { networkProvider } from "#/infra/network/provider";
@@ -16,24 +21,44 @@ type QueueRoomClient = RoomClient<
   QueueServerMessagePayload
 >;
 
-export function useQueueRoom() {
+interface UseQueueRoomOptions {
+  enabled?: boolean;
+  gameMode?: GameMode;
+}
+
+export function useQueueRoom({
+  enabled = true,
+  gameMode = GameMode.CLASSIC,
+}: UseQueueRoomOptions = {}) {
   const [room, setRoom] = useState<QueueRoomClient | null>(null);
   const [queueState, setQueueState] = useState<QueueState | null>(null);
   const [seatReservation, setSeatReservation] =
     useState<SeatReservation | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
+    if (!enabled) return;
+
     let currentRoom: QueueRoomClient;
+    let isCurrent = true;
 
     const connect = async () => {
+      setIsConnecting(true);
+      setError(null);
       try {
         currentRoom = await networkProvider.joinOrCreate<
           QueueState,
           QueueClientMessagePayload,
           QueueServerMessagePayload
-        >("queue");
+        >(ROOM_NAMES.QUEUE, { gameMode });
 
+        if (!isCurrent) {
+          await currentRoom.leave();
+          return;
+        }
         setRoom(currentRoom);
+        setIsConnecting(false);
 
         currentRoom.onStateChange((state) => {
           setQueueState(state.clone());
@@ -43,19 +68,26 @@ export function useQueueRoom() {
           QueueServerMessage.SEAT_RESERVATION,
           (reservation) => {
             setSeatReservation(reservation);
+            currentRoom.send(QueueClientMessage.CONFIRM);
           },
         );
+        currentRoom.onMessage(QueueServerMessage.ERROR, (message) => {
+          setError(message);
+        });
       } catch (e) {
-        console.error("Failed to join queue room", e);
+        if (!isCurrent) return;
+        setIsConnecting(false);
+        setError(e instanceof Error ? e.message : "Failed to join queue room");
       }
     };
 
     connect();
 
     return () => {
-      if (currentRoom) currentRoom.leave();
+      isCurrent = false;
+      if (currentRoom) void currentRoom.leave();
     };
-  }, []);
+  }, [enabled, gameMode]);
 
-  return { room, queueState, seatReservation };
+  return { room, queueState, seatReservation, error, isConnecting };
 }

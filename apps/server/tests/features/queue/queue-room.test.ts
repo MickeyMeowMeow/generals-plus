@@ -66,4 +66,12 @@ describe("MatchQueueRoom", () => {
 
     expect(room.clients.some((c) => c.userData.currentCycle > 0)).toBe(true);
   });
+
+  it("uses minPlayers as the default match group size", async () => {
+    room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+      gameMode: GameMode.CLASSIC,
+    });
+
+    expect(room.maxPlayers).toBe(2);
+  });
 });

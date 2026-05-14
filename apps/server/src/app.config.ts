@@ -19,6 +19,7 @@ import { SetupRoom } from "#/features/setup/setup-room";
 Encoder.BUFFER_SIZE = 1024 * 1024;
 
 matchMaker.controller.exposedMethods = [
+  "create",
   "joinById",
   "reconnect",
   "joinOrCreate",

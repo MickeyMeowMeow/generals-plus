@@ -18,9 +18,8 @@ import {
 
 import { createGame } from "#/features/game/utils";
 
-const DEFAULT_MAX_PLAYERS = 8;
 const DEFAULT_MIN_PLAYERS = 2;
-const DEFAULT_COUNTDOWN_CYCLES = 20;
+const DEFAULT_COUNTDOWN_CYCLES = 0;
 
 export class MatchQueueRoom extends QueueRoom {
   declare state: QueueState;
@@ -42,7 +41,7 @@ export class MatchQueueRoom extends QueueRoom {
 
     const queueOptions: QueueOptions = {
       matchRoomName: ROOM_NAMES.MATCH,
-      maxPlayers: DEFAULT_MAX_PLAYERS,
+      maxPlayers: options.maxPlayers ?? this.minPlayers,
       maxWaitingCycles: options.countdownCycles ?? DEFAULT_COUNTDOWN_CYCLES,
       allowIncompleteGroups: true,
       onGroupReady: async (group) => {
