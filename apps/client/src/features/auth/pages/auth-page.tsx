@@ -1,14 +1,10 @@
 import type { SubmitEvent } from "react";
 import { useCallback, useState } from "react";
 
+import { BrandTitle, LoadingPanel, StageCenter } from "#/components/layout";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { AuthForm } from "#/features/auth/components/auth-form";
 import { useAuth } from "#/features/auth/hooks";
-import {
-  BrandTitle,
-  LoadingPanel,
-  StageCenter,
-} from "#/features/game/components/game-stage";
 
 /**
  * Root-route unauthenticated scene.

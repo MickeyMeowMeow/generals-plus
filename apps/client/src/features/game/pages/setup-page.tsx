@@ -3,20 +3,16 @@ import { SetupClientMessage } from "@generals-plus/shared-types";
 import { LogOut, Play } from "lucide-react";
 import { useNavigate } from "react-router";
 
-import { ColorPicker } from "#/components/game/color-picker";
+import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { useUser } from "#/features/auth/hooks";
 import { useSetupRoom } from "#/features/game/api/use-setup-room";
-import {
-  ErrorPanel,
-  LoadingPanel,
-  StageCenter,
-} from "#/features/game/components/game-stage";
 import {
   ModeSelect,
   RoomPlayerList,
 } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
+import { ColorPicker } from "../components/color-picker";
 
 /**
  * Custom-room setup/game scene for `/match/:roomId`.

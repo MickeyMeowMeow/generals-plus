@@ -3,11 +3,11 @@ import { LogOut, Play, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
+import { BrandTitle, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
 import { createCustomSetupRoom } from "#/features/game/api/use-setup-room";
-import { BrandTitle, StageCenter } from "#/features/game/components/game-stage";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
 function ModePickerDialog({
@@ -116,8 +116,8 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
       ) : null}
 
       <StageCenter>
-        <div className="mx-auto grid max-w-5xl gap-8">
-          <BrandTitle />
+        <div className="mx-auto grid max-w-5xl gap-5 sm:gap-6">
+          <BrandTitle compact />
 
           <div className="flex items-center justify-between gap-3">
             <p className="text-lg font-medium">Hello, {displayName}</p>
@@ -127,7 +127,7 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
             </Button>
           </div>
 
-          <section className="grid min-h-56 place-items-center border-t border-game-border pt-8">
+          <section className="grid min-h-40 place-items-center border-t border-game-border pt-5 sm:min-h-44">
             <Button
               type="button"
               size="lg"
@@ -139,7 +139,7 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
             </Button>
           </section>
 
-          <section className="grid min-h-44 place-items-center border-t border-game-border pt-8">
+          <section className="grid min-h-32 place-items-center border-t border-game-border pt-5 sm:min-h-36">
             <div className="grid justify-items-center gap-3">
               <Button
                 type="button"

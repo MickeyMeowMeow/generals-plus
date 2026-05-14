@@ -34,6 +34,8 @@ declare module "@pixi/react" {
 interface ViewportProps {
   worldWidth: number;
   worldHeight: number;
+  initialFitRatio: number;
+  initialMaxScale: number;
   minScale: number;
   maxScale: number;
 }
@@ -45,15 +47,19 @@ export function Viewport({
   children,
   worldWidth,
   worldHeight,
+  initialFitRatio,
+  initialMaxScale,
   minScale,
   maxScale,
 }: PropsWithChildren<ViewportProps>) {
   const { app } = useApplication();
   const viewportRef = useRef<ViewportWrapper>(null);
+  const initializedWorldRef = useRef<string | null>(null);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
+    if (app.screen.width <= 0 || app.screen.height <= 0) return;
 
     viewport.resize(
       app.screen.width,
@@ -62,15 +68,40 @@ export function Viewport({
       worldHeight,
     );
     viewport.clampZoom({ minScale, maxScale });
-    viewport.clamp({ direction: "all" });
+    viewport.clamp({
+      left: 0,
+      top: 0,
+      right: worldWidth,
+      bottom: worldHeight,
+      direction: "all",
+      underflow: "center",
+    });
 
-    viewport.fit();
-    viewport.moveCenter(worldWidth / 2, worldHeight / 2);
+    const viewportKey = `${app.screen.width}:${app.screen.height}:${worldWidth}:${worldHeight}`;
+    if (initializedWorldRef.current !== viewportKey) {
+      const fitScale = Math.min(
+        app.screen.width / worldWidth,
+        app.screen.height / worldHeight,
+      );
+      const adaptiveInitialScale = Math.min(
+        initialMaxScale,
+        fitScale * initialFitRatio,
+      );
+      const clampedInitialScale = Math.min(
+        maxScale,
+        Math.max(minScale, adaptiveInitialScale),
+      );
+      viewport.setZoom(clampedInitialScale, true);
+      viewport.moveCenter(worldWidth / 2, worldHeight / 2);
+      initializedWorldRef.current = viewportKey;
+    }
   }, [
     app.screen.width,
     app.screen.height,
     worldWidth,
     worldHeight,
+    initialFitRatio,
+    initialMaxScale,
     minScale,
     maxScale,
   ]);

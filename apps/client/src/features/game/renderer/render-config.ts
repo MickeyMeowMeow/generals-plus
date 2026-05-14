@@ -5,7 +5,9 @@ export const RenderConfig = {
   // Stage
   stageBackground: 0x111111,
   stagePadding: 24,
-  minScale: 0.25,
+  initialMaxScale: 0.72,
+  initialFitRatio: 0.92,
+  minScale: 0.08,
   maxScale: 1,
 
   // Grid

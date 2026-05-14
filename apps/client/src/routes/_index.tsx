@@ -1,11 +1,11 @@
 import type { GameMode } from "@generals-plus/engine";
 import { useState } from "react";
 
+import { Stage } from "#/components/layout";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth } from "#/features/auth/hooks";
 import { AuthPage } from "#/features/auth/pages/auth-page";
-import { GameStage } from "#/features/game/components/game-stage";
 import { QueuePage } from "#/features/game/pages/queue-page";
 import { LobbyPage } from "#/features/lobby/pages/lobby-page";
 
@@ -34,7 +34,7 @@ export default function Index() {
   );
 
   return (
-    <GameStage>
+    <Stage>
       {state.status !== AuthStatus.AUTHENTICATED ? (
         <AuthPage />
       ) : phase === "queue" ? (
@@ -47,6 +47,6 @@ export default function Index() {
           }}
         />
       )}
-    </GameStage>
+    </Stage>
   );
 }

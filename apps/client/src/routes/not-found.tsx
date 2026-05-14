@@ -1,12 +1,12 @@
 import { Link } from "react-router";
 
-import { Button } from "#/components/ui/button";
 import {
   BrandTitle,
-  GameStage,
+  Stage,
   StageCenter,
   StagePanel,
-} from "#/features/game/components/game-stage";
+} from "#/components/layout";
+import { Button } from "#/components/ui/button";
 
 /**
  * Stage-styled 404 for removed legacy routes and bad URLs.
@@ -17,7 +17,7 @@ import {
  */
 export default function NotFoundPage() {
   return (
-    <GameStage>
+    <Stage>
       <StageCenter>
         <div className="mx-auto grid max-w-xl gap-6">
           <BrandTitle compact />
@@ -32,6 +32,6 @@ export default function NotFoundPage() {
           </StagePanel>
         </div>
       </StageCenter>
-    </GameStage>
+    </Stage>
   );
 }

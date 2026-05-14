@@ -1,13 +1,9 @@
 import { useParams } from "react-router";
 
+import { ErrorPanel, Stage, StageCenter } from "#/components/layout";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth } from "#/features/auth/hooks";
 import { AuthPage } from "#/features/auth/pages/auth-page";
-import {
-  ErrorPanel,
-  GameStage,
-  StageCenter,
-} from "#/features/game/components/game-stage";
 import { CustomSetupRoom } from "#/features/game/pages/setup-page";
 
 /**
@@ -22,7 +18,7 @@ export default function MatchRoute() {
   const { state } = useAuth();
 
   return (
-    <GameStage>
+    <Stage>
       {state.status !== AuthStatus.AUTHENTICATED ? (
         <AuthPage />
       ) : roomId ? (
@@ -32,6 +28,6 @@ export default function MatchRoute() {
           <ErrorPanel message="This match URL does not contain a room id." />
         </StageCenter>
       )}
-    </GameStage>
+    </Stage>
   );
 }

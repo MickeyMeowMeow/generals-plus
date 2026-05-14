@@ -88,6 +88,8 @@ export function GameApp({
           <Viewport
             worldWidth={worldWidth}
             worldHeight={worldHeight}
+            initialFitRatio={RenderConfig.initialFitRatio}
+            initialMaxScale={RenderConfig.initialMaxScale}
             minScale={RenderConfig.minScale}
             maxScale={RenderConfig.maxScale}
           >

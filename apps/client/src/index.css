@@ -103,8 +103,52 @@ body {
 }
 
 .game-stage {
+  isolation: isolate;
   position: relative;
-  background: var(--game-bg);
+  background:
+    linear-gradient(180deg, rgb(15 15 15) 0%, var(--game-bg) 100%),
+    var(--game-bg);
+}
+
+.game-stage::before,
+.game-stage::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+}
+
+.game-stage::before {
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M48 0V48M0 48H48' fill='none' stroke='%232f2f2f' stroke-width='1' stroke-dasharray='5 9'/%3E%3C/svg%3E");
+  background-position: center;
+  opacity: 0.82;
+}
+
+.game-stage::after {
+  z-index: 0;
+  background:
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 34%,
+      rgb(255 255 255 / 0.04) 43%,
+      rgb(255 255 255 / 0.12) 49%,
+      rgb(255 255 255 / 0.04) 55%,
+      transparent 66%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.06) 0%,
+      transparent 34%,
+      rgb(0 0 0 / 0.28) 100%
+    );
+  opacity: 0.9;
+}
+
+.game-stage > :first-child {
+  z-index: 1;
 }
 
 .game-panel {
