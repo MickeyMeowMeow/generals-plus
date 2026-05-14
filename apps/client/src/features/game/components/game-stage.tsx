@@ -63,9 +63,7 @@ export function StagePanel({
   className?: string;
 }) {
   return (
-    <section className={cn("game-panel rounded-lg p-5", className)}>
-      {children}
-    </section>
+    <section className={cn("game-panel p-5", className)}>{children}</section>
   );
 }
 

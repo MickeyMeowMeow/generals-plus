@@ -8,7 +8,6 @@ import {
   isPaletteColor,
   nextAvailableColor,
   ROOM_NAMES,
-  SetupClientMessage,
   SetupPlayer,
   SetupState,
 } from "@generals-plus/shared-types";
@@ -179,7 +178,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       });
     },
 
-    [SetupClientMessage.START_GAME]: async (client: Client) => {
+    start: async (client: Client) => {
       if (!this.isHost(client)) {
         client.send("error", "only the host can start the game");
         return;
@@ -207,10 +206,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       }
     },
 
-    [SetupClientMessage.PICK_COLOR]: (
-      client: Client,
-      message: { color: number },
-    ) => {
+    pickColor: (client: Client, message: { color: number }) => {
       const auth = client.auth as ClientAuth;
       const player = this.state.players.find((p) => p.id === auth.id);
       if (!player) return;
@@ -288,6 +284,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         matchMaker.buildSeatReservation(room, client.sessionId),
       );
     }
+
+    await this.disconnect();
   }
 
   private transferHost() {
