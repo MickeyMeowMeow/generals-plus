@@ -1,5 +1,12 @@
 import type { GameMode } from "@generals-plus/engine";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { cn } from "#/lib/utils";
 
@@ -92,22 +99,36 @@ interface ModeSelectProps {
  * values to be selected before the backend can run them.
  */
 export function ModeSelect({ value, onChange, disabled }: ModeSelectProps) {
+  const labelId = "game-mode-label";
+
   return (
-    <label className="grid gap-1.5 text-sm text-game-text-dim">
-      Game mode
-      <select
+    <div className="grid gap-1.5 text-sm text-game-text-dim">
+      <span id={labelId}>Game mode</span>
+      <Select
         value={value}
+        onValueChange={(nextValue) => onChange(nextValue as GameMode)}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value as GameMode)}
-        className="h-7 border border-game-border bg-game-bg px-3 text-sm text-game-text outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:opacity-60"
       >
-        {GAME_MODE_OPTIONS.map((mode) => (
-          <option key={mode.id} value={mode.id} disabled={!mode.isEnabled}>
-            {mode.label}
-            {mode.isEnabled ? "" : " (coming soon)"}
-          </option>
-        ))}
-      </select>
-    </label>
+        <SelectTrigger
+          aria-labelledby={labelId}
+          size="sm"
+          className="h-7 w-full border-game-border bg-game-bg px-3 text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="border border-game-border bg-game-surface text-game-text">
+          {GAME_MODE_OPTIONS.map((mode) => (
+            <SelectItem
+              key={mode.id}
+              value={mode.id}
+              disabled={!mode.isEnabled}
+            >
+              {mode.label}
+              {mode.isEnabled ? "" : " (coming soon)"}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

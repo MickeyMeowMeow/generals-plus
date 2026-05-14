@@ -11,10 +11,10 @@ import {
 } from "@generals-plus/shared-types";
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
-  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StrictMode } from "react";
@@ -333,16 +333,19 @@ describe("client room flows", () => {
 
     expect(await screen.findByText("You are host")).toBeTruthy();
     expect(networkMocks.joinById).toHaveBeenCalledWith("setup-456");
+    const user = userEvent.setup();
     const modeSelect = screen.getByLabelText("Game mode");
     expect(modeSelect).toBeTruthy();
-    expect(
-      within(modeSelect).getByRole("option", { name: /Demolition/ }),
-    ).toBeDisabled();
+    fireEvent.keyDown(modeSelect, { key: "ArrowDown" });
+    expect(screen.getByRole("option", { name: /Demolition/ })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    fireEvent.keyDown(modeSelect, { key: "Escape" });
     expect(
       screen.getByRole("button", { name: "Force start game" }),
     ).toBeTruthy();
 
-    const user = userEvent.setup();
     await user.click(
       screen.getByRole("button", {
         name: `Pick color #${PLAYER_COLOR_PALETTE[0]
