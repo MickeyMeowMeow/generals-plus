@@ -23,7 +23,7 @@ function ModePickerDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="mode-picker-title"
-        className="game-panel max-h-[min(42rem,calc(100svh-2rem))] w-full max-w-3xl overflow-auto rounded-lg p-5"
+        className="game-panel max-h-[min(42rem,calc(100svh-2rem))] w-full max-w-3xl overflow-auto rounded-none p-5"
       >
         <div className="flex items-center justify-between gap-3">
           <h2 id="mode-picker-title" className="text-xl font-semibold">
@@ -47,7 +47,7 @@ function ModePickerDialog({
               type="button"
               disabled={!mode.isEnabled}
               onClick={() => onSelectMode(mode.id)}
-              className="rounded-lg border border-game-border bg-game-bg p-4 text-left transition hover:border-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:cursor-not-allowed disabled:opacity-45"
+              className="rounded-none border border-game-border bg-game-bg p-4 text-left transition hover:border-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:cursor-not-allowed disabled:opacity-45"
             >
               <span className="block text-base font-semibold">
                 {mode.label}
@@ -152,7 +152,7 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
               </Button>
 
               {customError ? (
-                <p className="rounded-md border border-destructive/40 p-3 text-sm text-destructive">
+                <p className="rounded-none border border-destructive/40 p-3 text-sm text-destructive">
                   {customError}
                 </p>
               ) : null}

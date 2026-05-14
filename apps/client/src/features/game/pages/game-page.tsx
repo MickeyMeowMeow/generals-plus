@@ -120,7 +120,7 @@ export function GamePage({ reservation, source }: GamePageProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="game-result-title"
-            className="game-panel w-full max-w-sm rounded-lg p-5"
+            className="game-panel w-full max-w-sm rounded-none p-5"
           >
             <h2 id="game-result-title" className="text-2xl font-semibold">
               {didWin ? "You won" : winner ? "You lost" : "Game over"}
