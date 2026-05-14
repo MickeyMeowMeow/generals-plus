@@ -27,6 +27,12 @@ export abstract class BaseCombatResolver implements CombatResolver {
       return false;
     }
 
+    const dx = Math.abs(action.from.x - action.to.x);
+    const dy = Math.abs(action.from.y - action.to.y);
+    if (dx + dy !== 1) {
+      return false; // Can only move to adjacent cells
+    }
+
     const sourceOwnerId = source.owner?.playerId;
     if (sourceOwnerId !== action.playerId) {
       return false; // Can only move your own troops
@@ -66,7 +72,10 @@ export abstract class BaseCombatResolver implements CombatResolver {
 
     if (isAllied) {
       // Reinforce (including taking ownership if it was a teammate's tile)
-      target.owner = attacker;
+      // Ownership transfers only if it's not a general, troops are merged regardless
+      if (target.terrain !== Terrain.GENERAL) {
+        target.owner = attacker;
+      }
       target.troopCount = (target.troopCount ?? 0) + movingTroops;
     } else {
       // Attack
