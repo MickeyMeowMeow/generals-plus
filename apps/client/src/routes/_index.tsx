@@ -2,7 +2,7 @@ import type { GameMode } from "@generals-plus/engine";
 import { useState } from "react";
 
 import { Stage } from "#/components/layout";
-import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
+import { DEFAULT_GAME_MODE } from "#/config/ui-constants";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth } from "#/features/auth/hooks";
 import { AuthPage } from "#/features/auth/pages/auth-page";
@@ -29,9 +29,7 @@ type OfficialPhase = "lobby" | "queue";
 export default function Index() {
   const { state } = useAuth();
   const [phase, setPhase] = useState<OfficialPhase>("lobby");
-  const [selectedMode, setSelectedMode] = useState<GameMode>(
-    GAME_MODE_OPTIONS[0].id,
-  );
+  const [selectedMode, setSelectedMode] = useState<GameMode>(DEFAULT_GAME_MODE);
 
   return (
     <Stage>

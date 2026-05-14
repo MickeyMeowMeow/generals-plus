@@ -53,7 +53,7 @@ function ModePickerDialog({
                 {mode.label}
               </span>
               <span className="mt-2 block text-sm leading-5 text-game-text-dim">
-                {mode.description}
+                {mode.isEnabled ? "Ready to play" : "Coming soon"}
               </span>
               {!mode.isEnabled ? (
                 <span className="mt-3 block text-xs text-game-text-dim">
