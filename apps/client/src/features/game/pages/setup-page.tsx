@@ -12,6 +12,18 @@ import { GamePage } from "#/features/game/pages/game-page";
 import { ColorPicker } from "../components/color-picker";
 
 /**
+ * Computes how many teams the current setup settings will produce.
+ *
+ * The engine ends a classic match as soon as only one team is alive, so a room
+ * that starts with every player on the same team immediately resolves as a win.
+ * Keeping this check in the setup UI prevents custom rooms from starting in
+ * that invalid one-team shape.
+ */
+function getConfiguredTeamCount(playerCount: number, playersPerTeam: number) {
+  return Math.ceil(playerCount / playersPerTeam);
+}
+
+/**
  * Custom-room setup/game scene for `/match/:roomId`.
  *
  * The route first joins the setup room identified by the URL. While setup is
@@ -82,7 +94,12 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
   const myPlayer = setupState.players.find((player) => player.id === userId);
   const takenColors = setupState.players.map((player) => player.color);
   const isHost = Boolean(myPlayer?.isHost);
-  const canStart = isHost && setupState.players.length >= 2;
+  const teamCount = getConfiguredTeamCount(
+    setupState.players.length,
+    setupState.playersPerTeam,
+  );
+  const hasEnoughTeams = teamCount >= 2;
+  const canStart = isHost && setupState.players.length >= 2 && hasEnoughTeams;
 
   return (
     <StageCenter>
@@ -126,6 +143,11 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
                     <Play className="size-4" />
                     Force start game
                   </Button>
+                ) : null}
+                {isHost && setupState.players.length >= 2 && !hasEnoughTeams ? (
+                  <p className="basis-full text-sm text-game-text-dim">
+                    Set Players Per Team lower to create at least two teams.
+                  </p>
                 ) : null}
                 <Button
                   type="button"

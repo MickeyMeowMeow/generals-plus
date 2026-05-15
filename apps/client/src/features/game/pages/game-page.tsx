@@ -209,7 +209,6 @@ export function GamePage({ connection, source }: GamePageProps) {
               {didWin ? "You won" : winner ? "You lost" : "Game over"}
             </h2>
             <div className="mt-3 space-y-1 text-sm text-game-text-dim">
-              <p>Mode: {getModeLabel(gameResult.mode)}</p>
               {!didWin && winner?.displayName ? (
                 <p>Winner: {winner.displayName}</p>
               ) : null}

@@ -66,6 +66,7 @@ function createSetupState(
     color: number;
     isHost: boolean;
   }>,
+  overrides: Partial<SetupSettings> = {},
 ) {
   const settings: SetupSettings = {
     gameMode: GameMode.CLASSIC,
@@ -80,6 +81,7 @@ function createSetupState(
     minGeneralDistanceFactor: 0.6,
     generalInitialTroops: 50,
     cityInitialTroops: 50,
+    ...overrides,
   };
 
   return createState({
@@ -381,20 +383,23 @@ describe("client room flows", () => {
   it("joins setup room directly from match URL", async () => {
     const setupRoom = createRoom({
       roomId: "setup-456",
-      state: createSetupState([
-        {
-          id: "player-1",
-          displayName: "Nova",
-          color: PLAYER_COLOR_PALETTE[0],
-          isHost: true,
-        },
-        {
-          id: "player-2",
-          displayName: "Rook",
-          color: PLAYER_COLOR_PALETTE[1],
-          isHost: false,
-        },
-      ]),
+      state: createSetupState(
+        [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+            isHost: true,
+          },
+          {
+            id: "player-2",
+            displayName: "Rook",
+            color: PLAYER_COLOR_PALETTE[1],
+            isHost: false,
+          },
+        ],
+        { playersPerTeam: 1 },
+      ),
     });
     networkMocks.joinById.mockResolvedValue(setupRoom);
 
@@ -437,6 +442,35 @@ describe("client room flows", () => {
 
     await user.click(screen.getByRole("button", { name: "Force start game" }));
     expect(setupRoom.send).toHaveBeenCalledWith(SetupClientMessage.START_GAME);
+  });
+
+  it("does not allow a custom match to start when all players are on one team", async () => {
+    const setupRoom = createRoom({
+      roomId: "setup-one-team",
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: true,
+        },
+        {
+          id: "player-2",
+          displayName: "Rook",
+          color: PLAYER_COLOR_PALETTE[1],
+          isHost: false,
+        },
+      ]),
+    });
+    networkMocks.joinById.mockResolvedValue(setupRoom);
+
+    renderRoute("/match/setup-one-team", auth());
+
+    expect(await screen.findByText("You are host")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Force start game" }),
+    ).toBeNull();
+    expect(screen.getByText(/at least two teams/)).toBeTruthy();
   });
 
   it("waits for a complete setup state when joining a custom room by link", async () => {
