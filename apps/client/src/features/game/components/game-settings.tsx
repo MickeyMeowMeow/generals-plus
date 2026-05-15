@@ -163,7 +163,7 @@ export function GameSettings({
           <Label htmlFor="isPublic" className={labelClassName}>
             Visibility
           </Label>
-          <div className="flex h-7 items-center justify-between border border-game-border bg-game-bg px-3 text-sm text-game-text">
+          <div className="flex h-7 items-center justify-between border border-game-border bg-game-bg px-3 text-sm text-game-text dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40">
             <Label
               htmlFor="isPublic"
               className={
