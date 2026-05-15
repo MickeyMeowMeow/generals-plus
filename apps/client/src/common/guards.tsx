@@ -12,7 +12,14 @@ import {
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth } from "#/features/auth/hooks";
 
-/** Route guard that redirects unauthenticated users to /user. */
+/**
+ * Legacy-compatible authenticated route guard.
+ *
+ * The rebuilt primary flows handle unauthenticated users inside `/` and
+ * `/match/:roomId`, but tests and any future protected utility routes can still
+ * use this guard. Unauthenticated users are sent to the root auth surface rather
+ * than to the removed `/user` route.
+ */
 export function RequireAuthenticated({ children }: { children: ReactElement }) {
   const { state } = useAuth();
 
@@ -42,7 +49,7 @@ export function RequireAuthenticated({ children }: { children: ReactElement }) {
   }
 
   if (state.status !== AuthStatus.AUTHENTICATED) {
-    return <Navigate to="/user" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return children;

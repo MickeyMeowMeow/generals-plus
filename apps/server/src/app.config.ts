@@ -18,7 +18,15 @@ import { SetupRoom } from "#/features/setup/setup-room";
 
 Encoder.BUFFER_SIZE = 1024 * 1024;
 
+/**
+ * Colyseus matchmaker methods exposed to the browser client.
+ *
+ * The rebuilt client relies on these methods directly: official queue uses
+ * `joinOrCreate`, custom-room URLs use `create` and `joinById`, and the
+ * setup/queue -> match transition consumes server-issued seat reservations.
+ */
 matchMaker.controller.exposedMethods = [
+  "create",
   "joinById",
   "reconnect",
   "joinOrCreate",

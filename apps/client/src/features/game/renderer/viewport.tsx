@@ -1,6 +1,7 @@
 import type { PixiReactElementProps } from "@pixi/react";
 import { extend, useApplication } from "@pixi/react";
 import type { Application } from "pixi.js";
+import { Rectangle } from "pixi.js";
 import type { IViewportOptions } from "pixi-viewport";
 import { Viewport as BaseViewport } from "pixi-viewport";
 import type { PropsWithChildren } from "react";
@@ -34,6 +35,10 @@ declare module "@pixi/react" {
 interface ViewportProps {
   worldWidth: number;
   worldHeight: number;
+  initialFitRatio: number;
+  initialMaxScale: number;
+  initialHudReserveRight: number;
+  initialHudReserveTop: number;
   minScale: number;
   maxScale: number;
 }
@@ -45,16 +50,29 @@ export function Viewport({
   children,
   worldWidth,
   worldHeight,
+  initialFitRatio,
+  initialMaxScale,
+  initialHudReserveRight,
+  initialHudReserveTop,
   minScale,
   maxScale,
 }: PropsWithChildren<ViewportProps>) {
   const { app } = useApplication();
   const viewportRef = useRef<ViewportWrapper>(null);
+  const initializedWorldRef = useRef<string | null>(null);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
+    if (app.screen.width <= 0 || app.screen.height <= 0) return;
 
+    viewport.eventMode = "static";
+    viewport.forceHitArea = new Rectangle(
+      0,
+      0,
+      app.screen.width,
+      app.screen.height,
+    );
     viewport.resize(
       app.screen.width,
       app.screen.height,
@@ -62,15 +80,54 @@ export function Viewport({
       worldHeight,
     );
     viewport.clampZoom({ minScale, maxScale });
-    viewport.clamp({ direction: "all" });
+    viewport.clamp({
+      left: 0,
+      top: 0,
+      right: worldWidth,
+      bottom: worldHeight,
+      direction: "all",
+      underflow: "center",
+    });
 
-    viewport.fit();
-    viewport.moveCenter(worldWidth / 2, worldHeight / 2);
+    const viewportKey = `${app.screen.width}:${app.screen.height}:${worldWidth}:${worldHeight}`;
+    if (initializedWorldRef.current !== viewportKey) {
+      const reservedWidth = Math.min(
+        initialHudReserveRight,
+        app.screen.width * 0.42,
+      );
+      const reservedHeight = Math.min(
+        initialHudReserveTop,
+        app.screen.height * 0.32,
+      );
+      const availableWidth = Math.max(1, app.screen.width - reservedWidth);
+      const availableHeight = Math.max(1, app.screen.height - reservedHeight);
+      const fitScale = Math.min(
+        availableWidth / worldWidth,
+        availableHeight / worldHeight,
+      );
+      const adaptiveInitialScale = Math.min(
+        initialMaxScale,
+        fitScale * initialFitRatio,
+      );
+      const clampedInitialScale = Math.min(
+        maxScale,
+        Math.max(minScale, adaptiveInitialScale),
+      );
+      viewport.setZoom(clampedInitialScale, true);
+      viewport.moveCenter(worldWidth / 2, worldHeight / 2);
+      viewport.x -= reservedWidth / 2;
+      viewport.y += reservedHeight / 2;
+      initializedWorldRef.current = viewportKey;
+    }
   }, [
     app.screen.width,
     app.screen.height,
     worldWidth,
     worldHeight,
+    initialFitRatio,
+    initialMaxScale,
+    initialHudReserveRight,
+    initialHudReserveTop,
     minScale,
     maxScale,
   ]);

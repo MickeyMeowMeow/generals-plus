@@ -1,22 +1,43 @@
-import type { LucideProps } from "lucide-react";
-import { Gamepad2, LogIn, User } from "lucide-react";
+import { GameMode } from "@generals-plus/engine";
 
-/** Maximum content width for standard page layouts. */
-export const PAGE_MAX_WIDTH = "max-w-3xl";
-
-/** Standard inner padding for page content. */
-export const PAGE_PADDING = "p-6";
-
-/** App title displayed in the header. */
+/** Product title shown by the shared stage-brand component. */
 export const APP_TITLE = "Generals Plus";
 
-/** Navigation link definitions for the app header. */
-export const NAV_LINKS: readonly {
-  readonly to: string;
-  readonly label: string;
-  readonly icon: React.ComponentType<LucideProps>;
-}[] = [
-  { to: "/user", label: "User", icon: User },
-  { to: "/lobby", label: "Lobby", icon: LogIn },
-  { to: "/match-screen", label: "Match Screen", icon: Gamepad2 },
-] as const;
+/** Default selectable mode until more rulesets are wired end to end. */
+export const DEFAULT_GAME_MODE = GameMode.CLASSIC;
+
+/** Client-side mode gate while only Classic is implemented end to end. */
+const SUPPORTED_GAME_MODES: ReadonlySet<GameMode> = new Set([
+  DEFAULT_GAME_MODE,
+]);
+
+/** Formats serialized game-mode ids for compact UI labels. */
+function formatGameMode(mode: string): string {
+  return mode.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Mode options presented by lobby and setup controls. */
+export const GAME_MODE_OPTIONS = Object.values(GameMode).map((mode) => ({
+  id: mode,
+  label: formatGameMode(mode),
+  minPlayers: 2,
+  isEnabled: SUPPORTED_GAME_MODES.has(mode),
+}));
+
+/** Playable official modes for queue creation. */
+export const OFFICIAL_GAME_MODES = GAME_MODE_OPTIONS.filter(
+  (mode) => mode.isEnabled,
+);
+
+/**
+ * Shared copy for the full-screen game stage.
+ *
+ * These strings are consumed by reusable visual primitives instead of individual
+ * routes so the rebuilt shell keeps a consistent tone across auth, lobby,
+ * setup, queue, and error states.
+ */
+export const GAME_STAGE_COPY = {
+  eyebrow: "Realtime command",
+  lobbyStatus: "Online operations ready",
+  customRoomLabel: "Create custom room",
+} as const;

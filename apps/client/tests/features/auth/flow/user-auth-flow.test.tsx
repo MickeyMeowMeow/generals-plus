@@ -20,14 +20,14 @@ describe("user auth flow", () => {
     cleanup();
   });
 
-  it("redirects unauthenticated players to user page", async () => {
-    renderRoute("/lobby", createMockAuth());
+  it("shows root auth surface for unauthenticated players", async () => {
+    renderRoute("/", createMockAuth());
     expect(
-      await screen.findByRole("heading", { name: "Sign In" }),
+      await screen.findByRole("heading", { name: "Sign in" }),
     ).toBeTruthy();
   });
 
-  it("signs in from user page and enters lobby", async () => {
+  it("signs in from root page", async () => {
     const signInAnonymously = vi.fn().mockImplementation(async () => {
       setAuthValue(
         createMockAuth({
@@ -41,40 +41,14 @@ describe("user auth flow", () => {
     const auth = createMockAuth();
     auth.actions.signInAnonymously = signInAnonymously;
 
-    renderRoute("/user", auth);
+    renderRoute("/", auth);
 
     const user = userEvent.setup();
     const input = screen.getByLabelText("Display name");
     await user.clear(input);
     await user.type(input, "Nova");
-    await user.click(
-      screen.getByRole("button", { name: "Sign in anonymously" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(signInAnonymously).toHaveBeenCalledWith("Nova");
-  });
-
-  it("signs out from user page and clears active room state", async () => {
-    const signOut = vi.fn().mockResolvedValue(undefined);
-    const resetMatchConnection = vi.fn().mockResolvedValue(undefined);
-
-    const auth = createMockAuth({
-      status: AuthStatus.AUTHENTICATED,
-      user: { id: "helix", displayName: "Helix" },
-      token: "token-2",
-    });
-    auth.actions.signOut = signOut;
-
-    useMatchConnectionStore.setState({
-      reset: resetMatchConnection,
-    });
-
-    renderRoute("/user", auth);
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Sign out" }));
-
-    expect(resetMatchConnection).toHaveBeenCalledTimes(1);
-    expect(signOut).toHaveBeenCalledTimes(1);
   });
 });
