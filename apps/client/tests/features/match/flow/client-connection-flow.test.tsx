@@ -254,7 +254,7 @@ describe("client room flows", () => {
     const usernameInList = screen
       .getAllByText("Nova")
       .find((el) => el.closest("li"));
-    expect(usernameInList!.closest("li")).toHaveClass("font-semibold");
+    expect(usernameInList?.closest("li")).toHaveClass("font-semibold");
     expect(networkMocks.joinOrCreate).toHaveBeenCalledWith(ROOM_NAMES.QUEUE, {
       gameMode: GameMode.CLASSIC,
     });
