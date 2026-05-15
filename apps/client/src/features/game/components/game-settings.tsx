@@ -50,6 +50,9 @@ const NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "cityInitialTroops", label: "City Troops" },
 ];
 
+/** Rounds a value to a consistent precision to avoid floating-point nonsense. */
+const round = (v: number | string) => Math.round(Number(v) * 100000) / 100000;
+
 /**
  * Host-editable setup settings panel.
  *
@@ -63,7 +66,13 @@ export function GameSettings({
   onChangeSettings,
 }: GameSettingsProps) {
   const [draft, setDraft] = useState<DraftSettings>(currentSettings);
-  const [isDirty, setIsDirty] = useState(false);
+
+  const isDirty =
+    draft.gameMode !== currentSettings.gameMode ||
+    draft.isPublic !== currentSettings.isPublic ||
+    NUMBER_FIELDS.some(
+      ({ key }) => round(draft[key]) !== round(currentSettings[key]),
+    );
 
   // Sync draft with server settings only if the host hasn't made unsaved local changes.
   useEffect(() => {
@@ -73,17 +82,14 @@ export function GameSettings({
   }, [currentSettings, isDirty]);
 
   const handleNumberChange = (key: NumberKeys, value: string) => {
-    setIsDirty(true);
     setDraft((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleModeChange = (mode: GameMode) => {
-    setIsDirty(true);
     setDraft((prev) => ({ ...prev, gameMode: mode }));
   };
 
   const handlePublicToggle = (checked: boolean) => {
-    setIsDirty(true);
     setDraft((prev) => ({ ...prev, isPublic: checked }));
   };
 
@@ -93,18 +99,15 @@ export function GameSettings({
       isPublic: draft.isPublic,
     };
 
-    for (const field of NUMBER_FIELDS) {
-      const val = draft[field.key];
-      payload[field.key] = typeof val === "string" ? parseFloat(val) || 0 : val;
+    for (const { key } of NUMBER_FIELDS) {
+      Object.assign(payload, { [key]: round(draft[key]) });
     }
 
     onChangeSettings(payload);
-    setIsDirty(false);
   };
 
   const handleDiscard = () => {
     setDraft(currentSettings);
-    setIsDirty(false);
   };
 
   // Guests see the live server state. The host sees their active draft.
@@ -135,7 +138,10 @@ export function GameSettings({
           <Select
             disabled={!isHost}
             value={displayed.gameMode ?? GameMode.CLASSIC}
-            onValueChange={(val) => handleModeChange(val as GameMode)}
+            onValueChange={(val) => {
+              const mode = GAME_MODE_OPTIONS.find((o) => o.id === val)?.id;
+              if (mode) handleModeChange(mode);
+            }}
           >
             <SelectTrigger
               aria-labelledby="game-mode-label"
@@ -163,7 +169,7 @@ export function GameSettings({
           <Label htmlFor="isPublic" className={labelClassName}>
             Visibility
           </Label>
-          <div className="flex h-7 items-center justify-between border border-game-border bg-game-bg px-3 text-sm text-game-text">
+          <div className="flex h-7 items-center justify-between border border-game-border bg-game-bg px-3 text-sm text-game-text dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40">
             <Label
               htmlFor="isPublic"
               className={
@@ -191,7 +197,11 @@ export function GameSettings({
               id={key}
               type="number"
               disabled={!isHost}
-              value={displayed[key] ?? ""}
+              value={
+                displayed[key] === Number(displayed[key])
+                  ? round(displayed[key])
+                  : displayed[key]
+              }
               onChange={(e) => handleNumberChange(key, e.target.value)}
               className={inputClassName}
             />
