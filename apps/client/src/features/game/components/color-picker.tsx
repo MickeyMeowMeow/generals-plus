@@ -1,5 +1,7 @@
 import { PLAYER_COLOR_PALETTE } from "@generals-plus/shared-types";
 
+import { Button } from "#/components/ui/button";
+
 interface ColorPickerProps {
   /** Palette colors already claimed by other players in the current room. */
   takenColors: number[];
@@ -31,9 +33,11 @@ export function ColorPicker({
         const taken = takenColors.includes(c) && c !== currentColor;
         const colorHex = `#${c.toString(16).padStart(6, "0")}`;
         return (
-          <button
+          <Button
             key={c}
             type="button"
+            variant="outline"
+            size="icon"
             disabled={taken}
             aria-label={`Pick color ${colorHex}`}
             aria-pressed={c === currentColor}
@@ -43,7 +47,7 @@ export function ColorPicker({
                 ? "border-white ring-2 ring-white/50"
                 : taken
                   ? "cursor-not-allowed border-transparent opacity-25 grayscale"
-                  : "cursor-pointer border-white/20 hover:border-white/70"
+                  : "border-white/20 hover:border-white/70"
             }`}
             style={{
               backgroundColor: colorHex,

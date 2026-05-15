@@ -1,11 +1,16 @@
 import "@testing-library/jest-dom/vitest";
 
-import { vi } from "vitest";
+import { afterEach, vi } from "vitest";
 
 Element.prototype.scrollIntoView ??= vi.fn();
 Element.prototype.hasPointerCapture ??= vi.fn(() => false);
 Element.prototype.setPointerCapture ??= vi.fn();
 Element.prototype.releasePointerCapture ??= vi.fn();
+
+afterEach(() => {
+  localStorage.clear();
+  sessionStorage.clear();
+});
 
 vi.mock("#/features/auth/providers/auth-provider", async () => {
   const [actual, { getTestAuthValue }, { createElement }] = await Promise.all([

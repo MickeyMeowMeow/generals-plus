@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MatchConnectionGateway } from "#/features/match/store/match-connection-store";
 import { createMatchConnectionStore } from "#/features/match/store/match-connection-store";
@@ -12,6 +12,14 @@ interface MatchState {
 }
 
 describe("match connection store", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
   it("starts with idle state", () => {
     const gateway: MatchConnectionGateway = {
       joinRoom: vi.fn(),

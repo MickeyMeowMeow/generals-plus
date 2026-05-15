@@ -4,6 +4,12 @@ import { useNavigate } from "react-router";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "#/components/ui/dialog";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import type { GameRoomConnection } from "#/features/game/api/use-game-room";
 import {
@@ -198,16 +204,19 @@ export function GamePage({ connection, source }: GamePageProps) {
       />
 
       {gameResult ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 px-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="game-result-title"
-            className="game-panel w-full max-w-sm rounded-none p-5"
+        <Dialog open={true}>
+          <DialogContent
+            className="max-w-sm"
+            aria-describedby={undefined}
+            showCloseButton={false}
+            onEscapeKeyDown={(event) => event.preventDefault()}
+            onInteractOutside={(event) => event.preventDefault()}
           >
-            <h2 id="game-result-title" className="text-2xl font-semibold">
-              {didWin ? "You won" : winner ? "You lost" : "Game over"}
-            </h2>
+            <DialogHeader>
+              <DialogTitle className="text-2xl">
+                {didWin ? "You won" : winner ? "You lost" : "Game over"}
+              </DialogTitle>
+            </DialogHeader>
             <div className="mt-3 space-y-1 text-sm text-game-text-dim">
               {!didWin && winner?.displayName ? (
                 <p>Winner: {winner.displayName}</p>
@@ -219,8 +228,8 @@ export function GamePage({ connection, source }: GamePageProps) {
                 ? "Return to lobby"
                 : "Return to setup room"}
             </Button>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </div>
   );
