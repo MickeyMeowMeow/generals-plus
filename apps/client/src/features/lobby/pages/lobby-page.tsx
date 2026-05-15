@@ -1,71 +1,74 @@
 import type { GameMode } from "@generals-plus/engine";
-import { LogOut, Play, Plus, X } from "lucide-react";
+import { LogOut, Play, Plus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
 import { BrandTitle, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "#/components/ui/dialog";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
 import { clearPersistedGameSession } from "#/features/game/api/use-game-room";
 import { createCustomSetupRoom } from "#/features/game/api/use-setup-room";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
+type ModeOption = (typeof GAME_MODE_OPTIONS)[number];
+
+function ModeCard({
+  mode,
+  onSelect,
+}: {
+  mode: ModeOption;
+  onSelect: (mode: GameMode) => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      disabled={!mode.isEnabled}
+      onClick={() => onSelect(mode.id)}
+      aria-label={`${mode.label}, ${mode.isEnabled ? "Ready" : "Coming soon"}`}
+      className="h-24 w-full flex-col items-start justify-between whitespace-normal border-game-border bg-game-bg p-3 text-left text-game-text hover:border-white/50 hover:bg-game-surface focus-visible:ring-white/30 disabled:opacity-45"
+    >
+      <span className="text-lg font-semibold leading-tight">{mode.label}</span>
+      <span className="text-xs text-game-text-dim">
+        {mode.isEnabled ? "Ready" : "Coming soon"}
+      </span>
+    </Button>
+  );
+}
+
 function ModePickerDialog({
+  open,
   onClose,
   onSelectMode,
 }: {
+  open: boolean;
   onClose: () => void;
   onSelectMode: (mode: GameMode) => void;
 }) {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 px-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mode-picker-title"
-        className="game-panel max-h-[min(42rem,calc(100svh-2rem))] w-full max-w-3xl overflow-auto rounded-none p-5"
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent
+        className="max-h-[min(48rem,calc(100svh-2rem))] sm:max-w-4xl overflow-auto border-game-border bg-game-surface p-5 text-game-text"
+        aria-describedby={undefined}
+        showCloseButton={true}
       >
-        <div className="flex items-center justify-between gap-3">
-          <h2 id="mode-picker-title" className="text-xl font-semibold">
-            Choose mode
-          </h2>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            aria-label="Close mode picker"
-          >
-            <X className="size-4" />
-          </Button>
-        </div>
-
+        <DialogHeader className="flex-row items-center justify-between gap-3">
+          <DialogTitle className="text-xl">Choose mode</DialogTitle>
+        </DialogHeader>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {GAME_MODE_OPTIONS.map((mode) => (
-            <button
-              key={mode.id}
-              type="button"
-              disabled={!mode.isEnabled}
-              onClick={() => onSelectMode(mode.id)}
-              className="rounded-none border border-game-border bg-game-bg p-4 text-left transition hover:border-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              <span className="block text-base font-semibold">
-                {mode.label}
-              </span>
-              <span className="mt-2 block text-sm leading-5 text-game-text-dim">
-                {mode.isEnabled ? "Ready to play" : "Coming soon"}
-              </span>
-              {!mode.isEnabled ? (
-                <span className="mt-3 block text-xs text-game-text-dim">
-                  Coming soon
-                </span>
-              ) : null}
-            </button>
+            <ModeCard key={mode.id} mode={mode} onSelect={onSelectMode} />
           ))}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -114,6 +117,7 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
     <>
       {isModePickerOpen ? (
         <ModePickerDialog
+          open={isModePickerOpen}
           onClose={() => setIsModePickerOpen(false)}
           onSelectMode={(mode) => {
             setIsModePickerOpen(false);
