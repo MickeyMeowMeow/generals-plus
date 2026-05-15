@@ -246,7 +246,6 @@ export class MatchRoom extends Room<{
     this.updateRatings(result).catch((err) => {
       logger.error(`[MatchRoom] Failed to update ratings: ${err}`);
     });
-    this.disconnect();
   }
 
   private createFinishedResultFromState(): IGameResult {

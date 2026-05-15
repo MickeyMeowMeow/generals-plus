@@ -3,6 +3,21 @@ import { describe, expect, it } from "vitest";
 
 import { calculateNewRatings } from "#/features/rating/rating-service";
 
+/**
+ * Narrow the result of Array.find() for test assertions.
+ * biome complains about non-null assertions (!) in tests, so we use
+ * explicit null checks instead.
+ */
+function mustFind<T>(
+  arr: T[],
+  predicate: (item: T) => boolean,
+  label: string,
+): T {
+  const result = arr.find(predicate);
+  if (!result) throw new Error(`mustFind: ${label} not found`);
+  return result;
+}
+
 describe("calculateNewRatings", () => {
   it("returns no change for a single player", () => {
     const result = calculateNewRatings(
@@ -25,8 +40,8 @@ describe("calculateNewRatings", () => {
 
     expect(result).toHaveLength(2);
 
-    const winner = result.find((r) => r.playerId === "p1")!;
-    const loser = result.find((r) => r.playerId === "p2")!;
+    const winner = mustFind(result, (r) => r.playerId === "p1", "winner p1");
+    const loser = mustFind(result, (r) => r.playerId === "p2", "loser p2");
 
     expect(winner.newRating).toBeGreaterThan(winner.oldRating);
     expect(loser.newRating).toBeLessThan(loser.oldRating);
@@ -42,7 +57,11 @@ describe("calculateNewRatings", () => {
       GameMode.CLASSIC,
     );
 
-    const winner = result.find((r) => r.playerId === "strong")!;
+    const winner = mustFind(
+      result,
+      (r) => r.playerId === "strong",
+      "winner strong",
+    );
     expect(winner.ratingChange).toBeGreaterThan(0);
     expect(winner.ratingChange).toBeLessThan(16);
   });
@@ -56,7 +75,11 @@ describe("calculateNewRatings", () => {
       GameMode.CLASSIC,
     );
 
-    const winner = result.find((r) => r.playerId === "weak")!;
+    const winner = mustFind(
+      result,
+      (r) => r.playerId === "weak",
+      "winner weak",
+    );
     expect(winner.ratingChange).toBeGreaterThan(16);
   });
 
@@ -73,8 +96,12 @@ describe("calculateNewRatings", () => {
 
     expect(result).toHaveLength(4);
 
-    const winner = result.find((r) => r.playerId === "p1")!;
-    const lastPlace = result.find((r) => r.playerId === "p4")!;
+    const winner = mustFind(result, (r) => r.playerId === "p1", "winner p1");
+    const lastPlace = mustFind(
+      result,
+      (r) => r.playerId === "p4",
+      "lastPlace p4",
+    );
 
     expect(winner.newRating).toBeGreaterThan(winner.oldRating);
     expect(lastPlace.newRating).toBeLessThan(lastPlace.oldRating);

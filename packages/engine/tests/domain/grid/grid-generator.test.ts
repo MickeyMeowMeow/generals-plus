@@ -51,7 +51,8 @@ function bfsReachable(
   visited.add(`${start.x},${start.y}`);
 
   while (queue.length > 0) {
-    const current = queue.shift()!;
+    const current = queue.shift();
+    if (!current) break;
     for (const [dx, dy] of [
       [0, -1],
       [1, 0],
@@ -177,7 +178,8 @@ describe("DefaultGridGenerator", () => {
       const queue: ICoordinate[] = [generals[0]];
       visited.add(`${generals[0].x},${generals[0].y}`);
       while (queue.length > 0) {
-        const current = queue.shift()!;
+        const current = queue.shift();
+        if (!current) break;
         for (const [dx, dy] of [
           [0, -1],
           [1, 0],
@@ -228,7 +230,8 @@ describe("DefaultGridGenerator", () => {
     const queue: ICoordinate[] = [generals[0]];
     visited.add(`${generals[0].x},${generals[0].y}`);
     while (queue.length > 0) {
-      const current = queue.shift()!;
+      const current = queue.shift();
+      if (!current) break;
       for (const [dx, dy] of [
         [0, -1],
         [1, 0],
