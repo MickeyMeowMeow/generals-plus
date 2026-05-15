@@ -218,6 +218,7 @@ describe("StandardCombatResolver", () => {
 
     expect(result).toBe(true);
     expect(general.owner).toBe(p1);
+    expect(general.terrain).toBe(Terrain.CITY);
     expect(resourceCell.owner).toBe(p1);
     expect(resourceCell.troopCount).toBe(8);
     expect(p2.status).toBe(PlayerStatus.ELIMINATED);

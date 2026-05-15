@@ -95,9 +95,25 @@ function createMatchState() {
     mode: GameMode.CLASSIC,
     width: 1,
     height: 1,
-    playerColors: new Map([
-      ["player-1", PLAYER_COLOR_PALETTE[0]],
-      ["player-2", PLAYER_COLOR_PALETTE[1]],
+    publicPlayers: new Map([
+      [
+        "player-1",
+        {
+          id: "player-1",
+          displayName: "Nova",
+          teamId: "team_0",
+          color: PLAYER_COLOR_PALETTE[0],
+        },
+      ],
+      [
+        "player-2",
+        {
+          id: "player-2",
+          displayName: "Rook",
+          teamId: "team_1",
+          color: PLAYER_COLOR_PALETTE[1],
+        },
+      ],
     ]),
     clientVisions: new Map([
       [
@@ -238,7 +254,7 @@ describe("client room flows", () => {
     const usernameInList = screen
       .getAllByText("Nova")
       .find((el) => el.closest("li"));
-    expect(usernameInList!.closest("li")).toHaveClass("font-semibold");
+    expect(usernameInList?.closest("li")).toHaveClass("font-semibold");
     expect(networkMocks.joinOrCreate).toHaveBeenCalledWith(ROOM_NAMES.QUEUE, {
       gameMode: GameMode.CLASSIC,
     });

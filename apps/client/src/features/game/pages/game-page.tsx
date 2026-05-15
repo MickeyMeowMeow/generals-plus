@@ -99,6 +99,7 @@ export function GamePage({ connection, source }: GamePageProps) {
     gameResult,
     sendMove,
     playerColors,
+    playerNames,
     connectionStatus,
     error,
     isConnecting,
@@ -175,9 +176,12 @@ export function GamePage({ connection, source }: GamePageProps) {
   const currentPlayer = visiblePlayers.find(
     (player) => player.sessionId === room?.sessionId,
   );
-  const winner = gameResult?.winnerTeamId
-    ? visiblePlayers.find((player) => player.teamId === gameResult.winnerTeamId)
+  const winnerId = gameResult?.winnerTeamId
+    ? Array.from(gameState.publicPlayers.values()).find(
+        (p) => p.teamId === gameResult.winnerTeamId,
+      )?.id
     : null;
+  const winnerName = winnerId ? playerNames.get(winnerId) : null;
   const didWin = Boolean(
     gameResult?.winnerTeamId &&
       currentPlayer?.teamId === gameResult.winnerTeamId,
@@ -200,6 +204,7 @@ export function GamePage({ connection, source }: GamePageProps) {
         scoreboard={gameState.scoreboard}
         visiblePlayers={visiblePlayers}
         playerColors={playerColors}
+        playerNames={playerNames}
         currentSessionId={room?.sessionId}
       />
 
@@ -214,13 +219,11 @@ export function GamePage({ connection, source }: GamePageProps) {
           >
             <DialogHeader>
               <DialogTitle className="text-2xl">
-                {didWin ? "You won" : winner ? "You lost" : "Game over"}
+                {didWin ? "You won" : winnerId ? "You lost" : "Game over"}
               </DialogTitle>
             </DialogHeader>
             <div className="mt-3 space-y-1 text-sm text-game-text-dim">
-              {!didWin && winner?.displayName ? (
-                <p>Winner: {winner.displayName}</p>
-              ) : null}
+              {!didWin && winnerName ? <p>Winner: {winnerName}</p> : null}
               {!gameResult.winnerTeamId ? <p>No winner was reported.</p> : null}
             </div>
             <Button type="button" onClick={handleReturn} className="mt-5">

@@ -38,9 +38,7 @@ export function createVisionCell(
         coordinate: cell.coordinate,
         visibility,
         terrain:
-          cell.terrain === Terrain.MOUNTAIN ||
-          cell.terrain === Terrain.CITY ||
-          cell.terrain === Terrain.GENERAL
+          cell.terrain === Terrain.MOUNTAIN || cell.terrain === Terrain.CITY
             ? MaskedTerrain.MAYBE_MOUNTAIN
             : MaskedTerrain.MAYBE_PLAIN,
         troopCount: null,
@@ -69,7 +67,7 @@ export class VisibilityMap {
    * @param team The team to evaluate visibility for.
    * @returns An IVisionGrid representing the visibility of each cell.
    */
-  evaluate(team: Team): IVisionGrid {
+  evaluate(team: Team, all_visible = false): IVisionGrid {
     const width = this.gameGrid.width;
     const height = this.gameGrid.height;
     const teamPlayerIds = new Set(
@@ -78,7 +76,7 @@ export class VisibilityMap {
 
     // Step 1: Compute visibility first. Everything starts as shrouded.
     const visibilityData: Visibility[][] = Array.from({ length: height }, () =>
-      Array(width).fill(Visibility.SHROUDED),
+      Array(width).fill(all_visible ? Visibility.VISIBLE : Visibility.SHROUDED),
     );
 
     this.gameGrid.forEach((cell, coord) => {

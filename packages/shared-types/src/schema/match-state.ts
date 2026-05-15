@@ -3,6 +3,7 @@ import { GameMode, GameStatus } from "@generals-plus/engine";
 
 import { ClientActionQueue } from "#/schema/action-data";
 import { Player } from "#/schema/player";
+import { PublicPlayer } from "#/schema/public-player";
 import { BaseScoreboard } from "#/schema/scoreboard";
 import { ClientVision } from "#/schema/vision-cell";
 
@@ -14,7 +15,9 @@ export class MatchState extends Schema {
   @type("number") width: number = 0;
   @type("number") height: number = 0;
 
-  @type({ map: "number" }) playerColors = new MapSchema<number>();
+  // Shared metadata that every client can see without exposing the full
+  // per-player server state kept in `players`.
+  @type({ map: PublicPlayer }) publicPlayers = new MapSchema<PublicPlayer>();
 
   @view() @type({ map: ClientActionQueue }) clientActionQueues =
     new MapSchema<ClientActionQueue>();

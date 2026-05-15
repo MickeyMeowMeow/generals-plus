@@ -297,7 +297,7 @@ function getDirection(from: ICoordinate, to: ICoordinate): MoveDirection {
  */
 function isReadyMatchState(state: MatchState) {
   return Boolean(
-    state.playerColors &&
+    state.publicPlayers &&
       state.clientVisions &&
       state.clientActionQueues &&
       state.players,
@@ -322,6 +322,9 @@ export function useGameRoom(
   const [gameState, setGameState] = useState<MatchState | null>(null);
   const [gameResult, setGameResult] = useState<IGameResult | null>(null);
   const [playerColors, setPlayerColors] = useState<Map<string, number>>(
+    new Map(),
+  );
+  const [playerNames, setPlayerNames] = useState<Map<string, string>>(
     new Map(),
   );
   const [error, setError] = useState<string | null>(null);
@@ -367,10 +370,13 @@ export function useGameRoom(
           setGameState(state);
 
           const colorMap = new Map<string, number>();
-          state.playerColors.forEach((color, playerId) => {
-            colorMap.set(playerId, color);
+          const nameMap = new Map<string, string>();
+          state.publicPlayers.forEach((player) => {
+            colorMap.set(player.id, player.color);
+            nameMap.set(player.id, player.displayName);
           });
           setPlayerColors(colorMap);
+          setPlayerNames(nameMap);
 
           const myId = currentRoom.sessionId;
 
@@ -455,6 +461,7 @@ export function useGameRoom(
     gameResult,
     sendMove,
     playerColors,
+    playerNames,
     connectionStatus,
     error,
     isConnecting,

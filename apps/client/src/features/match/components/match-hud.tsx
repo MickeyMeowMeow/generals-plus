@@ -24,6 +24,7 @@ interface MatchHudProps {
   scoreboard: BaseScoreboard;
   visiblePlayers: Iterable<Player>;
   playerColors: Map<string, number>;
+  playerNames: Map<string, string>;
   currentSessionId: string | null | undefined;
 }
 
@@ -45,10 +46,15 @@ function getHudPlayers({
   scoreboard,
   visiblePlayers,
   playerColors,
+  playerNames,
   currentSessionId,
 }: Pick<
   MatchHudProps,
-  "scoreboard" | "visiblePlayers" | "playerColors" | "currentSessionId"
+  | "scoreboard"
+  | "visiblePlayers"
+  | "playerColors"
+  | "playerNames"
+  | "currentSessionId"
 >): MatchHudPlayer[] {
   const scoreEntries = getScoreEntries(scoreboard);
   const scoreByPlayer = new Map(
@@ -68,7 +74,8 @@ function getHudPlayers({
       const score = scoreByPlayer.get(playerId);
       return {
         id: playerId,
-        displayName: player?.displayName || playerId,
+        displayName:
+          player?.displayName || playerNames.get(playerId) || playerId,
         teamId: player?.teamId || "",
         color: player?.color ?? playerColors.get(playerId) ?? 0,
         land: score?.land ?? 0,
@@ -140,12 +147,14 @@ export function MatchHud({
   scoreboard,
   visiblePlayers,
   playerColors,
+  playerNames,
   currentSessionId,
 }: MatchHudProps) {
   const players = getHudPlayers({
     scoreboard,
     visiblePlayers,
     playerColors,
+    playerNames,
     currentSessionId,
   });
   const groupedPlayers = groupPlayers(players);
