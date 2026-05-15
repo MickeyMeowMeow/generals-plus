@@ -5,10 +5,10 @@ export const RenderConfig = {
   // Stage
   stageBackground: 0x111111,
   stagePadding: 24,
-  initialMaxScale: 0.56,
+  initialMaxScale: 0.6,
   initialFitRatio: 0.8,
-  initialHudReserveRight: 150,
-  initialHudReserveTop: 80,
+  initialHudReserveRight: 120,
+  initialHudReserveTop: 60,
   minScale: 0.08,
   maxScale: 1,
 

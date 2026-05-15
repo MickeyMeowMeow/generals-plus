@@ -1,7 +1,6 @@
 import type { PixiReactElementProps } from "@pixi/react";
 import { extend, useApplication } from "@pixi/react";
 import type { Application } from "pixi.js";
-import { Rectangle } from "pixi.js";
 import type { IViewportOptions } from "pixi-viewport";
 import { Viewport as BaseViewport } from "pixi-viewport";
 import type { PropsWithChildren } from "react";
@@ -67,12 +66,10 @@ export function Viewport({
     if (app.screen.width <= 0 || app.screen.height <= 0) return;
 
     viewport.eventMode = "static";
-    viewport.forceHitArea = new Rectangle(
-      0,
-      0,
-      app.screen.width,
-      app.screen.height,
-    );
+    // Let pixi-viewport keep its hit area aligned with the visible world.
+    // A forced screen-sized rect lives in local/world coordinates, so it gets
+    // scaled with the camera and can silently shrink the clickable region.
+    viewport.forceHitArea = null;
     viewport.resize(
       app.screen.width,
       app.screen.height,

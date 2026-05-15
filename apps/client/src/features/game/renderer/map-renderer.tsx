@@ -1,8 +1,8 @@
 import type { ICoordinate } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import type { FederatedPointerEvent } from "pixi.js";
-import { Container } from "pixi.js";
-import { useCallback } from "react";
+import { Container, Rectangle } from "pixi.js";
+import { useCallback, useMemo } from "react";
 
 import { GridLayer } from "#/features/game/renderer/layers/grid";
 import { HighlightLayer } from "#/features/game/renderer/layers/highlight";
@@ -33,6 +33,16 @@ export function MapRenderer({
   playerColors,
 }: MapRendererProps) {
   const cellSize = stride - RenderConfig.cellGap;
+  const hitArea = useMemo(
+    () =>
+      new Rectangle(
+        0,
+        0,
+        grid.width * stride - RenderConfig.cellGap,
+        grid.height * stride - RenderConfig.cellGap,
+      ),
+    [grid.width, grid.height, stride],
+  );
 
   const onPointerDown = useCallback(
     (e: FederatedPointerEvent) => {
@@ -47,7 +57,11 @@ export function MapRenderer({
   );
 
   return (
-    <pixiContainer eventMode="static" onPointerDown={onPointerDown}>
+    <pixiContainer
+      eventMode="static"
+      hitArea={hitArea}
+      onPointerDown={onPointerDown}
+    >
       <GridLayer
         grid={grid}
         stride={stride}
