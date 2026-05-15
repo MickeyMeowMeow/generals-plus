@@ -1,5 +1,6 @@
 export * from "#/color-palette";
 export * from "#/messages";
+export * from "#/player-ratings";
 export * from "#/room-data";
 export * from "#/schema";
 export * from "#/seat";

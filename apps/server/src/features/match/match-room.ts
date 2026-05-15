@@ -21,10 +21,13 @@ import {
 } from "@generals-plus/shared-types";
 
 import { createPlayer } from "#/features/player/utils";
+import { calculateNewRatings } from "#/features/rating/rating-service";
 import { parseRoomData } from "#/features/room-data";
 import { createScoreboard, syncScoreboard } from "#/features/scoreboard/utils";
+import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
 const TICK_INTERVAL = 500;
+const userRepository = new MongoUserRepository();
 
 export class MatchRoom extends Room<{
   state: MatchState;
@@ -240,6 +243,9 @@ export class MatchRoom extends Room<{
   private finishMatch(result: IGameResult) {
     this.state.status = GameStatus.FINISHED;
     this.broadcast(MatchServerMessage.GAME_END, result);
+    this.updateRatings(result).catch((err) => {
+      logger.error(`[MatchRoom] Failed to update ratings: ${err}`);
+    });
     this.disconnect();
   }
 
@@ -355,6 +361,41 @@ export class MatchRoom extends Room<{
     }
 
     syncScoreboard(this.state.scoreboard, this.game.getScoreboard());
+  }
+
+  private async updateRatings(result: IGameResult) {
+    const players = Array.from(this.state.players.values());
+    if (players.length < 2) return;
+
+    const mode = result.mode;
+
+    const inputs = await Promise.all(
+      players.map(async (player) => {
+        const currentRating = await userRepository.getRating(player.id, mode);
+        const teamId = player.teamId;
+        const placement = teamId === result.winnerTeamId ? 1 : 2;
+
+        return {
+          playerId: player.id,
+          currentRating,
+          placement,
+        };
+      }),
+    );
+
+    const results = calculateNewRatings(inputs, mode);
+
+    await userRepository.updateRatings(
+      results.map((r) => ({
+        userId: r.playerId,
+        mode,
+        newRating: r.newRating,
+      })),
+    );
+
+    logger.info(
+      `[MatchRoom] Ratings updated for mode ${mode}: ${results.map((r) => `${r.playerId} ${r.oldRating}->${r.newRating}`).join(", ")}`,
+    );
   }
 
   private updateClientViews() {

@@ -1,3 +1,5 @@
+import type { GameMode } from "@generals-plus/engine";
+
 import type {
   IUser,
   IUserRepository,
@@ -10,9 +12,6 @@ import { UserModel } from "#/infra/db/models/user-model";
  * MongoDB implementation of the IUserRepository using Mongoose.
  */
 export class MongoUserRepository implements IUserRepository {
-  /**
-   * Map Mongoose Document to plain IUser entity.
-   */
   private mapToEntity(doc: IUserDocument): IUser {
     return {
       id: doc._id.toString(),
@@ -21,7 +20,7 @@ export class MongoUserRepository implements IUserRepository {
       displayName: doc.displayName,
       anonymous: doc.anonymous,
       verified: doc.verified,
-      elo: doc.elo,
+      ratings: doc.ratings,
     };
   }
 
@@ -39,12 +38,10 @@ export class MongoUserRepository implements IUserRepository {
     passwordHash: string,
     options?: UserCreateOptions,
   ): Promise<IUser> {
-    // Strip privileged fields from caller-supplied options to prevent
-    // callers from overriding security-sensitive values.
     const {
       password: _pw,
       verified: _v,
-      elo: _elo,
+      ratings: _ratings,
       anonymous: _anon,
       email: _email,
       ...safeOptions
@@ -61,12 +58,10 @@ export class MongoUserRepository implements IUserRepository {
   }
 
   async createAnonymous(options?: UserCreateOptions): Promise<IUser> {
-    // Strip privileged fields from caller-supplied options to prevent
-    // callers from overriding security-sensitive values.
     const {
       password: _pw,
       verified: _v,
-      elo: _elo,
+      ratings: _ratings,
       anonymous: _anon,
       email: _email,
       ...safeOptions
@@ -97,5 +92,26 @@ export class MongoUserRepository implements IUserRepository {
       { verified: true },
     ).exec();
     return result.modifiedCount > 0;
+  }
+
+  async getRating(userId: string, mode: GameMode): Promise<number> {
+    const user = await UserModel.findById(userId).exec();
+    if (!user) {
+      return 1000;
+    }
+    return user.ratings[mode] ?? 1000;
+  }
+
+  async updateRatings(
+    updates: Array<{ userId: string; mode: GameMode; newRating: number }>,
+  ): Promise<void> {
+    const bulkOps = updates.map(({ userId, mode, newRating }) => ({
+      updateOne: {
+        filter: { _id: userId },
+        update: { $set: { [`ratings.${mode}`]: newRating } },
+      },
+    }));
+
+    await UserModel.bulkWrite(bulkOps);
   }
 }

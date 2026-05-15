@@ -1,7 +1,7 @@
 import { JWT } from "@colyseus/auth";
 import type { Client, QueueOptions } from "@colyseus/core";
 import { logger, matchMaker, QueueRoom } from "@colyseus/core";
-import { GameMode } from "@generals-plus/engine";
+import { GameMode, getDefaultPlayersPerTeam } from "@generals-plus/engine";
 import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
 import {
   isPaletteColor,
@@ -13,10 +13,14 @@ import {
 
 import { createGame } from "#/features/game/utils";
 import { createPlayerInit } from "#/features/player/utils";
+import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
+const DEFAULT_MAX_PLAYERS = 8;
 const DEFAULT_MIN_PLAYERS = 2;
 const DEFAULT_COUNTDOWN_CYCLES = 20;
-const DEFAULT_PLAYERS_PER_TEAM = 2;
+const RATING_TOLERANCE = 200;
+
+const userRepository = new MongoUserRepository();
 
 /**
  * Official matchmaking queue room.
@@ -49,14 +53,19 @@ export class MatchQueueRoom extends QueueRoom {
 
     const queueOptions: QueueOptions = {
       matchRoomName: ROOM_NAMES.MATCH,
-      maxPlayers: options.maxPlayers ?? this.minPlayers,
+      maxPlayers: options.maxPlayers ?? DEFAULT_MAX_PLAYERS,
       maxWaitingCycles: options.countdownCycles ?? DEFAULT_COUNTDOWN_CYCLES,
       allowIncompleteGroups: true,
+      compare: (clientData, group) => {
+        const diff = Math.abs(clientData.rank - group.averageRank);
+        return diff <= RATING_TOLERANCE;
+      },
       onGroupReady: async () => {
         const game = createGame({
           mode: this.gameMode,
+          gridOptions: { generalCount: this.state.players.length },
           playerIds: this.state.players.map((p) => p.id),
-          playerPerTeam: DEFAULT_PLAYERS_PER_TEAM,
+          playerPerTeam: getDefaultPlayersPerTeam(this.gameMode),
         });
 
         const playerInit = createPlayerInit(this.state.players, game);
@@ -114,7 +123,40 @@ export class MatchQueueRoom extends QueueRoom {
       return;
     }
 
-    super.reassignMatchGroups();
+    // Replicate Colyseus QueueRoom.reassignMatchGroups but enforce minPlayers
+    // per group, since the built-in evaluateHighPriorityGroups can mark
+    // undersized groups as ready and trigger onGroupReady before we can stop it.
+    (this.groups as unknown[]).length = 0;
+    (this.highPriorityGroups as unknown[]).length = 0;
+
+    const sortedClients = this.clients
+      .filter(
+        (client: Client) =>
+          client.userData && client.userData.group?.ready !== true,
+      )
+      .sort((a: Client, b: Client) => a.userData.rank - b.userData.rank);
+
+    this.redistributeClients(sortedClients);
+    this.evaluateMinPlayersForPriorityGroups();
+    this.processGroupsReady();
+  }
+
+  private evaluateMinPlayersForPriorityGroups() {
+    for (const group of this
+      .highPriorityGroups as (typeof this.groups)[number][]) {
+      if (group.clients.length < this.minPlayers) {
+        // Reset wait time so these clients continue waiting instead of being ready
+        for (const client of group.clients) {
+          if (client.userData) {
+            client.userData.currentCycle = 0;
+          }
+        }
+        continue;
+      }
+      group.ready = group.clients.every(
+        (c: Client) => c.userData?.currentCycle > 1,
+      );
+    }
   }
 
   /** Verify the client auth token before allowing queue participation. */
@@ -128,7 +170,7 @@ export class MatchQueueRoom extends QueueRoom {
    * Queue state is intentionally smaller than match state; it only contains the
    * information needed by the lobby UI before a real match room exists.
    */
-  onJoin(client: Client, options: { rank?: number }) {
+  async onJoin(client: Client) {
     const auth = client.auth as ClientAuth;
     const existingClient = this.clients.find(
       (c) =>
@@ -142,6 +184,8 @@ export class MatchQueueRoom extends QueueRoom {
       existingClient.leave(4000);
     }
 
+    const rating = await userRepository.getRating(auth.id, this.gameMode);
+
     const player = new QueuePlayer();
     player.id = auth.id;
     player.displayName = auth.displayName ?? "Player";
@@ -151,7 +195,7 @@ export class MatchQueueRoom extends QueueRoom {
       ) ?? 0;
     this.queueState.players.push(player);
 
-    super.onJoin(client, { rank: options.rank ?? 0 });
+    super.onJoin(client, { rank: rating });
   }
 
   /** Remove a leaving player's queue presentation state. */

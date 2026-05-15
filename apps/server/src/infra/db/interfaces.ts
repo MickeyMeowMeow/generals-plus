@@ -1,3 +1,7 @@
+import type { GameMode } from "@generals-plus/engine";
+
+import type { IPlayerRatings } from "#/infra/db/models/user-model";
+
 /**
  * User entity representing the core data structure.
  */
@@ -8,7 +12,7 @@ export interface IUser {
   displayName?: string; // Display name
   anonymous?: boolean;
   verified?: boolean;
-  elo?: number; // Player's ranking score
+  ratings?: IPlayerRatings;
 }
 
 export type UserCreateOptions = Record<string, unknown>;
@@ -27,4 +31,8 @@ export interface IUserRepository {
   createAnonymous(options?: UserCreateOptions): Promise<IUser>;
   updatePassword(email: string, newPasswordHash: string): Promise<boolean>;
   verifyEmail(email: string): Promise<boolean>;
+  getRating(userId: string, mode: GameMode): Promise<number>;
+  updateRatings(
+    updates: Array<{ userId: string; mode: GameMode; newRating: number }>,
+  ): Promise<void>;
 }
