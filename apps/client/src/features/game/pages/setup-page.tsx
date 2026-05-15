@@ -35,9 +35,13 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
   } = useSetupRoom({ roomId });
 
   if (seatReservation) {
+    /**
+     * Custom matches keep the setup URL in the address bar; `GamePage` persists
+     * the setup room id with the recovery token so refresh can restore the match.
+     */
     return (
       <GamePage
-        reservation={seatReservation}
+        connection={{ type: "reservation", reservation: seatReservation }}
         source={{
           type: "custom",
           setupRoomId: roomId,
@@ -48,11 +52,20 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
   }
 
   if (error) {
+    /**
+     * A failed setup join usually means the shared room URL is stale. Provide an
+     * explicit lobby escape instead of trapping the user on the broken URL.
+     */
     return (
       <StageCenter>
         <ErrorPanel
           title="Room unavailable"
           message={`${error}. Check the shared URL or ask the host for a fresh room link.`}
+          action={
+            <Button type="button" onClick={() => navigate("/")}>
+              Return to lobby
+            </Button>
+          }
         />
       </StageCenter>
     );

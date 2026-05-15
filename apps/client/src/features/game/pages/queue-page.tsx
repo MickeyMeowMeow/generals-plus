@@ -35,15 +35,35 @@ export function QueuePage({
   const modeLabel = getModeOption(gameMode)?.label ?? gameMode;
 
   if (seatReservation) {
+    /**
+     * Seat reservations are consumed by `GamePage`, which then persists a
+     * recovery token for refresh-safe official matches.
+     */
     return (
       <GamePage
-        reservation={seatReservation}
+        connection={{ type: "reservation", reservation: seatReservation }}
         source={{ type: "official", onReturn: onLeave }}
       />
     );
   }
 
-  if (error) return <ErrorPanel message={error} />;
+  if (error) {
+    /**
+     * Queue connection failures should not strand the root route in queue mode.
+     */
+    return (
+      <StageCenter>
+        <ErrorPanel
+          message={error}
+          action={
+            <Button type="button" onClick={onLeave}>
+              Return to lobby
+            </Button>
+          }
+        />
+      </StageCenter>
+    );
+  }
 
   if (isConnecting || !queueState) {
     return (

@@ -7,6 +7,7 @@ import { BrandTitle, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
+import { clearPersistedGameSession } from "#/features/game/api/use-game-room";
 import { createCustomSetupRoom } from "#/features/game/api/use-setup-room";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 
@@ -98,8 +99,14 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
     }
   };
 
+  /**
+   * Sign-out clears both the legacy match connection store and the newer
+   * GamePage recovery token so a future login never restores someone else's
+   * stale match session.
+   */
   const signOut = async () => {
     await resetMatchConnection();
+    clearPersistedGameSession();
     await actions.signOut();
   };
 

@@ -6,6 +6,8 @@ import { DEFAULT_GAME_MODE } from "#/config/ui-constants";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth } from "#/features/auth/hooks";
 import { AuthPage } from "#/features/auth/pages/auth-page";
+import { loadPersistedGameSession } from "#/features/game/api/use-game-room";
+import { GamePage } from "#/features/game/pages/game-page";
 import { QueuePage } from "#/features/game/pages/queue-page";
 import { LobbyPage } from "#/features/lobby/pages/lobby-page";
 
@@ -30,11 +32,42 @@ export default function Index() {
   const { state } = useAuth();
   const [phase, setPhase] = useState<OfficialPhase>("lobby");
   const [selectedMode, setSelectedMode] = useState<GameMode>(DEFAULT_GAME_MODE);
+  /**
+   * Snapshot any in-progress official match recovery token during route mount.
+   *
+   * Official matches keep the URL at `/`, so this persisted token is the only
+   * signal that a hard refresh should restore a match instead of showing lobby.
+   */
+  const [persistedGameSession, setPersistedGameSession] = useState(() =>
+    loadPersistedGameSession(),
+  );
+
+  /**
+   * Only the official root route may consume official recovery sessions.
+   */
+  const officialRecoveryToken =
+    persistedGameSession?.source.type === "official"
+      ? persistedGameSession.recoveryToken
+      : null;
 
   return (
     <Stage>
       {state.status !== AuthStatus.AUTHENTICATED ? (
         <AuthPage />
+      ) : officialRecoveryToken ? (
+        <GamePage
+          connection={{
+            type: "recovery",
+            recoveryToken: officialRecoveryToken,
+          }}
+          source={{
+            type: "official",
+            onReturn: () => {
+              setPersistedGameSession(null);
+              setPhase("lobby");
+            },
+          }}
+        />
       ) : phase === "queue" ? (
         <QueuePage gameMode={selectedMode} onLeave={() => setPhase("lobby")} />
       ) : (

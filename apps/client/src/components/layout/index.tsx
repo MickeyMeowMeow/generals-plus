@@ -106,13 +106,21 @@ export function LoadingPanel({ message }: { message: string }) {
 
 /**
  * Error surface for room, auth, and route failures.
+ *
+ * `action` lets connection-oriented callers offer a concrete escape hatch, such
+ * as returning to the lobby after a stale room link or failed recovery attempt.
  */
 export function ErrorPanel({
   title = "Connection failed",
   message,
+  action,
 }: {
+  /** Short heading shown above the failure message. */
   title?: string;
+  /** User-facing explanation of what went wrong. */
   message: string;
+  /** Optional command rendered below the message. */
+  action?: ReactNode;
 }) {
   return (
     <StagePanel className="mx-auto max-w-md">
@@ -121,6 +129,7 @@ export function ErrorPanel({
         <div>
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="mt-2 text-sm leading-6 text-game-text-dim">{message}</p>
+          {action ? <div className="mt-4">{action}</div> : null}
         </div>
       </div>
     </StagePanel>

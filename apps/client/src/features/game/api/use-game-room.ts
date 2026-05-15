@@ -27,6 +27,107 @@ type GameRoomClient = RoomClient<
 >;
 
 /**
+ * Describes how the client should enter a match room.
+ *
+ * The normal queue/setup flow uses a one-shot seat reservation. A refreshed page
+ * no longer has that reservation in React state, so it uses the Colyseus
+ * recovery token persisted from the previous live match connection.
+ */
+export type GameRoomConnection =
+  | {
+      /** Consume a server-issued seat reservation for the first match entry. */
+      type: "reservation";
+      reservation: ISeatReservation;
+    }
+  | {
+      /** Restore an already-consumed match session after refresh or crash. */
+      type: "recovery";
+      recoveryToken: string;
+    };
+
+/**
+ * Minimal route context needed to bring a recovered match back to the right UI.
+ *
+ * Official games recover on `/`; custom games recover only when the current
+ * `/match/:roomId` URL matches the setup room that originally launched them.
+ */
+export type PersistedGameSource =
+  | {
+      type: "official";
+    }
+  | {
+      type: "custom";
+      setupRoomId: string;
+    };
+
+/**
+ * LocalStorage payload that survives page refresh while a match is in progress.
+ */
+export interface PersistedGameSession {
+  /** Colyseus token used by `restoreSession()` for the match room. */
+  recoveryToken: string;
+  /** Route context used to decide whether this page should attempt recovery. */
+  source: PersistedGameSource;
+}
+
+const ACTIVE_GAME_SESSION_KEY = "generals_plus_active_game_session";
+/** Upper bound for recovery attempts so stale tokens cannot trap the UI. */
+const RECOVERY_TIMEOUT_MS = 10_000;
+
+/**
+ * Read the persisted match recovery session, ignoring malformed or unavailable
+ * localStorage values so startup can always fall back to the normal lobby/setup.
+ */
+export function loadPersistedGameSession(): PersistedGameSession | null {
+  try {
+    const raw = localStorage.getItem(ACTIVE_GAME_SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw) as Partial<PersistedGameSession>;
+    if (
+      typeof session.recoveryToken === "string" &&
+      session.recoveryToken &&
+      session.source?.type
+    ) {
+      return session as PersistedGameSession;
+    }
+  } catch {
+    // Ignore malformed or unavailable localStorage.
+  }
+  return null;
+}
+
+/**
+ * Remove the persisted match recovery session after a user leaves, signs out, or
+ * a recovery attempt proves the token is stale.
+ */
+export function clearPersistedGameSession() {
+  try {
+    localStorage.removeItem(ACTIVE_GAME_SESSION_KEY);
+  } catch {
+    // Ignore unavailable localStorage.
+  }
+}
+
+/**
+ * Persist enough information to recover the current match after a full page
+ * reload. Empty recovery tokens are ignored because they cannot restore a room.
+ */
+function persistGameSession(
+  recoveryToken: string | null,
+  source: PersistedGameSource,
+) {
+  if (!recoveryToken) return;
+  try {
+    localStorage.setItem(
+      ACTIVE_GAME_SESSION_KEY,
+      JSON.stringify({ recoveryToken, source }),
+    );
+  } catch {
+    // Ignore unavailable localStorage.
+  }
+}
+
+/**
  * Shared client-side handle for one consumed match-room seat reservation.
  *
  * Colyseus seat reservations are a one-time handoff from queue/setup into the
@@ -42,8 +143,6 @@ interface SharedGameConnection {
   room: GameRoomClient | null;
   /** Number of mounted `useGameRoom` consumers using this connection. */
   refs: number;
-  /** Delayed room leave scheduled when the last consumer releases it. */
-  leaveTimer: ReturnType<typeof setTimeout> | null;
 }
 
 /**
@@ -57,6 +156,14 @@ interface SharedGameConnection {
 const gameConnections = new Map<string, SharedGameConnection>();
 
 /**
+ * Clear the in-memory match connection pool between tests so one test's cached
+ * room promise cannot affect another scenario.
+ */
+export function resetGameConnectionsForTesting() {
+  gameConnections.clear();
+}
+
+/**
  * Build a stable cache key for one reserved match seat.
  *
  * `roomId` alone is not sufficient because different players consume different
@@ -68,35 +175,45 @@ function getReservationKey(reservation: ISeatReservation) {
 }
 
 /**
+ * Build a cache key for both first-entry reservations and refresh recovery.
+ */
+function getConnectionKey(connection: GameRoomConnection) {
+  return connection.type === "reservation"
+    ? getReservationKey(connection.reservation)
+    : `recovery:${connection.recoveryToken}`;
+}
+
+/**
  * Consume or reuse a match-room seat reservation.
  *
- * The first caller starts the Colyseus consume request and stores its promise.
- * Later callers with the same reservation key reuse that promise/room, canceling
- * any pending delayed leave if the connection was about to be released.
+ * The first caller starts the Colyseus request and stores its promise. Later
+ * callers with the same connection key reuse that promise/room, canceling any
+ * pending React remounts can reuse the same live match socket.
  */
-function acquireGameRoom(reservation: ISeatReservation) {
-  const key = getReservationKey(reservation);
+function acquireGameRoom(connection: GameRoomConnection) {
+  const key = getConnectionKey(connection);
   let entry = gameConnections.get(key);
 
   if (entry) {
     entry.refs++;
-    if (entry.leaveTimer) {
-      clearTimeout(entry.leaveTimer);
-      entry.leaveTimer = null;
-    }
     return entry.promise;
   }
 
   entry = {
     refs: 1,
     room: null,
-    leaveTimer: null,
-    promise: networkProvider
-      .consumeSeatReservation<
-        MatchState,
-        MatchClientMessagePayload,
-        MatchServerMessagePayload
-      >(reservation)
+    promise: (connection.type === "reservation"
+      ? networkProvider.consumeSeatReservation<
+          MatchState,
+          MatchClientMessagePayload,
+          MatchServerMessagePayload
+        >(connection.reservation)
+      : networkProvider.restoreSession<
+          MatchState,
+          MatchClientMessagePayload,
+          MatchServerMessagePayload
+        >(connection.recoveryToken)
+    )
       .then((room) => {
         const current = gameConnections.get(key);
         if (current) current.room = room;
@@ -114,26 +231,49 @@ function acquireGameRoom(reservation: ISeatReservation) {
 }
 
 /**
+ * Wrap a connection attempt with a UI-level timeout.
+ *
+ * Colyseus recovery can keep retrying internally when a room has already been
+ * disposed. The page needs a bounded failure path so the user can return to the
+ * lobby instead of staring at a permanent loading state.
+ */
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string,
+) {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(timeoutMessage));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
+/**
  * Release one mounted game page's reference to a consumed match room.
  *
- * The connection is left only after the final consumer has been gone for a short
- * delay. That delay keeps a valid match socket alive through fast remounts while
- * still cleaning up when the user actually leaves the game view.
+ * Unlike setup/queue rooms, match-room `leave()` is gameplay-significant:
+ * `MatchRoom.onLeave` treats it as surrender. React cleanup can run for benign
+ * reasons such as StrictMode probes, route handoffs, and refresh recovery, so it
+ * must not actively leave or discard the match. The socket is closed by page
+ * unload, server game end, or SDK/network lifecycle.
  */
-function releaseGameRoom(reservation: ISeatReservation) {
-  const key = getReservationKey(reservation);
+function releaseGameRoom(connection: GameRoomConnection) {
+  const key = getConnectionKey(connection);
   const entry = gameConnections.get(key);
   if (!entry) return;
 
   entry.refs = Math.max(0, entry.refs - 1);
-  if (entry.refs > 0 || entry.leaveTimer) return;
-
-  entry.leaveTimer = setTimeout(() => {
-    const current = gameConnections.get(key);
-    if (!current || current.refs > 0) return;
-    gameConnections.delete(key);
-    void current.promise.then((room) => room.leave()).catch(() => {});
-  }, 500);
 }
 
 /**
@@ -149,14 +289,33 @@ function getDirection(from: ICoordinate, to: ICoordinate): MoveDirection {
 }
 
 /**
+ * Guard against rendering from a partially patched Colyseus schema.
+ *
+ * Immediately after join/recovery, `room.state` may exist before all nested maps
+ * have been populated. Waiting for the required schema containers avoids null
+ * access while still allowing us to use already-arrived state on refresh.
+ */
+function isReadyMatchState(state: MatchState) {
+  return Boolean(
+    state.playerColors &&
+      state.clientVisions &&
+      state.clientActionQueues &&
+      state.players,
+  );
+}
+
+/**
  * Connect the game page to a reserved Colyseus match room.
  *
- * The hook consumes the seat reservation, subscribes to authoritative match
- * state, adapts the current client's vision schema into a render grid, mirrors
- * the player's server-side action queue for the movement overlay, and exposes a
- * typed `sendMove` command for user input.
+ * The hook consumes a seat reservation or restores a persisted recovery token,
+ * subscribes to authoritative match state, adapts the current client's vision
+ * schema into a render grid, mirrors the player's server-side action queue for
+ * the movement overlay, and exposes a typed `sendMove` command for user input.
  */
-export function useGameRoom(reservation: ISeatReservation) {
+export function useGameRoom(
+  connection: GameRoomConnection,
+  source: PersistedGameSource,
+) {
   const [room, setRoom] = useState<GameRoomClient | null>(null);
   const [renderGrid, setRenderGrid] = useState<RenderGrid | null>(null);
   const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
@@ -170,7 +329,7 @@ export function useGameRoom(reservation: ISeatReservation) {
   const [connectionStatus, setConnectionStatus] = useState("connecting");
 
   useEffect(() => {
-    if (!reservation) return;
+    if (!connection) return;
 
     let isCurrent = true;
     const unsubscribers: Array<() => void> = [];
@@ -181,47 +340,68 @@ export function useGameRoom(reservation: ISeatReservation) {
       setGameResult(null);
       setConnectionStatus("connecting");
       try {
-        const currentRoom = await acquireGameRoom(reservation);
+        const currentRoom = await (connection.type === "recovery"
+          ? withTimeout(
+              acquireGameRoom(connection),
+              RECOVERY_TIMEOUT_MS,
+              "Unable to restore the match. The room may have ended or expired.",
+            )
+          : acquireGameRoom(connection));
         if (!isCurrent) {
           return;
         }
         setRoom(currentRoom);
         setIsConnecting(false);
         setConnectionStatus("connected");
+        persistGameSession(currentRoom.getRecoveryToken(), source);
+
+        /**
+         * Mirror authoritative match state into render-friendly client state.
+         *
+         * This runs once with the room's current state to cover refresh recovery,
+         * then again for every subsequent server patch.
+         */
+        const syncState = (state: MatchState) => {
+          if (!isReadyMatchState(state)) return;
+
+          setGameState(state);
+
+          const colorMap = new Map<string, number>();
+          state.playerColors.forEach((color, playerId) => {
+            colorMap.set(playerId, color);
+          });
+          setPlayerColors(colorMap);
+
+          const myId = currentRoom.sessionId;
+
+          const myVision = state.clientVisions.get(myId);
+          if (myVision && state.width > 0) {
+            const newGrid = createRenderGrid(
+              myVision,
+              state.width,
+              state.height,
+            );
+            setRenderGrid(newGrid);
+          }
+
+          const myQueue = state.clientActionQueues.get(myId);
+          if (myQueue) {
+            const newQueue = myQueue.queue.map((action: ActionData) => ({
+              from: { x: action.fromX, y: action.fromY },
+              direction: getDirection(
+                { x: action.fromX, y: action.fromY },
+                { x: action.toX, y: action.toY },
+              ),
+            }));
+            setMoveQueue(newQueue);
+          }
+        };
+
+        syncState(currentRoom.state);
 
         unsubscribers.push(
           currentRoom.onStateChange((state) => {
-            setGameState(state);
-
-            const colorMap = new Map<string, number>();
-            state.playerColors.forEach((color, playerId) => {
-              colorMap.set(playerId, color);
-            });
-            setPlayerColors(colorMap);
-
-            const myId = currentRoom.sessionId;
-
-            const myVision = state.clientVisions.get(myId);
-            if (myVision && state.width > 0) {
-              const newGrid = createRenderGrid(
-                myVision,
-                state.width,
-                state.height,
-              );
-              setRenderGrid(newGrid);
-            }
-
-            const myQueue = state.clientActionQueues.get(myId);
-            if (myQueue) {
-              const newQueue = myQueue.queue.map((action: ActionData) => ({
-                from: { x: action.fromX, y: action.fromY },
-                direction: getDirection(
-                  { x: action.fromX, y: action.fromY },
-                  { x: action.toX, y: action.toY },
-                ),
-              }));
-              setMoveQueue(newQueue);
-            }
+            syncState(state);
           }),
         );
         unsubscribers.push(
@@ -236,11 +416,12 @@ export function useGameRoom(reservation: ISeatReservation) {
         );
       } catch (error) {
         if (!isCurrent) return;
+        if (connection.type === "recovery") {
+          clearPersistedGameSession();
+        }
         setIsConnecting(false);
         setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to consume seat reservation",
+          error instanceof Error ? error.message : "Failed to connect to match",
         );
       }
     };
@@ -252,9 +433,9 @@ export function useGameRoom(reservation: ISeatReservation) {
       for (const unsubscribe of unsubscribers) {
         unsubscribe();
       }
-      releaseGameRoom(reservation);
+      releaseGameRoom(connection);
     };
-  }, [reservation]);
+  }, [connection, source]);
 
   const sendMove = (from: ICoordinate, to: ICoordinate) => {
     if (!room) return;

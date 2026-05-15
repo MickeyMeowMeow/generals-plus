@@ -58,6 +58,12 @@ interface SharedSetupConnection {
  */
 const setupConnections = new Map<string, SharedSetupConnection>();
 
+/**
+ * Clear the shared setup-room pool between tests.
+ *
+ * The production pool is intentionally module-scoped for route handoff, but
+ * tests need an explicit reset so cached setup sockets do not leak across cases.
+ */
 export function resetSetupConnectionsForTesting() {
   setupConnections.clear();
 }
@@ -67,6 +73,13 @@ interface SetupRoomOptions {
   roomId?: string;
 }
 
+/**
+ * Clone only setup states that have received their required schema containers.
+ *
+ * Creating a room and navigating by URL can race with Colyseus' initial patch:
+ * the room object may exist before `players` is populated. Returning `null`
+ * keeps the UI in its joining state until a render-safe setup state arrives.
+ */
 function cloneReadySetupState(state: SetupState): SetupState | null {
   const cloned = state.clone();
   return cloned.players ? cloned : null;
