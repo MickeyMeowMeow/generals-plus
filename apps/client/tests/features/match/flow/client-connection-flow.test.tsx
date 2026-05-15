@@ -234,7 +234,11 @@ describe("client room flows", () => {
       await screen.findByRole("heading", { name: "Pick Your Color" }),
     ).toBeTruthy();
     expect(screen.getByText("Mode: Classic")).toBeTruthy();
-    expect(screen.getByText("Nova").closest("li")).toHaveClass("font-semibold");
+    expect(screen.getByText("Mode: Classic")).toBeTruthy();
+    const usernameInList = screen
+      .getAllByText("Nova")
+      .find((el) => el.closest("li"));
+    expect(usernameInList!.closest("li")).toHaveClass("font-semibold");
     expect(networkMocks.joinOrCreate).toHaveBeenCalledWith(ROOM_NAMES.QUEUE, {
       gameMode: GameMode.CLASSIC,
     });

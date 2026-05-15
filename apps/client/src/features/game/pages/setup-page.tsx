@@ -106,7 +106,10 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
       <div className="mx-auto grid w-full max-w-5xl gap-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-lg font-medium">Hello, {displayName}</p>
+            <div>
+              <p className="text-sm text-game-text-dim">Hello,</p>
+              <p className="text-2xl font-bold">{displayName}</p>
+            </div>
             <p className="text-sm text-game-text-dim">
               {isHost ? "You are host" : "You are guest"}
             </p>

@@ -52,7 +52,8 @@ describe("index route", () => {
       }),
     );
 
-    expect(screen.getByText("Hello, Nova")).toBeTruthy();
+    expect(screen.getByText("Hello,")).toBeTruthy();
+    expect(screen.getByText("Nova")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Start" })).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Create custom room" }),

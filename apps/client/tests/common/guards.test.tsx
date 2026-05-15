@@ -27,7 +27,8 @@ describe("app routes", () => {
         token: "token-1",
       }),
     );
-    expect(await screen.findByText("Hello, Scout")).toBeTruthy();
+    expect(await screen.findByText("Hello,")).toBeTruthy();
+    expect(screen.getByText("Scout")).toBeTruthy();
   });
 
   it("does not register old business routes", async () => {

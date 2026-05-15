@@ -126,8 +126,11 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
         <div className="mx-auto grid max-w-5xl gap-5 sm:gap-6">
           <BrandTitle compact />
 
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-lg font-medium">Hello, {displayName}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm text-game-text-dim">Hello,</p>
+              <p className="text-2xl font-bold">{displayName}</p>
+            </div>
             <Button type="button" variant="ghost" onClick={signOut}>
               <LogOut className="size-4" />
               Sign out
