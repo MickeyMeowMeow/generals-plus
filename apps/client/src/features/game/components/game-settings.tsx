@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
+import { Label } from "#/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -128,9 +129,9 @@ export function GameSettings({
 
       <div className="grid gap-3 text-left sm:grid-cols-2 lg:grid-cols-3">
         <div className={fieldClassName}>
-          <span id="game-mode-label" className={labelClassName}>
+          <Label id="game-mode-label" className={labelClassName}>
             Game mode
-          </span>
+          </Label>
           <Select
             disabled={!isHost}
             value={displayed.gameMode ?? GameMode.CLASSIC}
@@ -159,14 +160,18 @@ export function GameSettings({
         </div>
 
         <div className={fieldClassName}>
-          <span className={labelClassName}>Visibility</span>
+          <Label htmlFor="isPublic" className={labelClassName}>
+            Visibility
+          </Label>
           <div className="flex h-7 items-center justify-between border border-game-border bg-game-bg px-3 text-sm text-game-text">
-            <label
+            <Label
               htmlFor="isPublic"
-              className={isHost ? "cursor-pointer" : "cursor-not-allowed"}
+              className={
+                isHost ? "cursor-pointer text-sm" : "cursor-not-allowed text-sm"
+              }
             >
               {displayed.isPublic ? "Public" : "Private"}
-            </label>
+            </Label>
             <Switch
               id="isPublic"
               size="sm"
@@ -179,9 +184,9 @@ export function GameSettings({
 
         {NUMBER_FIELDS.map(({ key, label }) => (
           <div key={key} className={fieldClassName}>
-            <label htmlFor={key} className={labelClassName}>
+            <Label htmlFor={key} className={labelClassName}>
               {label}
-            </label>
+            </Label>
             <Input
               id={key}
               type="number"

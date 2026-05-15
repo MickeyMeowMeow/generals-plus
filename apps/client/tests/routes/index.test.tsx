@@ -60,6 +60,29 @@ describe("index route", () => {
     ).toBeTruthy();
   });
 
+  it("opens the mode picker with compact three-column cards", async () => {
+    renderRoute(
+      "/",
+      createMockAuth({
+        status: AuthStatus.AUTHENTICATED,
+        user: { id: "nova", displayName: "Nova" },
+        token: "tok",
+      }),
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Start" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Choose mode" });
+    expect(dialog).toHaveClass("sm:max-w-4xl");
+    expect(
+      screen.getByRole("button", { name: "Classic, Ready" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Demolition, Coming soon" }),
+    ).toBeDisabled();
+  });
+
   it("signs out from lobby and clears active room state", async () => {
     const signOut = vi.fn().mockResolvedValue(undefined);
     const resetMatchConnection = vi.fn().mockResolvedValue(undefined);
