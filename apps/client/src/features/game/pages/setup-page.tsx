@@ -6,10 +6,10 @@ import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { useUser } from "#/features/auth/hooks";
 import { useSetupRoom } from "#/features/game/api/use-setup-room";
+import { ColorPicker } from "#/features/game/components/color-picker";
 import { GameSettings } from "#/features/game/components/game-settings";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
-import { ColorPicker } from "../components/color-picker";
 
 /**
  * Computes how many teams the current setup settings will produce.
