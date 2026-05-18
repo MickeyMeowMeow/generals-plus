@@ -119,10 +119,16 @@ export class MatchRoom extends Room<{
         const player = this.state.players.get(playerId);
         if (!player) return;
 
+        if (!data || typeof data !== "object") {
+          return;
+        }
+
         const { x, y, type } = data;
         if (
-          typeof x !== "number" ||
-          typeof y !== "number" ||
+          !Number.isFinite(x) ||
+          !Number.isInteger(x) ||
+          !Number.isFinite(y) ||
+          !Number.isInteger(y) ||
           typeof type !== "string"
         ) {
           return;
