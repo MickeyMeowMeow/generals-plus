@@ -6,6 +6,7 @@ import {
   cityIcon,
   crownIcon,
   desertIcon,
+  flagIcon,
   mountainIcon,
   obstacleIcon,
   swampIcon,
@@ -44,6 +45,10 @@ export const TerrainTheme: Partial<
   [Terrain.CITY]: {
     color: 0x8aa4c8,
     icon: cityIcon,
+  },
+  [Terrain.FLAG]: {
+    color: 0x8aa4c8,
+    icon: flagIcon,
   },
   [MaskedTerrain.MAYBE_PLAIN]: {
     color: 0xd8dde3,

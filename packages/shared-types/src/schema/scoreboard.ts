@@ -73,3 +73,29 @@ export class TurfWarScoreboard extends BaseScoreboard {
   @type([TurfWarScoreboardTeamEntry]) teams =
     new ArraySchema<TurfWarScoreboardTeamEntry>();
 }
+
+/**
+ * Domination mode player row, including troops, land, and alive status.
+ */
+export class DominationScoreboardPlayerEntry extends TroopLandScoreboardPlayerEntry {
+  @type("boolean") isAlive: boolean = false;
+}
+
+/**
+ * Domination team aggregate used for team score display.
+ */
+export class DominationScoreboardTeamEntry extends Schema {
+  @type("string") teamId: string = "";
+  @type(["string"]) playerIds = new ArraySchema<string>();
+  @type("number") score: number = 0;
+}
+
+/**
+ * Domination scoreboard with per-player troop/land/isAlive rows and team score data.
+ */
+export class DominationScoreboard extends BaseScoreboard {
+  @type([DominationScoreboardPlayerEntry]) players =
+    new ArraySchema<DominationScoreboardPlayerEntry>();
+  @type([DominationScoreboardTeamEntry]) teams =
+    new ArraySchema<DominationScoreboardTeamEntry>();
+}

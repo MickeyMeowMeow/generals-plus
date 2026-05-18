@@ -200,9 +200,9 @@ describe("TurfWarGame", () => {
 
     expect(success).toBe(true);
 
-    // Attack succeeded, p1 owns c1 and it became a CITY
+    // Attack succeeded, p1 owns c1 and it became a PLAIN
     expect(c1.owner).toBe(p1);
-    expect(c1.terrain).toBe(Terrain.CITY);
+    expect(c1.terrain).toBe(Terrain.PLAIN);
 
     // p2 respawns general on c2
     expect(c2.owner).toBe(p2);
@@ -211,5 +211,58 @@ describe("TurfWarGame", () => {
 
     // Game should still be playing
     expect(game.status).toBe(GameStatus.PLAYING);
+  });
+
+  it("conquered generals become PLAIN and player respawn prioritizes non-city cells", () => {
+    const grid = new Grid(4, 1, [
+      [
+        new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.GENERAL }),
+        new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.GENERAL }),
+        new Cell({ coordinate: { x: 2, y: 0 }, terrain: Terrain.CITY }),
+        new Cell({ coordinate: { x: 3, y: 0 }, terrain: Terrain.PLAIN }),
+      ],
+    ]);
+    const game = new TurfWarGame(grid);
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+
+    const c0 = getCell(grid, 0, 0);
+    const c1 = getCell(grid, 1, 0);
+    const c2 = getCell(grid, 2, 0);
+    const c3 = getCell(grid, 3, 0);
+
+    c0.owner = p1;
+    c0.troopCount = 10;
+
+    c1.owner = p2;
+    c1.troopCount = 2;
+
+    c2.owner = p2;
+    c2.troopCount = 1;
+
+    c3.owner = p2;
+    c3.troopCount = 1;
+
+    game.startGame();
+
+    const success = game.handleAction({
+      playerId: "p1",
+      type: ActionType.MOVE,
+      from: { x: 0, y: 0 },
+      to: { x: 1, y: 0 },
+    });
+
+    expect(success).toBe(true);
+
+    // Captured general c1 should turn into PLAIN
+    expect(c1.terrain).toBe(Terrain.PLAIN);
+
+    // p2 respawn must prioritize the plain tile c3 over the city tile c2
+    expect(c3.terrain).toBe(Terrain.GENERAL);
+    expect(c2.terrain).toBe(Terrain.CITY);
   });
 });

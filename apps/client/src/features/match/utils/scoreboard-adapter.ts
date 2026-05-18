@@ -47,10 +47,14 @@ export interface GameHudGroup {
 export interface GameHudScoreboardModel {
   /** Section title shown above the scoreboard rows. */
   title: string;
+  /** Optional secondary subtitle or target displayed on the right. */
+  subtitle?: string;
   /** Ordered metric columns to render. */
   columns: GameHudColumn[];
   /** Ordered groups and rows to render. */
   groups: GameHudGroup[];
+  /** Whether the mode uses teams grouping. */
+  hasTeams: boolean;
 }
 
 interface TroopLandScoreEntry {
@@ -90,7 +94,28 @@ interface ScoreboardWithTurfWarTeams {
   teams?: Iterable<TurfWarTeamEntryLike>;
 }
 
+interface DominationTeamEntryLike {
+  teamId: string;
+  score: number;
+}
+
+interface ScoreboardWithDominationTeams {
+  teams?: Iterable<DominationTeamEntryLike>;
+}
+
 const troopLandColumns: GameHudColumn[] = [
+  { key: "land", label: "Land" },
+  { key: "troops", label: "Soldiers" },
+];
+
+const turfWarColumns: GameHudColumn[] = [
+  { key: "percent", label: "Area" },
+  { key: "land", label: "Land" },
+  { key: "troops", label: "Soldiers" },
+];
+
+const dominationColumns: GameHudColumn[] = [
+  { key: "score", label: "Score" },
   { key: "land", label: "Land" },
   { key: "troops", label: "Soldiers" },
 ];
@@ -140,6 +165,14 @@ function getTurfWarTeamEntries(
   scoreboard: BaseScoreboard,
 ): TurfWarTeamEntryLike[] {
   const teams = (scoreboard as ScoreboardWithTurfWarTeams | undefined)?.teams;
+  return teams ? Array.from(teams) : [];
+}
+
+function getDominationTeamEntries(
+  scoreboard: BaseScoreboard,
+): DominationTeamEntryLike[] {
+  const teams = (scoreboard as ScoreboardWithDominationTeams | undefined)
+    ?.teams;
   return teams ? Array.from(teams) : [];
 }
 
@@ -221,6 +254,7 @@ function createTroopLandModel(
     title,
     columns: troopLandColumns,
     groups: createTeamGroups(rows),
+    hasTeams: false,
   };
 }
 
@@ -242,18 +276,62 @@ function createTurfWarModel(
     const percent = landPercentByTeam.get(group.id) ?? 0;
     return {
       ...group,
-      label: `${group.label} (${percent}%)`,
+      label: group.label,
+      totals: {
+        ...group.totals,
+        percent: `${percent}%`,
+      },
     };
   });
 
   return {
-    title: "Teams",
-    columns: troopLandColumns,
+    title: "Turf War",
+    columns: turfWarColumns,
     groups: groups.sort(
       (a, b) =>
         (landPercentByTeam.get(b.id) ?? 0) -
           (landPercentByTeam.get(a.id) ?? 0) || a.label.localeCompare(b.label),
     ),
+    hasTeams: true,
+  };
+}
+
+function createDominationModel(
+  scoreboard: BaseScoreboard,
+  targetScore?: number,
+): GameHudScoreboardModel {
+  const rows = createPlayerRows(scoreboard);
+  const scoreByTeam = new Map(
+    getDominationTeamEntries(scoreboard).map((entry) => [
+      entry.teamId,
+      entry.score,
+    ]),
+  );
+
+  const finalTarget = targetScore && targetScore > 0 ? targetScore : 1000;
+
+  const groups = createTeamGroups(rows).map((group) => {
+    const score = scoreByTeam.get(group.id) ?? 0;
+    return {
+      ...group,
+      label: group.label,
+      totals: {
+        ...group.totals,
+        score: `${score}/${finalTarget}`,
+      },
+    };
+  });
+
+  return {
+    title: "Domination",
+    subtitle: `Target: ${finalTarget}`,
+    columns: dominationColumns,
+    groups: groups.sort(
+      (a, b) =>
+        (scoreByTeam.get(b.id) ?? 0) - (scoreByTeam.get(a.id) ?? 0) ||
+        a.label.localeCompare(b.label),
+    ),
+    hasTeams: true,
   };
 }
 
@@ -265,13 +343,16 @@ function createTurfWarModel(
  */
 export function createGameHudScoreboardModel(
   scoreboard: BaseScoreboard,
+  targetScore?: number,
 ): GameHudScoreboardModel {
   switch (scoreboard.mode) {
     case GameMode.CLASSIC:
-      return createTroopLandModel("Players", scoreboard);
+      return createTroopLandModel("Classic", scoreboard);
     case GameMode.TURF_WAR:
       return createTurfWarModel(scoreboard);
+    case GameMode.DOMINATION:
+      return createDominationModel(scoreboard, targetScore);
     default:
-      return createTroopLandModel("Players", scoreboard);
+      return createTroopLandModel("Classic", scoreboard);
   }
 }

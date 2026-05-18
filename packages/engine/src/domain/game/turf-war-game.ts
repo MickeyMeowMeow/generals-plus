@@ -191,7 +191,7 @@ export class TurfWarGame extends BaseGame implements ITurfWarGame {
 
   protected onCellNeutralized(cell: ICell): void {
     if (cell.terrain === Terrain.GENERAL) {
-      cell.terrain = Terrain.CITY;
+      cell.terrain = Terrain.PLAIN;
     }
   }
 }

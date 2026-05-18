@@ -95,7 +95,7 @@ describe("DominationGame", () => {
 
     // Fast forward to MAX_TICKS
     // @ts-expect-error - bypassing private modifier for testing
-    game.tick = game.MAX_TICKS - 1;
+    game.tick = game.maxTicks - 1;
     game.nextTick();
 
     expect(game.status).toBe(GameStatus.FINISHED);
@@ -125,7 +125,74 @@ describe("DominationGame", () => {
       playerId: "p1",
       troops: 0,
       land: 1,
+      isAlive: true,
     });
     expect(scoreboard.teamScores.get("t1")).toBe(1);
+  });
+
+  it("uses default targetScore and finishTick when no options provided", () => {
+    const grid = createGridWithFlag();
+    const game = new DominationGame(grid);
+
+    expect(game.targetScore).toBe(1000);
+    // @ts-expect-error - bypassing private modifier
+    expect(game.maxTicks).toBe(600);
+  });
+
+  it("accepts custom targetScore via options", () => {
+    const grid = createGridWithFlag();
+    const game = new DominationGame(grid, { targetScore: 100 });
+
+    expect(game.targetScore).toBe(100);
+  });
+
+  it("accepts custom finishTick via options", () => {
+    const grid = createGridWithFlag();
+    const game = new DominationGame(grid, { finishTick: 200 });
+
+    // @ts-expect-error - bypassing private modifier
+    expect(game.maxTicks).toBe(200);
+  });
+
+  it("finishes game when custom targetScore is reached", () => {
+    const grid = createGridWithFlag();
+    const game = new DominationGame(grid, { targetScore: 5 });
+    const t1 = new StandardTeam("t1");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    game.teams.set(t1.teamId, t1);
+    game.players.set(p1.playerId, p1);
+
+    const flagCell = grid.get({ x: 0, y: 0 });
+    if (!flagCell) throw new Error("Missing flag cell");
+    flagCell.owner = p1;
+
+    game.startGame();
+
+    for (let i = 0; i < 5; i++) {
+      game.nextTick();
+    }
+
+    expect(game.status).toBe(GameStatus.FINISHED);
+  });
+
+  it("finishes game when custom finishTick is reached", () => {
+    const grid = createGridWithFlag();
+    const game = new DominationGame(grid, { finishTick: 3 });
+    const t1 = new StandardTeam("t1");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    game.teams.set(t1.teamId, t1);
+    game.players.set(p1.playerId, p1);
+
+    const flagCell = grid.get({ x: 0, y: 0 });
+    if (!flagCell) throw new Error("Missing flag cell");
+    flagCell.owner = p1;
+
+    game.startGame();
+
+    game.nextTick();
+    game.nextTick();
+    game.nextTick();
+
+    expect(game.status).toBe(GameStatus.FINISHED);
   });
 });
