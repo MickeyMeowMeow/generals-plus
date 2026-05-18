@@ -39,7 +39,7 @@ describe("index route", () => {
   it("disables sign-in button while authenticating", () => {
     renderRoute("/", createMockAuth({ status: AuthStatus.AUTHENTICATING }));
 
-    expect(screen.getByText("Checking session")).toBeTruthy();
+    expect(screen.getByText("Checking session...")).toBeTruthy();
   });
 
   it("shows official lobby when authenticated", () => {

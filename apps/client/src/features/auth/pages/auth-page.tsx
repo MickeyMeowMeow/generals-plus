@@ -32,7 +32,7 @@ export function AuthPage() {
   ) {
     return (
       <StageCenter>
-        <LoadingPanel message="Checking session" />
+        <LoadingPanel message="Checking session..." />
       </StageCenter>
     );
   }
