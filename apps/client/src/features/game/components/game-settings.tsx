@@ -59,6 +59,7 @@ const MODE_SPECIFIC_FIELDS: Partial<
 > = {
   [GameMode.TURF_WAR]: [{ key: "duration", label: "Duration (s)" }],
   [GameMode.DOMINATION]: [
+    { key: "duration", label: "Duration (s)" },
     { key: "flagCount", label: "Flag Count" },
     { key: "targetScore", label: "Target Score" },
   ],
