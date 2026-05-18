@@ -4,7 +4,7 @@ import {
   MatchClientMessage,
   MatchServerMessage,
 } from "@generals-plus/shared-types";
-import { Flag, Shield, Swords } from "lucide-react";
+import { Flag, Shield, Swords, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -370,9 +370,17 @@ export function GamePage({
     <div className="fixed inset-0 z-20 bg-game-bg">
       {isViewingAsSpectator ? (
         <div className="pointer-events-none fixed inset-x-0 top-0 z-30 p-3">
-          <div className="pointer-events-auto">
-            <Button type="button" variant="outline" onClick={handleReturn}>
-              Return
+          <div className="pointer-events-auto inline-flex rounded-none border border-game-border/80 bg-[rgb(27_27_27/0.76)] p-1 shadow-xl shadow-black/25 backdrop-blur-sm">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={handleReturn}
+              aria-label="Return"
+              title="Return"
+              className="size-8 text-game-text hover:bg-white/8 hover:text-game-text"
+            >
+              <Undo2 className="mt-px size-5" />
             </Button>
           </div>
         </div>

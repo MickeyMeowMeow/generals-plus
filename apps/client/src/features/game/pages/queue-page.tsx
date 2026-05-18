@@ -1,5 +1,6 @@
 import type { GameMode } from "@generals-plus/engine";
 import { QueueClientMessage } from "@generals-plus/shared-types";
+import { useEffect, useState } from "react";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
@@ -12,6 +13,14 @@ import { GamePage } from "#/features/game/pages/game-page";
 
 function getModeOption(mode: GameMode) {
   return GAME_MODE_OPTIONS.find((option) => option.id === mode);
+}
+
+function formatQueueDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${seconds}`;
 }
 
 /**
@@ -33,6 +42,22 @@ export function QueuePage({
   const userId = useUser((user) => user?.id);
   const displayName = useUser((user) => user?.displayName ?? "Commander");
   const modeLabel = getModeOption(gameMode)?.label ?? gameMode;
+  const [queueSeconds, setQueueSeconds] = useState(0);
+
+  useEffect(() => {
+    if (isConnecting || !queueState || seatReservation) {
+      setQueueSeconds(0);
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setQueueSeconds((seconds) => seconds + 1);
+    }, 1_000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [isConnecting, queueState, seatReservation]);
 
   if (seatReservation) {
     /**
@@ -75,6 +100,7 @@ export function QueuePage({
 
   const myPlayer = queueState.players.find((p) => p.id === userId);
   const takenColors = queueState.players.map((p) => p.color);
+  const queueDuration = formatQueueDuration(queueSeconds);
 
   return (
     <StageCenter>
@@ -119,6 +145,15 @@ export function QueuePage({
               Leave queue
             </Button>
           </div>
+        </div>
+
+        <div className="mt-8 flex flex-col items-center gap-1">
+          <p className="text-center text-2xl font-semibold text-game-text-dim">
+            QUEUED
+          </p>
+          <p className="text-center text-4xl font-semibold tabular-nums text-game-text-dim">
+            {queueDuration}
+          </p>
         </div>
       </div>
     </StageCenter>
