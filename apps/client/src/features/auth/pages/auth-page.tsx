@@ -1,9 +1,13 @@
-import type { SubmitEvent } from "react";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import { BrandTitle, LoadingPanel, StageCenter } from "#/components/layout";
 import { AuthStatus } from "#/features/auth/auth-store";
-import { AuthForm } from "#/features/auth/components/auth-form";
+import type {
+  GuestFormValues,
+  RegisterFormValues,
+  SignInFormValues,
+} from "#/features/auth/components/auth-form";
+import { AuthForm, AuthFormMode } from "#/features/auth/components/auth-form";
 import { useAuth } from "#/features/auth/hooks";
 
 /**
@@ -14,22 +18,11 @@ import { useAuth } from "#/features/auth/hooks";
  * render the official lobby without navigating.
  */
 export function AuthPage() {
-  const [displayNameInput, setDisplayNameInput] = useState("Commander");
+  const [mode, setMode] = useState<AuthFormMode>(AuthFormMode.SIGN_IN);
   const { state, actions } = useAuth();
+  const isBusy = state.status === AuthStatus.AUTHENTICATING;
 
-  const handleSignIn = useCallback(
-    async (event: SubmitEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      await actions.signInAnonymously(displayNameInput);
-    },
-    [actions.signInAnonymously, displayNameInput],
-  );
-
-  if (
-    !state.isHydrated ||
-    state.status === AuthStatus.HYDRATING ||
-    state.status === AuthStatus.AUTHENTICATING
-  ) {
+  if (!state.isHydrated || state.status === AuthStatus.HYDRATING) {
     return (
       <StageCenter>
         <LoadingPanel message="Checking session..." />
@@ -43,11 +36,22 @@ export function AuthPage() {
         <BrandTitle />
         <div className="mx-auto w-full max-w-md">
           <AuthForm
-            displayName={displayNameInput}
-            onDisplayNameChange={setDisplayNameInput}
-            isBusy={false}
+            mode={mode}
+            onModeChange={(nextMode) => {
+              actions.clearError();
+              setMode(nextMode);
+            }}
+            isBusy={isBusy}
             lastError={state.error}
-            onSignIn={handleSignIn}
+            onSignIn={async ({ email, password }: SignInFormValues) => {
+              await actions.signInWithEmailAndPassword(email, password);
+            }}
+            onRegister={async (values: RegisterFormValues) => {
+              await actions.registerWithEmailAndPassword(values);
+            }}
+            onGuestSignIn={async ({ displayName }: GuestFormValues) => {
+              await actions.signInAnonymously(displayName);
+            }}
           />
         </div>
       </div>
