@@ -1,5 +1,6 @@
 import { ActionType } from "#/domain/action/action-type";
 import type { Action } from "#/domain/action/interfaces";
+import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
 import { EffectType } from "#/domain/effect/effect-type";
@@ -89,6 +90,12 @@ export class ClassicGame extends BaseGame implements IClassicGame {
 
     // Check game end immediately after processing actions and effects
     this.checkGameEnd();
+  }
+
+  protected onCellNeutralized(cell: ICell): void {
+    if (cell.terrain === Terrain.GENERAL) {
+      cell.terrain = Terrain.CITY;
+    }
   }
 
   protected evaluateGameEnd(): IGameResult | null {

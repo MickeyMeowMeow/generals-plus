@@ -483,4 +483,72 @@ describe("ClassicGame", () => {
       winnerTeamId: "t2",
     });
   });
+
+  test("surrender converts general to city so capturer does not gain a second general", () => {
+    // Grid: [GENERAL(p1), PLAIN(p2), PLAIN(p3)]
+    // p1 surrenders → GENERAL must become CITY. p3 keeps game alive so p2 can capture it.
+    const grid = new Grid(3, 1, [
+      [
+        new Cell({
+          coordinate: { x: 0, y: 0 },
+          terrain: Terrain.GENERAL,
+          troopCount: 2,
+        }),
+        new Cell({
+          coordinate: { x: 1, y: 0 },
+          terrain: Terrain.PLAIN,
+          troopCount: 0,
+        }),
+        new Cell({
+          coordinate: { x: 2, y: 0 },
+          terrain: Terrain.PLAIN,
+          troopCount: 0,
+        }),
+      ],
+    ]);
+    const game = new ClassicGame(grid);
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const t3 = new StandardTeam("t3");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    const p3 = new Player(t3, "p3", PlayerStatus.ACTIVE);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+    game.players.set(p3.playerId, p3);
+
+    const generalCell = grid.get({ x: 0, y: 0 });
+    const plainCell = grid.get({ x: 1, y: 0 });
+    if (!generalCell || !plainCell) {
+      throw new Error("cells should exist");
+    }
+
+    generalCell.owner = p1;
+    plainCell.owner = p2;
+    plainCell.troopCount = 10;
+
+    game.startGame();
+
+    // p1 surrenders → general should become a neutral city
+    const success = game.handleAction(createSurrenderAction("p1"));
+    expect(success).toBe(true);
+    expect(generalCell.terrain).toBe(Terrain.CITY);
+    expect(generalCell.owner).toBeNull();
+
+    // Game is still PLAYING because p2 and p3 are on different teams
+    expect(game.status).toBe(GameStatus.PLAYING);
+
+    // p2 attacks the former general (now a city with 2 troops, p2 moves 9)
+    const captured = game.handleAction({
+      playerId: "p2",
+      type: ActionType.MOVE,
+      from: { x: 1, y: 0 },
+      to: { x: 0, y: 0 },
+    });
+    expect(captured).toBe(true);
+
+    // p2 should own the captured cell and it should STILL be a CITY
+    expect(generalCell.owner?.playerId).toBe("p2");
+    expect(generalCell.terrain).toBe(Terrain.CITY);
+  });
 });
