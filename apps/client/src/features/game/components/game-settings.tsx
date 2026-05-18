@@ -42,6 +42,8 @@ const NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "cityInitialTroops", label: "City Troops" },
 ];
 
+const GAME_SPEED_OPTIONS = [0.5, 1, 2, 4];
+
 /** Rounds a value to a consistent precision to avoid floating-point nonsense. */
 const round = (v: number | string) => Math.round(Number(v) * 100000) / 100000;
 
@@ -129,6 +131,32 @@ export function GameSettings({
                 >
                   {mode.label}
                   {mode.isEnabled ? "" : " (coming soon)"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className={fieldClassName}>
+          <Label id="game-speed-label" className={labelClassName}>
+            Game speed
+          </Label>
+          <Select
+            disabled={!isHost}
+            value={String(currentSettings.speed ?? 1)}
+            onValueChange={(val) => onChangeSettings({ speed: Number(val) })}
+          >
+            <SelectTrigger
+              aria-labelledby="game-speed-label"
+              size="sm"
+              className="h-7 w-full border-game-border bg-game-bg px-3 text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border border-game-border bg-game-surface text-game-text">
+              {GAME_SPEED_OPTIONS.map((speed) => (
+                <SelectItem key={speed} value={String(speed)}>
+                  {speed}x
                 </SelectItem>
               ))}
             </SelectContent>
