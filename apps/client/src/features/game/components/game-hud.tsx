@@ -5,10 +5,6 @@ import { FloatingHud } from "#/components/layout";
 import { Separator } from "#/components/ui/separator";
 import { colorToHex } from "#/features/game/components/room-controls";
 import { TimerBar } from "#/features/game/components/timer-bar";
-import type {
-  GameHudColumn,
-  GameHudRow,
-} from "#/features/match/utils/scoreboard-adapter";
 import { createGameHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
 
 interface TimerProps {
