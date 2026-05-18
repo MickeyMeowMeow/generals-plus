@@ -39,11 +39,11 @@ const BASE_TICK_INTERVAL = 500;
 
 const MODE_SETTINGS: Record<
   string,
-  { finishTick?: number; flagCount?: number; targetScore?: number }
+  { duration?: number; flagCount?: number; targetScore?: number }
 > = {
   classic: {},
-  turf_war: { finishTick: 360 },
-  domination: { finishTick: 600, flagCount: 3, targetScore: 1000 },
+  turf_war: { duration: 180 },
+  domination: { duration: 300, flagCount: 3, targetScore: 1000 },
 };
 
 const DEFAULT_MAX_PLAYERS = 8;
@@ -108,8 +108,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     // Initialize mode-specific defaults so startGame sees the right values
     // even if the host never opens the settings panel.
     const modeDefaults = MODE_SETTINGS[gameMode];
-    if (modeDefaults?.finishTick !== undefined) {
-      state.finishTick = modeDefaults.finishTick;
+    if (modeDefaults?.duration !== undefined) {
+      state.duration = modeDefaults.duration;
     }
     if (modeDefaults?.flagCount !== undefined) {
       state.flagCount = modeDefaults.flagCount;
@@ -292,11 +292,11 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       // Reset mode-specific defaults when gameMode changes.
       if (update.gameMode !== undefined) {
         const modeDefaults = MODE_SETTINGS[update.gameMode];
-        if (update.duration === undefined) {
-          this.state.duration = 1;
-        }
-        if (modeDefaults?.finishTick !== undefined) {
-          this.state.finishTick = modeDefaults.finishTick;
+        if (
+          update.duration === undefined &&
+          modeDefaults?.duration !== undefined
+        ) {
+          this.state.duration = modeDefaults.duration;
         }
         if (
           update.flagCount === undefined &&
@@ -324,12 +324,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         this.state.gameMode === GameMode.TURF_WAR ||
         this.state.gameMode === GameMode.DOMINATION
       ) {
-        const baseFinishTick = MODE_SETTINGS[this.state.gameMode].finishTick;
-        if (baseFinishTick === undefined) {
-          throw new Error(`Missing finishTick for mode ${this.state.gameMode}`);
-        }
         this.state.finishTick = Math.round(
-          baseFinishTick * this.state.duration,
+          (this.state.duration * 1000) / this.state.tickInterval,
         );
       }
 

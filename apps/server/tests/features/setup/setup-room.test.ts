@@ -179,7 +179,7 @@ describe("SetupRoom", () => {
       await msgPromise;
 
       expect(room.state.gameMode).toBe("turf_war");
-      expect(room.state.duration).toBe(1);
+      expect(room.state.duration).toBe(180);
       expect(room.state.finishTick).toBe(360);
     });
 
@@ -191,12 +191,12 @@ describe("SetupRoom", () => {
 
       const msgPromise = room.waitForMessage("updateSettings");
       room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
-        duration: 2,
+        duration: 360,
       });
       await msgPromise;
 
-      expect(room.state.duration).toBe(2);
-      expect(room.state.finishTick).toBe(720); // 360 * 2
+      expect(room.state.duration).toBe(360);
+      expect(room.state.finishTick).toBe(720); // 360 * 1000 / 500
     });
 
     it("resets duration when switching mode without explicit duration", async () => {
@@ -205,22 +205,22 @@ describe("SetupRoom", () => {
       });
       await connectClient(room, { id: "p1", email: "p1@test.com" });
 
-      // Set duration to 3
+      // Set duration to 30
       let msgPromise = room.waitForMessage("updateSettings");
       room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
-        duration: 3,
+        duration: 30,
       });
       await msgPromise;
-      expect(room.state.duration).toBe(3);
+      expect(room.state.duration).toBe(30);
 
-      // Switch to classic — duration should reset
+      // Switch to domination — duration should reset
       msgPromise = room.waitForMessage("updateSettings");
       room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
-        gameMode: "classic",
+        gameMode: "domination",
       });
       await msgPromise;
 
-      expect(room.state.duration).toBe(1);
+      expect(room.state.duration).toBe(300);
     });
   });
 
@@ -238,7 +238,7 @@ describe("SetupRoom", () => {
       await msgPromise;
 
       expect(room.state.gameMode).toBe("domination");
-      expect(room.state.duration).toBe(1);
+      expect(room.state.duration).toBe(300);
       expect(room.state.finishTick).toBe(600);
       expect(room.state.flagCount).toBe(3);
       expect(room.state.targetScore).toBe(1000);
@@ -252,12 +252,12 @@ describe("SetupRoom", () => {
 
       const msgPromise = room.waitForMessage("updateSettings");
       room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
-        duration: 2,
+        duration: 600,
       });
       await msgPromise;
 
-      expect(room.state.duration).toBe(2);
-      expect(room.state.finishTick).toBe(1200); // 600 * 2
+      expect(room.state.duration).toBe(600);
+      expect(room.state.finishTick).toBe(1200); // 600 * 1000 / 500
     });
 
     it("allows flagCount update in domination mode", async () => {
