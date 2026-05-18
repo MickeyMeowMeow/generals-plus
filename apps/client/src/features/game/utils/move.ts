@@ -1,4 +1,4 @@
-import type { ICoordinate } from "@generals-plus/engine";
+import type { ICoordinate, MoveActionType } from "@generals-plus/engine";
 
 export const MoveDirection = {
   UP: "up",
@@ -11,6 +11,7 @@ export type MoveDirection = (typeof MoveDirection)[keyof typeof MoveDirection];
 export interface MoveIntent {
   from: ICoordinate;
   direction: MoveDirection;
+  type?: MoveActionType;
 }
 
 export const KeyToDirection: Record<string, MoveDirection> = {
@@ -23,6 +24,8 @@ export const KeyToDirection: Record<string, MoveDirection> = {
   arrowdown: MoveDirection.DOWN,
   arrowright: MoveDirection.RIGHT,
 } as const;
+
+export const ClearMoveQueueKey = "q";
 
 export function getTargetCoord(move: MoveIntent): ICoordinate {
   switch (move.direction) {

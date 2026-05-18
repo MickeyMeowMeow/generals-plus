@@ -1,3 +1,4 @@
+import type { ICoordinate } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Container, Text, TextStyle } from "pixi.js";
 import { useMemo } from "react";
@@ -14,18 +15,32 @@ interface TroopLayerProps {
   grid: RenderGrid;
   stride: number;
   cellSize: number;
+  splitMoveSelection: ICoordinate | null;
 }
 
-export function TroopLayer({ grid, stride, cellSize }: TroopLayerProps) {
+function isSameCoord(a: ICoordinate, b: ICoordinate | null): boolean {
+  return !!b && a.x === b.x && a.y === b.y;
+}
+
+export function TroopLayer({
+  grid,
+  stride,
+  cellSize,
+  splitMoveSelection,
+}: TroopLayerProps) {
   const troopCells = useMemo(() => {
-    const cells: Array<{ cell: RenderGridCell; count: number }> = [];
+    const cells: Array<{ cell: RenderGridCell; text: string }> = [];
     grid.forEach((cell) => {
-      if (cell.troopCount) {
-        cells.push({ cell, count: cell.troopCount });
+      const isSplitMoveCell = isSameCoord(cell.coordinate, splitMoveSelection);
+      if (cell.troopCount || isSplitMoveCell) {
+        cells.push({
+          cell,
+          text: isSplitMoveCell ? "50%" : cell.troopCount!.toString(),
+        });
       }
     });
     return cells;
-  }, [grid]);
+  }, [grid, splitMoveSelection]);
 
   const troopTextStyle = useMemo(() => {
     return new TextStyle({
@@ -42,14 +57,14 @@ export function TroopLayer({ grid, stride, cellSize }: TroopLayerProps) {
 
   return (
     <pixiContainer>
-      {troopCells.map(({ cell, count }) => {
+      {troopCells.map(({ cell, text }) => {
         const x = cell.coordinate.x * stride + cellSize / 2;
         const y = cell.coordinate.y * stride + cellSize / 2;
 
         return (
           <pixiText
             key={`troop-${cell.coordinate.x},${cell.coordinate.y}`}
-            text={count.toString()}
+            text={text}
             anchor={0.5}
             x={x}
             y={y}

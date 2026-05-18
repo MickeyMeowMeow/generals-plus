@@ -1,5 +1,9 @@
 import type { ISeatReservation } from "@colyseus/sdk/Client";
-import type { ICoordinate, IGameResult } from "@generals-plus/engine";
+import type {
+  ICoordinate,
+  IGameResult,
+  MoveActionType,
+} from "@generals-plus/engine";
 import { ActionType } from "@generals-plus/engine";
 import type {
   ActionData,
@@ -11,7 +15,7 @@ import {
   MatchClientMessage,
   MatchServerMessage,
 } from "@generals-plus/shared-types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { createRenderGrid } from "#/features/game/utils/grid-adapter";
@@ -398,6 +402,7 @@ export function useGameRoom(
                 { x: action.fromX, y: action.fromY },
                 { x: action.toX, y: action.toY },
               ),
+              type: action.type as MoveActionType,
             }));
             setMoveQueue(newQueue);
           }
@@ -443,15 +448,26 @@ export function useGameRoom(
     };
   }, [connection, source]);
 
-  const sendMove = (from: ICoordinate, to: ICoordinate) => {
-    if (!room) return;
-    room.send(MatchClientMessage.ACTION, {
-      playerId: room.sessionId,
-      type: ActionType.MOVE,
-      from,
-      to,
-    });
-  };
+  const sendMove = useCallback(
+    (
+      from: ICoordinate,
+      to: ICoordinate,
+      type: MoveActionType = ActionType.MOVE,
+    ) => {
+      room?.send(MatchClientMessage.ACTION, {
+        playerId: room.sessionId,
+        type,
+        from,
+        to,
+      });
+    },
+    [room],
+  );
+
+  const clearMoveQueue = useCallback(() => {
+    setMoveQueue([]);
+    room?.send(MatchClientMessage.CLEAR_QUEUE);
+  }, [room]);
 
   return {
     room,
@@ -460,6 +476,7 @@ export function useGameRoom(
     gameState,
     gameResult,
     sendMove,
+    clearMoveQueue,
     playerColors,
     playerNames,
     connectionStatus,
