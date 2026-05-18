@@ -145,9 +145,36 @@ export class TurfWarGame extends BaseGame implements ITurfWarGame {
       }),
     );
 
+    const teamLand = new Map<string, number>();
+    let capturableTotal = 0;
+    this.grid.forEach((cell) => {
+      if (cell.terrain !== Terrain.MOUNTAIN && cell.terrain !== Terrain.VOID) {
+        capturableTotal++;
+        if (cell.owner) {
+          const player = this.players.get(cell.owner.playerId);
+          if (player) {
+            const teamId = player.team.teamId;
+            teamLand.set(teamId, (teamLand.get(teamId) ?? 0) + 1);
+          }
+        }
+      }
+    });
+
+    const teams = Array.from(this.teams.values()).map((team) => ({
+      teamId: team.teamId,
+      playerIds: team.players.map((p) => p.playerId),
+      landPercent:
+        capturableTotal > 0
+          ? Math.round(
+              ((teamLand.get(team.teamId) ?? 0) / capturableTotal) * 100,
+            )
+          : 0,
+    }));
+
     return {
       mode: this.mode,
       players,
+      teams,
     };
   }
 

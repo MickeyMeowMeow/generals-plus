@@ -132,6 +132,11 @@ export interface ITurfWarScoreboard extends IBaseScoreboard {
     readonly troops: number;
     readonly land: number;
   }>;
+  readonly teams: Array<{
+    readonly teamId: string;
+    readonly playerIds: readonly string[];
+    readonly landPercent: number;
+  }>;
 }
 
 export interface IDominationScoreboard extends IBaseScoreboard {
