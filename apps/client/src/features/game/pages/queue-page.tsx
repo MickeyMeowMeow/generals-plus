@@ -10,6 +10,7 @@ import { useQueueRoom } from "#/features/game/api/use-queue-room";
 import { ColorPicker } from "#/features/game/components/color-picker";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
+import { RoomStatus } from "#/infra/network/room";
 
 function getModeOption(mode: GameMode) {
   return GAME_MODE_OPTIONS.find((option) => option.id === mode);
@@ -37,7 +38,7 @@ export function QueuePage({
   gameMode: GameMode;
   onLeave: () => void;
 }) {
-  const { room, queueState, seatReservation, error, isConnecting } =
+  const { room, queueState, seatReservation, error, isConnecting, status } =
     useQueueRoom({ gameMode });
   const userId = useUser((user) => user?.id);
   const displayName = useUser((user) => user?.displayName ?? "Commander");
@@ -58,6 +59,17 @@ export function QueuePage({
       window.clearInterval(timer);
     };
   }, [isConnecting, queueState, seatReservation]);
+
+  useEffect(() => {
+    if (!status || seatReservation) return;
+    if (
+      status === RoomStatus.DISCONNECTED ||
+      status === RoomStatus.RECONNECTING ||
+      status === RoomStatus.ERROR
+    ) {
+      onLeave();
+    }
+  }, [onLeave, seatReservation, status]);
 
   if (seatReservation) {
     /**

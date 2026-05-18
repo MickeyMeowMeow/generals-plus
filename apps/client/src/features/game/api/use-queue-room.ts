@@ -13,7 +13,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { networkProvider } from "#/infra/network/provider";
-import type { RoomClient } from "#/infra/network/room";
+import type { RoomClient, RoomStatus } from "#/infra/network/room";
 
 type QueueRoomClient = RoomClient<
   QueueState,
@@ -119,6 +119,7 @@ export function useQueueRoom({
     useState<SeatReservation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [status, setStatus] = useState<RoomStatus | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -129,6 +130,7 @@ export function useQueueRoom({
     const connect = async () => {
       setIsConnecting(true);
       setError(null);
+      setStatus(null);
       try {
         const currentRoom = await acquireQueueRoom(gameMode);
 
@@ -158,6 +160,11 @@ export function useQueueRoom({
             setError(message);
           }),
         );
+        unsubscribers.push(
+          currentRoom.onStatusChange((nextStatus) => {
+            setStatus(nextStatus);
+          }),
+        );
       } catch (e) {
         if (!isCurrent) return;
         setIsConnecting(false);
@@ -176,5 +183,5 @@ export function useQueueRoom({
     };
   }, [enabled, gameMode]);
 
-  return { room, queueState, seatReservation, error, isConnecting };
+  return { room, queueState, seatReservation, error, isConnecting, status };
 }

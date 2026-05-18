@@ -32,6 +32,7 @@ import { resetQueueConnectionsForTesting } from "#/features/game/api/use-queue-r
 import { resetSetupConnectionsForTesting } from "#/features/game/api/use-setup-room";
 import { QueuePage } from "#/features/game/pages/queue-page";
 import { HttpRequestError } from "#/infra/network/provider/colyseus";
+import { RoomStatus } from "#/infra/network/room";
 import { createMockAuth } from "#/tests/helpers/auth";
 import { renderRoute } from "#/tests/helpers/render";
 
@@ -205,6 +206,7 @@ function createRoom({
 }) {
   const messageHandlers = new Map<string, (payload: unknown) => void>();
   const stateHandlers = new Set<(nextState: unknown) => void>();
+  const statusHandlers = new Set<(status: string, details?: string) => void>();
   const room = {
     roomId,
     sessionId: "session-1",
@@ -222,7 +224,12 @@ function createRoom({
       messageHandlers.set(type, callback);
       return () => {};
     }),
-    onStatusChange: vi.fn().mockReturnValue(() => {}),
+    onStatusChange: vi.fn(
+      (callback: (status: string, details?: string) => void) => {
+        statusHandlers.add(callback);
+        return () => statusHandlers.delete(callback);
+      },
+    ),
     getRecoveryToken: vi.fn().mockReturnValue(recoveryToken),
     emitState(nextState: unknown) {
       room.state = nextState;
@@ -232,6 +239,11 @@ function createRoom({
     },
     emitMessage(type: string, payload: unknown) {
       messageHandlers.get(type)?.(payload);
+    },
+    emitStatus(status: string, details?: string) {
+      for (const callback of statusHandlers) {
+        callback(status, details);
+      }
     },
   };
   return room;
@@ -373,6 +385,36 @@ describe("client room flows", () => {
     });
 
     expect(screen.getByText("00:03")).toBeTruthy();
+  });
+
+  it("leaves the official queue when the queue room disconnects", async () => {
+    const queueRoom = createRoom({
+      state: createState({
+        players: [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+          },
+        ],
+      }),
+    });
+    const onLeave = vi.fn();
+    networkMocks.joinOrCreate.mockResolvedValue(queueRoom);
+
+    render(
+      <AuthContext.Provider value={auth()}>
+        <QueuePage gameMode={GameMode.CLASSIC} onLeave={onLeave} />
+      </AuthContext.Provider>,
+    );
+
+    await screen.findByRole("heading", { name: "Pick Your Color" });
+
+    act(() => {
+      queueRoom.emitStatus(RoomStatus.RECONNECTING, "connection lost");
+    });
+
+    expect(onLeave).toHaveBeenCalledTimes(1);
   });
 
   it("confirms queue seat reservations before entering match", async () => {
