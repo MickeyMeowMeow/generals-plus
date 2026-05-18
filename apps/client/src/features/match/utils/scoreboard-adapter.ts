@@ -4,7 +4,7 @@ import type { BaseScoreboard, Player } from "@generals-plus/shared-types";
 /**
  * Column metadata used by the match HUD scoreboard table.
  */
-export interface MatchHudColumn {
+export interface GameHudColumn {
   /** Stable key used to read values from each row/group value map. */
   key: string;
   /** User-facing column label. */
@@ -14,7 +14,7 @@ export interface MatchHudColumn {
 /**
  * Render-ready player row for the match HUD scoreboard.
  */
-export interface MatchHudRow {
+export interface GameHudRow {
   /** Stable player id. */
   id: string;
   /** Display name shown in the HUD. */
@@ -23,34 +23,34 @@ export interface MatchHudRow {
   color: number;
   /** Whether this row represents the current client. */
   isCurrent: boolean;
-  /** Metric values keyed by {@link MatchHudColumn.key}. */
+  /** Metric values keyed by {@link GameHudColumn.key}. */
   values: Record<string, number | string>;
 }
 
 /**
  * Render-ready team or fallback player group for the match HUD scoreboard.
  */
-export interface MatchHudGroup {
+export interface GameHudGroup {
   /** Stable group id, usually a team id. */
   id: string;
   /** User-facing group label. */
   label: string;
-  /** Optional aggregate values keyed by {@link MatchHudColumn.key}. */
+  /** Optional aggregate values keyed by {@link GameHudColumn.key}. */
   totals?: Record<string, number | string>;
   /** Player rows belonging to the group. */
-  rows: MatchHudRow[];
+  rows: GameHudRow[];
 }
 
 /**
  * Mode-specific scoreboard data normalized for the match HUD renderer.
  */
-export interface MatchHudScoreboardModel {
+export interface GameHudScoreboardModel {
   /** Section title shown above the scoreboard rows. */
   title: string;
   /** Ordered metric columns to render. */
-  columns: MatchHudColumn[];
+  columns: GameHudColumn[];
   /** Ordered groups and rows to render. */
-  groups: MatchHudGroup[];
+  groups: GameHudGroup[];
 }
 
 interface TroopLandScoreEntry {
@@ -79,7 +79,7 @@ interface ScoreboardWithTeamScores {
   teamScores?: TeamScoresLike;
 }
 
-interface CreateMatchHudScoreboardModelOptions {
+interface CreateGameHudScoreboardModelOptions {
   /** Raw Colyseus scoreboard schema received from match state. */
   scoreboard: BaseScoreboard;
   /** Player schemas visible to the current client. */
@@ -92,12 +92,12 @@ interface CreateMatchHudScoreboardModelOptions {
   currentSessionId: string | null | undefined;
 }
 
-const troopLandColumns: MatchHudColumn[] = [
+const troopLandColumns: GameHudColumn[] = [
   { key: "land", label: "Land" },
   { key: "troops", label: "Soldiers" },
 ];
 
-const dominationColumns: MatchHudColumn[] = [
+const dominationColumns: GameHudColumn[] = [
   { key: "score", label: "Score" },
   ...troopLandColumns,
 ];
@@ -154,7 +154,7 @@ function createPlayerRows({
   playerColors,
   playerNames,
   currentSessionId,
-}: CreateMatchHudScoreboardModelOptions): MatchHudRow[] {
+}: CreateGameHudScoreboardModelOptions): GameHudRow[] {
   const scoreEntries = getTroopLandEntries(scoreboard);
   const scoreByPlayer = new Map(
     scoreEntries.map((entry) => [entry.playerId, entry]),
@@ -193,13 +193,13 @@ function createPlayerRows({
  * Groups player rows by team and computes troop/land totals for each group.
  */
 function createTeamGroups(
-  rows: MatchHudRow[],
+  rows: GameHudRow[],
   visiblePlayers: Iterable<Player>,
 ) {
   const teamByPlayer = new Map(
     Array.from(visiblePlayers).map((player) => [player.id, player.teamId]),
   );
-  const groups = new Map<string, MatchHudGroup>();
+  const groups = new Map<string, GameHudGroup>();
 
   for (const row of rows) {
     const teamId = teamByPlayer.get(row.id) || row.id;
@@ -229,8 +229,8 @@ function createTeamGroups(
  */
 function createTroopLandModel(
   title: string,
-  options: CreateMatchHudScoreboardModelOptions,
-): MatchHudScoreboardModel {
+  options: CreateGameHudScoreboardModelOptions,
+): GameHudScoreboardModel {
   const rows = createPlayerRows(options);
   return {
     title,
@@ -243,8 +243,8 @@ function createTroopLandModel(
  * Creates a HUD model for Domination, adding team score as the leading metric.
  */
 function createDominationModel(
-  options: CreateMatchHudScoreboardModelOptions,
-): MatchHudScoreboardModel {
+  options: CreateGameHudScoreboardModelOptions,
+): GameHudScoreboardModel {
   const rows = createPlayerRows(options);
   const scoreByTeam = new Map(
     getTeamScoreEntries(options.scoreboard).map((entry) => [
@@ -286,9 +286,9 @@ function createDominationModel(
  * render a stable column/group/row shape for Classic, Turf War, Domination, and
  * future modes.
  */
-export function createMatchHudScoreboardModel(
-  options: CreateMatchHudScoreboardModelOptions,
-): MatchHudScoreboardModel {
+export function createGameHudScoreboardModel(
+  options: CreateGameHudScoreboardModelOptions,
+): GameHudScoreboardModel {
   switch (options.scoreboard.mode) {
     case GameMode.CLASSIC:
       return createTroopLandModel("Players", options);

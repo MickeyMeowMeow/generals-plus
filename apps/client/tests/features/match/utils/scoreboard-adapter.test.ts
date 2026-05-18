@@ -6,7 +6,7 @@ import {
 } from "@generals-plus/shared-types";
 import { describe, expect, it } from "vitest";
 
-import { createMatchHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
+import { createGameHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
 
 /**
  * Creates a Colyseus player schema fixture with overridable identity fields.
@@ -69,9 +69,9 @@ function dominationScoreboard() {
   return scoreboard;
 }
 
-describe("createMatchHudScoreboardModel", () => {
+describe("createGameHudScoreboardModel", () => {
   it("adapts classic troop-land scoreboard rows", () => {
-    const model = createMatchHudScoreboardModel({
+    const model = createGameHudScoreboardModel({
       scoreboard: classicScoreboard(),
       visiblePlayers: [player()],
       playerColors: new Map(),
@@ -93,7 +93,7 @@ describe("createMatchHudScoreboardModel", () => {
   });
 
   it("adapts domination team scores when present", () => {
-    const model = createMatchHudScoreboardModel({
+    const model = createGameHudScoreboardModel({
       scoreboard: dominationScoreboard(),
       visiblePlayers: [
         player({ id: "p1", displayName: "Nova", teamId: "t1" }),

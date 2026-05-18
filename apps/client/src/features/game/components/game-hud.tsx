@@ -6,10 +6,10 @@ import { Separator } from "#/components/ui/separator";
 import { colorToHex } from "#/features/game/components/room-controls";
 import { TimerBar } from "#/features/game/components/timer-bar";
 import type {
-  MatchHudColumn,
-  MatchHudRow,
+  GameHudColumn,
+  GameHudRow,
 } from "#/features/match/utils/scoreboard-adapter";
-import { createMatchHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
+import { createGameHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
 import { cn } from "#/lib/utils";
 
 interface TimerProps {
@@ -64,7 +64,7 @@ function MetricCells({
   columns,
   values,
 }: {
-  columns: MatchHudColumn[];
+  columns: GameHudColumn[];
   values: Record<string, number | string> | undefined;
 }) {
   return columns.map((column) => (
@@ -81,8 +81,8 @@ function PlayerRow({
   columns,
   player,
 }: {
-  columns: MatchHudColumn[];
-  player: MatchHudRow;
+  columns: GameHudColumn[];
+  player: GameHudRow;
 }) {
   return (
     <li
@@ -113,7 +113,7 @@ export function GameHud({
   currentSessionId,
   timer,
 }: GameHudProps) {
-  const scoreboardModel = createMatchHudScoreboardModel({
+  const scoreboardModel = createGameHudScoreboardModel({
     scoreboard,
     visiblePlayers,
     playerColors,
