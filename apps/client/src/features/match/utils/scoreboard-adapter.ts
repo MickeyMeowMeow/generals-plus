@@ -47,10 +47,14 @@ export interface GameHudGroup {
 export interface GameHudScoreboardModel {
   /** Section title shown above the scoreboard rows. */
   title: string;
+  /** Optional secondary subtitle or target displayed on the right. */
+  subtitle?: string;
   /** Ordered metric columns to render. */
   columns: GameHudColumn[];
   /** Ordered groups and rows to render. */
   groups: GameHudGroup[];
+  /** Whether the mode uses teams grouping. */
+  hasTeams: boolean;
 }
 
 interface TroopLandScoreEntry {
@@ -100,6 +104,18 @@ interface ScoreboardWithDominationTeams {
 }
 
 const troopLandColumns: GameHudColumn[] = [
+  { key: "land", label: "Land" },
+  { key: "troops", label: "Soldiers" },
+];
+
+const turfWarColumns: GameHudColumn[] = [
+  { key: "percent", label: "Area" },
+  { key: "land", label: "Land" },
+  { key: "troops", label: "Soldiers" },
+];
+
+const dominationColumns: GameHudColumn[] = [
+  { key: "score", label: "Score" },
   { key: "land", label: "Land" },
   { key: "troops", label: "Soldiers" },
 ];
@@ -238,6 +254,7 @@ function createTroopLandModel(
     title,
     columns: troopLandColumns,
     groups: createTeamGroups(rows),
+    hasTeams: false,
   };
 }
 
@@ -259,18 +276,23 @@ function createTurfWarModel(
     const percent = landPercentByTeam.get(group.id) ?? 0;
     return {
       ...group,
-      label: `${group.label} (${percent}%)`,
+      label: group.label,
+      totals: {
+        ...group.totals,
+        percent: `${percent}%`,
+      },
     };
   });
 
   return {
-    title: "Teams",
-    columns: troopLandColumns,
+    title: "Turf War",
+    columns: turfWarColumns,
     groups: groups.sort(
       (a, b) =>
         (landPercentByTeam.get(b.id) ?? 0) -
           (landPercentByTeam.get(a.id) ?? 0) || a.label.localeCompare(b.label),
     ),
+    hasTeams: true,
   };
 }
 
@@ -292,18 +314,24 @@ function createDominationModel(
     const score = scoreByTeam.get(group.id) ?? 0;
     return {
       ...group,
-      label: `${group.label} (${score} / ${finalTarget})`,
+      label: group.label,
+      totals: {
+        ...group.totals,
+        score: `${score}/${finalTarget}`,
+      },
     };
   });
 
   return {
-    title: `Teams (Target: ${finalTarget})`,
-    columns: troopLandColumns,
+    title: "Domination",
+    subtitle: `Target: ${finalTarget}`,
+    columns: dominationColumns,
     groups: groups.sort(
       (a, b) =>
         (scoreByTeam.get(b.id) ?? 0) - (scoreByTeam.get(a.id) ?? 0) ||
         a.label.localeCompare(b.label),
     ),
+    hasTeams: true,
   };
 }
 
@@ -319,12 +347,12 @@ export function createGameHudScoreboardModel(
 ): GameHudScoreboardModel {
   switch (scoreboard.mode) {
     case GameMode.CLASSIC:
-      return createTroopLandModel("Players", scoreboard);
+      return createTroopLandModel("Classic", scoreboard);
     case GameMode.TURF_WAR:
       return createTurfWarModel(scoreboard);
     case GameMode.DOMINATION:
       return createDominationModel(scoreboard, targetScore);
     default:
-      return createTroopLandModel("Players", scoreboard);
+      return createTroopLandModel("Classic", scoreboard);
   }
 }
