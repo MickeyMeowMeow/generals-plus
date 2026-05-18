@@ -21,6 +21,7 @@ interface GameHudProps {
   /** Authoritative scoreboard schema from the match room state. */
   scoreboard: BaseScoreboard;
   timer?: TimerProps;
+  targetScore?: number;
 }
 
 /**
@@ -93,8 +94,8 @@ function PlayerRow({
 /**
  * Floating in-game HUD for connection state and mode-specific scoreboard data.
  */
-export function GameHud({ scoreboard, timer }: GameHudProps) {
-  const scoreboardModel = createGameHudScoreboardModel(scoreboard);
+export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
+  const scoreboardModel = createGameHudScoreboardModel(scoreboard, targetScore);
   const shouldShowGroupRows =
     scoreboardModel.title.startsWith("Teams") ||
     scoreboardModel.groups.some(

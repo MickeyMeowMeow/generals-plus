@@ -276,6 +276,7 @@ function createTurfWarModel(
 
 function createDominationModel(
   scoreboard: BaseScoreboard,
+  targetScore?: number,
 ): GameHudScoreboardModel {
   const rows = createPlayerRows(scoreboard);
   const scoreByTeam = new Map(
@@ -285,16 +286,18 @@ function createDominationModel(
     ]),
   );
 
+  const finalTarget = targetScore && targetScore > 0 ? targetScore : 1000;
+
   const groups = createTeamGroups(rows).map((group) => {
     const score = scoreByTeam.get(group.id) ?? 0;
     return {
       ...group,
-      label: `${group.label} (${score} / 1000)`,
+      label: `${group.label} (${score} / ${finalTarget})`,
     };
   });
 
   return {
-    title: "Teams (Target: 1000)",
+    title: `Teams (Target: ${finalTarget})`,
     columns: troopLandColumns,
     groups: groups.sort(
       (a, b) =>
@@ -312,6 +315,7 @@ function createDominationModel(
  */
 export function createGameHudScoreboardModel(
   scoreboard: BaseScoreboard,
+  targetScore?: number,
 ): GameHudScoreboardModel {
   switch (scoreboard.mode) {
     case GameMode.CLASSIC:
@@ -319,7 +323,7 @@ export function createGameHudScoreboardModel(
     case GameMode.TURF_WAR:
       return createTurfWarModel(scoreboard);
     case GameMode.DOMINATION:
-      return createDominationModel(scoreboard);
+      return createDominationModel(scoreboard, targetScore);
     default:
       return createTroopLandModel("Players", scoreboard);
   }
