@@ -99,15 +99,35 @@ export async function createCustomRoom(
     }
   }
 
-  const setupRoomId = await createSetupRoomForKeyImpl(key);
-  customRooms.set(key, {
+  const record: CustomRoomRecord = {
     key,
-    activeSetupRoomId: setupRoomId,
+    activeSetupRoomId: null,
     pendingSetupRoomId: null,
-    status: "setup",
-    version: 1,
+    status: "idle",
+    version: 0,
     ownerUserId,
-  });
+  };
+  customRooms.set(key, record);
+
+  const pendingSetupRoomId = createSetupRoomForKeyImpl(key)
+    .then((setupRoomId) => {
+      record.activeSetupRoomId = setupRoomId;
+      record.status = "setup";
+      record.version = 1;
+      return setupRoomId;
+    })
+    .catch((error) => {
+      if (customRooms.get(key) === record) {
+        customRooms.delete(key);
+      }
+      throw error;
+    })
+    .finally(() => {
+      record.pendingSetupRoomId = null;
+    });
+
+  record.pendingSetupRoomId = pendingSetupRoomId;
+  const setupRoomId = await pendingSetupRoomId;
 
   return { customRoomKey: key, setupRoomId, created: true };
 }

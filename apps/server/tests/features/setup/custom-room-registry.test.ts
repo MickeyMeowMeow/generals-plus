@@ -96,6 +96,31 @@ describe("custom room registry", () => {
     ).rejects.toBeInstanceOf(CustomRoomAlreadyExistsError);
   });
 
+  it("atomically reserves a requested key across concurrent creates", async () => {
+    const creationDeferred = createDeferred<string>();
+    let createCount = 0;
+    setCreateSetupRoomForKeyForTesting(async () => {
+      createCount += 1;
+      return creationDeferred.promise;
+    });
+
+    const firstCreate = createCustomRoom("host-1", "shared-room");
+    await Promise.resolve();
+
+    await expect(
+      createCustomRoom("host-2", "shared-room"),
+    ).rejects.toBeInstanceOf(CustomRoomAlreadyExistsError);
+    expect(createCount).toBe(1);
+
+    creationDeferred.resolve("setup-shared");
+
+    await expect(firstCreate).resolves.toEqual({
+      customRoomKey: "shared-room",
+      setupRoomId: "setup-shared",
+      created: true,
+    });
+  });
+
   // --- Coverage for lines 29-34: real createSetupRoomForKey implementation ---
 
   describe("createCustomRoom (real implementation)", () => {
