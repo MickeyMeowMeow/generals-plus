@@ -383,4 +383,39 @@ describe("MatchRoom", () => {
       expect(room.state.status).toBe(GameStatus.FINISHED);
     });
   });
+
+  // ── Custom tickInterval and finishTick ──────────────────────
+
+  describe("custom tickInterval and finishTick", () => {
+    it("sets tickInterval on state from metadata", async () => {
+      const metadata = createValidRoomData({ tickInterval: 250 });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      expect(room.state.tickInterval).toBe(250);
+    });
+
+    it("defaults tickInterval to 500 when metadata omits it", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      expect(room.state.tickInterval).toBe(500);
+    });
+
+    it("sets finishTick on state from metadata", async () => {
+      const metadata = createValidRoomData({
+        mode: "turf_war",
+        finishTick: 720,
+      });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      expect(room.state.finishTick).toBe(720);
+    });
+
+    it("defaults finishTick to undefined when metadata omits it", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      expect(room.state.finishTick).toBeUndefined();
+    });
+  });
 });

@@ -118,6 +118,33 @@ describe("TurfWarGame", () => {
     });
   });
 
+  it("uses custom finishTick from options", () => {
+    const grid = createGridForTurfWar();
+    const game = new TurfWarGame(grid, { finishTick: 100 });
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+
+    grid.get({ x: 0, y: 0 })!.owner = p1;
+    grid.get({ x: 1, y: 0 })!.owner = p2;
+
+    game.startGame();
+
+    // Game should still be playing at tick 99
+    game.tick = 98;
+    game.nextTick();
+    expect(game.status).toBe(GameStatus.PLAYING);
+
+    // Game should finish at tick 100
+    // @ts-expect-error - bypassing private modifier
+    game.tick = game.maxTicks - 1;
+    game.nextTick();
+    expect(game.status).toBe(GameStatus.FINISHED);
+  });
+
   it("integrates with RespawningCombatResolver during action execution", () => {
     const grid = createGridForTurfWar();
     const game = new TurfWarGame(grid);
