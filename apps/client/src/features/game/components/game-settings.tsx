@@ -15,6 +15,7 @@ import {
 } from "#/components/ui/select";
 import { Switch } from "#/components/ui/switch";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
+import { cn } from "#/lib/utils";
 
 interface GameSettingsProps {
   /** Whether the current player can edit setup-room settings. */
@@ -172,9 +173,12 @@ export function GameSettings({
           <div className="flex h-7 items-center justify-between border border-game-border bg-game-bg px-3 text-sm text-game-text dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40">
             <Label
               htmlFor="isPublic"
-              className={
-                isHost ? "cursor-pointer text-sm" : "cursor-not-allowed text-sm"
-              }
+              className={cn(
+                "text-sm",
+                isHost
+                  ? "cursor-pointer"
+                  : "cursor-not-allowed text-game-text-dim",
+              )}
             >
               {displayed.isPublic ? "Public" : "Private"}
             </Label>
