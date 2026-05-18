@@ -445,7 +445,8 @@ export function useGameRoom(
 
   const sendMove = useCallback(
     (from: ICoordinate, to: ICoordinate) => {
-      room?.send(MatchClientMessage.ACTION, {
+      if (!room) return;
+      room.send(MatchClientMessage.ACTION, {
         playerId: room.sessionId,
         type: ActionType.MOVE,
         from,
