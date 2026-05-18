@@ -224,6 +224,73 @@ describe("SetupRoom", () => {
     });
   });
 
+  // ── Domination mode settings ───────────────────────────────
+
+  describe("domination mode settings", () => {
+    it("resets finishTick and flagCount when switching to domination", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        gameMode: "domination",
+      });
+      await msgPromise;
+
+      expect(room.state.gameMode).toBe("domination");
+      expect(room.state.duration).toBe(1);
+      expect(room.state.finishTick).toBe(600);
+      expect(room.state.flagCount).toBe(3);
+    });
+
+    it("computes finishTick from duration multiplier in domination", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: "domination",
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        duration: 2,
+      });
+      await msgPromise;
+
+      expect(room.state.duration).toBe(2);
+      expect(room.state.finishTick).toBe(1200); // 600 * 2
+    });
+
+    it("allows flagCount update in domination mode", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: "domination",
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        flagCount: 5,
+      });
+      await msgPromise;
+
+      expect(room.state.flagCount).toBe(5);
+    });
+
+    it("rejects flagCount in non-domination mode", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      const sent = captureErrors(room.clients[0]);
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        flagCount: 3,
+      });
+      await msgPromise;
+
+      expect(sent).toContain(
+        "Flag count is only available in Domination mode.",
+      );
+    });
+  });
+
   // ── Settings update: validation ────────────────────────────
 
   describe("settings validation", () => {

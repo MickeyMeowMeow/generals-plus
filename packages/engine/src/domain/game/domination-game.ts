@@ -169,11 +169,15 @@ export class DominationGame extends BaseGame implements IDominationGame {
   getScoreboard(): IDominationScoreboard {
     const baseScores = this.calculateBaseScores();
     const players = Array.from(baseScores.entries()).map(
-      ([playerId, score]) => ({
-        playerId,
-        troops: score.troops,
-        land: score.land,
-      }),
+      ([playerId, score]) => {
+        const player = this.players.get(playerId);
+        return {
+          playerId,
+          troops: score.troops,
+          land: score.land,
+          isAlive: player?.status === PlayerStatus.ACTIVE,
+        };
+      },
     );
 
     return {

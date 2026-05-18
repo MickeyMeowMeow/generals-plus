@@ -1,6 +1,7 @@
 import { JWT } from "@colyseus/auth";
 import type { Client, QueueOptions } from "@colyseus/core";
 import { logger, matchMaker, QueueRoom } from "@colyseus/core";
+import type { DominationGridOptions } from "@generals-plus/engine";
 import { GameMode, getDefaultPlayersPerTeam } from "@generals-plus/engine";
 import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
 import {
@@ -68,9 +69,17 @@ export class MatchQueueRoom extends QueueRoom {
           groupPlayerIds.includes(p.id),
         );
 
+        const gridOptions =
+          this.gameMode === GameMode.DOMINATION
+            ? ({
+                generalCount: groupPlayers.length,
+                flagCount: 3,
+              } as DominationGridOptions)
+            : { generalCount: groupPlayers.length };
+
         const game = createGame({
           mode: this.gameMode,
-          gridOptions: { generalCount: groupPlayers.length },
+          gridOptions,
           playerIds: groupPlayers.map((p) => p.id),
           playerPerTeam: getDefaultPlayersPerTeam(this.gameMode),
         });

@@ -280,6 +280,29 @@ describe("MatchQueueRoom", () => {
         }),
       );
     });
+
+    it("passes flagCount in gridOptions for domination mode", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.DOMINATION,
+        countdownCycles: 2,
+      });
+
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      c1.userData.rank = 1000;
+      const c2 = await connectClient(room, { id: "p2", email: "p2@t.com" });
+      c2.userData.rank = 1100;
+
+      for (let i = 0; i < 10; i++) {
+        room.reassignMatchGroups();
+      }
+
+      expect(mocks.createGame).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: GameMode.DOMINATION,
+          gridOptions: expect.objectContaining({ flagCount: 3 }),
+        }),
+      );
+    });
   });
 
   describe("duplicate connection handling", () => {

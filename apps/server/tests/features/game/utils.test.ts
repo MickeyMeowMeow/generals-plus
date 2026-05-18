@@ -1,4 +1,4 @@
-import { GameMode, TurfWarGame } from "@generals-plus/engine";
+import { DominationGame, GameMode, TurfWarGame } from "@generals-plus/engine";
 import { describe, expect, it } from "vitest";
 
 import { createGame } from "#/features/game/utils";
@@ -107,5 +107,51 @@ describe("createGame", () => {
         playerPerTeam: 1,
       }),
     ).toThrow('Game mode "demolition" is not implemented yet.');
+  });
+
+  describe("domination mode", () => {
+    it("creates a DominationGame with correct teams and players", () => {
+      const game = createGame({
+        mode: GameMode.DOMINATION,
+        playerIds: ["p1", "p2", "p3", "p4"],
+        playerPerTeam: 2,
+      });
+
+      expect(game).toBeInstanceOf(DominationGame);
+      expect(game.mode).toBe(GameMode.DOMINATION);
+      expect(game.players.size).toBe(4);
+      expect(game.teams.size).toBe(2);
+    });
+
+    it("passes grid options including flagCount", () => {
+      const game = createGame({
+        mode: GameMode.DOMINATION,
+        gridOptions: { generalCount: 2, flagCount: 3 },
+        playerIds: ["p1", "p2"],
+        playerPerTeam: 1,
+      });
+
+      expect(game).toBeInstanceOf(DominationGame);
+      expect(game.players.size).toBe(2);
+    });
+
+    it("throws if team not found during player assignment", () => {
+      const originalSet = Map.prototype.set;
+      Map.prototype.set = function () {
+        return this;
+      };
+
+      try {
+        expect(() =>
+          createGame({
+            mode: GameMode.DOMINATION,
+            playerIds: ["p1"],
+            playerPerTeam: 1,
+          }),
+        ).toThrow('Team with id "team_0" not found for player "p1".');
+      } finally {
+        Map.prototype.set = originalSet;
+      }
+    });
   });
 });

@@ -21,6 +21,7 @@ export const setupSettingsUpdateSchema = z
     cityInitialTroops: z.number().int().min(0),
     speed: z.number().min(0.5).max(10),
     duration: z.number().min(0.5).max(10),
+    flagCount: z.number().int().min(1).max(20),
   })
   .partial()
   .strict();

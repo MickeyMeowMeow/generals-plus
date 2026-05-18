@@ -25,14 +25,23 @@ export interface TurfWarSetupSettings extends BaseSetupSettings {
   duration: number;
 }
 
+export interface DominationSetupSettings extends BaseSetupSettings {
+  gameMode: typeof GameMode.DOMINATION;
+  duration: number;
+  flagCount: number;
+}
+
 export interface OtherSettings extends BaseSetupSettings {
   gameMode: Exclude<
     GameMode,
-    typeof GameMode.CLASSIC | typeof GameMode.TURF_WAR
+    | typeof GameMode.CLASSIC
+    | typeof GameMode.TURF_WAR
+    | typeof GameMode.DOMINATION
   >;
 }
 
 export type SetupSettings =
   | ClassicSetupSettings
   | TurfWarSetupSettings
+  | DominationSetupSettings
   | OtherSettings;

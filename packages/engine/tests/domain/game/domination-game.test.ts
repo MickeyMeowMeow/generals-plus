@@ -125,6 +125,7 @@ describe("DominationGame", () => {
       playerId: "p1",
       troops: 0,
       land: 1,
+      isAlive: true,
     });
     expect(scoreboard.teamScores.get("t1")).toBe(1);
   });

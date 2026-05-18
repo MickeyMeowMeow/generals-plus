@@ -36,9 +36,13 @@ import { setupSettingsUpdateSchema } from "./schemas";
 
 const BASE_TICK_INTERVAL = 500;
 
-const MODE_SETTINGS: Record<string, { finishTick?: number }> = {
+const MODE_SETTINGS: Record<
+  string,
+  { finishTick?: number; flagCount?: number }
+> = {
   classic: {},
   turf_war: { finishTick: 360 },
+  domination: { finishTick: 600, flagCount: 3 },
 };
 
 const DEFAULT_MAX_PLAYERS = 8;
@@ -58,6 +62,7 @@ const SETTING_LABELS: Record<string, string> = {
   cityInitialTroops: "City troops",
   speed: "Speed",
   duration: "Duration",
+  flagCount: "Flag count",
 };
 
 type SetupSettingsIssue = {
@@ -229,6 +234,17 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         }
       }
 
+      // flagCount is only allowed for domination mode
+      const activeMode = update.gameMode ?? this.state.gameMode;
+      if (update.flagCount !== undefined && activeMode !== "domination") {
+        this.sendValidationFailed(client, {
+          severity: "warning",
+          field: "flagCount",
+          message: "Flag count is only available in Domination mode.",
+        });
+        return;
+      }
+
       // When gameMode changes without an explicit playersPerTeam, reset to the
       // mode default so the host doesn't carry a stale value across modes.
       if (
@@ -247,6 +263,12 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         if (modeDefaults?.finishTick !== undefined) {
           this.state.finishTick = modeDefaults.finishTick;
         }
+        if (
+          update.flagCount === undefined &&
+          modeDefaults?.flagCount !== undefined
+        ) {
+          this.state.flagCount = modeDefaults.flagCount;
+        }
       }
 
       // Apply valid updates to state
@@ -257,8 +279,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         100,
         Math.round(BASE_TICK_INTERVAL / this.state.speed),
       );
-      if (this.state.gameMode === "turf_war") {
-        const baseFinishTick = MODE_SETTINGS.turf_war.finishTick ?? 360;
+      if (
+        this.state.gameMode === "turf_war" ||
+        this.state.gameMode === "domination"
+      ) {
+        const baseFinishTick = MODE_SETTINGS[this.state.gameMode].finishTick;
+        if (baseFinishTick === undefined) {
+          throw new Error(`Missing finishTick for mode ${this.state.gameMode}`);
+        }
         this.state.finishTick = Math.round(
           baseFinishTick * this.state.duration,
         );
@@ -437,7 +465,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   private getGridOptions(): GridGeneratorOptions | DominationGridOptions {
-    return {
+    const base: GridGeneratorOptions = {
       width: this.state.mapWidth,
       height: this.state.mapHeight,
       seed: this.state.seed,
@@ -448,6 +476,12 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       generalInitialTroops: this.state.generalInitialTroops,
       cityInitialTroops: this.state.cityInitialTroops,
     };
+
+    if (this.state.gameMode === "domination") {
+      return { ...base, flagCount: this.state.flagCount };
+    }
+
+    return base;
   }
 
   private async startGame() {
@@ -457,7 +491,10 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       playerIds: this.state.players.map((p) => p.id),
       playerPerTeam: this.state.playersPerTeam,
       finishTick:
-        this.state.gameMode === "turf_war" ? this.state.finishTick : undefined,
+        this.state.gameMode === "turf_war" ||
+        this.state.gameMode === "domination"
+          ? this.state.finishTick
+          : undefined,
     });
 
     const playerInit = createPlayerInit(this.state.players, game);
@@ -469,7 +506,10 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       isPublic: false,
       tickInterval: this.state.tickInterval,
       finishTick:
-        this.state.gameMode === "turf_war" ? this.state.finishTick : undefined,
+        this.state.gameMode === "turf_war" ||
+        this.state.gameMode === "domination"
+          ? this.state.finishTick
+          : undefined,
     };
 
     const room = await matchMaker.createRoom(ROOM_NAMES.MATCH, { metadata });
