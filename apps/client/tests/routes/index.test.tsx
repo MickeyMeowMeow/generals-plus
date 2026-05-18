@@ -56,7 +56,7 @@ describe("index route", () => {
     expect(screen.getByText("Nova")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Start" })).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: "Create custom room" }),
+      screen.getByRole("button", { name: "Create/Join custom room" }),
     ).toBeTruthy();
   });
 

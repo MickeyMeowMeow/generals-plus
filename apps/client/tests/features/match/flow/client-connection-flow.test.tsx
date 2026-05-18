@@ -3,6 +3,8 @@
 import { GameMode } from "@generals-plus/engine";
 import type { SetupSettings } from "@generals-plus/shared-types";
 import {
+  CUSTOM_ROOM_KEY_MAX_LENGTH,
+  CUSTOM_ROOM_KEY_MIN_LENGTH,
   MatchClientMessage,
   MatchServerMessage,
   PLAYER_COLOR_PALETTE,
@@ -30,6 +32,7 @@ import { resetGameConnectionsForTesting } from "#/features/game/api/use-game-roo
 import { resetQueueConnectionsForTesting } from "#/features/game/api/use-queue-room";
 import { resetSetupConnectionsForTesting } from "#/features/game/api/use-setup-room";
 import { QueuePage } from "#/features/game/pages/queue-page";
+import { HttpRequestError } from "#/infra/network/provider/colyseus";
 import { createMockAuth } from "#/tests/helpers/auth";
 import { renderRoute } from "#/tests/helpers/render";
 
@@ -423,7 +426,7 @@ describe("client room flows", () => {
 
     const user = userEvent.setup();
     await user.click(
-      screen.getByRole("button", { name: "Create custom room" }),
+      screen.getByRole("button", { name: "Create/Join custom room" }),
     );
 
     expect(await screen.findByText("You are host")).toBeTruthy();
@@ -433,6 +436,79 @@ describe("client room flows", () => {
     expect(networkMocks.createCustomRoom).toHaveBeenCalledTimes(1);
     expect(networkMocks.resolveCustomRoom).toHaveBeenCalledWith("custom-123");
     expect(networkMocks.joinById).toHaveBeenCalledWith("setup-123");
+  });
+
+  it("joins an existing custom setup room when creating the same lobby room id conflicts", async () => {
+    const setupRoom = createRoom({
+      roomId: "setup-join-existing",
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: false,
+        },
+        {
+          id: "player-2",
+          displayName: "Rook",
+          color: PLAYER_COLOR_PALETTE[1],
+          isHost: true,
+        },
+      ]),
+    });
+    networkMocks.createCustomRoom.mockRejectedValue(
+      new HttpRequestError(409, "room already exists"),
+    );
+    networkMocks.resolveCustomRoom.mockResolvedValue({
+      customRoomKey: "existing-room",
+      setupRoomId: "setup-join-existing",
+      created: false,
+    });
+    networkMocks.joinById.mockResolvedValue(setupRoom);
+
+    renderRoute("/", auth());
+
+    const user = userEvent.setup();
+    await user.type(
+      screen.getByRole("textbox", { name: "Custom room id" }),
+      "existing-room",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Create/Join custom room" }),
+    );
+
+    expect(await screen.findByText("You are guest")).toBeTruthy();
+    expect(networkMocks.createCustomRoom).toHaveBeenCalledWith("existing-room");
+    expect(networkMocks.resolveCustomRoom).toHaveBeenCalledWith(
+      "existing-room",
+    );
+    expect(networkMocks.joinById).toHaveBeenCalledWith("setup-join-existing");
+  });
+
+  it("shows a validation error when the lobby custom room id is too short or too long", async () => {
+    renderRoute("/", auth());
+
+    const user = userEvent.setup();
+    const input = screen.getByRole("textbox", { name: "Custom room id" });
+    const button = screen.getByRole("button", {
+      name: "Create/Join custom room",
+    });
+
+    await user.type(input, "abc");
+    await user.click(button);
+
+    expect(
+      screen.getByText(
+        `Room id must be ${CUSTOM_ROOM_KEY_MIN_LENGTH} - ${CUSTOM_ROOM_KEY_MAX_LENGTH} characters.`,
+      ),
+    ).toBeTruthy();
+    expect(networkMocks.createCustomRoom).not.toHaveBeenCalled();
+
+    await user.clear(input);
+    await user.type(input, "abcdefghijklmnopq");
+    await user.click(button);
+
+    expect(networkMocks.createCustomRoom).not.toHaveBeenCalled();
   });
 
   it("renders custom setup state when the initial room patch arrived before navigation", async () => {
@@ -464,7 +540,7 @@ describe("client room flows", () => {
 
     const user = userEvent.setup();
     await user.click(
-      screen.getByRole("button", { name: "Create custom room" }),
+      screen.getByRole("button", { name: "Create/Join custom room" }),
     );
 
     expect(await screen.findByText("You are host")).toBeTruthy();

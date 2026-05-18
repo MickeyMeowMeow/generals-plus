@@ -1,4 +1,9 @@
 import type { GameMode } from "@generals-plus/engine";
+import {
+  CUSTOM_ROOM_KEY_MAX_LENGTH,
+  CUSTOM_ROOM_KEY_MIN_LENGTH,
+  isValidCustomRoomKeyLength,
+} from "@generals-plus/shared-types";
 import { LogOut, Play, Plus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
@@ -11,11 +16,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
+import { Input } from "#/components/ui/input";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
 import { networkProvider } from "#/infra/network/provider";
+import { HttpRequestError } from "#/infra/network/provider/colyseus";
 
 type ModeOption = (typeof GAME_MODE_OPTIONS)[number];
+const CUSTOM_ROOM_KEY_LENGTH_ERROR = `Room id must be ${CUSTOM_ROOM_KEY_MIN_LENGTH} - ${CUSTOM_ROOM_KEY_MAX_LENGTH} characters.`;
 
 function ModeCard({
   mode,
@@ -81,16 +89,30 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
   const { actions } = useAuth();
   const displayName = useUser((user) => user?.displayName ?? "Commander");
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
+  const [customRoomId, setCustomRoomId] = useState("");
   const [customError, setCustomError] = useState<string | null>(null);
   const [isModePickerOpen, setIsModePickerOpen] = useState(false);
 
-  const createCustomRoom = async () => {
+  const createOrJoinCustomRoom = async () => {
+    const trimmedRoomId = customRoomId.trim();
+    if (trimmedRoomId && !isValidCustomRoomKeyLength(trimmedRoomId)) {
+      setCustomError(CUSTOM_ROOM_KEY_LENGTH_ERROR);
+      return;
+    }
     setIsCreatingCustom(true);
     setCustomError(null);
     try {
-      const room = await networkProvider.createCustomRoom();
+      const room = await networkProvider.createCustomRoom(trimmedRoomId);
       navigate(`/match/${encodeURIComponent(room.customRoomKey)}`);
     } catch (error) {
+      if (
+        trimmedRoomId &&
+        error instanceof HttpRequestError &&
+        error.status === 409
+      ) {
+        navigate(`/match/${encodeURIComponent(trimmedRoomId)}`);
+        return;
+      }
       setCustomError(
         error instanceof Error ? error.message : "Failed to create custom room",
       );
@@ -144,19 +166,40 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
           </section>
 
           <section className="grid min-h-32 place-items-center border-t border-game-border pt-5 sm:min-h-36">
-            <div className="grid justify-items-center gap-3">
-              <Button
-                type="button"
-                onClick={createCustomRoom}
-                disabled={isCreatingCustom}
-                className="min-w-48 justify-center"
-              >
-                <Plus className="size-4" />
-                {isCreatingCustom ? "Creating..." : "Create custom room"}
-              </Button>
+            <div className="grid w-full justify-items-stretch gap-3">
+              <div className="mx-auto flex w-full max-w-sm flex-col gap-3 sm:flex-row">
+                <Input
+                  value={customRoomId}
+                  onChange={(event) => {
+                    setCustomRoomId(event.target.value);
+                    if (customError) {
+                      setCustomError(null);
+                    }
+                  }}
+                  placeholder="Leave blank to randomize"
+                  aria-label="Custom room id"
+                  autoComplete="off"
+                  className="flex-1 border-game-border bg-game-bg text-game-text placeholder:text-game-text-dim"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !isCreatingCustom) {
+                      event.preventDefault();
+                      void createOrJoinCustomRoom();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={() => void createOrJoinCustomRoom()}
+                  disabled={isCreatingCustom}
+                  className="min-w-48 justify-center"
+                >
+                  <Plus className="size-4" />
+                  {isCreatingCustom ? "Creating..." : "Create/Join custom room"}
+                </Button>
+              </div>
 
               {customError ? (
-                <p className="rounded-none border border-destructive/40 p-3 text-sm text-destructive">
+                <p className="mx-auto flex min-h-8 w-full max-w-sm items-center rounded-none border border-destructive/40 px-3 text-sm text-destructive">
                   {customError}
                 </p>
               ) : null}
