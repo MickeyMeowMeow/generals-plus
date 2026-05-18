@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { Terrain } from "#/domain/cell/terrain";
+import type { DominationGridOptions } from "#/domain/grid/grid-generator";
 import {
   DefaultGridGenerator,
   DefaultGridGeneratorOptions,
@@ -12,6 +13,8 @@ import type { ICoordinate } from "#/math/coordinate";
 import {
   GENERAL_SAFE_RADIUS,
   MIN_CITY_GENERAL_DISTANCE,
+  MIN_FLAG_GENERAL_DISTANCE,
+  MIN_FLAG_SPACING,
 } from "#/domain/grid/grid-generator";
 
 function collectByTerrain(
@@ -277,5 +280,89 @@ describe("DefaultGridGenerator", () => {
         cityRate: 0.02,
       }),
     ).not.toThrow();
+  });
+
+  describe("flag placement", () => {
+    const flagOptions: DominationGridOptions = {
+      width: 20,
+      height: 14,
+      seed: 1234,
+      flagCount: 3,
+      generalCount: 4,
+    };
+
+    it("places the requested number of flags", () => {
+      const grid = generator.generate(flagOptions);
+      const flags = collectByTerrain(grid, Terrain.FLAG);
+      expect(flags).toHaveLength(3);
+    });
+
+    it("keeps flags away from generals", () => {
+      const grid = generator.generate(flagOptions);
+      const flags = collectByTerrain(grid, Terrain.FLAG);
+      const generals = collectByTerrain(grid, Terrain.GENERAL);
+
+      for (const f of flags) {
+        for (const g of generals) {
+          expect(manhattanDistance(f, g)).toBeGreaterThanOrEqual(
+            MIN_FLAG_GENERAL_DISTANCE,
+          );
+        }
+      }
+    });
+
+    it("enforces minimum spacing between flags", () => {
+      const grid = generator.generate(flagOptions);
+      const flags = collectByTerrain(grid, Terrain.FLAG);
+
+      for (let i = 0; i < flags.length; i++) {
+        for (let j = i + 1; j < flags.length; j++) {
+          expect(manhattanDistance(flags[i], flags[j])).toBeGreaterThanOrEqual(
+            MIN_FLAG_SPACING,
+          );
+        }
+      }
+    });
+
+    it("biases flags toward the center of the map", () => {
+      const width = 20;
+      const height = 14;
+      const cx = (width - 1) / 2;
+      const cy = (height - 1) / 2;
+
+      // Run many seeds and collect all flag positions
+      const allFlags: ICoordinate[] = [];
+      for (let seed = 0; seed < 50; seed++) {
+        const grid = generator.generate({
+          ...flagOptions,
+          width,
+          height,
+          seed,
+        });
+        allFlags.push(...collectByTerrain(grid, Terrain.FLAG));
+      }
+
+      // Average distance of flags from center should be less than
+      // the average distance of all cells from center (random uniform)
+      const maxDist = Math.sqrt(cx * cx + cy * cy);
+      const avgFlagDist =
+        allFlags.reduce(
+          (sum, f) => sum + Math.sqrt((f.x - cx) ** 2 + (f.y - cy) ** 2),
+          0,
+        ) / allFlags.length;
+
+      expect(avgFlagDist).toBeLessThan(maxDist * 0.7);
+    });
+
+    it("generates zero flags when flagCount is not provided", () => {
+      const grid = generator.generate({
+        width: 20,
+        height: 14,
+        seed: 99,
+        generalCount: 2,
+      });
+      const flags = collectByTerrain(grid, Terrain.FLAG);
+      expect(flags).toHaveLength(0);
+    });
   });
 });
