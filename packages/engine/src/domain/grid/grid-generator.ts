@@ -128,14 +128,14 @@ export function isGrid(input: GridInput): input is IGrid {
     return false;
   }
 
-  const candidate = input as Record<string, unknown>;
+  const candidate = input as Partial<IGrid>;
 
   return (
-    typeof candidate["width"] === "number" &&
-    typeof candidate["height"] === "number" &&
-    typeof candidate["get"] === "function" &&
-    typeof candidate["forEach"] === "function" &&
-    typeof candidate["forEachTerrain"] === "function"
+    typeof candidate.width === "number" &&
+    typeof candidate.height === "number" &&
+    typeof candidate.get === "function" &&
+    typeof candidate.forEach === "function" &&
+    typeof candidate.forEachTerrain === "function"
   );
 }
 
