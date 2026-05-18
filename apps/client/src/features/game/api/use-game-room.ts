@@ -310,7 +310,7 @@ function isReadyMatchState(state: MatchState) {
  * The hook consumes a seat reservation or restores a persisted recovery token,
  * subscribes to authoritative match state, adapts the current client's vision
  * schema into a render grid, mirrors the player's server-side action queue for
- * the movement overlay, and exposes a typed `sendMove` command for user input.
+ * the movement overlay, and exposes typed queue commands for user input.
  */
 export function useGameRoom(
   connection: GameRoomConnection,
@@ -453,6 +453,12 @@ export function useGameRoom(
     });
   };
 
+  const clearMoveQueue = () => {
+    if (!room) return;
+    setMoveQueue([]);
+    room.send(MatchClientMessage.CLEAR_QUEUE);
+  };
+
   return {
     room,
     renderGrid,
@@ -460,6 +466,7 @@ export function useGameRoom(
     gameState,
     gameResult,
     sendMove,
+    clearMoveQueue,
     playerColors,
     playerNames,
     connectionStatus,

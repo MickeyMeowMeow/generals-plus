@@ -24,6 +24,8 @@ export const KeyToDirection: Record<string, MoveDirection> = {
   arrowright: MoveDirection.RIGHT,
 } as const;
 
+export const ClearMoveQueueKey = "q";
+
 export function getTargetCoord(move: MoveIntent): ICoordinate {
   switch (move.direction) {
     case MoveDirection.UP:
