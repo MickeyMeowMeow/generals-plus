@@ -20,18 +20,26 @@ export const RenderConfig = {
   terrainIconScale: 0.78,
 
   // Troop count text
-  troopTextFontFamily: "Arial, sans-serif",
-  troopTextFontSizeRatio: 0.5, // Relative to cell size
-  troopTextFontWeight: "bold",
-  troopTextColor: 0x000000,
-  troopTextStrokeColor: 0xffffff,
+  troopTextFontFamily: "Oxanium Variable, sans-serif",
+  troopTextFontSizeRatio: 0.33, // Relative to cell size
+  troopTextFontWeight: "400",
+  troopTextColor: 0xffffff,
+  troopTextStrokeColor: 0x000000,
   troopTextStrokeWidth: 4,
+  troopTextShadowColor: 0x000000,
+  troopTextShadowAlpha: 0.7,
+  troopTextShadowBlur: 10,
+  troopTextShadowDistance: 0,
+  troopTextShadowAngle: 0,
 
   // Intent arrow
-  arrowColor: 0x000000,
-  arrowStrokeColor: 0xffffff,
-  arrowStrokeWidth: 3,
-  arrowLength: 44,
-  arrowThickness: 7,
-  arrowHeadSize: 22,
+  arrowColor: 0xffffff,
+  arrowStrokeColor: 0x000000,
+  arrowStrokeWidth: 0,
+  splitArrowBarWidth: 3.5,
+  splitArrowBarLength: 12,
+  splitArrowBarInset: 10,
+  arrowLength: 30,
+  arrowThickness: 3,
+  arrowHeadSize: 10,
 } as const;

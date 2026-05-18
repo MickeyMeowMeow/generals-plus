@@ -49,6 +49,13 @@ export function TroopLayer({
         color: RenderConfig.troopTextStrokeColor,
         width: RenderConfig.troopTextStrokeWidth,
       },
+      dropShadow: {
+        color: RenderConfig.troopTextShadowColor,
+        alpha: RenderConfig.troopTextShadowAlpha,
+        blur: RenderConfig.troopTextShadowBlur,
+        distance: RenderConfig.troopTextShadowDistance,
+        angle: RenderConfig.troopTextShadowAngle,
+      },
     });
   }, [cellSize]);
 

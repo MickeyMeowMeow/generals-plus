@@ -77,6 +77,75 @@ function transformArrowPoints(
   });
 }
 
+function transformArrowPoint(
+  point: { x: number; y: number },
+  edgeX: number,
+  edgeY: number,
+  rotation: number,
+) {
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  return {
+    x: point.x * cos - point.y * sin + edgeX,
+    y: point.x * sin + point.y * cos + edgeY,
+  };
+}
+
+function drawArrow(
+  g: Graphics,
+  points: { x: number; y: number }[],
+  strokeWidth: number,
+) {
+  const shape = g.poly(points).fill(RenderConfig.arrowColor);
+  if (strokeWidth > 0) {
+    shape.stroke({
+      width: strokeWidth,
+      color: RenderConfig.arrowStrokeColor,
+      join: "round",
+    });
+  }
+}
+
+function drawSplitArrow(
+  g: Graphics,
+  edgeX: number,
+  edgeY: number,
+  rotation: number,
+) {
+  const points = transformArrowPoints(
+    createArrowPoints(),
+    edgeX,
+    edgeY,
+    rotation,
+  );
+  drawArrow(g, points, RenderConfig.arrowStrokeWidth);
+
+  const halfLength = RenderConfig.arrowLength / 2;
+  const barCenterX =
+    -halfLength +
+    RenderConfig.splitArrowBarInset +
+    RenderConfig.splitArrowBarWidth / 2;
+  const halfBarLength = RenderConfig.splitArrowBarLength / 2;
+  const barStart = transformArrowPoint(
+    { x: barCenterX, y: -halfBarLength },
+    edgeX,
+    edgeY,
+    rotation,
+  );
+  const barEnd = transformArrowPoint(
+    { x: barCenterX, y: halfBarLength },
+    edgeX,
+    edgeY,
+    rotation,
+  );
+
+  g.moveTo(barStart.x, barStart.y).lineTo(barEnd.x, barEnd.y).stroke({
+    width: RenderConfig.splitArrowBarWidth,
+    color: RenderConfig.arrowColor,
+    cap: "round",
+  });
+}
+
 interface MoveQueueLayerProps {
   stride: number;
   moveQueue: MoveIntent[];
@@ -87,17 +156,8 @@ export function MoveQueueLayer({ stride, moveQueue }: MoveQueueLayerProps) {
     (g: Graphics) => {
       g.clear();
 
-      // Apply dark stroke and white fill to the polygon
-      g.setStrokeStyle({
-        width: RenderConfig.arrowStrokeWidth,
-        color: RenderConfig.arrowStrokeColor,
-        join: "round",
-      });
-
       // Create the base arrow shape points.
       const points = createArrowPoints();
-      const splitPoints = createArrowPoints(0.45);
-      const splitOffset = RenderConfig.arrowThickness * 0.75;
 
       // Draw move queue arrows
       moveQueue.forEach((move) => {
@@ -105,34 +165,15 @@ export function MoveQueueLayer({ stride, moveQueue }: MoveQueueLayerProps) {
         const { edgeX, edgeY, rotation } = getArrowPosition(move, stride);
 
         if (move.type === ActionType.SPLIT_MOVE) {
-          g.poly(
-            transformArrowPoints(
-              splitPoints,
-              edgeX,
-              edgeY,
-              rotation,
-              -splitOffset,
-            ),
-          )
-            .fill(RenderConfig.arrowColor)
-            .stroke();
-          g.poly(
-            transformArrowPoints(
-              splitPoints,
-              edgeX,
-              edgeY,
-              rotation,
-              splitOffset,
-            ),
-          )
-            .fill(RenderConfig.arrowColor)
-            .stroke();
+          drawSplitArrow(g, edgeX, edgeY, rotation);
           return;
         }
 
-        g.poly(transformArrowPoints(points, edgeX, edgeY, rotation))
-          .fill(RenderConfig.arrowColor)
-          .stroke();
+        drawArrow(
+          g,
+          transformArrowPoints(points, edgeX, edgeY, rotation),
+          RenderConfig.arrowStrokeWidth,
+        );
       });
     },
     [moveQueue, stride],
