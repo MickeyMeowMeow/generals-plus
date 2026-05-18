@@ -363,7 +363,11 @@ export class MatchRoom extends Room<{
       throw new Error("Game instance not found");
     }
 
-    syncScoreboard(this.state.scoreboard, this.game.getScoreboard());
+    syncScoreboard(
+      this.state.scoreboard,
+      this.game.getScoreboard(),
+      this.state.publicPlayers.values(),
+    );
   }
 
   private async updateRatings(result: IGameResult) {

@@ -4,7 +4,7 @@ import { GameMode, GameStatus } from "@generals-plus/engine";
 import { ClientActionQueue } from "#/schema/action-data";
 import { Player } from "#/schema/player";
 import { PublicPlayer } from "#/schema/public-player";
-import { BaseScoreboard } from "#/schema/scoreboard";
+import { BaseScoreboard, ClassicScoreboard } from "#/schema/scoreboard";
 import { ClientVision } from "#/schema/vision-cell";
 
 export class MatchState extends Schema {
@@ -27,5 +27,5 @@ export class MatchState extends Schema {
     new MapSchema<ClientVision>();
   @view() @type({ map: Player }) players = new MapSchema<Player>();
 
-  @type(BaseScoreboard) scoreboard: BaseScoreboard = new BaseScoreboard();
+  @type(BaseScoreboard) scoreboard: BaseScoreboard = new ClassicScoreboard();
 }

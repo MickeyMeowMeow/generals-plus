@@ -256,8 +256,8 @@ describe("MatchRoom", () => {
       const getScoreboard = vi.fn(() => ({
         mode: "classic" as const,
         players: [
-          { playerId: "p1", troops: 10, land: 5, isGeneralAlive: true },
-          { playerId: "p2", troops: 3, land: 1, isGeneralAlive: false },
+          { playerId: "p1", troops: 10, land: 5, isAlive: true },
+          { playerId: "p2", troops: 3, land: 1, isAlive: false },
         ],
       }));
       const metadata = createValidRoomData({
@@ -275,7 +275,7 @@ describe("MatchRoom", () => {
         playerId: "p1",
         troops: 10,
         land: 5,
-        isGeneralAlive: true,
+        isAlive: true,
       });
     });
 

@@ -6,7 +6,7 @@ import {
   Terrain,
   Visibility,
 } from "@generals-plus/engine";
-import { BaseScoreboard, Player } from "@generals-plus/shared-types";
+import { ClassicScoreboard, Player } from "@generals-plus/shared-types";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -64,8 +64,8 @@ vi.mock("#/features/game/renderer/game-app", () => ({
   ),
 }));
 
-vi.mock("#/features/match/components/match-hud", () => ({
-  MatchHud: () => <div data-testid="match-hud" />,
+vi.mock("#/features/game/components/game-hud", () => ({
+  GameHud: () => <div data-testid="match-hud" />,
 }));
 
 vi.mock("#/components/ui/dialog", () => ({
@@ -105,7 +105,7 @@ function createPlayer(overrides: Partial<Player> = {}) {
 }
 
 function createScoreboard() {
-  const scoreboard = new BaseScoreboard();
+  const scoreboard = new ClassicScoreboard();
   scoreboard.mode = GameMode.CLASSIC;
   return scoreboard;
 }
