@@ -32,8 +32,8 @@ export type GamePageSource =
   | {
       /** Custom setup flow rendered from `/match/:roomId`. */
       type: "custom";
-      /** Setup room URL id used to scope persisted match recovery. */
-      setupRoomId: string;
+      /** Stable custom room URL key used to scope persisted match recovery. */
+      customRoomKey: string;
       /** Returns from a finished custom match to its setup route. */
       onReturn: () => void;
     };
@@ -76,7 +76,7 @@ export function GamePage({ connection, source }: GamePageProps) {
     stableConnectionRef.current = { key: connectionKey, value: connection };
   }
   const stableConnection = stableConnectionRef.current.value;
-  const setupRoomId = source.type === "custom" ? source.setupRoomId : null;
+  const customRoomKey = source.type === "custom" ? source.customRoomKey : null;
 
   /**
    * Memoized route context persisted alongside the recovery token.
@@ -85,8 +85,8 @@ export function GamePage({ connection, source }: GamePageProps) {
     () =>
       source.type === "official"
         ? { type: "official" as const }
-        : { type: "custom" as const, setupRoomId: setupRoomId ?? "" },
-    [source.type, setupRoomId],
+        : { type: "custom" as const, customRoomKey: customRoomKey ?? "" },
+    [source.type, customRoomKey],
   );
   const {
     room,

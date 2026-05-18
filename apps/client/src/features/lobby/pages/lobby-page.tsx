@@ -14,8 +14,8 @@ import {
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
 import { clearPersistedGameSession } from "#/features/game/api/use-game-room";
-import { createCustomSetupRoom } from "#/features/game/api/use-setup-room";
 import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
+import { networkProvider } from "#/infra/network/provider";
 
 type ModeOption = (typeof GAME_MODE_OPTIONS)[number];
 
@@ -91,8 +91,8 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
     setIsCreatingCustom(true);
     setCustomError(null);
     try {
-      const room = await createCustomSetupRoom();
-      navigate(`/match/${encodeURIComponent(room.roomId)}`);
+      const room = await networkProvider.createCustomRoom();
+      navigate(`/match/${encodeURIComponent(room.customRoomKey)}`);
     } catch (error) {
       setCustomError(
         error instanceof Error ? error.message : "Failed to create custom room",

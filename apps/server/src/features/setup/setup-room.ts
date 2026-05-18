@@ -25,6 +25,10 @@ import {
 
 import { createGame } from "#/features/game/utils";
 import { createPlayerInit } from "#/features/player/utils";
+import {
+  markCustomRoomMatchStarted,
+  onSetupRoomDisposed,
+} from "./custom-room-registry";
 import { setupSettingsUpdateSchema } from "./schemas";
 
 const DEFAULT_MAX_PLAYERS = 8;
@@ -37,11 +41,13 @@ interface SetupRoomOptions {
 
 export class SetupRoom extends Room<{ state: SetupState }> {
   private hostId = "";
+  private customRoomKey: string | null = null;
 
-  async onCreate(options: SetupRoomOptions) {
+  async onCreate(options: SetupRoomOptions & { customRoomKey?: string }) {
     const gameMode = options.gameMode ?? GameMode.CLASSIC;
     const maxPlayers = options.maxPlayers ?? DEFAULT_MAX_PLAYERS;
     const isPublic = options.isPublic ?? true;
+    this.customRoomKey = options.customRoomKey ?? null;
 
     this.maxClients = maxPlayers;
 
@@ -115,6 +121,12 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
     if (isHost && this.state.players.length > 0) {
       this.transferHost();
+    }
+  }
+
+  onDispose() {
+    if (this.customRoomKey) {
+      onSetupRoomDisposed(this.customRoomKey, this.roomId);
     }
   }
 
@@ -286,6 +298,10 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         "seat",
         matchMaker.buildSeatReservation(room, client.sessionId),
       );
+    }
+
+    if (this.customRoomKey) {
+      markCustomRoomMatchStarted(this.customRoomKey, this.roomId);
     }
 
     await this.disconnect();
