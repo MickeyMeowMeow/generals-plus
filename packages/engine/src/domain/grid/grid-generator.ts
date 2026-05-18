@@ -25,6 +25,8 @@ export const GENERAL_SAFE_RADIUS = 0;
 const MIN_GENERAL_DISTANCE_FACTOR = 0.6;
 export const MIN_CITY_GENERAL_DISTANCE = 3;
 const MIN_CITY_SPACING = 2;
+export const MIN_FLAG_SPACING = 3;
+export const MIN_FLAG_GENERAL_DISTANCE = 3;
 const GENERAL_INITIAL_TROOPS = 50;
 const CITY_INITIAL_TROOPS = 50;
 const EDGE_MARGIN = 1;
@@ -72,7 +74,7 @@ class SeededRandom {
 // ── Options ──────────────────────────────────────────────────────────
 
 /**
- * Options for grid generation.
+ * Base options for grid generation.
  */
 export interface GridGeneratorOptions {
   readonly width?: number;
@@ -84,6 +86,13 @@ export interface GridGeneratorOptions {
   readonly minGeneralDistanceFactor?: number; // expected to be in a narrower range, but TBD
   readonly generalInitialTroops?: number;
   readonly cityInitialTroops?: number;
+}
+
+/**
+ * Extended options for Domination mode, adds flag placement.
+ */
+export interface DominationGridOptions extends GridGeneratorOptions {
+  readonly flagCount?: number;
 }
 
 /** Default options exposed for external reference. */
@@ -103,13 +112,13 @@ export const DefaultGridGeneratorOptions: Required<GridGeneratorOptions> = {
  * Grid generator interface for creating new grid instances.
  */
 export interface GridGenerator {
-  generate(options?: GridGeneratorOptions): IGrid;
+  generate(options?: GridGeneratorOptions | DominationGridOptions): IGrid;
 }
 
 /**
  * Union type representing either a pre-built grid or generation options.
  */
-export type GridInput = IGrid | GridGeneratorOptions;
+export type GridInput = IGrid | GridGeneratorOptions | DominationGridOptions;
 
 /**
  * Type guard to check if a GridInput is a pre-built IGrid.
@@ -137,6 +146,7 @@ interface ResolvedConfig {
   readonly height: number;
   readonly mountainRate: number;
   readonly cityRate: number;
+  readonly flagCount: number;
   readonly generalCount: number;
   readonly minGeneralDistanceFactor: number;
   readonly generalInitialTroops: number;
@@ -154,7 +164,7 @@ interface ResolvedConfig {
  * On validation failure, derives a new seed and retries up to MAX_RETRY_COUNT.
  */
 export class DefaultGridGenerator implements GridGenerator {
-  generate(options: GridGeneratorOptions = {}): IGrid {
+  generate(options: GridGeneratorOptions | DominationGridOptions = {}): IGrid {
     const config = this.resolveOptions(options);
     const baseSeed = options.seed ?? DEFAULT_SEED;
     const baseRng = new SeededRandom(options.seed ?? DEFAULT_SEED);
@@ -196,6 +206,8 @@ export class DefaultGridGenerator implements GridGenerator {
 
     this.placeCities(config, rng, terrain, protectedZone, generals);
 
+    this.placeFlags(config, rng, terrain, protectedZone, generals);
+
     if (!this.areAllGeneralsConnected(terrain, generals)) {
       return null;
     }
@@ -207,11 +219,14 @@ export class DefaultGridGenerator implements GridGenerator {
 
   // ── Step 0: resolve & validate ───────────────────────────────────
 
-  private resolveOptions(options: GridGeneratorOptions): ResolvedConfig {
+  private resolveOptions(
+    options: GridGeneratorOptions | DominationGridOptions,
+  ): ResolvedConfig {
     const width = options.width ?? DEFAULT_WIDTH;
     const height = options.height ?? DEFAULT_HEIGHT;
     const mountainRate = options.mountainRate ?? DEFAULT_MOUNTAIN_RATE;
     const cityRate = options.cityRate ?? DEFAULT_CITY_RATE;
+    const flagCount = "flagCount" in options ? (options.flagCount ?? 0) : 0;
     const generalCount = options.generalCount ?? DEFAULT_GENERAL_COUNT;
     const minGeneralDistanceFactor =
       options.minGeneralDistanceFactor ?? MIN_GENERAL_DISTANCE_FACTOR;
@@ -237,12 +252,16 @@ export class DefaultGridGenerator implements GridGenerator {
     if (generalCount < 1) {
       throw new Error(`General count must be at least 1, got ${generalCount}.`);
     }
+    if (flagCount < 0) {
+      throw new Error(`Flag count must be at least 0, got ${flagCount}.`);
+    }
 
     return {
       width,
       height,
       mountainRate,
       cityRate,
+      flagCount,
       generalCount,
       minGeneralDistanceFactor,
       generalInitialTroops,
@@ -402,13 +421,86 @@ export class DefaultGridGenerator implements GridGenerator {
     }
   }
 
-  // ── Step 5: materialize ──────────────────────────────────────────
+  // ── Step 5: place flags (center-weighted) ────────────────────────
+
+  private placeFlags(
+    config: ResolvedConfig,
+    rng: SeededRandom,
+    terrain: Terrain[][],
+    protectedZone: boolean[][],
+    generals: ICoordinate[],
+  ): void {
+    if (config.flagCount === 0) return;
+
+    const { width, height, flagCount } = config;
+    const cx = (width - 1) / 2;
+    const cy = (height - 1) / 2;
+    const maxDist = Math.sqrt(cx * cx + cy * cy);
+
+    const candidates: { coord: ICoordinate; weight: number }[] = [];
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (
+          !protectedZone[y][x] &&
+          terrain[y][x] === Terrain.PLAIN &&
+          generals.every(
+            (g) => manhattanDistance(g, { x, y }) >= MIN_FLAG_GENERAL_DISTANCE,
+          )
+        ) {
+          const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+          const weight = 1 - dist / maxDist;
+          candidates.push({ coord: { x, y }, weight });
+        }
+      }
+    }
+
+    const placed: ICoordinate[] = [];
+    for (let i = 0; i < flagCount && candidates.length > 0; i++) {
+      const idx = this.weightedRandomIndex(
+        candidates.map((c) => c.weight),
+        rng,
+      );
+      const chosen = candidates[idx];
+      terrain[chosen.coord.y][chosen.coord.x] = Terrain.FLAG;
+      placed.push(chosen.coord);
+      candidates.splice(idx, 1);
+
+      // Remove candidates too close to the placed flag
+      for (let j = candidates.length - 1; j >= 0; j--) {
+        if (
+          manhattanDistance(candidates[j].coord, chosen.coord) <
+          MIN_FLAG_SPACING
+        ) {
+          candidates.splice(j, 1);
+        }
+      }
+    }
+
+    if (placed.length !== flagCount) {
+      throw new Error(
+        `Unable to place requested number of flags: requested ${flagCount}, placed ${placed.length}. ` +
+          `Map generation constraints exhausted the candidate pool.`,
+      );
+    }
+  }
+
+  private weightedRandomIndex(weights: number[], rng: SeededRandom): number {
+    const total = weights.reduce((sum, w) => sum + w, 0);
+    let roll = rng.next() * total;
+    for (let i = 0; i < weights.length; i++) {
+      roll -= weights[i];
+      if (roll <= 0) return i;
+    }
+    return weights.length - 1;
+  }
+
+  // ── Step 6: materialize ──────────────────────────────────────────
 
   private materializeCells(
     terrain: Terrain[][],
     width: number,
     height: number,
-    options: GridGeneratorOptions,
+    options: GridGeneratorOptions | DominationGridOptions,
   ): IGrid {
     const cells = Array.from({ length: height }, (_, y) =>
       Array.from(
@@ -501,7 +593,7 @@ export class DefaultGridGenerator implements GridGenerator {
 
   private initialTroops(
     terrain: Terrain,
-    options: GridGeneratorOptions,
+    options: GridGeneratorOptions | DominationGridOptions,
   ): number | null {
     if (terrain === Terrain.GENERAL)
       return options.generalInitialTroops ?? GENERAL_INITIAL_TROOPS;
