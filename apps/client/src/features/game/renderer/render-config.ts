@@ -2,15 +2,17 @@
  * Shared Pixi renderer constants for the first static grid pass.
  */
 export const RenderConfig = {
-  // Stage
-  stageBackground: 0x111111,
-  stagePadding: 24,
-  initialMaxScale: 0.6,
-  initialFitRatio: 0.8,
-  initialHudReserveRight: 120,
-  initialHudReserveTop: 60,
-  minScale: 0.08,
+  // Stage and viewport
+  background: 0x111111,
+  minScale: 0.15,
   maxScale: 1,
+  initialFitRatio: 0.8,
+  initialMinScale: 0.25,
+  initialMaxScale: 0.6,
+  clampMarginRatioX: 0.3,
+  clampMarginRatioY: 0.3,
+  initialMarginRatioX: 0.15,
+  initialMarginRatioY: 0.15,
 
   // Grid
   cellGap: 2,
