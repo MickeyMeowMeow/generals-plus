@@ -1,3 +1,5 @@
+import { JWT } from "@colyseus/auth";
+import type { Client } from "@colyseus/core";
 import type { IGameResult, IPlayerState } from "@generals-plus/engine";
 import {
   ActionType,
@@ -6,14 +8,17 @@ import {
   Terrain,
   Visibility,
 } from "@generals-plus/engine";
-import type { ClassicScoreboard } from "@generals-plus/shared-types";
+import type {
+  ClassicScoreboard,
+  PlayerInit,
+} from "@generals-plus/shared-types";
 import {
   MatchClientMessage,
   MatchServerMessage,
 } from "@generals-plus/shared-types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { MatchRoom } from "#/features/match/match-room";
+import { MatchRoom } from "#/features/match/match-room";
 import {
   connectClient,
   createMockGame,
@@ -681,6 +686,286 @@ describe("MatchRoom", () => {
 
       expect(internal.sessionToPlayerId.size).toBe(0);
       expect(internal.playerToSessionId.size).toBe(0);
+    });
+  });
+
+  // ── Error branches and edge cases ─────────────────────────────
+
+  describe("error branches and edge cases", () => {
+    it("onAuth delegates to JWT.verify", async () => {
+      const verifySpy = vi
+        .spyOn(JWT, "verify")
+        .mockResolvedValue({ sub: "u1" });
+      const res = await MatchRoom.onAuth("token", undefined, undefined);
+      expect(verifySpy).toHaveBeenCalledWith("token");
+      expect(res).toEqual({ sub: "u1" });
+      verifySpy.mockRestore();
+    });
+
+    it("action handler returns when mapping or queue missing", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      // Remove mapping to simulate missing player mapping
+      room.state.clientActionQueues.delete(client.sessionId);
+      // Sending action should early-return and not throw
+      expect(() =>
+        client.send("action", {
+          type: "move",
+          from: { x: 0, y: 0 },
+          to: { x: 1, y: 0 },
+        }),
+      ).not.toThrow();
+
+      // Recreate queue but remove mapping instead
+      const queue = new (
+        await import("@generals-plus/shared-types")
+      ).ClientActionQueue();
+      room.state.clientActionQueues.set(client.sessionId, queue);
+      (
+        room as unknown as { sessionToPlayerId: Map<string, string> }
+      ).sessionToPlayerId.delete(client.sessionId);
+
+      expect(() =>
+        client.send("action", {
+          type: "move",
+          from: { x: 0, y: 0 },
+          to: { x: 1, y: 0 },
+        }),
+      ).not.toThrow();
+    });
+    it("throws on join when client has no auth data", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const fakeClient = { sessionId: "no-auth" } as unknown as Client;
+
+      expect(() =>
+        (
+          room as unknown as { onJoin: (c: unknown, o: unknown) => void }
+        ).onJoin(fakeClient, undefined),
+      ).toThrow("No auth data");
+    });
+
+    it("throws on join when player not part of match", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const fakeClient = {
+        sessionId: "bad-player",
+        auth: { id: "not-a-player", displayName: "Nope" },
+      } as unknown as Client;
+
+      expect(() =>
+        (
+          room as unknown as { onJoin: (c: unknown, o: unknown) => void }
+        ).onJoin(fakeClient, undefined),
+      ).toThrow("Player not part of this match");
+    });
+
+    it("throws on leave when game instance missing", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      // clear game instance to trigger branch
+      (room as unknown as { game: unknown }).game = undefined;
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      expect(() =>
+        (
+          room as unknown as { onLeave: (c: unknown, code?: number) => void }
+        ).onLeave(client),
+      ).toThrow("Game instance not found");
+    });
+
+    it("throws on tick when game instance missing", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      (room as unknown as { game: unknown }).game = undefined;
+
+      expect(() =>
+        (room as unknown as { onTick: (d: number) => void }).onTick(0),
+      ).toThrow("Game instance not found");
+    });
+
+    it("throws on processActionQueues when game instance missing", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      (room as unknown as { game: unknown }).game = undefined;
+
+      expect(() =>
+        (
+          room as unknown as { processActionQueues: () => void }
+        ).processActionQueues(),
+      ).toThrow("Game instance not found");
+    });
+
+    it("createFinishedResultFromState returns single-team winner when only one active team", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      // Mark both players on same team and only one active
+      for (const [, p] of room.state.players) {
+        p.teamId = "team_x";
+        p.status = PlayerStatus.ACTIVE;
+      }
+
+      const res = (
+        room as unknown as { createFinishedResultFromState: () => IGameResult }
+      ).createFinishedResultFromState();
+      expect(res.winnerTeamId).toBe("team_x");
+    });
+
+    it("updateClientViews populates hidden cells when vision grid returns empty cells", async () => {
+      const getVisionGrid = vi.fn(() => ({
+        width: 2,
+        height: 2,
+        get: () => undefined,
+        getNeighbors: () => [],
+        isValid: () => true,
+        forEach: () => {},
+      }));
+
+      const metadata = createValidRoomData({
+        game: createMockGame({ getVisionGrid }),
+      });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      // run a tick which triggers updateClientViews
+      await room.waitForNextSimulationTick();
+
+      const vision = room.state.clientVisions.get(client.sessionId);
+      expect(vision).toBeDefined();
+      if (vision) {
+        // 16x16 map => 256 entries (default test map size)
+        expect(vision.visibility.length).toBe(
+          room.state.width * room.state.height,
+        );
+        // All should be "hidden"
+        expect(vision.visibility.every((v) => v === "hidden")).toBe(true);
+      }
+    });
+
+    it("updateClientViews pushes empty ownerIndex when owner not ACTIVE", async () => {
+      const getVisionGrid = vi.fn((playerId: string) => ({
+        width: 2,
+        height: 2,
+        get: ({ x, y }: { x: number; y: number }) => ({
+          coordinate: { x, y },
+          visibility: Visibility.VISIBLE,
+          terrain: Terrain.PLAIN,
+          troopCount: 1,
+          owner: { playerId, status: PlayerStatus.ELIMINATED },
+        }),
+        getNeighbors: () => [],
+        isValid: () => true,
+        forEach: () => {},
+      }));
+
+      const metadata = createValidRoomData({
+        game: createMockGame({ getVisionGrid }),
+      });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      await room.waitForNextSimulationTick();
+
+      const vision = room.state.clientVisions.get(client.sessionId);
+      expect(vision).toBeDefined();
+      if (vision) {
+        // ownerIndex entries should be empty strings when owner not ACTIVE
+        expect(vision.ownerIndex.every((v) => v === "")).toBe(true);
+      }
+    });
+
+    it("finishMatch handles updateRatings rejection without throwing", async () => {
+      // cause updateRatings to reject for this test
+      ratingMocks.updateRatings.mockRejectedValueOnce(new Error("boom"));
+
+      let callCount = 0;
+      const game = createMockGame({
+        checkGameEnd: vi.fn(() => {
+          callCount++;
+          if (callCount >= 1) {
+            return { mode: "classic" as const, winnerTeamId: "team_0" };
+          }
+          return null;
+        }),
+      });
+      game.nextTick = () => {
+        game.tick++;
+      };
+
+      const metadata = createValidRoomData({ game });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      // drive one tick to trigger finishMatch
+      await room.waitForNextSimulationTick();
+
+      expect(room.state.status).toBe(GameStatus.FINISHED);
+      // ensure our mocked updateRatings was invoked and rejected (handled)
+      await vi.waitFor(() => {
+        expect(ratingMocks.updateRatings).toHaveBeenCalled();
+      });
+    });
+
+    it("skips updateRatings when fewer than two players", async () => {
+      // clear hoisted mocks call counts from earlier tests
+      ratingMocks.getRating.mockClear();
+      ratingMocks.updateRatings.mockClear();
+
+      const onePlayerInit: PlayerInit[] = [
+        {
+          id: "solo",
+          displayName: "Solo",
+          teamId: "team_0",
+          color: 0xe74c3c,
+        },
+      ];
+
+      let callCount = 0;
+      const game = createMockGame({
+        checkGameEnd: vi.fn(() => {
+          callCount++;
+          if (callCount >= 1) {
+            return { mode: "classic" as const, winnerTeamId: "team_0" };
+          }
+          return null;
+        }),
+      });
+      game.nextTick = () => {
+        game.tick++;
+      };
+
+      const metadata = createValidRoomData({ playerInit: onePlayerInit, game });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      await room.waitForNextSimulationTick();
+
+      expect(room.state.status).toBe(GameStatus.FINISHED);
+      // updateRatings should not be called when < 2 players
+      expect(ratingMocks.getRating).not.toHaveBeenCalled();
+      expect(ratingMocks.updateRatings).not.toHaveBeenCalled();
     });
   });
 });

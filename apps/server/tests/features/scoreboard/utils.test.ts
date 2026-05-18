@@ -2,9 +2,10 @@ import type {
   IClassicScoreboard,
   ITurfWarScoreboard,
 } from "@generals-plus/engine";
-import { GameMode } from "@generals-plus/engine";
+import { GameMode, PlayerStatus } from "@generals-plus/engine";
 import {
   ClassicScoreboard,
+  PublicPlayer,
   TurfWarScoreboard,
 } from "@generals-plus/shared-types";
 import { describe, expect, it } from "vitest";
@@ -74,12 +75,13 @@ describe("syncScoreboard", () => {
         players: [{ playerId: "p1", troops: 10, land: 5, isAlive: true }],
       } as IClassicScoreboard,
       [
-        {
+        Object.assign(new PublicPlayer(), {
           id: "p1",
           teamId: "t1",
           displayName: "Nova",
           color: 0xff0000,
-        },
+          status: PlayerStatus.ACTIVE,
+        }),
       ],
     );
 
@@ -138,8 +140,8 @@ describe("syncScoreboard", () => {
     const source: ITurfWarScoreboard = {
       mode: GameMode.TURF_WAR,
       players: [
-        { playerId: "p1", troops: 10, land: 5 },
-        { playerId: "p2", troops: 3, land: 1 },
+        { playerId: "p1", troops: 10, land: 5, isAlive: true },
+        { playerId: "p2", troops: 3, land: 1, isAlive: false },
       ],
       teams: [
         { teamId: "t1", playerIds: ["p1"], landPercent: 83 },
@@ -156,6 +158,26 @@ describe("syncScoreboard", () => {
       playerId: "p1",
       troops: 10,
       land: 5,
+    });
+  });
+
+  it("falls back to classic sync for unknown mode", () => {
+    const target = createScoreboard("unknown" as GameMode);
+    const source = {
+      mode: "unknown",
+      players: [{ playerId: "p1", troops: 10, land: 5, isAlive: true }],
+    };
+
+    syncScoreboard(target, source as unknown as IClassicScoreboard);
+
+    expect(target.mode).toBe("unknown");
+    const classic = target as ClassicScoreboard;
+    expect(classic.players.length).toBe(1);
+    expect(classic.players.at(0)).toMatchObject({
+      playerId: "p1",
+      troops: 10,
+      land: 5,
+      isAlive: true,
     });
   });
 });

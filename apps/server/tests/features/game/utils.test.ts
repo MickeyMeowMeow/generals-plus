@@ -61,6 +61,44 @@ describe("createGame", () => {
     expect(game.maxTicks).toBe(360);
   });
 
+  it("throws if team not found during classic player assignment", () => {
+    const originalSet = Map.prototype.set;
+    Map.prototype.set = function () {
+      return this;
+    };
+
+    try {
+      expect(() =>
+        createGame({
+          mode: GameMode.CLASSIC,
+          playerIds: ["p1"],
+          playerPerTeam: 1,
+        }),
+      ).toThrow('Team with id "team_0" not found for player "p1".');
+    } finally {
+      Map.prototype.set = originalSet;
+    }
+  });
+
+  it("throws if team not found during turf war player assignment", () => {
+    const originalSet = Map.prototype.set;
+    Map.prototype.set = function () {
+      return this;
+    };
+
+    try {
+      expect(() =>
+        createGame({
+          mode: GameMode.TURF_WAR,
+          playerIds: ["p1"],
+          playerPerTeam: 1,
+        }),
+      ).toThrow('Team with id "team_0" not found for player "p1".');
+    } finally {
+      Map.prototype.set = originalSet;
+    }
+  });
+
   it("throws for unsupported game mode", () => {
     expect(() =>
       createGame({

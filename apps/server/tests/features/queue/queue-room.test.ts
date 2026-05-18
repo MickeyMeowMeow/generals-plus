@@ -1,8 +1,9 @@
+import { JWT } from "@colyseus/auth";
 import { GameMode } from "@generals-plus/engine";
 import type { QueuePlayer } from "@generals-plus/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { MatchQueueRoom } from "#/features/queue/queue-room";
+import { MatchQueueRoom } from "#/features/queue/queue-room";
 import {
   connectClient,
   createMockGame,
@@ -296,7 +297,7 @@ describe("MatchQueueRoom", () => {
       };
 
       // Same player joins again — should kick old session
-      const c2 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      await connectClient(room, { id: "p1", email: "p1@t.com" });
 
       expect(oldLeft).toBe(true);
     });
@@ -343,6 +344,32 @@ describe("MatchQueueRoom", () => {
       c2.send("pickColor", { color: p1Color });
 
       expect(sent).toContain("color already taken");
+    });
+  });
+
+  // ── onAuth ────────────────────────────────────────────────────
+
+  describe("onAuth", () => {
+    it("returns decoded data for a valid token", async () => {
+      const token = await JWT.sign({
+        id: "u1",
+        email: "u1@test.com",
+        displayName: "Test",
+      });
+
+      const result = await MatchQueueRoom.onAuth(token);
+
+      expect(result).toMatchObject({
+        id: "u1",
+        email: "u1@test.com",
+        displayName: "Test",
+      });
+    });
+
+    it("throws for an invalid token", async () => {
+      await expect(
+        MatchQueueRoom.onAuth("invalid.token.here"),
+      ).rejects.toThrow();
     });
   });
 });
