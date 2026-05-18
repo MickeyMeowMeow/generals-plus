@@ -121,7 +121,7 @@ export abstract class BaseGame implements IBaseGame {
 
   protected cachedGameResult: IGameResult | null = null;
 
-  public checkGameEnd(): IGameResult | null {
+  checkGameEnd(): IGameResult | null {
     if (this.status !== GameStatus.PLAYING) {
       return this.cachedGameResult;
     }
@@ -136,7 +136,7 @@ export abstract class BaseGame implements IBaseGame {
 
   protected abstract evaluateGameEnd(): IGameResult | null;
 
-  public forceEnd(): IGameResult {
+  forceEnd(): IGameResult {
     this.status = GameStatus.FINISHED;
     this.cachedGameResult = { mode: this.mode, winnerTeamId: null };
     return this.cachedGameResult;
