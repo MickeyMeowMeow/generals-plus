@@ -1,7 +1,6 @@
-import type { GridGeneratorOptions, IBaseGame } from "@generals-plus/engine";
+import type { GridInput, IBaseGame } from "@generals-plus/engine";
 import {
   ClassicGame,
-  DefaultGridGenerator,
   GameMode,
   Player,
   StandardTeam,
@@ -9,7 +8,7 @@ import {
 
 export interface CreateGameOptions {
   mode: GameMode;
-  gridOptions?: GridGeneratorOptions;
+  gridOptions?: GridInput;
   playerIds: string[];
   playerPerTeam: number;
 }
@@ -21,11 +20,9 @@ export interface CreateGameOptions {
  * @throws Error if the GameMode has no implementation yet.
  */
 export function createGame(options: CreateGameOptions): IBaseGame {
-  const grid = new DefaultGridGenerator().generate(options.gridOptions);
-
   switch (options.mode) {
     case GameMode.CLASSIC: {
-      const game = new ClassicGame(grid);
+      const game = new ClassicGame(options.gridOptions ?? {});
 
       const teamsCount = Math.ceil(
         options.playerIds.length / options.playerPerTeam,

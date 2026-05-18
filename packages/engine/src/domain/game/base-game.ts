@@ -7,6 +7,8 @@ import type { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import { GameStatus } from "#/domain/game/game-status";
 import type { IBaseGame, IBaseScoreboard } from "#/domain/game/interfaces";
+import type { GridInput } from "#/domain/grid/grid-generator";
+import { DefaultGridGenerator, isGrid } from "#/domain/grid/grid-generator";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { IItem } from "#/domain/item/interfaces";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
@@ -32,8 +34,10 @@ export abstract class BaseGame implements IBaseGame {
   readonly effectRegistry = new EffectRegistry();
   protected readonly visibilityMap: VisibilityMap;
 
-  constructor(grid: IGrid) {
-    this.grid = grid;
+  constructor(input: GridInput) {
+    this.grid = isGrid(input)
+      ? input
+      : new DefaultGridGenerator().generate(input);
     this.visibilityMap = new VisibilityMap(this.grid);
   }
 

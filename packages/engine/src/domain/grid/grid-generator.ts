@@ -106,6 +106,20 @@ export interface GridGenerator {
   generate(options?: GridGeneratorOptions): IGrid;
 }
 
+/**
+ * Union type representing either a pre-built grid or generation options.
+ */
+export type GridInput = IGrid | GridGeneratorOptions;
+
+/**
+ * Type guard to check if a GridInput is a pre-built IGrid.
+ */
+export function isGrid(input: GridInput): input is IGrid {
+  return (
+    typeof (input as Record<string, unknown>)["forEachTerrain"] === "function"
+  );
+}
+
 // ── Resolved config (all fields required) ────────────────────────────
 
 interface ResolvedConfig {
