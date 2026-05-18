@@ -16,16 +16,24 @@ import type { RenderGridCell } from "#/features/game/renderer/render-grid";
 import { RenderGrid } from "#/features/game/renderer/render-grid";
 import { MoveDirection } from "#/features/game/utils/move";
 
-const useGameRoomMock = vi.fn();
-const navigateMock = vi.fn();
-const sendMoveMock = vi.fn();
+const {
+  clearPersistedGameSessionMock,
+  navigateMock,
+  sendMoveMock,
+  useGameRoomMock,
+} = vi.hoisted(() => ({
+  clearPersistedGameSessionMock: vi.fn(),
+  navigateMock: vi.fn(),
+  sendMoveMock: vi.fn(),
+  useGameRoomMock: vi.fn(),
+}));
 
 vi.mock("react-router", () => ({
   useNavigate: () => navigateMock,
 }));
 
 vi.mock("#/features/game/api/use-game-room", () => ({
-  clearPersistedGameSession: vi.fn(),
+  clearPersistedGameSession: clearPersistedGameSessionMock,
   useGameRoom: (...args: unknown[]) => useGameRoomMock(...args),
 }));
 
@@ -104,6 +112,7 @@ function createScoreboard() {
 
 describe("GamePage keyboard move bounds", () => {
   beforeEach(() => {
+    clearPersistedGameSessionMock.mockReset();
     useGameRoomMock.mockReset();
     sendMoveMock.mockReset();
     navigateMock.mockReset();
