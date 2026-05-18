@@ -1,5 +1,9 @@
 import { GameMode } from "@generals-plus/engine";
-import { afterEach, describe, expect, it } from "vitest";
+import {
+  SetupClientMessage,
+  SetupServerMessage,
+} from "@generals-plus/shared-types";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { SetupRoom } from "#/features/setup/setup-room";
 import { connectClient, createRoom, ROOM_NAMES } from "#tests/helpers";
@@ -105,5 +109,27 @@ describe("SetupRoom", () => {
     await (
       room as unknown as { _onLeave: (c: unknown) => Promise<void> }
     )._onLeave(c2);
+  });
+
+  it("sends validationFailed for invalid setup settings without changing state", async () => {
+    room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+
+    const client = await connectClient(room, {
+      id: "p1",
+      email: "p1@test.com",
+    });
+    const sendSpy = vi.spyOn(client, "send");
+
+    const messagePromise = room.waitForMessage(
+      SetupClientMessage.UPDATE_SETTINGS,
+    );
+    client.send(SetupClientMessage.UPDATE_SETTINGS, { maxPlayers: 1 });
+    await messagePromise;
+
+    expect(sendSpy).toHaveBeenCalledWith(SetupServerMessage.VALIDATION_FAILED, {
+      field: "maxPlayers",
+      message: "Max players must be at least 2.",
+    });
+    expect(room.state.maxPlayers).toBe(8);
   });
 });

@@ -2,6 +2,7 @@ import { SetupClientMessage } from "@generals-plus/shared-types";
 import { LogOut, Play } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
@@ -86,12 +87,24 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
     startGame,
     updateSettings,
     clearSeatReservation,
+    clearValidationError,
     error,
+    validationError,
     isConnecting,
   } = useSetupRoom({
     roomId: resolvedRoomId ?? undefined,
     enabled: Boolean(resolvedRoomId),
   });
+
+  useEffect(() => {
+    if (!validationError) return;
+    toast.warning("Settings not applied", {
+      description: validationError.message,
+      duration: 5_000,
+      id: validationError.id,
+    });
+    clearValidationError();
+  }, [clearValidationError, validationError]);
 
   const handleReturnToSetup = useCallback(() => {
     clearSeatReservation();

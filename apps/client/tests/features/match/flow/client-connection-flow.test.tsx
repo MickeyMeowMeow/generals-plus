@@ -42,9 +42,24 @@ const networkMocks = vi.hoisted(() => ({
   restoreSession: vi.fn(),
 }));
 
+const { toastWarningMock } = vi.hoisted(() => ({
+  toastWarningMock: vi.fn(),
+}));
+
 vi.mock("#/infra/network/provider", () => ({
   networkProvider: networkMocks,
 }));
+
+vi.mock("sonner", async () => {
+  const actual = await vi.importActual<typeof import("sonner")>("sonner");
+  return {
+    ...actual,
+    toast: {
+      ...actual.toast,
+      warning: toastWarningMock,
+    },
+  };
+});
 
 vi.mock("#/features/game/renderer/game-app", () => ({
   GameApp: ({ onClearMoveQueue }: { onClearMoveQueue: () => void }) => (
@@ -220,6 +235,7 @@ describe("client room flows", () => {
     resetGameConnectionsForTesting();
     resetQueueConnectionsForTesting();
     resetSetupConnectionsForTesting();
+    toastWarningMock.mockReset();
     networkMocks.resolveCustomRoom.mockImplementation(
       async (customRoomKey: string) => ({
         customRoomKey,
@@ -527,6 +543,44 @@ describe("client room flows", () => {
       screen.queryByRole("button", { name: "Force start game" }),
     ).toBeNull();
     expect(screen.getByText(/at least two teams/)).toBeTruthy();
+  });
+
+  it("shows setup validation failures as a toast without leaving the room", async () => {
+    const setupRoom = createRoom({
+      roomId: "setup-validation",
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: true,
+        },
+      ]),
+    });
+    networkMocks.joinById.mockResolvedValue(setupRoom);
+
+    renderRoute("/match/setup-validation", auth());
+
+    expect(await screen.findByText("You are host")).toBeTruthy();
+
+    act(() => {
+      setupRoom.emitMessage(SetupServerMessage.VALIDATION_FAILED, {
+        field: "mapWidth",
+        message: "Map width is below the allowed minimum.",
+      });
+    });
+
+    await waitFor(() => {
+      expect(toastWarningMock).toHaveBeenCalledWith("Settings not applied", {
+        description: "Map width is below the allowed minimum.",
+        duration: 5_000,
+        id: 1,
+      });
+    });
+    expect(
+      screen.queryByRole("heading", { name: "Room unavailable" }),
+    ).toBeNull();
+    expect(screen.getByText("You are host")).toBeTruthy();
   });
 
   it("waits for a complete setup state when joining a custom room by link", async () => {

@@ -20,6 +20,7 @@ export const setupSettingsUpdateSchema = z
     generalInitialTroops: z.number().int().min(1),
     cityInitialTroops: z.number().int().min(0),
   })
-  .partial();
+  .partial()
+  .strict();
 
 export type SetupSettingsUpdate = z.infer<typeof setupSettingsUpdateSchema>;
