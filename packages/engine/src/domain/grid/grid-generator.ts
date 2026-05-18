@@ -475,6 +475,13 @@ export class DefaultGridGenerator implements GridGenerator {
         }
       }
     }
+
+    if (placed.length !== flagCount) {
+      throw new Error(
+        `Unable to place requested number of flags: requested ${flagCount}, placed ${placed.length}. ` +
+          `Map generation constraints exhausted the candidate pool.`,
+      );
+    }
   }
 
   private weightedRandomIndex(weights: number[], rng: SeededRandom): number {
