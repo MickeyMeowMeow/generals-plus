@@ -19,13 +19,13 @@ interface MatchHudPlayer {
 }
 
 interface MatchHudProps {
-  modeLabel: string | undefined;
-  connectionStatus: string;
   scoreboard: BaseScoreboard;
   visiblePlayers: Iterable<Player>;
   playerColors: Map<string, number>;
   playerNames: Map<string, string>;
   currentSessionId: string | null | undefined;
+  totalSeconds?: number;
+  remainingSeconds?: number;
 }
 
 function getScoreEntries(scoreboard: BaseScoreboard) {
@@ -142,8 +142,6 @@ function PlayerRow({ player }: { player: MatchHudPlayer }) {
 }
 
 export function MatchHud({
-  modeLabel,
-  connectionStatus,
   scoreboard,
   visiblePlayers,
   playerColors,
@@ -165,17 +163,6 @@ export function MatchHud({
   return (
     <FloatingHud>
       <div className="space-y-2.5">
-        <div className="space-y-0.5 text-[11px]">
-          <div className="flex justify-between gap-2">
-            <span className="text-game-text-dim">Mode</span>
-            <span>{modeLabel}</span>
-          </div>
-          <div className="flex justify-between gap-2">
-            <span className="text-game-text-dim">Connection</span>
-            <span>{connectionStatus}</span>
-          </div>
-        </div>
-
         <div className="space-y-2">
           <div className="grid grid-cols-[1fr_2.5rem_3.25rem] gap-1.5 text-[9px] uppercase text-game-text-dim">
             <h2 className="text-xs font-semibold normal-case text-game-text">
