@@ -10,16 +10,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
-import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import type { GameRoomConnection } from "#/features/game/api/use-game-room";
 import {
   clearPersistedGameSession,
   useGameRoom,
 } from "#/features/game/api/use-game-room";
+import { GameHud } from "#/features/game/components/game-hud";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
-import { MatchHud } from "#/features/match/components/match-hud";
 
 export type GamePageSource =
   | {
@@ -42,10 +41,6 @@ interface GamePageProps {
   connection: GameRoomConnection;
   /** Return behavior and metadata for the flow that launched the match. */
   source: GamePageSource;
-}
-
-function getModeLabel(mode: string | undefined) {
-  return GAME_MODE_OPTIONS.find((option) => option.id === mode)?.label ?? mode;
 }
 
 /**
@@ -100,7 +95,6 @@ export function GamePage({ connection, source }: GamePageProps) {
     sendMove,
     playerColors,
     playerNames,
-    connectionStatus,
     error,
     isConnecting,
   } = useGameRoom(stableConnection, persistedSource);
@@ -198,9 +192,7 @@ export function GamePage({ connection, source }: GamePageProps) {
         playerColors={playerColors}
       />
 
-      <MatchHud
-        modeLabel={getModeLabel(gameState.mode)}
-        connectionStatus={connectionStatus}
+      <GameHud
         scoreboard={gameState.scoreboard}
         visiblePlayers={visiblePlayers}
         playerColors={playerColors}

@@ -8,7 +8,7 @@ import { FloatingHud } from "#/components/layout";
 import { colorToHex } from "#/features/game/components/room-controls";
 import { cn } from "#/lib/utils";
 
-interface MatchHudPlayer {
+interface GameHudPlayer {
   id: string;
   displayName: string;
   teamId: string;
@@ -18,7 +18,7 @@ interface MatchHudPlayer {
   isCurrent: boolean;
 }
 
-interface MatchHudProps {
+interface GameHudProps {
   scoreboard: BaseScoreboard;
   visiblePlayers: Iterable<Player>;
   playerColors: Map<string, number>;
@@ -49,13 +49,13 @@ function getHudPlayers({
   playerNames,
   currentSessionId,
 }: Pick<
-  MatchHudProps,
+  GameHudProps,
   | "scoreboard"
   | "visiblePlayers"
   | "playerColors"
   | "playerNames"
   | "currentSessionId"
->): MatchHudPlayer[] {
+>): GameHudPlayer[] {
   const scoreEntries = getScoreEntries(scoreboard);
   const scoreByPlayer = new Map(
     scoreEntries.map((entry) => [entry.playerId, entry]),
@@ -89,14 +89,14 @@ function getHudPlayers({
     );
 }
 
-function groupPlayers(players: MatchHudPlayer[]) {
+function groupPlayers(players: GameHudPlayer[]) {
   const playerGroups = new Map<
     string,
     {
       label: string;
       land: number;
       troops: number;
-      players: MatchHudPlayer[];
+      players: GameHudPlayer[];
     }
   >();
 
@@ -120,7 +120,7 @@ function groupPlayers(players: MatchHudPlayer[]) {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-function PlayerRow({ player }: { player: MatchHudPlayer }) {
+function PlayerRow({ player }: { player: GameHudPlayer }) {
   return (
     <li
       className={cn(
@@ -141,13 +141,13 @@ function PlayerRow({ player }: { player: MatchHudPlayer }) {
   );
 }
 
-export function MatchHud({
+export function GameHud({
   scoreboard,
   visiblePlayers,
   playerColors,
   playerNames,
   currentSessionId,
-}: MatchHudProps) {
+}: GameHudProps) {
   const players = getHudPlayers({
     scoreboard,
     visiblePlayers,
