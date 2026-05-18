@@ -8,8 +8,13 @@ async function getAuthorizedUserId(request: Request) {
   if (!header?.startsWith("Bearer ")) return null;
   const token = header.slice("Bearer ".length).trim();
   if (!token) return null;
-  const auth = (await JWT.verify(token)) as { id?: string } | null;
-  return auth?.id ?? null;
+
+  try {
+    const auth = (await JWT.verify(token)) as { id?: string } | null;
+    return auth?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function registerCustomRoomRoutes(app: {
