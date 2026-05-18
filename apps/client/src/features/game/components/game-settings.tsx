@@ -1,9 +1,7 @@
 import { GameMode } from "@generals-plus/engine";
 import type { SetupSettings, SetupState } from "@generals-plus/shared-types";
-import { Check, RotateCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import {
@@ -31,13 +29,6 @@ type NumberKeys = {
   [K in keyof SetupSettings]: SetupSettings[K] extends number ? K : never;
 }[keyof SetupSettings];
 
-/**
- * Draft state permits numeric fields to hold intermediate string values.
- */
-type DraftSettings = Omit<SetupSettings, NumberKeys> & {
-  [K in NumberKeys]: number | string;
-};
-
 const NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "maxPlayers", label: "Max Players" },
   { key: "playersPerTeam", label: "Players Per Team" },
@@ -57,62 +48,40 @@ const round = (v: number | string) => Math.round(Number(v) * 100000) / 100000;
 /**
  * Host-editable setup settings panel.
  *
- * The host edits a local draft and submits one patch, while guests continue to
- * see the live room state. This avoids fighting Colyseus state updates while a
- * numeric field is mid-edit.
+ * Inputs are local-first while focused to prevent cursor jumping from network sync.
+ * Changes are automatically submitted to the server when an input loses focus.
  */
 export function GameSettings({
   isHost,
   currentSettings,
   onChangeSettings,
 }: GameSettingsProps) {
-  const [draft, setDraft] = useState<DraftSettings>(currentSettings);
+  // Tracks the field currently being edited and its intermediate string value
+  const [editing, setEditing] = useState<{
+    key: NumberKeys;
+    value: string;
+  } | null>(null);
 
-  const isDirty =
-    draft.gameMode !== currentSettings.gameMode ||
-    draft.isPublic !== currentSettings.isPublic ||
-    NUMBER_FIELDS.some(
-      ({ key }) => round(draft[key]) !== round(currentSettings[key]),
-    );
+  const handleFocus = (key: NumberKeys, value: number) => {
+    if (!isHost) return;
+    setEditing({ key, value: String(round(value)) });
+  };
 
-  // Sync draft with server settings only if the host hasn't made unsaved local changes.
-  useEffect(() => {
-    if (!isDirty) {
-      setDraft(currentSettings);
+  const handleSubmit = () => {
+    if (!editing) return;
+    const roundedValue = round(editing.value);
+    // Only submit if the value actually differs from the authoritative server state
+    if (roundedValue !== round(currentSettings[editing.key])) {
+      onChangeSettings({ [editing.key]: roundedValue });
     }
-  }, [currentSettings, isDirty]);
-
-  const handleNumberChange = (key: NumberKeys, value: string) => {
-    setDraft((prev) => ({ ...prev, [key]: value }));
+    setEditing(null);
   };
 
-  const handleModeChange = (mode: GameMode) => {
-    setDraft((prev) => ({ ...prev, gameMode: mode }));
+  const handleNumberChange = (value: string) => {
+    if (!editing) return;
+    setEditing({ ...editing, value });
   };
 
-  const handlePublicToggle = (checked: boolean) => {
-    setDraft((prev) => ({ ...prev, isPublic: checked }));
-  };
-
-  const handleSave = () => {
-    const payload: Partial<SetupSettings> = {
-      gameMode: draft.gameMode,
-      isPublic: draft.isPublic,
-    };
-
-    for (const { key } of NUMBER_FIELDS) {
-      Object.assign(payload, { [key]: round(draft[key]) });
-    }
-
-    onChangeSettings(payload);
-  };
-
-  const handleDiscard = () => {
-    setDraft(currentSettings);
-  };
-
-  // Guests see the live server state. The host sees their active draft.
-  const displayed = isHost ? draft : currentSettings;
   const labelClassName = "text-sm text-game-text-dim";
   const fieldClassName = "grid gap-1.5";
   const inputClassName =
@@ -138,10 +107,10 @@ export function GameSettings({
           </Label>
           <Select
             disabled={!isHost}
-            value={displayed.gameMode ?? GameMode.CLASSIC}
+            value={currentSettings.gameMode ?? GameMode.CLASSIC}
             onValueChange={(val) => {
               const mode = GAME_MODE_OPTIONS.find((o) => o.id === val)?.id;
-              if (mode) handleModeChange(mode);
+              if (mode) onChangeSettings({ gameMode: mode });
             }}
           >
             <SelectTrigger
@@ -180,14 +149,16 @@ export function GameSettings({
                   : "cursor-not-allowed text-game-text-dim",
               )}
             >
-              {displayed.isPublic ? "Public" : "Private"}
+              {currentSettings.isPublic ? "Public" : "Private"}
             </Label>
             <Switch
               id="isPublic"
               size="sm"
               disabled={!isHost}
-              checked={displayed.isPublic ?? false}
-              onCheckedChange={handlePublicToggle}
+              checked={currentSettings.isPublic ?? false}
+              onCheckedChange={(checked) =>
+                onChangeSettings({ isPublic: checked })
+              }
             />
           </div>
         </div>
@@ -201,41 +172,25 @@ export function GameSettings({
               id={key}
               type="number"
               disabled={!isHost}
+              // Display local draft value if focused, otherwise display rounded server value
               value={
-                displayed[key] === Number(displayed[key])
-                  ? round(displayed[key])
-                  : displayed[key]
+                editing?.key === key
+                  ? editing.value
+                  : round(currentSettings[key])
               }
-              onChange={(e) => handleNumberChange(key, e.target.value)}
+              onFocus={() => handleFocus(key, currentSettings[key])}
+              onBlur={handleSubmit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSubmit();
+                }
+              }}
+              onChange={(e) => handleNumberChange(e.target.value)}
               className={inputClassName}
             />
           </div>
         ))}
       </div>
-
-      {isHost && (
-        <div className="flex justify-end gap-2 border-t border-game-border pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleDiscard}
-            disabled={!isDirty}
-          >
-            <RotateCcw className="size-3.5" />
-            Discard
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleSave}
-            disabled={!isDirty}
-          >
-            <Check className="size-3.5" />
-            Apply Changes
-          </Button>
-        </div>
-      )}
     </section>
   );
 }
