@@ -228,4 +228,52 @@ describe("AuthForm", () => {
     await user.click(screen.getByRole("tab", { name: "Log in" }));
     expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("");
   });
+
+  it("preserves the display name draft across guest and register tab switches", async () => {
+    const user = userEvent.setup();
+
+    function ControlledAuthForm() {
+      const [mode, setMode] = useState<AuthFormMode>(AuthFormMode.GUEST);
+      return <AuthForm {...defaultProps} mode={mode} onModeChange={setMode} />;
+    }
+
+    render(<ControlledAuthForm />);
+
+    await user.clear(screen.getByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Nova");
+
+    await user.click(screen.getByRole("tab", { name: "Log in" }));
+    await user.click(screen.getByRole("tab", { name: "Guest" }));
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Nova");
+
+    await user.click(screen.getByRole("tab", { name: "Register" }));
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Nova");
+  });
+
+  it("preserves the email draft across sign-in and register tab switches", async () => {
+    const user = userEvent.setup();
+
+    function ControlledAuthForm() {
+      const [mode, setMode] = useState<AuthFormMode>(AuthFormMode.SIGN_IN);
+      return <AuthForm {...defaultProps} mode={mode} onModeChange={setMode} />;
+    }
+
+    render(<ControlledAuthForm />);
+
+    await user.type(screen.getByLabelText("Email"), "nova@example.com");
+
+    await user.click(screen.getByRole("tab", { name: "Register" }));
+    expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe(
+      "nova@example.com",
+    );
+
+    await user.click(screen.getByRole("tab", { name: "Log in" }));
+    expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe(
+      "nova@example.com",
+    );
+  });
 });
