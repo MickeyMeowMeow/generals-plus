@@ -17,6 +17,8 @@ export function createMockAuth(
     },
     actions: {
       hydrate: vi.fn().mockResolvedValue(undefined),
+      signInWithEmailAndPassword: vi.fn().mockResolvedValue(undefined),
+      registerWithEmailAndPassword: vi.fn().mockResolvedValue(undefined),
       signInAnonymously: vi.fn().mockResolvedValue(undefined),
       signOut: vi.fn().mockResolvedValue(undefined),
       clearError: vi.fn(),
