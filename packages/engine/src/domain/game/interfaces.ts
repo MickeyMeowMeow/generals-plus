@@ -146,6 +146,7 @@ export interface IDominationScoreboard extends IBaseScoreboard {
     readonly playerId: string;
     readonly troops: number;
     readonly land: number;
+    readonly isAlive: boolean;
   }>;
   readonly teamScores: Map<string, number>;
 }

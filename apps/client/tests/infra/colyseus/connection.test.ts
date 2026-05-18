@@ -46,13 +46,11 @@ describe("colyseus connection gateway", () => {
 
     const onError = vi.fn();
     const onLeave = vi.fn();
-    const onDrop = vi.fn();
-    const onReconnect = vi.fn();
 
     const gateway = new ColyseusConnectionGateway(client);
     const joinedRoom = await gateway.joinRoom(
       { roomName: "battle" },
-      { onError, onLeave, onDrop, onReconnect },
+      { onError, onLeave },
     );
 
     expect(client.joinOrCreate).toHaveBeenCalledWith("battle", {});
@@ -60,41 +58,6 @@ describe("colyseus connection gateway", () => {
 
     expect(room.onError).toHaveBeenCalledWith(onError);
     expect(room.onLeave).toHaveBeenCalledWith(onLeave);
-    expect(room.onDrop).toHaveBeenCalledWith(onDrop);
-    expect(room.onReconnect).toHaveBeenCalledWith(onReconnect);
-  });
-
-  it("wires onDrop and onReconnect handlers", async () => {
-    const room = createRoom();
-    const client = createMockClient({
-      joinOrCreate: vi.fn().mockResolvedValue(room),
-    });
-
-    const onDrop = vi.fn();
-    const onReconnect = vi.fn();
-
-    const gateway = new ColyseusConnectionGateway(client);
-    await gateway.joinRoom({ roomName: "battle" }, { onDrop, onReconnect });
-
-    expect(room.onDrop).toHaveBeenCalledWith(onDrop);
-    expect(room.onReconnect).toHaveBeenCalledWith(onReconnect);
-  });
-
-  it("reconnects to a room using a reconnection token", async () => {
-    const room = createRoom();
-    const client = createMockClient({
-      reconnect: vi.fn().mockResolvedValue(room),
-    });
-
-    const onError = vi.fn();
-    const gateway = new ColyseusConnectionGateway(client);
-    const reconnectedRoom = await gateway.reconnect("room-1:token-abc", {
-      onError,
-    });
-
-    expect(client.reconnect).toHaveBeenCalledWith("room-1:token-abc");
-    expect(reconnectedRoom).toBe(room);
-    expect(room.onError).toHaveBeenCalledWith(onError);
   });
 
   it("delegates leaveRoom and clears subscriptions", async () => {
@@ -138,7 +101,6 @@ describe("colyseus connection gateway", () => {
       joinById: vi.fn(),
       create: vi.fn(),
       join: vi.fn(),
-      reconnect: vi.fn(),
       consumeSeatReservation: vi.fn(),
       getLatency: vi.fn(),
       http: {},

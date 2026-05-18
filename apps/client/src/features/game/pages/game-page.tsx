@@ -1,5 +1,10 @@
 import type { ICoordinate } from "@generals-plus/engine";
-import { ActionType, GameMode, PlayerStatus } from "@generals-plus/engine";
+import {
+  ActionType,
+  GameMode,
+  PlayerStatus,
+  Terrain,
+} from "@generals-plus/engine";
 import {
   MatchClientMessage,
   MatchServerMessage,
@@ -13,15 +18,13 @@ import { Button } from "#/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
-import { isTerminalRecoveryErrorCode } from "#/features/game/api/game-room-errors";
 import type { GameRoomConnection } from "#/features/game/api/use-game-room";
-import {
-  clearPersistedGameSession,
-  useGameRoom,
-} from "#/features/game/api/use-game-room";
+import { useGameRoom } from "#/features/game/api/use-game-room";
 import { GameHud } from "#/features/game/components/game-hud";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { Ping } from "#/features/game/renderer/layers/ping";
@@ -40,26 +43,18 @@ export type GamePageSource =
   | {
       /** Custom setup flow rendered from `/match/:roomId`. */
       type: "custom";
-      /** Stable custom room URL key used to scope persisted match recovery. */
-      customRoomKey: string;
       /** Returns from a finished custom match to its setup route. */
       onReturn: () => void;
     };
 
 interface GamePageProps {
-  /** Seat reservation or recovery token used to enter the match room. */
+  /** Seat reservation used to enter the match room. */
   connection: GameRoomConnection;
   /** Return behavior and metadata for the flow that launched the match. */
   source: GamePageSource;
-  /** Optional hook for routes that should abandon a stale recovery path. */
-  onRecoveryFailed?: () => void;
 }
 
 /**
- * Only terminal recovery failures should abandon the match URL and return to
- * setup. Transient network failures still need the visible error panel so the
- * user can retry/diagnose without discarding a potentially valid live match.
- *
  * Match view rendered after queue/setup hands the client a seat reservation.
  *
  * The page delegates socket ownership and state adaptation to `useGameRoom`,
@@ -68,12 +63,7 @@ interface GamePageProps {
  * official matches and `/match/:roomId` custom matches can reuse the same game
  * surface after their respective seat-reservation handoff.
  */
-export function GamePage({
-  connection,
-  source,
-  onRecoveryFailed,
-}: GamePageProps) {
-  const navigate = useNavigate();
+export function GamePage({ connection, source }: GamePageProps) {
   /**
    * Keep the full connection payload stable across parent re-renders.
    *
@@ -82,10 +72,7 @@ export function GamePage({
    * intact, because Colyseus may attach SDK-specific fields beyond the visible
    * `{ name, roomId, sessionId }` tuple.
    */
-  const connectionKey =
-    connection.type === "reservation"
-      ? `reservation:${connection.reservation.name}:${connection.reservation.roomId}:${connection.reservation.sessionId}`
-      : `recovery:${connection.recoveryToken}`;
+  const connectionKey = `reservation:${connection.reservation.name}:${connection.reservation.roomId}:${connection.reservation.sessionId}`;
   const stableConnectionRef = useRef<{
     key: string;
     value: GameRoomConnection;
@@ -94,41 +81,21 @@ export function GamePage({
     stableConnectionRef.current = { key: connectionKey, value: connection };
   }
   const stableConnection = stableConnectionRef.current.value;
-  const customRoomKey = source.type === "custom" ? source.customRoomKey : null;
-  const hasHandledRecoveryFailureRef = useRef(false);
-  const recoveryFailedHandlerRef = useRef(onRecoveryFailed);
-  recoveryFailedHandlerRef.current = onRecoveryFailed;
-
-  /**
-   * Memoized route context persisted alongside the recovery token.
-   */
-  const persistedSource = useMemo(
-    () =>
-      source.type === "official"
-        ? { type: "official" as const }
-        : { type: "custom" as const, customRoomKey: customRoomKey ?? "" },
-    [source.type, customRoomKey],
-  );
   const {
     room,
+    playerColors,
+    playerNames,
+    currentPlayer,
     renderGrid,
     moveQueue,
     gameState,
     gameResult,
     sendMove,
     clearMoveQueue,
-    playerColors,
-    playerNames,
     error,
-    errorCode,
+    disconnectMessage,
     isConnecting,
-  } = useGameRoom(stableConnection, persistedSource);
-  const shouldFallbackToSetup =
-    Boolean(errorCode) &&
-    connection.type === "recovery" &&
-    source.type === "custom" &&
-    Boolean(onRecoveryFailed) &&
-    isTerminalRecoveryErrorCode(errorCode);
+  } = useGameRoom(stableConnection);
 
   const [pings, setPings] = useState<Ping[]>([]);
   const [activeBrush, setActiveBrush] = useState<
@@ -196,6 +163,43 @@ export function GamePage({
   const renderGridWidth = renderGrid?.width ?? 0;
   const renderGridHeight = renderGrid?.height ?? 0;
 
+  const initialCoord = useRef<ICoordinate>(null);
+  const hasInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasInitializedRef.current || !renderGrid || !currentPlayer) return;
+
+    // Find the player's general or any owned spawn cell to start selection
+    let startCoord: ICoordinate | null = null;
+
+    // 1. Try to find a General
+    for (const cell of renderGrid) {
+      if (
+        cell.terrain === Terrain.GENERAL &&
+        cell.ownerIndex === currentPlayer.id
+      ) {
+        startCoord = cell.coordinate;
+        break;
+      }
+    }
+
+    // 2. Fallback to any owned spawn cell (like the starting city in Domination)
+    if (!startCoord) {
+      for (const cell of renderGrid) {
+        if (cell.ownerIndex === currentPlayer.id) {
+          startCoord = cell.coordinate;
+          break;
+        }
+      }
+    }
+
+    if (startCoord) {
+      initialCoord.current = startCoord;
+      setSelection(startCoord);
+      hasInitializedRef.current = true;
+    }
+  }, [renderGrid, currentPlayer]);
+
   const handleSelectCell = useCallback(
     (coord: ICoordinate) => {
       if (activeBrush) {
@@ -260,22 +264,7 @@ export function GamePage({
   );
 
   const handleReturn = () => {
-    clearPersistedGameSession();
     source.onReturn();
-  };
-
-  /**
-   * Leave the failed match recovery path and send users to a usable lobby.
-   *
-   * Custom games live under `/match/:roomId`, so a failed custom recovery needs
-   * an explicit navigation away from the stale setup URL after clearing state.
-   */
-  const handleConnectionFailedReturn = () => {
-    clearPersistedGameSession();
-    source.onReturn();
-    if (source.type === "custom") {
-      navigate("/");
-    }
   };
 
   useEffect(() => {
@@ -285,37 +274,16 @@ export function GamePage({
     }
   }, [gameResult, spectatorSource]);
 
-  useEffect(() => {
-    if (!shouldFallbackToSetup) {
-      hasHandledRecoveryFailureRef.current = false;
-      return;
-    }
-
-    const recoveryFailedHandler = recoveryFailedHandlerRef.current;
-    if (hasHandledRecoveryFailureRef.current || !recoveryFailedHandler) {
-      return;
-    }
-
-    hasHandledRecoveryFailureRef.current = true;
-    recoveryFailedHandler();
-  }, [shouldFallbackToSetup]);
-
-  if (shouldFallbackToSetup) {
-    return (
-      <StageCenter>
-        <LoadingPanel message="Rejoining custom room" />
-      </StageCenter>
-    );
-  }
-
   if (error) {
     return (
       <StageCenter>
         <ErrorPanel
           message={error}
           action={
-            <Button type="button" onClick={handleConnectionFailedReturn}>
-              Return to lobby
+            <Button type="button" onClick={handleReturn}>
+              {source.type === "official"
+                ? "Return to lobby"
+                : "Return to setup room"}
             </Button>
           }
         />
@@ -338,14 +306,13 @@ export function GamePage({
       </StageCenter>
     );
 
-  const visiblePlayers = Array.from(gameState.players.values());
-  const currentPlayer = visiblePlayers.find(
-    (player) => player.sessionId === room?.sessionId,
-  );
   const isPlayerEliminated =
     currentPlayer?.status === PlayerStatus.ELIMINATED && !gameResult;
   const isReadOnly =
-    isViewingAsSpectator || Boolean(gameResult) || isPlayerEliminated;
+    isViewingAsSpectator ||
+    Boolean(gameResult) ||
+    isPlayerEliminated ||
+    Boolean(disconnectMessage);
   const winnerId = gameResult?.winnerTeamId
     ? Array.from(gameState.publicPlayers.values()).find(
         (p) => p.teamId === gameResult.winnerTeamId,
@@ -356,13 +323,15 @@ export function GamePage({
     gameResult?.winnerTeamId &&
       currentPlayer?.teamId === gameResult.winnerTeamId,
   );
-  const activeModal = gameResult
-    ? isViewingAsSpectator && spectatorSource === "game-end"
-      ? null
-      : "game-end"
-    : !isViewingAsSpectator && isPlayerEliminated
-      ? "eliminated"
-      : null;
+  const activeModal = disconnectMessage
+    ? null
+    : gameResult
+      ? isViewingAsSpectator && spectatorSource === "game-end"
+        ? null
+        : "game-end"
+      : !isViewingAsSpectator && isPlayerEliminated
+        ? "eliminated"
+        : null;
   const returnLabel =
     source.type === "official" ? "Return to lobby" : "Return to setup room";
 
@@ -388,6 +357,7 @@ export function GamePage({
 
       <GameApp
         grid={renderGrid}
+        initialCoord={initialCoord.current ?? undefined}
         selection={isReadOnly ? null : selection}
         splitMoveSelection={isReadOnly ? null : splitMoveSelection}
         moveQueue={moveQueue}
@@ -401,16 +371,21 @@ export function GamePage({
 
       <GameHud
         scoreboard={gameState.scoreboard}
+        targetScore={gameState.targetScore}
         timer={{
           currentTick: gameState.tick,
           targetTick:
-            gameState.mode === GameMode.TURF_WAR
+            gameState.mode === GameMode.TURF_WAR ||
+            gameState.mode === GameMode.DOMINATION
               ? gameState.finishTick > 0
                 ? gameState.finishTick
                 : 0
               : 0,
           tickInterval:
-            gameState.mode === GameMode.TURF_WAR ? gameState.tickInterval : 0,
+            gameState.mode === GameMode.TURF_WAR ||
+            gameState.mode === GameMode.DOMINATION
+              ? gameState.tickInterval
+              : 0,
         }}
       />
 
@@ -486,6 +461,28 @@ export function GamePage({
         </Button>
       </div>
 
+      {disconnectMessage ? (
+        <Dialog open={true}>
+          <DialogContent
+            className="max-w-sm"
+            aria-describedby={undefined}
+            showCloseButton={false}
+            onEscapeKeyDown={(event) => event.preventDefault()}
+            onInteractOutside={(event) => event.preventDefault()}
+          >
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Disconnected</DialogTitle>
+              <DialogDescription>{disconnectMessage}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button type="button" onClick={handleReturn}>
+                {returnLabel}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+
       {activeModal ? (
         <Dialog open={true}>
           <DialogContent
@@ -516,7 +513,7 @@ export function GamePage({
                 </>
               )}
             </div>
-            <div className="mt-5 flex flex-col gap-2">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -534,7 +531,7 @@ export function GamePage({
               <Button type="button" onClick={handleReturn}>
                 {returnLabel}
               </Button>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       ) : null}

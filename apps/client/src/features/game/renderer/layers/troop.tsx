@@ -8,7 +8,10 @@ import type {
   RenderGrid,
   RenderGridCell,
 } from "#/features/game/renderer/render-grid";
-import { isSameCoord } from "#/features/game/utils/coord";
+import {
+  getCoordWorldPosition,
+  isSameCoord,
+} from "#/features/game/utils/coord";
 
 extend({ Container, Text });
 
@@ -62,8 +65,11 @@ export function TroopLayer({
   return (
     <pixiContainer>
       {troopCells.map(({ cell, text }) => {
-        const x = cell.coordinate.x * stride + cellSize / 2;
-        const y = cell.coordinate.y * stride + cellSize / 2;
+        const { x, y } = getCoordWorldPosition(
+          cell.coordinate,
+          stride,
+          cellSize,
+        );
 
         return (
           <pixiText

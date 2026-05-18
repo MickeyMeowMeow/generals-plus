@@ -37,7 +37,6 @@ export type GameMode = (typeof GameMode)[keyof typeof GameMode];
  * New modes that need uneven or dynamic team sizes should add their own
  * logic rather than relying on this default.
  */
-export function getDefaultPlayersPerTeam(mode: GameMode): number {
-  if (mode === GameMode.CLASSIC) return 1;
-  return 2;
+export function getDefaultPlayersPerTeam(_mode: GameMode): number {
+  return 1;
 }

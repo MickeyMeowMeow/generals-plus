@@ -19,8 +19,6 @@ import {
 import { Input } from "#/components/ui/input";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
-import { clearPersistedGameSession } from "#/features/game/api/use-game-room";
-import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 import { networkProvider } from "#/infra/network/provider";
 import { HttpRequestError } from "#/infra/network/provider/colyseus";
 
@@ -90,7 +88,6 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
   const navigate = useNavigate();
   const { actions } = useAuth();
   const displayName = useUser((user) => user?.displayName ?? "Commander");
-  const resetMatchConnection = useMatchConnectionStore((s) => s.reset);
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [customRoomId, setCustomRoomId] = useState("");
   const [customError, setCustomError] = useState<string | null>(null);
@@ -124,14 +121,7 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
     }
   };
 
-  /**
-   * Sign-out clears both the legacy match connection store and the newer
-   * GamePage recovery token so a future login never restores someone else's
-   * stale match session.
-   */
   const signOut = async () => {
-    await resetMatchConnection();
-    clearPersistedGameSession();
     await actions.signOut();
   };
 
