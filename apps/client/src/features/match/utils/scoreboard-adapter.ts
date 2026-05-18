@@ -253,7 +253,11 @@ function createTroopLandModel(
   return {
     title,
     columns: troopLandColumns,
-    groups: createTeamGroups(rows),
+    groups: createTeamGroups(rows).sort(
+      (a, b) =>
+        Number(b.totals?.troops ?? 0) - Number(a.totals?.troops ?? 0) ||
+        a.label.localeCompare(b.label),
+    ),
     hasTeams: false,
   };
 }

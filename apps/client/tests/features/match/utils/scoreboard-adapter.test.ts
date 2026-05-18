@@ -117,6 +117,41 @@ describe("createGameHudScoreboardModel", () => {
     });
   });
 
+  it("adapts classic troop-land scoreboard rows sorted by troops descending", () => {
+    const scoreboard = new ClassicScoreboard();
+    scoreboard.mode = GameMode.CLASSIC;
+
+    const p1 = playerScore({
+      playerId: "p1",
+      teamId: "p1",
+      displayName: "Nova",
+      troops: 10,
+      land: 4,
+    });
+    const entry1 = new ClassicScoreboardPlayerEntry();
+    Object.assign(entry1, p1, { isAlive: true });
+
+    const p2 = playerScore({
+      playerId: "p2",
+      teamId: "p2",
+      displayName: "Astra",
+      troops: 25,
+      land: 2,
+    });
+    const entry2 = new ClassicScoreboardPlayerEntry();
+    Object.assign(entry2, p2, { isAlive: true });
+
+    scoreboard.players.push(entry1, entry2);
+
+    const model = createGameHudScoreboardModel(scoreboard);
+
+    expect(model.title).toBe("Classic");
+    expect(model.groups).toHaveLength(2);
+    // p2 has 25 troops, p1 has 10 troops -> p2 should be first!
+    expect(model.groups[0].id).toBe("p2");
+    expect(model.groups[1].id).toBe("p1");
+  });
+
   it("adapts turf war scoreboard rows grouped by team with percentage", () => {
     const model = createGameHudScoreboardModel(turfWarScoreboard());
 
