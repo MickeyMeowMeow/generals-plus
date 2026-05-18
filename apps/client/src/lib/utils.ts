@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Formats a duration in seconds into a standard MM:SS string.
+ * Formats a duration in seconds into a standard M:SS string.
  */
 export const formatTime = (seconds: number): string => {
   const m = Math.floor(Math.max(0, seconds) / 60);
