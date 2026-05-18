@@ -11,6 +11,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { isTerminalRecoveryErrorCode } from "#/features/game/api/game-room-errors";
 import { GamePage } from "#/features/game/pages/game-page";
 import type { RenderGridCell } from "#/features/game/renderer/render-grid";
 import { RenderGrid } from "#/features/game/renderer/render-grid";
@@ -172,6 +173,7 @@ describe("GamePage keyboard move bounds", () => {
       playerColors: new Map(),
       playerNames: new Map(),
       connectionStatus: "connected",
+      errorCode: null,
       error: null,
       isConnecting: false,
     });
@@ -217,6 +219,7 @@ describe("GamePage keyboard move bounds", () => {
       playerColors: new Map(),
       playerNames: new Map([["player-2", "Rook"]]),
       connectionStatus: "connected",
+      errorCode: null,
       error: null,
       isConnecting: false,
     });
@@ -258,6 +261,7 @@ describe("GamePage keyboard move bounds", () => {
       playerColors: new Map(),
       playerNames: new Map(),
       connectionStatus: "connected",
+      errorCode: null,
       error: null,
       isConnecting: false,
     });
@@ -278,5 +282,200 @@ describe("GamePage keyboard move bounds", () => {
     expect(screen.queryByText("You have been eliminated")).toBeNull();
     expect(screen.getByRole("button", { name: "Return" })).toBeTruthy();
     expect(onReturn).not.toHaveBeenCalled();
+  });
+
+  it("falls back to setup only for terminal custom recovery errors", () => {
+    const onRecoveryFailed = vi.fn();
+
+    useGameRoomMock.mockReturnValue({
+      room: null,
+      renderGrid: null,
+      moveQueue: [],
+      gameState: null,
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      playerColors: new Map(),
+      playerNames: new Map(),
+      connectionStatus: "error",
+      errorCode: "RECOVERY_TOKEN_INVALID",
+      error: "reconnection token invalid or expired",
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={{
+          type: "recovery",
+          recoveryToken: "token-stale",
+        }}
+        source={{
+          type: "custom",
+          customRoomKey: "custom-room",
+          onReturn: vi.fn(),
+        }}
+        onRecoveryFailed={onRecoveryFailed}
+      />,
+    );
+
+    expect(screen.getByText("Rejoining custom room")).toBeTruthy();
+    expect(onRecoveryFailed).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps custom recovery connection failures visible when they may be transient", () => {
+    const onRecoveryFailed = vi.fn();
+
+    useGameRoomMock.mockReturnValue({
+      room: null,
+      renderGrid: null,
+      moveQueue: [],
+      gameState: null,
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      playerColors: new Map(),
+      playerNames: new Map(),
+      connectionStatus: "error",
+      errorCode: "RECOVERY_TIMEOUT",
+      error: "Unable to restore the match. The room may have ended or expired.",
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={{
+          type: "recovery",
+          recoveryToken: "token-timeout",
+        }}
+        source={{
+          type: "custom",
+          customRoomKey: "custom-room",
+          onReturn: vi.fn(),
+        }}
+        onRecoveryFailed={onRecoveryFailed}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Connection failed" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Unable to restore the match\. The room may have ended or expired\./,
+      ),
+    ).toBeTruthy();
+    expect(onRecoveryFailed).not.toHaveBeenCalled();
+  });
+
+  it("re-arms recovery fallback after the error clears and returns", () => {
+    const firstHandler = vi.fn();
+    const secondHandler = vi.fn();
+
+    useGameRoomMock.mockReturnValue({
+      room: null,
+      renderGrid: null,
+      moveQueue: [],
+      gameState: null,
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      playerColors: new Map(),
+      playerNames: new Map(),
+      connectionStatus: "error",
+      errorCode: "RECOVERY_TOKEN_INVALID",
+      error: "reconnection token invalid or expired",
+      isConnecting: false,
+    });
+
+    const { rerender } = render(
+      <GamePage
+        connection={{
+          type: "recovery",
+          recoveryToken: "token-stale",
+        }}
+        source={{
+          type: "custom",
+          customRoomKey: "custom-room",
+          onReturn: vi.fn(),
+        }}
+        onRecoveryFailed={firstHandler}
+      />,
+    );
+
+    expect(firstHandler).toHaveBeenCalledTimes(1);
+
+    useGameRoomMock.mockReturnValue({
+      room: null,
+      renderGrid: null,
+      moveQueue: [],
+      gameState: null,
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      playerColors: new Map(),
+      playerNames: new Map(),
+      connectionStatus: "connecting",
+      errorCode: null,
+      error: null,
+      isConnecting: true,
+    });
+
+    rerender(
+      <GamePage
+        connection={{
+          type: "recovery",
+          recoveryToken: "token-stale",
+        }}
+        source={{
+          type: "custom",
+          customRoomKey: "custom-room",
+          onReturn: vi.fn(),
+        }}
+        onRecoveryFailed={secondHandler}
+      />,
+    );
+
+    useGameRoomMock.mockReturnValue({
+      room: null,
+      renderGrid: null,
+      moveQueue: [],
+      gameState: null,
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      playerColors: new Map(),
+      playerNames: new Map(),
+      connectionStatus: "error",
+      errorCode: "RECOVERY_TOKEN_INVALID",
+      error: "reconnection token invalid or expired",
+      isConnecting: false,
+    });
+
+    rerender(
+      <GamePage
+        connection={{
+          type: "recovery",
+          recoveryToken: "token-stale",
+        }}
+        source={{
+          type: "custom",
+          customRoomKey: "custom-room",
+          onReturn: vi.fn(),
+        }}
+        onRecoveryFailed={secondHandler}
+      />,
+    );
+
+    expect(firstHandler).toHaveBeenCalledTimes(1);
+    expect(secondHandler).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("isTerminalRecoveryErrorCode", () => {
+  it("matches only explicit stale-room recovery failures", () => {
+    expect(isTerminalRecoveryErrorCode("RECOVERY_ROOM_NOT_FOUND")).toBe(true);
+    expect(isTerminalRecoveryErrorCode("RECOVERY_TOKEN_INVALID")).toBe(true);
+    expect(isTerminalRecoveryErrorCode("RECOVERY_TIMEOUT")).toBe(false);
+    expect(isTerminalRecoveryErrorCode("RECOVERY_FAILED")).toBe(false);
   });
 });

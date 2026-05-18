@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
+import { isTerminalRecoveryErrorCode } from "#/features/game/api/game-room-errors";
 import type { GameRoomConnection } from "#/features/game/api/use-game-room";
 import {
   clearPersistedGameSession,
@@ -48,6 +49,11 @@ interface GamePageProps {
 }
 
 /**
+ * Only terminal recovery failures should abandon the match URL and return to
+ * setup. Transient network failures still need the visible error panel so the
+ * user can retry/diagnose without discarding a potentially valid live match.
+ */
+/**
  * Match view rendered after queue/setup hands the client a seat reservation.
  *
  * The page delegates socket ownership and state adaptation to `useGameRoom`,
@@ -84,6 +90,8 @@ export function GamePage({
   const stableConnection = stableConnectionRef.current.value;
   const customRoomKey = source.type === "custom" ? source.customRoomKey : null;
   const hasHandledRecoveryFailureRef = useRef(false);
+  const recoveryFailedHandlerRef = useRef(onRecoveryFailed);
+  recoveryFailedHandlerRef.current = onRecoveryFailed;
 
   /**
    * Memoized route context persisted alongside the recovery token.
@@ -106,8 +114,15 @@ export function GamePage({
     playerColors,
     playerNames,
     error,
+    errorCode,
     isConnecting,
   } = useGameRoom(stableConnection, persistedSource);
+  const shouldFallbackToSetup =
+    Boolean(errorCode) &&
+    connection.type === "recovery" &&
+    source.type === "custom" &&
+    Boolean(onRecoveryFailed) &&
+    isTerminalRecoveryErrorCode(errorCode);
 
   const [selection, setSelection] = useState<ICoordinate | null>(null);
   const [splitMoveSelection, setSplitMoveSelection] =
@@ -188,30 +203,21 @@ export function GamePage({
   }, [gameResult, spectatorSource]);
 
   useEffect(() => {
-    hasHandledRecoveryFailureRef.current = false;
-  }, []);
+    if (!shouldFallbackToSetup) {
+      hasHandledRecoveryFailureRef.current = false;
+      return;
+    }
 
-  useEffect(() => {
-    if (
-      !error ||
-      connection.type !== "recovery" ||
-      source.type !== "custom" ||
-      !onRecoveryFailed ||
-      hasHandledRecoveryFailureRef.current
-    ) {
+    const recoveryFailedHandler = recoveryFailedHandlerRef.current;
+    if (hasHandledRecoveryFailureRef.current || !recoveryFailedHandler) {
       return;
     }
 
     hasHandledRecoveryFailureRef.current = true;
-    onRecoveryFailed();
-  }, [connection.type, error, onRecoveryFailed, source.type]);
+    recoveryFailedHandler();
+  }, [shouldFallbackToSetup]);
 
-  if (
-    error &&
-    connection.type === "recovery" &&
-    source.type === "custom" &&
-    onRecoveryFailed
-  ) {
+  if (shouldFallbackToSetup) {
     return (
       <StageCenter>
         <LoadingPanel message="Rejoining custom room" />

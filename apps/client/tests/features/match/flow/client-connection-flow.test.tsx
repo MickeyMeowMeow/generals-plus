@@ -845,13 +845,11 @@ describe("client room flows", () => {
   it("stops waiting when persisted match recovery never resolves", async () => {
     vi.useFakeTimers();
     networkMocks.restoreSession.mockReturnValue(new Promise(() => {}));
-    localStorage.setItem(
-      "generals_plus_active_game_session",
-      JSON.stringify({
-        recoveryToken: "hung-token",
-        source: { type: "official" },
-      }),
-    );
+    const persistedSession = JSON.stringify({
+      recoveryToken: "hung-token",
+      source: { type: "official" },
+    });
+    localStorage.setItem("generals_plus_active_game_session", persistedSession);
 
     renderRoute("/", auth());
 
@@ -866,9 +864,38 @@ describe("client room flows", () => {
       screen.getByRole("heading", { name: "Connection failed" }),
     ).toBeTruthy();
     expect(screen.getByText(/Unable to restore the match/)).toBeTruthy();
+    expect(localStorage.getItem("generals_plus_active_game_session")).toBe(
+      persistedSession,
+    );
+  });
+
+  it("keeps custom recovery timeouts on the error panel instead of silently rejoining setup", async () => {
+    vi.useFakeTimers();
+    networkMocks.restoreSession.mockReturnValue(new Promise(() => {}));
+    const persistedSession = JSON.stringify({
+      recoveryToken: "hung-custom-token",
+      source: { type: "custom", customRoomKey: "setup-timeout" },
+    });
+    localStorage.setItem("generals_plus_active_game_session", persistedSession);
+
+    renderRoute("/match/setup-timeout", auth());
+
+    expect(screen.getByText("Connecting to match")).toBeTruthy();
+
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+      await Promise.resolve();
+    });
+
     expect(
-      localStorage.getItem("generals_plus_active_game_session"),
-    ).toBeNull();
+      screen.getByRole("heading", { name: "Connection failed" }),
+    ).toBeTruthy();
+    expect(screen.getByText(/Unable to restore the match/)).toBeTruthy();
+    expect(networkMocks.resolveCustomRoom).not.toHaveBeenCalled();
+    expect(networkMocks.joinById).not.toHaveBeenCalled();
+    expect(localStorage.getItem("generals_plus_active_game_session")).toBe(
+      persistedSession,
+    );
   });
 
   it("resolves a fresh setup room after returning from a finished custom match", async () => {
