@@ -545,7 +545,7 @@ describe("client room flows", () => {
     expect(screen.getByText(/at least two teams/)).toBeTruthy();
   });
 
-  it("shows setup validation failures as a toast without leaving the room", async () => {
+  it("shows setup validation failures as stacked toasts without leaving the room", async () => {
     const setupRoom = createRoom({
       roomId: "setup-validation",
       state: createSetupState([
@@ -574,9 +574,27 @@ describe("client room flows", () => {
       expect(toastWarningMock).toHaveBeenCalledWith("Settings not applied", {
         description: "Map width is below the allowed minimum.",
         duration: 5_000,
-        id: 1,
       });
     });
+
+    act(() => {
+      setupRoom.emitMessage(SetupServerMessage.VALIDATION_FAILED, {
+        field: "mapHeight",
+        message: "Map height is below the allowed minimum.",
+      });
+    });
+
+    await waitFor(() => {
+      expect(toastWarningMock).toHaveBeenCalledTimes(2);
+    });
+    expect(toastWarningMock).toHaveBeenNthCalledWith(
+      2,
+      "Settings not applied",
+      {
+        description: "Map height is below the allowed minimum.",
+        duration: 5_000,
+      },
+    );
     expect(
       screen.queryByRole("heading", { name: "Room unavailable" }),
     ).toBeNull();

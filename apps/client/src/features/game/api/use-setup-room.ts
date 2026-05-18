@@ -42,7 +42,6 @@ interface SetupRoomOptions {
 }
 
 interface SetupValidationToast {
-  id: number;
   message: string;
   field?: SetupValidationFailedMessage["field"];
 }
@@ -199,11 +198,10 @@ export function useSetupRoom({
           currentRoom.onMessage(
             SetupServerMessage.VALIDATION_FAILED,
             (message) => {
-              setValidationError((previous) => ({
-                id: (previous?.id ?? 0) + 1,
+              setValidationError({
                 message: message.message,
                 field: message.field,
-              }));
+              });
             },
           ),
         );

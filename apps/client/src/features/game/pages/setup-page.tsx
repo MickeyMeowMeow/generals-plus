@@ -101,7 +101,6 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
     toast.warning("Settings not applied", {
       description: validationError.message,
       duration: 5_000,
-      id: validationError.id,
     });
     clearValidationError();
   }, [clearValidationError, validationError]);
