@@ -1,6 +1,7 @@
 import { GameMode } from "@generals-plus/engine";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { IUserDocument } from "#/infra/db/models/user-model";
 import { UserModel } from "#/infra/db/models/user-model";
 import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
@@ -64,7 +65,7 @@ describe("MongoUserRepository and UserModel tests", () => {
 
         const findOneSpy = vi.spyOn(UserModel, "findOne").mockReturnValue({
           exec: vi.fn().mockResolvedValue(mockDoc),
-        } as any);
+        } as unknown as never);
 
         const result = await repository.findByEmail("found@example.com");
 
@@ -83,7 +84,7 @@ describe("MongoUserRepository and UserModel tests", () => {
       it("should return null when user is not found", async () => {
         const findOneSpy = vi.spyOn(UserModel, "findOne").mockReturnValue({
           exec: vi.fn().mockResolvedValue(null),
-        } as any);
+        } as unknown as never);
 
         const result = await repository.findByEmail("notfound@example.com");
 
@@ -106,12 +107,12 @@ describe("MongoUserRepository and UserModel tests", () => {
           ratings: { classic: 1000 },
         };
 
-        let savedInstance: any = null;
+        let savedInstance: IUserDocument | null = null;
         const saveSpy = vi
           .spyOn(UserModel.prototype, "save")
-          .mockImplementation(function (this: any) {
+          .mockImplementation(function (this: IUserDocument) {
             savedInstance = this;
-            return Promise.resolve(mockSavedDoc as any);
+            return Promise.resolve(mockSavedDoc as unknown as IUserDocument);
           });
 
         const result = await repository.createWithEmailAndPassword(
@@ -129,10 +130,10 @@ describe("MongoUserRepository and UserModel tests", () => {
         expect(saveSpy).toHaveBeenCalled();
         expect(savedInstance).toBeDefined();
         // Check that options sanitization worked:
-        expect(savedInstance.email).toBe("new@example.com"); // constructor override parameter
-        expect(savedInstance.displayName).toBe("New User"); // safe option
-        expect(savedInstance.anonymous).toBe(false); // set to false directly
-        expect(savedInstance.verified).toBe(false); // set to false directly
+        expect(savedInstance?.email).toBe("new@example.com"); // constructor override parameter
+        expect(savedInstance?.displayName).toBe("New User"); // safe option
+        expect(savedInstance?.anonymous).toBe(false); // set to false directly
+        expect(savedInstance?.verified).toBe(false); // set to false directly
 
         expect(result).toEqual({
           id: "60f7c1234567890123456789",
@@ -155,12 +156,12 @@ describe("MongoUserRepository and UserModel tests", () => {
           ratings: { classic: 1000 },
         };
 
-        let savedInstance: any = null;
+        let savedInstance: IUserDocument | null = null;
         const saveSpy = vi
           .spyOn(UserModel.prototype, "save")
-          .mockImplementation(function (this: any) {
+          .mockImplementation(function (this: IUserDocument) {
             savedInstance = this;
-            return Promise.resolve(mockSavedDoc as any);
+            return Promise.resolve(mockSavedDoc as unknown as IUserDocument);
           });
 
         const result = await repository.createAnonymous({
@@ -171,9 +172,9 @@ describe("MongoUserRepository and UserModel tests", () => {
 
         expect(saveSpy).toHaveBeenCalled();
         expect(savedInstance).toBeDefined();
-        expect(savedInstance.displayName).toBe("Guest User");
-        expect(savedInstance.anonymous).toBe(true);
-        expect(savedInstance.verified).toBe(false);
+        expect(savedInstance?.displayName).toBe("Guest User");
+        expect(savedInstance?.anonymous).toBe(true);
+        expect(savedInstance?.verified).toBe(false);
 
         expect(result).toEqual({
           id: "60f7c123456789012345678a",
@@ -194,7 +195,7 @@ describe("MongoUserRepository and UserModel tests", () => {
             acknowledged: true,
             matchedCount: 1,
           }),
-        } as any);
+        } as unknown as never);
 
         const result = await repository.updatePassword(
           "test@example.com",
@@ -214,7 +215,7 @@ describe("MongoUserRepository and UserModel tests", () => {
             acknowledged: true,
             matchedCount: 0,
           }),
-        } as any);
+        } as unknown as never);
 
         const result = await repository.updatePassword(
           "missing@example.com",
@@ -235,7 +236,7 @@ describe("MongoUserRepository and UserModel tests", () => {
           exec: vi.fn().mockResolvedValue({
             modifiedCount: 1,
           }),
-        } as any);
+        } as unknown as never);
 
         const result = await repository.verifyEmail("test@example.com");
 
@@ -251,7 +252,7 @@ describe("MongoUserRepository and UserModel tests", () => {
           exec: vi.fn().mockResolvedValue({
             modifiedCount: 0,
           }),
-        } as any);
+        } as unknown as never);
 
         const result = await repository.verifyEmail(
           "already-verified@example.com",
@@ -274,7 +275,7 @@ describe("MongoUserRepository and UserModel tests", () => {
 
         const findByIdSpy = vi.spyOn(UserModel, "findById").mockReturnValue({
           exec: vi.fn().mockResolvedValue(mockUser),
-        } as any);
+        } as unknown as never);
 
         const rating = await repository.getRating(
           "60f7c1234567890123456789",
@@ -293,7 +294,7 @@ describe("MongoUserRepository and UserModel tests", () => {
 
         const findByIdSpy = vi.spyOn(UserModel, "findById").mockReturnValue({
           exec: vi.fn().mockResolvedValue(mockUser),
-        } as any);
+        } as unknown as never);
 
         const rating = await repository.getRating(
           "60f7c1234567890123456789",
@@ -307,7 +308,7 @@ describe("MongoUserRepository and UserModel tests", () => {
       it("should return default rating 1000 if user is not found", async () => {
         const findByIdSpy = vi.spyOn(UserModel, "findById").mockReturnValue({
           exec: vi.fn().mockResolvedValue(null),
-        } as any);
+        } as unknown as never);
 
         const rating = await repository.getRating(
           "missing-id",
@@ -323,7 +324,7 @@ describe("MongoUserRepository and UserModel tests", () => {
       it("should call bulkWrite with the formatted updates", async () => {
         const bulkWriteSpy = vi
           .spyOn(UserModel, "bulkWrite")
-          .mockResolvedValue({} as any);
+          .mockResolvedValue({} as unknown as never);
 
         const updates = [
           { userId: "user1", mode: GameMode.CLASSIC, newRating: 1050 },
