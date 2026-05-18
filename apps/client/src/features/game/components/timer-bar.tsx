@@ -46,7 +46,7 @@ export function TimerBar({
         </span>
         <span
           className={cn(
-            "font-mono text-sm font-medium tabular-nums transition-colors",
+            "text-sm font-medium tabular-nums transition-colors",
             isCritical
               ? "text-timer-critical"
               : isWarning
