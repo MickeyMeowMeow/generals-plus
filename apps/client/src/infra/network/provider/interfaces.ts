@@ -138,7 +138,7 @@ export interface NetworkProvider<User = unknown> {
     options?: Record<string, unknown>,
   ): Promise<RoomClient<State, Sent, Received>>;
 
-  createCustomRoom(): Promise<CustomRoomCreation>;
+  createCustomRoom(customRoomKey?: string): Promise<CustomRoomCreation>;
 
   resolveCustomRoom(customRoomKey: string): Promise<CustomRoomResolution>;
 
