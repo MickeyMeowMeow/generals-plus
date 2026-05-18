@@ -94,6 +94,15 @@ export function GameSettings({
 
   const handleSubmit = () => {
     if (!editing) return;
+
+    if (
+      editing.value.trim() === "" ||
+      !Number.isFinite(Number(editing.value))
+    ) {
+      setEditing(null);
+      return;
+    }
+
     const roundedValue = round(editing.value);
     // Only submit if the value actually differs from the authoritative server state
     if (roundedValue !== round(currentSettings[editing.key])) {
