@@ -12,6 +12,7 @@ import type {
 import type { AuthData } from "#/infra/network/auth";
 import type { NetworkProvider } from "#/infra/network/provider/interfaces";
 import type { RoomClient } from "#/infra/network/room";
+import { RoomStatus } from "#/infra/network/room";
 import type { UnsubscribeFn } from "#/infra/network/types";
 
 export class HttpRequestError extends Error {
@@ -67,6 +68,23 @@ class ColyseusRoomAdapter<
     callback: (payload: Received[K]) => void,
   ): UnsubscribeFn {
     return this.room.onMessage(type, callback);
+  }
+
+  onStatusChange(
+    callback: (status: RoomStatus, details?: string) => void,
+  ): UnsubscribeFn {
+    const unsubError = this.room.onError((code, message) =>
+      callback(RoomStatus.ERROR, `[${code}] ${message}`),
+    );
+
+    const unsubLeave = this.room.onLeave((_code, reason) => {
+      callback(RoomStatus.DISCONNECTED, reason);
+    });
+
+    return () => {
+      unsubError.clear();
+      unsubLeave.clear();
+    };
   }
 
   onError(callback: (code: number, message?: string) => void): UnsubscribeFn {

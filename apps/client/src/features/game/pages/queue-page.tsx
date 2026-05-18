@@ -1,5 +1,6 @@
 import type { GameMode } from "@generals-plus/engine";
 import { QueueClientMessage } from "@generals-plus/shared-types";
+import { useEffect, useRef, useState } from "react";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
@@ -9,9 +10,18 @@ import { useQueueRoom } from "#/features/game/api/use-queue-room";
 import { ColorPicker } from "#/features/game/components/color-picker";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
+import { RoomStatus } from "#/infra/network/room";
 
 function getModeOption(mode: GameMode) {
   return GAME_MODE_OPTIONS.find((option) => option.id === mode);
+}
+
+function formatQueueDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${seconds}`;
 }
 
 /**
@@ -28,11 +38,42 @@ export function QueuePage({
   gameMode: GameMode;
   onLeave: () => void;
 }) {
-  const { room, queueState, seatReservation, error, isConnecting } =
+  const { room, queueState, seatReservation, error, isConnecting, status } =
     useQueueRoom({ gameMode });
   const userId = useUser((user) => user?.id);
   const displayName = useUser((user) => user?.displayName ?? "Commander");
   const modeLabel = getModeOption(gameMode)?.label ?? gameMode;
+  const [queueSeconds, setQueueSeconds] = useState(0);
+  const queueStartedAtRef = useRef<number | null>(null);
+  const isQueued = !isConnecting && Boolean(queueState) && !seatReservation;
+
+  useEffect(() => {
+    if (!isQueued) {
+      queueStartedAtRef.current = null;
+      setQueueSeconds(0);
+      return;
+    }
+
+    if (queueStartedAtRef.current === null) {
+      queueStartedAtRef.current = Date.now();
+    }
+
+    const timer = window.setInterval(() => {
+      const startedAt = queueStartedAtRef.current ?? Date.now();
+      setQueueSeconds(Math.floor((Date.now() - startedAt) / 1_000));
+    }, 1_000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [isQueued]);
+
+  useEffect(() => {
+    if (!status || seatReservation) return;
+    if (status === RoomStatus.DISCONNECTED || status === RoomStatus.ERROR) {
+      onLeave();
+    }
+  }, [onLeave, seatReservation, status]);
 
   if (seatReservation) {
     return (
@@ -71,6 +112,7 @@ export function QueuePage({
 
   const myPlayer = queueState.players.find((p) => p.id === userId);
   const takenColors = queueState.players.map((p) => p.color);
+  const queueDuration = formatQueueDuration(queueSeconds);
 
   return (
     <StageCenter>
@@ -115,6 +157,15 @@ export function QueuePage({
               Leave queue
             </Button>
           </div>
+        </div>
+
+        <div className="mt-8 flex flex-col items-center gap-1">
+          <p className="text-center text-2xl font-semibold text-game-text-dim">
+            QUEUED
+          </p>
+          <p className="text-center text-4xl font-semibold tabular-nums text-game-text-dim">
+            {queueDuration}
+          </p>
         </div>
       </div>
     </StageCenter>

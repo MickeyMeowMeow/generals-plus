@@ -1,4 +1,4 @@
-import { Loader2, LogIn, UserPlus } from "lucide-react";
+import { Loader2, LogIn, ShieldUser, UserPlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 import { ErrorAlert } from "#/components/feedback/error-alert";
@@ -9,6 +9,7 @@ import { Label } from "#/components/ui/label";
 export const AuthFormMode = {
   SIGN_IN: "sign-in",
   REGISTER: "register",
+  GUEST: "guest",
 } as const;
 
 export type AuthFormMode = (typeof AuthFormMode)[keyof typeof AuthFormMode];
@@ -81,31 +82,62 @@ export function AuthForm({
     },
   });
   const isRegisterMode = mode === AuthFormMode.REGISTER;
+  const isGuestMode = mode === AuthFormMode.GUEST;
+
+  const syncSharedDrafts = () => {
+    const displayName =
+      mode === AuthFormMode.GUEST
+        ? guestForm.getValues("displayName")
+        : mode === AuthFormMode.REGISTER
+          ? registerForm.getValues("displayName")
+          : registerForm.getValues("displayName");
+    const email =
+      mode === AuthFormMode.REGISTER
+        ? registerForm.getValues("email")
+        : signInForm.getValues("email");
+
+    registerForm.setValue("displayName", displayName, {
+      shouldDirty: displayName !== "Commander",
+    });
+    guestForm.setValue("displayName", displayName, {
+      shouldDirty: displayName !== "Commander",
+    });
+    registerForm.setValue("email", email, {
+      shouldDirty: email.length > 0,
+    });
+    signInForm.setValue("email", email, {
+      shouldDirty: email.length > 0,
+    });
+  };
+
+  const handleModeChange = (nextMode: AuthFormMode) => {
+    syncSharedDrafts();
+    onModeChange(nextMode);
+  };
 
   return (
     <section className="game-panel space-y-5 rounded-none p-5 text-game-text">
       <div className="space-y-1">
-        <h2 className="text-2xl font-semibold">
-          {isRegisterMode ? "Create account" : "Sign in"}
-        </h2>
-        <p className="text-sm text-game-text-dim">
+        <h2 className="text-xl font-semibold">
           {isRegisterMode
-            ? "Register with a username, email, and password."
-            : "Sign in with your email and password."}
-        </p>
+            ? "Create account"
+            : isGuestMode
+              ? "Continue as guest"
+              : "Sign in"}
+        </h2>
       </div>
 
       <div
-        className="grid grid-cols-2 gap-2"
+        className="grid grid-cols-3 gap-2"
         role="tablist"
         aria-label="Authentication mode"
       >
         <Button
           type="button"
-          variant={isRegisterMode ? "outline" : "default"}
-          onClick={() => onModeChange(AuthFormMode.SIGN_IN)}
+          variant={!isRegisterMode && !isGuestMode ? "default" : "outline"}
+          onClick={() => handleModeChange(AuthFormMode.SIGN_IN)}
           role="tab"
-          aria-selected={!isRegisterMode}
+          aria-selected={!isRegisterMode && !isGuestMode}
           disabled={isBusy}
         >
           <LogIn className="size-4" />
@@ -114,7 +146,7 @@ export function AuthForm({
         <Button
           type="button"
           variant={isRegisterMode ? "default" : "outline"}
-          onClick={() => onModeChange(AuthFormMode.REGISTER)}
+          onClick={() => handleModeChange(AuthFormMode.REGISTER)}
           role="tab"
           aria-selected={isRegisterMode}
           disabled={isBusy}
@@ -122,12 +154,24 @@ export function AuthForm({
           <UserPlus className="size-4" />
           Register
         </Button>
+        <Button
+          type="button"
+          variant={isGuestMode ? "default" : "outline"}
+          onClick={() => handleModeChange(AuthFormMode.GUEST)}
+          role="tab"
+          aria-selected={isGuestMode}
+          disabled={isBusy}
+        >
+          <ShieldUser className="size-4" />
+          Guest
+        </Button>
       </div>
 
       <ErrorAlert message={lastError} />
 
       {isRegisterMode ? (
         <form
+          key={AuthFormMode.REGISTER}
           onSubmit={registerForm.handleSubmit(async (values) =>
             onRegister({
               displayName: values.displayName.trim(),
@@ -142,7 +186,7 @@ export function AuthForm({
               htmlFor="register-display-name"
               className="text-game-text-dim"
             >
-              Username
+              Display name
             </Label>
             <Input
               id="register-display-name"
@@ -153,7 +197,7 @@ export function AuthForm({
               className="border-game-border bg-game-bg text-game-text"
               {...registerForm.register("displayName", {
                 validate: (value) =>
-                  value.trim().length > 0 || "Username cannot be empty.",
+                  value.trim().length > 0 || "Display name cannot be empty.",
               })}
             />
             <FieldError
@@ -222,8 +266,54 @@ export function AuthForm({
             {isBusy ? "Creating account..." : "Create account"}
           </Button>
         </form>
+      ) : isGuestMode ? (
+        <form
+          key={AuthFormMode.GUEST}
+          onSubmit={guestForm.handleSubmit(async (values) =>
+            onGuestSignIn({
+              displayName: values.displayName.trim(),
+            }),
+          )}
+          className="space-y-4"
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="guest-display-name" className="text-game-text-dim">
+              Display name
+            </Label>
+            <Input
+              id="guest-display-name"
+              autoComplete="nickname"
+              aria-invalid={
+                guestForm.formState.errors.displayName ? true : undefined
+              }
+              className="border-game-border bg-game-bg text-game-text"
+              {...guestForm.register("displayName", {
+                validate: (value) =>
+                  value.trim().length > 0 || "Display name cannot be empty.",
+              })}
+            />
+            <FieldError
+              message={guestForm.formState.errors.displayName?.message}
+            />
+          </div>
+
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={isBusy}
+            className="w-full"
+          >
+            {isBusy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <UserPlus className="size-4" />
+            )}
+            {isBusy ? "Entering..." : "Enter as guest"}
+          </Button>
+        </form>
       ) : (
         <form
+          key={AuthFormMode.SIGN_IN}
           onSubmit={signInForm.handleSubmit(async (values) =>
             onSignIn({
               email: values.email.trim(),
@@ -288,59 +378,6 @@ export function AuthForm({
           </Button>
         </form>
       )}
-
-      <div className="space-y-4 border-t border-game-border/80 pt-4">
-        <div className="space-y-1">
-          <h3 className="text-sm font-semibold">Continue as guest</h3>
-          <p className="text-xs text-game-text-dim">
-            Use a temporary commander name to enter without an account.
-          </p>
-        </div>
-
-        <form
-          onSubmit={guestForm.handleSubmit(async (values) =>
-            onGuestSignIn({
-              displayName: values.displayName.trim(),
-            }),
-          )}
-          className="space-y-4"
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="guest-display-name" className="text-game-text-dim">
-              Display name
-            </Label>
-            <Input
-              id="guest-display-name"
-              autoComplete="nickname"
-              aria-invalid={
-                guestForm.formState.errors.displayName ? true : undefined
-              }
-              className="border-game-border bg-game-bg text-game-text"
-              {...guestForm.register("displayName", {
-                validate: (value) =>
-                  value.trim().length > 0 || "Display name cannot be empty.",
-              })}
-            />
-            <FieldError
-              message={guestForm.formState.errors.displayName?.message}
-            />
-          </div>
-
-          <Button
-            type="submit"
-            variant="outline"
-            disabled={isBusy}
-            className="w-full"
-          >
-            {isBusy ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <UserPlus className="size-4" />
-            )}
-            {isBusy ? "Entering..." : "Enter as guest"}
-          </Button>
-        </form>
-      </div>
     </section>
   );
 }

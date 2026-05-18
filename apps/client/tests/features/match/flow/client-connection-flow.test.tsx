@@ -33,6 +33,7 @@ import { resetQueueConnectionsForTesting } from "#/features/game/api/use-queue-r
 import { resetSetupConnectionsForTesting } from "#/features/game/api/use-setup-room";
 import { QueuePage } from "#/features/game/pages/queue-page";
 import { HttpRequestError } from "#/infra/network/provider/colyseus";
+import { RoomStatus } from "#/infra/network/room";
 import { createMockAuth } from "#/tests/helpers/auth";
 import { renderRoute } from "#/tests/helpers/render";
 
@@ -195,14 +196,17 @@ function createRoom({
   state,
   currentState = state,
   emitInitialState = true,
+  recoveryToken = null,
 }: {
   roomId?: string;
   state: unknown;
   currentState?: unknown;
   emitInitialState?: boolean;
+  recoveryToken?: string | null;
 }) {
   const messageHandlers = new Map<string, (payload: unknown) => void>();
   const stateHandlers = new Set<(nextState: unknown) => void>();
+  const statusHandlers = new Set<(status: string, details?: string) => void>();
   const errorHandlers = new Set<(code: number, message?: string) => void>();
   const leaveHandlers = new Set<(code: number, reason?: string) => void>();
   const room = {
@@ -222,6 +226,13 @@ function createRoom({
       messageHandlers.set(type, callback);
       return () => {};
     }),
+    onStatusChange: vi.fn(
+      (callback: (status: string, details?: string) => void) => {
+        statusHandlers.add(callback);
+        return () => statusHandlers.delete(callback);
+      },
+    ),
+    getRecoveryToken: vi.fn().mockReturnValue(recoveryToken),
     onError: vi.fn((callback: (code: number, message?: string) => void) => {
       errorHandlers.add(callback);
       return () => errorHandlers.delete(callback);
@@ -238,6 +249,11 @@ function createRoom({
     },
     emitMessage(type: string, payload: unknown) {
       messageHandlers.get(type)?.(payload);
+    },
+    emitStatus(status: string, details?: string) {
+      for (const callback of statusHandlers) {
+        callback(status, details);
+      }
     },
     emitError(code: number, message?: string) {
       for (const callback of errorHandlers) {
@@ -355,6 +371,125 @@ describe("client room flows", () => {
     expect(networkMocks.joinOrCreate).toHaveBeenCalledWith(ROOM_NAMES.QUEUE, {
       gameMode: GameMode.CLASSIC,
     });
+  });
+
+  it("shows the elapsed queue time at the bottom of the official queue page", async () => {
+    vi.useFakeTimers();
+    const queueRoom = createRoom({
+      state: createState({
+        players: [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+          },
+        ],
+      }),
+    });
+    networkMocks.joinOrCreate.mockResolvedValue(queueRoom);
+
+    render(
+      <AuthContext.Provider value={auth()}>
+        <QueuePage gameMode={GameMode.CLASSIC} onLeave={vi.fn()} />
+      </AuthContext.Provider>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("00:00")).toBeTruthy();
+
+    await act(async () => {
+      vi.advanceTimersByTime(3_000);
+    });
+
+    expect(screen.getByText("00:03")).toBeTruthy();
+  });
+
+  it("keeps queue time running across queue-state updates", async () => {
+    vi.useFakeTimers();
+    const queueRoom = createRoom({
+      state: createState({
+        players: [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+          },
+        ],
+      }),
+    });
+    networkMocks.joinOrCreate.mockResolvedValue(queueRoom);
+
+    render(
+      <AuthContext.Provider value={auth()}>
+        <QueuePage gameMode={GameMode.CLASSIC} onLeave={vi.fn()} />
+      </AuthContext.Provider>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_000);
+    });
+
+    act(() => {
+      queueRoom.emitState(
+        createState({
+          players: [
+            {
+              id: "player-1",
+              displayName: "Nova",
+              color: PLAYER_COLOR_PALETTE[1],
+            },
+            {
+              id: "player-2",
+              displayName: "Rook",
+              color: PLAYER_COLOR_PALETTE[0],
+            },
+          ],
+        }),
+      );
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_000);
+    });
+
+    expect(screen.getByText("00:03")).toBeTruthy();
+  });
+
+  it("leaves the official queue when the queue room disconnects", async () => {
+    const queueRoom = createRoom({
+      state: createState({
+        players: [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+          },
+        ],
+      }),
+    });
+    const onLeave = vi.fn();
+    networkMocks.joinOrCreate.mockResolvedValue(queueRoom);
+
+    render(
+      <AuthContext.Provider value={auth()}>
+        <QueuePage gameMode={GameMode.CLASSIC} onLeave={onLeave} />
+      </AuthContext.Provider>,
+    );
+
+    await screen.findByRole("heading", { name: "Pick Your Color" });
+
+    act(() => {
+      queueRoom.emitStatus(RoomStatus.DISCONNECTED, "connection lost");
+    });
+
+    expect(onLeave).toHaveBeenCalledTimes(1);
   });
 
   it("confirms queue seat reservations before entering match", async () => {

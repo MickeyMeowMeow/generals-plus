@@ -5,6 +5,14 @@ import type {
 
 import type { UnsubscribeFn } from "#/infra/network/types";
 
+export const RoomStatus = {
+  CONNECTED: "connected",
+  DISCONNECTED: "disconnected",
+  ERROR: "error",
+} as const;
+
+export type RoomStatus = (typeof RoomStatus)[keyof typeof RoomStatus];
+
 /**
  * Represents an active connection to a multiplayer match.
  *
@@ -30,6 +38,10 @@ export interface RoomClient<
   onMessage<K extends ExtractMessageKey<Received>>(
     type: K,
     callback: (payload: Received[K]) => void,
+  ): UnsubscribeFn;
+
+  onStatusChange(
+    callback: (status: RoomStatus, details?: string) => void,
   ): UnsubscribeFn;
 
   onError(callback: (code: number, message?: string) => void): UnsubscribeFn;

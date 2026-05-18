@@ -67,8 +67,8 @@ describe("user auth flow", () => {
 
     const user = userEvent.setup();
     await user.click(screen.getByRole("tab", { name: "Register" }));
-    await user.clear(screen.getByLabelText("Username"));
-    await user.type(screen.getByLabelText("Username"), "Nova");
+    await user.clear(screen.getByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Nova");
     await user.type(screen.getByLabelText("Email"), "nova@example.com");
     await user.type(screen.getByLabelText("Password"), "hunter22");
     await user.click(screen.getByRole("button", { name: "Create account" }));
@@ -97,6 +97,7 @@ describe("user auth flow", () => {
     renderRoute("/", auth);
 
     const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "Guest" }));
     await user.clear(screen.getByLabelText("Display name"));
     await user.type(screen.getByLabelText("Display name"), "Nova");
     await user.click(screen.getByRole("button", { name: "Enter as guest" }));

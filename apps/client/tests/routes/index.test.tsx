@@ -24,11 +24,14 @@ describe("index route", () => {
     expect(screen.getByLabelText("Email")).toBeTruthy();
     expect(screen.getByLabelText("Password")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Sign in" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Enter as guest" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Guest" })).toBeTruthy();
   });
 
-  it("shows default guest display name in input", () => {
+  it("shows default guest display name in input", async () => {
     renderRoute("/", createMockAuth());
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "Guest" }));
 
     expect(
       (screen.getByLabelText("Display name") as HTMLInputElement).value,
