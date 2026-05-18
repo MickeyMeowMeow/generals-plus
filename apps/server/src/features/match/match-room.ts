@@ -234,7 +234,7 @@ export class MatchRoom extends Room<{
 
     // Some engine flows can flip the game status during `nextTick()` without
     // returning a fresh result payload here, so derive a minimal final result
-    // from synced room state before disconnecting clients.
+    // from synced room state before closing the room and broadcasting it.
     if (this.game.status === GameStatus.FINISHED) {
       this.finishMatch(this.createFinishedResultFromState());
     }
