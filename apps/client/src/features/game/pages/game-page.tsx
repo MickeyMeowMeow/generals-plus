@@ -163,7 +163,6 @@ export function GamePage({ connection, source }: GamePageProps) {
   const renderGridHeight = renderGrid?.height ?? 0;
 
   const initialCoord = useRef<ICoordinate>(null);
-<<<<<<< HEAD
   const hasInitializedRef = useRef(false);
 
   useEffect(() => {
@@ -173,28 +172,16 @@ export function GamePage({ connection, source }: GamePageProps) {
     let startCoord: ICoordinate | null = null;
 
     // 1. Try to find a General
-=======
-
-  useEffect(() => {
-    if (initialCoord.current || !renderGrid || !currentPlayer) return;
-
-    // Find the general's coordinate
->>>>>>> fb45232 (feat(client/game): optimize the display of the viewport (#110))
     for (const cell of renderGrid) {
       if (
         cell.terrain === Terrain.GENERAL &&
         cell.ownerIndex === currentPlayer.id
       ) {
-<<<<<<< HEAD
         startCoord = cell.coordinate;
-=======
-        initialCoord.current = cell.coordinate;
->>>>>>> fb45232 (feat(client/game): optimize the display of the viewport (#110))
         break;
       }
     }
 
-<<<<<<< HEAD
     // 2. Fallback to any owned spawn cell (like the starting city in Domination)
     if (!startCoord) {
       for (const cell of renderGrid) {
@@ -210,10 +197,6 @@ export function GamePage({ connection, source }: GamePageProps) {
       setSelection(startCoord);
       hasInitializedRef.current = true;
     }
-=======
-    // Selection starts on the general by default, if found
-    setSelection(initialCoord.current);
->>>>>>> fb45232 (feat(client/game): optimize the display of the viewport (#110))
   }, [renderGrid, currentPlayer]);
 
   const handleSelectCell = useCallback(
@@ -325,15 +308,10 @@ export function GamePage({ connection, source }: GamePageProps) {
   const isPlayerEliminated =
     currentPlayer?.status === PlayerStatus.ELIMINATED && !gameResult;
   const isReadOnly =
-<<<<<<< HEAD
     isViewingAsSpectator ||
     Boolean(gameResult) ||
     isPlayerEliminated ||
     Boolean(disconnectMessage);
-=======
-    isViewingAsSpectator || gameResult !== null || isPlayerEliminated;
-
->>>>>>> fb45232 (feat(client/game): optimize the display of the viewport (#110))
   const winnerId = gameResult?.winnerTeamId
     ? Array.from(gameState.publicPlayers.values()).find(
         (p) => p.teamId === gameResult.winnerTeamId,
@@ -342,7 +320,7 @@ export function GamePage({ connection, source }: GamePageProps) {
   const winnerName = winnerId ? playerNames.get(winnerId) : null;
   const didWin = Boolean(
     gameResult?.winnerTeamId &&
-      currentPlayer?.teamId === gameResult.winnerTeamId,
+    currentPlayer?.teamId === gameResult.winnerTeamId,
   );
   const activeModal = disconnectMessage
     ? null
