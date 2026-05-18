@@ -1,6 +1,7 @@
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { Toaster } from "#/components/ui/sonner";
 import { APP_TITLE } from "#/config/ui-constants";
 import { cn } from "#/lib/utils";
 
@@ -16,6 +17,7 @@ export function Stage({ children }: { children: ReactNode }) {
       <div className="relative flex min-h-svh flex-col px-2 sm:px-6 lg:px-8">
         {children}
       </div>
+      <Toaster closeButton position="bottom-right" />
     </main>
   );
 }
