@@ -15,11 +15,11 @@ import type {
 import { PlayerStatus } from "#/domain/player/player-status";
 
 export class DominationGame extends BaseGame implements IDominationGame {
-  public readonly mode = GameMode.DOMINATION;
+  readonly mode = GameMode.DOMINATION;
   private readonly combatResolver = new StandardCombatResolver();
 
-  public readonly targetScore: number = 1000;
-  public readonly teamScores = new Map<string, number>();
+  readonly targetScore: number = 1000;
+  readonly teamScores = new Map<string, number>();
 
   private readonly MAX_TICKS = 600; // 5 minutes
   private readonly flagHoldState = new Map<
@@ -27,7 +27,7 @@ export class DominationGame extends BaseGame implements IDominationGame {
     { teamId: string; ticks: number }
   >();
 
-  public startGame(): void {
+  startGame(): void {
     super.startGame();
     this.assignStartPositions(Terrain.CITY); // Start positions are normal cities
 
@@ -99,7 +99,7 @@ export class DominationGame extends BaseGame implements IDominationGame {
     }
   }
 
-  public nextTick(): void {
+  nextTick(): void {
     if (this.status !== GameStatus.PLAYING) {
       return;
     }
@@ -166,7 +166,7 @@ export class DominationGame extends BaseGame implements IDominationGame {
     return null;
   }
 
-  public getScoreboard(): IDominationScoreboard {
+  getScoreboard(): IDominationScoreboard {
     const baseScores = this.calculateBaseScores();
     const players = Array.from(baseScores.entries()).map(
       ([playerId, score]) => ({
