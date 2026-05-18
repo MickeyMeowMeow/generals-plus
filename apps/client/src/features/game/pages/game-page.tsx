@@ -98,6 +98,7 @@ export function GamePage({ connection, source }: GamePageProps) {
     gameState,
     gameResult,
     sendMove,
+    clearMoveQueue,
     playerColors,
     playerNames,
     connectionStatus,
@@ -195,6 +196,7 @@ export function GamePage({ connection, source }: GamePageProps) {
         moveQueue={moveQueue}
         onSelectCell={handleSelectCell}
         onQueueMove={handleQueueMove}
+        onClearMoveQueue={clearMoveQueue}
         playerColors={playerColors}
       />
 
