@@ -1,6 +1,6 @@
 import type { GameMode } from "@generals-plus/engine";
 import { QueueClientMessage } from "@generals-plus/shared-types";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
@@ -44,21 +44,29 @@ export function QueuePage({
   const displayName = useUser((user) => user?.displayName ?? "Commander");
   const modeLabel = getModeOption(gameMode)?.label ?? gameMode;
   const [queueSeconds, setQueueSeconds] = useState(0);
+  const queueStartedAtRef = useRef<number | null>(null);
+  const isQueued = !isConnecting && Boolean(queueState) && !seatReservation;
 
   useEffect(() => {
-    if (isConnecting || !queueState || seatReservation) {
+    if (!isQueued) {
+      queueStartedAtRef.current = null;
       setQueueSeconds(0);
       return;
     }
 
+    if (queueStartedAtRef.current === null) {
+      queueStartedAtRef.current = Date.now();
+    }
+
     const timer = window.setInterval(() => {
-      setQueueSeconds((seconds) => seconds + 1);
+      const startedAt = queueStartedAtRef.current ?? Date.now();
+      setQueueSeconds(Math.floor((Date.now() - startedAt) / 1_000));
     }, 1_000);
 
     return () => {
       window.clearInterval(timer);
     };
-  }, [isConnecting, queueState, seatReservation]);
+  }, [isQueued]);
 
   useEffect(() => {
     if (!status || seatReservation) return;

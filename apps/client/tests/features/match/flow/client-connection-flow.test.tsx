@@ -387,6 +387,61 @@ describe("client room flows", () => {
     expect(screen.getByText("00:03")).toBeTruthy();
   });
 
+  it("keeps queue time running across queue-state updates", async () => {
+    vi.useFakeTimers();
+    const queueRoom = createRoom({
+      state: createState({
+        players: [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+          },
+        ],
+      }),
+    });
+    networkMocks.joinOrCreate.mockResolvedValue(queueRoom);
+
+    render(
+      <AuthContext.Provider value={auth()}>
+        <QueuePage gameMode={GameMode.CLASSIC} onLeave={vi.fn()} />
+      </AuthContext.Provider>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_000);
+    });
+
+    act(() => {
+      queueRoom.emitState(
+        createState({
+          players: [
+            {
+              id: "player-1",
+              displayName: "Nova",
+              color: PLAYER_COLOR_PALETTE[1],
+            },
+            {
+              id: "player-2",
+              displayName: "Rook",
+              color: PLAYER_COLOR_PALETTE[0],
+            },
+          ],
+        }),
+      );
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_000);
+    });
+
+    expect(screen.getByText("00:03")).toBeTruthy();
+  });
+
   it("leaves the official queue when the queue room disconnects", async () => {
     const queueRoom = createRoom({
       state: createState({
