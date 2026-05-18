@@ -6,9 +6,14 @@ export { PublicPlayer } from "#/schema/public-player";
 export { QueuePlayer, QueueState } from "#/schema/queue-state";
 export {
   BaseScoreboard,
+  BaseScoreboardPlayerEntry,
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
-  ScoreboardPlayerEntry,
+  DominationScoreboard,
+  TroopLandScoreboard,
+  TroopLandScoreboardPlayerEntry,
+  TurfWarScoreboard,
+  TurfWarScoreboardTeamEntry,
 } from "#/schema/scoreboard";
 export { SetupPlayer, SetupState } from "#/schema/setup-state";
 export { ClientVision } from "#/schema/vision-cell";

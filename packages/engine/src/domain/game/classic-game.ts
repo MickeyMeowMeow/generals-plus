@@ -120,7 +120,7 @@ export class ClassicGame extends BaseGame implements IClassicGame {
         playerId,
         troops: score.troops,
         land: score.land,
-        isGeneralAlive: generals.has(playerId),
+        isAlive: generals.has(playerId),
       }),
     );
 

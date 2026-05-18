@@ -121,7 +121,7 @@ export interface IClassicScoreboard extends IBaseScoreboard {
     readonly playerId: string;
     readonly troops: number;
     readonly land: number;
-    readonly isGeneralAlive: boolean;
+    readonly isAlive: boolean;
   }>;
 }
 

@@ -1,23 +1,15 @@
-import type {
-  BaseScoreboard,
-  Player,
-  ScoreboardPlayerEntry,
-} from "@generals-plus/shared-types";
+import type { BaseScoreboard } from "@generals-plus/shared-types";
+import type { CSSProperties } from "react";
 
 import { FloatingHud } from "#/components/layout";
+import { Separator } from "#/components/ui/separator";
 import { colorToHex } from "#/features/game/components/room-controls";
 import { TimerBar } from "#/features/game/components/timer-bar";
-import { cn } from "#/lib/utils";
-
-interface GameHudPlayer {
-  id: string;
-  displayName: string;
-  teamId: string;
-  color: number;
-  land: number;
-  troops: number;
-  isCurrent: boolean;
-}
+import type {
+  GameHudColumn,
+  GameHudRow,
+} from "#/features/match/utils/scoreboard-adapter";
+import { createGameHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
 
 interface TimerProps {
   currentTick: number;
@@ -26,196 +18,157 @@ interface TimerProps {
 }
 
 interface GameHudProps {
+  /** Authoritative scoreboard schema from the match room state. */
   scoreboard: BaseScoreboard;
-  visiblePlayers: Iterable<Player>;
-  playerColors: Map<string, number>;
-  playerNames: Map<string, string>;
-  currentSessionId: string | null | undefined;
-  totalSeconds?: number;
-  remainingSeconds?: number;
   timer?: TimerProps;
 }
 
-function getScoreEntries(scoreboard: BaseScoreboard) {
-  const players = (
-    scoreboard as { players?: Iterable<ScoreboardPlayerEntry> } | undefined
-  )?.players;
-
-  return players
-    ? Array.from(players, (entry) => ({
-        playerId: entry.playerId,
-        land: entry.land,
-        troops: entry.troops,
-      }))
-    : [];
+/**
+ * Builds the CSS grid template for score headers and aggregate rows.
+ */
+function getScoreboardGridStyle(columnCount: number): CSSProperties {
+  return {
+    gridTemplateColumns: `minmax(0, 1fr) repeat(${columnCount}, minmax(2.5rem, auto))`,
+  };
 }
 
-function getHudPlayers({
-  scoreboard,
-  visiblePlayers,
-  playerColors,
-  playerNames,
-  currentSessionId,
-}: Pick<
-  GameHudProps,
-  | "scoreboard"
-  | "visiblePlayers"
-  | "playerColors"
-  | "playerNames"
-  | "currentSessionId"
->): GameHudPlayer[] {
-  const scoreEntries = getScoreEntries(scoreboard);
-  const scoreByPlayer = new Map(
-    scoreEntries.map((entry) => [entry.playerId, entry]),
-  );
-  const playersById = new Map(
-    Array.from(visiblePlayers).map((player) => [player.id, player]),
-  );
-  const playerIds = new Set([
-    ...scoreEntries.map((entry) => entry.playerId),
-    ...Array.from(playersById.keys()),
-  ]);
-
-  return Array.from(playerIds)
-    .map((playerId) => {
-      const player = playersById.get(playerId);
-      const score = scoreByPlayer.get(playerId);
-      return {
-        id: playerId,
-        displayName:
-          player?.displayName || playerNames.get(playerId) || playerId,
-        teamId: player?.teamId || "",
-        color: player?.color ?? playerColors.get(playerId) ?? 0,
-        land: score?.land ?? 0,
-        troops: score?.troops ?? 0,
-        isCurrent: player?.sessionId === currentSessionId,
-      };
-    })
-    .sort(
-      (a, b) =>
-        b.troops - a.troops || a.displayName.localeCompare(b.displayName),
-    );
+/**
+ * Builds the CSS grid template for player rows, including the color swatch.
+ */
+function getPlayerGridStyle(columnCount: number): CSSProperties {
+  return {
+    gridTemplateColumns: `auto minmax(0, 1fr) repeat(${columnCount}, minmax(2.5rem, auto))`,
+  };
 }
 
-function groupPlayers(players: GameHudPlayer[]) {
-  const playerGroups = new Map<
-    string,
-    {
-      label: string;
-      land: number;
-      troops: number;
-      players: GameHudPlayer[];
-    }
-  >();
-
-  for (const player of players) {
-    const teamId = player.teamId || player.id;
-    const group = playerGroups.get(teamId) ?? {
-      label: player.teamId ? `Team ${player.teamId}` : "Unassigned",
-      land: 0,
-      troops: 0,
-      players: [],
-    };
-
-    group.land += player.land;
-    group.troops += player.troops;
-    group.players.push(player);
-    playerGroups.set(teamId, group);
-  }
-
-  return Array.from(playerGroups.entries())
-    .map(([teamId, group]) => ({ teamId, ...group }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+/**
+ * Normalizes missing HUD metric values to an empty cell.
+ */
+function formatValue(value: number | string | undefined) {
+  return value ?? "";
 }
 
-function PlayerRow({ player }: { player: GameHudPlayer }) {
+/**
+ * Renders metric cells in the same order as the active HUD columns.
+ */
+function MetricCells({
+  columns,
+  values,
+}: {
+  columns: GameHudColumn[];
+  values: Record<string, number | string> | undefined;
+}) {
+  return columns.map((column) => (
+    <span key={column.key} className="text-right tabular-nums">
+      {formatValue(values?.[column.key])}
+    </span>
+  ));
+}
+
+/**
+ * Renders one player entry for the match HUD scoreboard.
+ */
+function PlayerRow({
+  columns,
+  player,
+}: {
+  columns: GameHudColumn[];
+  player: GameHudRow;
+}) {
   return (
     <li
-      className={cn(
-        "grid grid-cols-[auto_1fr_2.5rem_3.25rem] items-center gap-1.5 text-[11px]",
-        player.isCurrent && "font-semibold",
-      )}
+      className="grid items-center gap-1.5 text-[11px]"
+      style={getPlayerGridStyle(columns.length)}
     >
       <span
         className="size-2"
         style={{ backgroundColor: colorToHex(player.color) }}
       />
-      <span className="truncate">{player.displayName}</span>
-      <span className="text-right tabular-nums text-game-text-dim">
-        {player.land}
-      </span>
-      <span className="text-right tabular-nums">{player.troops}</span>
+      <span className="truncate">{player.label}</span>
+      <MetricCells columns={columns} values={player.values} />
     </li>
   );
 }
 
-export function GameHud({
-  scoreboard,
-  visiblePlayers,
-  playerColors,
-  playerNames,
-  currentSessionId,
-  timer,
-}: GameHudProps) {
-  const players = getHudPlayers({
-    scoreboard,
-    visiblePlayers,
-    playerColors,
-    playerNames,
-    currentSessionId,
-  });
-  const groupedPlayers = groupPlayers(players);
-  const shouldShowTeamRows = groupedPlayers.some(
-    (group) => group.players.length > 1,
+/**
+ * Floating in-game HUD for connection state and mode-specific scoreboard data.
+ */
+export function GameHud({ scoreboard, timer }: GameHudProps) {
+  const scoreboardModel = createGameHudScoreboardModel(scoreboard);
+  const shouldShowGroupRows = scoreboardModel.groups.some(
+    (group) => group.rows.length > 1 || "score" in (group.totals ?? {}),
   );
+  const ungroupedRows = scoreboardModel.groups.flatMap((group) => group.rows);
+  const shouldShowTimer =
+    timer && timer.targetTick > 0 && timer.tickInterval > 0;
 
   return (
     <FloatingHud>
       <div className="space-y-2.5">
-        <div className="space-y-2">
-          {timer && (
+        {shouldShowTimer ? (
+          <>
             <TimerBar
               currentTick={timer.currentTick}
               targetTick={timer.targetTick}
               tickInterval={timer.tickInterval}
             />
-          )}
+            <Separator className="bg-game-border/70" />
+          </>
+        ) : null}
 
-          <div className="grid grid-cols-[1fr_2.5rem_3.25rem] gap-1.5 text-[9px] uppercase text-game-text-dim">
+        <div className="space-y-2">
+          <div
+            className="grid gap-1.5 text-[9px] uppercase text-game-text-dim"
+            style={getScoreboardGridStyle(scoreboardModel.columns.length)}
+          >
             <h2 className="text-xs font-semibold normal-case text-game-text">
-              Players
+              {scoreboardModel.title}
             </h2>
-            <span className="self-end text-right">Land</span>
-            <span className="self-end text-right">Soldiers</span>
+            {scoreboardModel.columns.map((column) => (
+              <span key={column.key} className="self-end text-right">
+                {column.label}
+              </span>
+            ))}
           </div>
 
-          {shouldShowTeamRows ? (
-            groupedPlayers.map((group) => (
+          {shouldShowGroupRows ? (
+            scoreboardModel.groups.map((group) => (
               <section
-                key={group.teamId}
+                key={group.id}
                 className="border-t border-game-border/70 pt-1.5"
               >
-                <div className="grid grid-cols-[1fr_2.5rem_3.25rem] gap-1.5 text-[10px] font-semibold uppercase tracking-wide">
+                <div
+                  className="grid gap-1.5 text-[10px] font-semibold uppercase tracking-wide"
+                  style={getScoreboardGridStyle(scoreboardModel.columns.length)}
+                >
                   <span className="truncate text-game-text-dim">
                     {group.label}
                   </span>
-                  <span className="text-right tabular-nums">{group.land}</span>
-                  <span className="text-right tabular-nums">
-                    {group.troops}
-                  </span>
+                  <MetricCells
+                    columns={scoreboardModel.columns}
+                    values={group.totals}
+                  />
                 </div>
 
                 <ul className="mt-1.5 space-y-0.5">
-                  {group.players.map((player) => (
-                    <PlayerRow key={player.id} player={player} />
+                  {group.rows.map((player) => (
+                    <PlayerRow
+                      key={player.id}
+                      columns={scoreboardModel.columns}
+                      player={player}
+                    />
                   ))}
                 </ul>
               </section>
             ))
           ) : (
             <ul className="space-y-0.5 border-t border-game-border/70 pt-1.5">
-              {players.map((player) => (
-                <PlayerRow key={player.id} player={player} />
+              {ungroupedRows.map((player) => (
+                <PlayerRow
+                  key={player.id}
+                  columns={scoreboardModel.columns}
+                  player={player}
+                />
               ))}
             </ul>
           )}
