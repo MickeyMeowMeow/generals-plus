@@ -219,6 +219,20 @@ function createPlayerRows(scoreboard: BaseScoreboard): GameHudRow[] {
 }
 
 /**
+ * Prettifies raw team identifiers (e.g. "team_0" -> "Team 1").
+ */
+function formatTeamLabel(teamId: string): string {
+  if (teamId.startsWith("team_")) {
+    const numPart = teamId.substring("team_".length);
+    const num = Number.parseInt(numPart, 10);
+    if (!Number.isNaN(num)) {
+      return `Team ${num + 1}`;
+    }
+  }
+  return `Team ${teamId}`;
+}
+
+/**
  * Groups player rows by team and computes troop/land totals for each group.
  */
 function createTeamGroups(rows: GameHudRow[]) {
@@ -228,7 +242,7 @@ function createTeamGroups(rows: GameHudRow[]) {
     const teamId = row.teamId || row.id;
     const group = groups.get(teamId) ?? {
       id: teamId,
-      label: row.teamId ? `Team ${teamId}` : "Unassigned",
+      label: row.teamId ? formatTeamLabel(row.teamId) : "Unassigned",
       totals: { land: 0, troops: 0 },
       rows: [],
     };
@@ -248,6 +262,20 @@ function createTeamGroups(rows: GameHudRow[]) {
 }
 
 /**
+ * Detects whether the scoreboard is a team game by checking if any teamId is
+ * shared by more than one player.
+ */
+function checkHasTeams(rows: GameHudRow[]): boolean {
+  const teamCounts = new Map<string, number>();
+  for (const row of rows) {
+    if (row.teamId) {
+      teamCounts.set(row.teamId, (teamCounts.get(row.teamId) ?? 0) + 1);
+    }
+  }
+  return Array.from(teamCounts.values()).some((count) => count > 1);
+}
+
+/**
  * Creates a HUD model for modes whose scoreboard is based on land and soldiers.
  */
 function createTroopLandModel(
@@ -255,6 +283,7 @@ function createTroopLandModel(
   scoreboard: BaseScoreboard,
 ): GameHudScoreboardModel {
   const rows = createPlayerRows(scoreboard);
+  const hasTeams = checkHasTeams(rows);
   return {
     title,
     columns: troopLandColumns,
@@ -263,7 +292,7 @@ function createTroopLandModel(
         Number(b.totals?.troops ?? 0) - Number(a.totals?.troops ?? 0) ||
         a.label.localeCompare(b.label),
     ),
-    hasTeams: false,
+    hasTeams,
   };
 }
 
