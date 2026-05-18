@@ -80,6 +80,12 @@ class ColyseusRoomAdapter<
   }
 }
 
+<<<<<<< HEAD
+=======
+/**
+ * Implementation of `NetworkProvider` for the Colyseus SDK.
+ */
+>>>>>>> 7d07302 (refactor: remove unused HttpRequestError class)
 export class ColyseusNetworkProvider<User = unknown>
   implements NetworkProvider<User>
 {
