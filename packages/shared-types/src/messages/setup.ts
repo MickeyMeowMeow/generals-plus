@@ -1,11 +1,13 @@
 import type { MessagePayload } from "#/messages";
+import type { ToastMessage } from "#/messages/common";
 import type { SeatReservation } from "#/seat";
 import type { SetupSettings } from "#/setup-settings";
 
+export type { ToastMessage } from "#/messages/common";
+
 export type SetupValidationField = keyof SetupSettings | "color" | "players";
 
-export interface SetupValidationFailedMessage {
-  message: string;
+export interface SetupValidationFailedMessage extends ToastMessage {
   field?: SetupValidationField;
 }
 

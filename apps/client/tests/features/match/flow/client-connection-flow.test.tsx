@@ -42,8 +42,13 @@ const networkMocks = vi.hoisted(() => ({
   restoreSession: vi.fn(),
 }));
 
-const { toastWarningMock } = vi.hoisted(() => ({
-  toastWarningMock: vi.fn(),
+const { toastMock } = vi.hoisted(() => ({
+  toastMock: {
+    info: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 vi.mock("#/infra/network/provider", () => ({
@@ -56,7 +61,7 @@ vi.mock("sonner", async () => {
     ...actual,
     toast: {
       ...actual.toast,
-      warning: toastWarningMock,
+      ...toastMock,
     },
   };
 });
@@ -235,7 +240,7 @@ describe("client room flows", () => {
     resetGameConnectionsForTesting();
     resetQueueConnectionsForTesting();
     resetSetupConnectionsForTesting();
-    toastWarningMock.mockReset();
+    toastMock.warning.mockReset();
     networkMocks.resolveCustomRoom.mockImplementation(
       async (customRoomKey: string) => ({
         customRoomKey,
@@ -565,13 +570,14 @@ describe("client room flows", () => {
 
     act(() => {
       setupRoom.emitMessage(SetupServerMessage.VALIDATION_FAILED, {
+        severity: "warning",
         field: "mapWidth",
         message: "Map width is below the allowed minimum.",
       });
     });
 
     await waitFor(() => {
-      expect(toastWarningMock).toHaveBeenCalledWith("Settings not applied", {
+      expect(toastMock.warning).toHaveBeenCalledWith("Settings not applied", {
         description: "Map width is below the allowed minimum.",
         duration: 5_000,
       });
@@ -579,15 +585,16 @@ describe("client room flows", () => {
 
     act(() => {
       setupRoom.emitMessage(SetupServerMessage.VALIDATION_FAILED, {
+        severity: "warning",
         field: "mapHeight",
         message: "Map height is below the allowed minimum.",
       });
     });
 
     await waitFor(() => {
-      expect(toastWarningMock).toHaveBeenCalledTimes(2);
+      expect(toastMock.warning).toHaveBeenCalledTimes(2);
     });
-    expect(toastWarningMock).toHaveBeenNthCalledWith(
+    expect(toastMock.warning).toHaveBeenNthCalledWith(
       2,
       "Settings not applied",
       {

@@ -127,6 +127,7 @@ describe("SetupRoom", () => {
     await messagePromise;
 
     expect(sendSpy).toHaveBeenCalledWith(SetupServerMessage.VALIDATION_FAILED, {
+      severity: "warning",
       field: "maxPlayers",
       message: "Max players must be at least 2.",
     });

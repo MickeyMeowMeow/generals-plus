@@ -98,7 +98,7 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
 
   useEffect(() => {
     if (!validationError) return;
-    toast.warning("Settings not applied", {
+    toast[validationError.severity]("Settings not applied", {
       description: validationError.message,
       duration: 5_000,
     });

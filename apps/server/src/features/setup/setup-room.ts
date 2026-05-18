@@ -191,14 +191,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           update.playersPerTeam ?? this.state.playersPerTeam;
         if (activePlayersPerTeam >= activeMaxPlayers) {
           this.sendValidationFailed(client, {
-            field: "playersPerTeam",
+            severity: "warning",
             message: "Players per team must be less than max players.",
           });
           return;
         }
         if (activeMaxPlayers < this.state.players.length) {
           this.sendValidationFailed(client, {
-            field: "maxPlayers",
+            severity: "warning",
             message:
               "Max players cannot be lower than the players already here.",
           });
@@ -213,7 +213,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           update.mountainRate ?? this.state.mountainRate;
         if (activeCityRate + activeMountainRate > 1) {
           this.sendValidationFailed(client, {
-            field: "mountainRate",
+            severity: "warning",
             message: "Mountain rate and city rate must add up to 1.0 or less.",
           });
           return;
@@ -255,7 +255,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
       if (this.state.players.length < 2) {
         this.sendValidationFailed(client, {
-          field: "players",
+          severity: "warning",
           message: "Need at least 2 players to start.",
         });
         return;
@@ -265,7 +265,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         Math.ceil(this.state.players.length / this.state.playersPerTeam) < 2
       ) {
         this.sendValidationFailed(client, {
-          field: "playersPerTeam",
+          severity: "warning",
           message:
             "Players per team is too high; the room needs at least two teams to start.",
         });
@@ -281,6 +281,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           }`,
         );
         this.sendValidationFailed(client, {
+          severity: "warning",
           message:
             "Those map settings cannot start a game. Try a larger map, fewer mountains, or a lower minimum general distance.",
         });
@@ -311,6 +312,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
       if (!isPaletteColor(message.color)) {
         this.sendValidationFailed(client, {
+          severity: "warning",
           field: "color",
           message: "Choose one of the available colors.",
         });
@@ -322,6 +324,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       );
       if (taken) {
         this.sendValidationFailed(client, {
+          severity: "warning",
           field: "color",
           message: "That color is already taken.",
         });
@@ -356,6 +359,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     switch (issue.code) {
       case "invalid_type":
         return {
+          severity: "warning",
           field,
           message:
             typeof issue.expected === "string"
@@ -364,6 +368,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         };
       case "too_small":
         return {
+          severity: "warning",
           field,
           message:
             issue.minimum === undefined
@@ -372,6 +377,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         };
       case "too_big":
         return {
+          severity: "warning",
           field,
           message:
             issue.maximum === undefined
@@ -379,11 +385,22 @@ export class SetupRoom extends Room<{ state: SetupState }> {
               : `${label} must be at most ${issue.maximum}.`,
         };
       case "invalid_value":
-        return { field, message: `${label} is not supported.` };
+        return {
+          severity: "warning",
+          field,
+          message: `${label} is not supported.`,
+        };
       case "unrecognized_keys":
-        return { message: "Settings include an unsupported field." };
+        return {
+          severity: "warning",
+          message: "Settings include an unsupported field.",
+        };
       default:
-        return { field, message: `${label}: ${issue.message}` };
+        return {
+          severity: "warning",
+          field,
+          message: `${label}: ${issue.message}`,
+        };
     }
   }
 

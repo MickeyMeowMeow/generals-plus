@@ -41,11 +41,6 @@ interface SetupRoomOptions {
   roomId?: string;
 }
 
-interface SetupValidationToast {
-  message: string;
-  field?: SetupValidationFailedMessage["field"];
-}
-
 /**
  * Clone only setup states that have received their required schema containers.
  *
@@ -144,7 +139,7 @@ export function useSetupRoom({
     useState<SeatReservation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [validationError, setValidationError] =
-    useState<SetupValidationToast | null>(null);
+    useState<SetupValidationFailedMessage | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
@@ -199,6 +194,7 @@ export function useSetupRoom({
             SetupServerMessage.VALIDATION_FAILED,
             (message) => {
               setValidationError({
+                severity: message.severity,
                 message: message.message,
                 field: message.field,
               });
