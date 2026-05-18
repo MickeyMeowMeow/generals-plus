@@ -42,7 +42,13 @@ function formatValue(value: number | string | undefined) {
 export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
   const scoreboardModel = createGameHudScoreboardModel(scoreboard, targetScore);
   const shouldShowGroupRows = scoreboardModel.hasTeams;
-  const ungroupedRows = scoreboardModel.groups.flatMap((group) => group.rows);
+  const ungroupedRows = scoreboardModel.groups
+    .flatMap((group) => group.rows)
+    .sort(
+      (a, b) =>
+        Number(b.values.troops) - Number(a.values.troops) ||
+        a.label.localeCompare(b.label),
+    );
   const shouldShowTimer =
     timer && timer.targetTick > 0 && timer.tickInterval > 0;
 
