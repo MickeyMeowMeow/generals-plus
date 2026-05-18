@@ -59,7 +59,10 @@ export class ClassicGame extends BaseGame implements IClassicGame {
   }
 
   protected executeAction(action: Action): boolean {
-    if (action.type !== ActionType.MOVE) {
+    if (
+      action.type !== ActionType.MOVE &&
+      action.type !== ActionType.SPLIT_MOVE
+    ) {
       return false;
     }
     const success = this.combatResolver.execute(

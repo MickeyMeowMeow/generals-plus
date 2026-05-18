@@ -1,3 +1,4 @@
+import { ActionType } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import { useCallback } from "react";
@@ -39,9 +40,9 @@ function getArrowPosition(move: MoveIntent, stride: number) {
   return { edgeX, edgeY, rotation };
 }
 
-function createArrowPoints(): { x: number; y: number }[] {
+function createArrowPoints(thicknessRatio = 1): { x: number; y: number }[] {
   const halfLength = RenderConfig.arrowLength / 2;
-  const halfThickness = RenderConfig.arrowThickness / 2;
+  const halfThickness = (RenderConfig.arrowThickness * thicknessRatio) / 2;
   const headSize = RenderConfig.arrowHeadSize;
 
   // Define a right-pointing arrow centered at (0,0)
@@ -55,6 +56,25 @@ function createArrowPoints(): { x: number; y: number }[] {
     { x: halfLength - headSize, y: halfThickness }, // Shoulder bottom
     { x: -halfLength, y: halfThickness }, // Back bottom
   ];
+}
+
+function transformArrowPoints(
+  points: { x: number; y: number }[],
+  edgeX: number,
+  edgeY: number,
+  rotation: number,
+  offset = 0,
+) {
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+
+  return points.map(({ x, y }) => {
+    const localY = y + offset;
+    return {
+      x: x * cos - localY * sin + edgeX,
+      y: x * sin + localY * cos + edgeY,
+    };
+  });
 }
 
 interface MoveQueueLayerProps {
@@ -74,25 +94,45 @@ export function MoveQueueLayer({ stride, moveQueue }: MoveQueueLayerProps) {
         join: "round",
       });
 
-      // Create the base arrow shape points
+      // Create the base arrow shape points.
       const points = createArrowPoints();
+      const splitPoints = createArrowPoints(0.45);
+      const splitOffset = RenderConfig.arrowThickness * 0.75;
 
       // Draw move queue arrows
       moveQueue.forEach((move) => {
         // Find the center point of the edge between the "from" cell and the target
         const { edgeX, edgeY, rotation } = getArrowPosition(move, stride);
 
-        // Translate and rotate the graphic context to the edge center
-        // WARN: Cosine and sine are computed for each arrow, but this can be optimized by precomputing for each direction since there are only 4 possible rotations.
-        const cos = Math.cos(rotation);
-        const sin = Math.sin(rotation);
+        if (move.type === ActionType.SPLIT_MOVE) {
+          g.poly(
+            transformArrowPoints(
+              splitPoints,
+              edgeX,
+              edgeY,
+              rotation,
+              -splitOffset,
+            ),
+          )
+            .fill(RenderConfig.arrowColor)
+            .stroke();
+          g.poly(
+            transformArrowPoints(
+              splitPoints,
+              edgeX,
+              edgeY,
+              rotation,
+              splitOffset,
+            ),
+          )
+            .fill(RenderConfig.arrowColor)
+            .stroke();
+          return;
+        }
 
-        const transformedPoints = points.map(({ x, y }) => ({
-          x: x * cos - y * sin + edgeX,
-          y: x * sin + y * cos + edgeY,
-        }));
-
-        g.poly(transformedPoints).fill(RenderConfig.arrowColor).stroke();
+        g.poly(transformArrowPoints(points, edgeX, edgeY, rotation))
+          .fill(RenderConfig.arrowColor)
+          .stroke();
       });
     },
     [moveQueue, stride],
