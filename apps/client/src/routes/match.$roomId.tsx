@@ -24,20 +24,20 @@ export default function MatchRoute() {
   /**
    * Snapshot any custom match recovery token during route mount.
    *
-   * The browser URL remains the setup-room URL while the custom match is in
+   * The browser URL remains the stable custom-room URL while the match is in
    * progress. On refresh, this persisted token tells the route to restore the
-   * match room instead of trying to rejoin a setup room that may be disposed.
+   * match room instead of trying to re-resolve setup room state first.
    */
   const [persistedGameSession, setPersistedGameSession] = useState(() =>
     loadPersistedGameSession(),
   );
 
   /**
-   * Custom recovery is valid only for the setup URL that launched the match.
+   * Custom recovery is valid only for the stable room URL that launched the match.
    */
   const customRecoveryToken =
     persistedGameSession?.source.type === "custom" &&
-    persistedGameSession.source.setupRoomId === roomId
+    persistedGameSession.source.customRoomKey === roomId
       ? persistedGameSession.recoveryToken
       : null;
 
@@ -53,7 +53,7 @@ export default function MatchRoute() {
           }}
           source={{
             type: "custom",
-            setupRoomId: roomId,
+            customRoomKey: roomId,
             onReturn: () => {
               setPersistedGameSession(null);
             },

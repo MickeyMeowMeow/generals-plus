@@ -1,4 +1,6 @@
 import type {
+  CustomRoomCreation,
+  CustomRoomResolution,
   MessagePayload,
   SeatReservation,
 } from "@generals-plus/shared-types";
@@ -135,6 +137,10 @@ export interface NetworkProvider<User = unknown> {
     roomName: string,
     options?: Record<string, unknown>,
   ): Promise<RoomClient<State, Sent, Received>>;
+
+  createCustomRoom(): Promise<CustomRoomCreation>;
+
+  resolveCustomRoom(customRoomKey: string): Promise<CustomRoomResolution>;
 
   /**
    * Re-establishes a connection using a previously issued recovery token.
