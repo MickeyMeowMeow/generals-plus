@@ -52,8 +52,7 @@ interface GamePageProps {
  * Only terminal recovery failures should abandon the match URL and return to
  * setup. Transient network failures still need the visible error panel so the
  * user can retry/diagnose without discarding a potentially valid live match.
- */
-/**
+ *
  * Match view rendered after queue/setup hands the client a seat reservation.
  *
  * The page delegates socket ownership and state adaptation to `useGameRoom`,
