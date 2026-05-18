@@ -63,5 +63,4 @@ describe("createGameHudScoreboardModel", () => {
       values: { land: 4, troops: 12 },
     });
   });
-
 });

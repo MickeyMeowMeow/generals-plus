@@ -31,6 +31,22 @@ function createMoveAction(playerId = "p1"): MoveAction {
   };
 }
 
+function getCell(grid: Grid, x: number, y: number): Cell {
+  const cell = grid.get({ x, y });
+  if (!cell) throw new Error(`Cell at ${x},${y} not found`);
+  return cell;
+}
+
+function mustFind<T>(
+  arr: T[],
+  predicate: (item: T) => boolean,
+  label: string,
+): T {
+  const result = arr.find(predicate);
+  if (!result) throw new Error(`mustFind: ${label} not found`);
+  return result;
+}
+
 describe("TurfWarGame", () => {
   it("finishes game when one alive team remains", () => {
     const grid = createGridForTurfWar();
@@ -58,9 +74,9 @@ describe("TurfWarGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    const c0 = grid.get({ x: 0, y: 0 })!;
-    const c1 = grid.get({ x: 1, y: 0 })!;
-    const c2 = grid.get({ x: 2, y: 0 })!;
+    const c0 = getCell(grid, 0, 0);
+    const c1 = getCell(grid, 1, 0);
+    const c2 = getCell(grid, 2, 0);
 
     c0.owner = p1;
     c1.owner = p2;
@@ -100,16 +116,24 @@ describe("TurfWarGame", () => {
       game.players.set(p1.playerId, p1);
       game.players.set(p2.playerId, p2);
 
-      grid.get({ x: 0, y: 0 })!.owner = p1;
-      grid.get({ x: 1, y: 0 })!.owner = p1;
-      grid.get({ x: 3, y: 0 })!.owner = p2;
+      getCell(grid, 0, 0).owner = p1;
+      getCell(grid, 1, 0).owner = p1;
+      getCell(grid, 3, 0).owner = p2;
 
       game.startGame();
 
       const scoreboard = game.getScoreboard();
       // 3 capturable tiles (excludes MOUNTAIN at x:2), t1 owns 2 → 67%, t2 owns 1 → 33%
-      const t1Entry = scoreboard.teams.find((t) => t.teamId === "t1")!;
-      const t2Entry = scoreboard.teams.find((t) => t.teamId === "t2")!;
+      const t1Entry = mustFind(
+        scoreboard.teams,
+        (t) => t.teamId === "t1",
+        "team t1",
+      );
+      const t2Entry = mustFind(
+        scoreboard.teams,
+        (t) => t.teamId === "t2",
+        "team t2",
+      );
 
       expect(t1Entry.playerIds).toEqual(["p1"]);
       expect(t1Entry.landPercent).toBe(67);
@@ -155,9 +179,9 @@ describe("TurfWarGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    const c0 = grid.get({ x: 0, y: 0 })!;
-    const c1 = grid.get({ x: 1, y: 0 })!;
-    const c2 = grid.get({ x: 2, y: 0 })!;
+    const c0 = getCell(grid, 0, 0);
+    const c1 = getCell(grid, 1, 0);
+    const c2 = getCell(grid, 2, 0);
 
     c0.owner = p1;
     c0.troopCount = 10;
