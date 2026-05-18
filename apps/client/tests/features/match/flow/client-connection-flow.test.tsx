@@ -73,7 +73,7 @@ function createSetupState(
   }>,
   overrides: Partial<SetupSettings> = {},
 ) {
-  const settings: SetupSettings = {
+  const settings = {
     gameMode: GameMode.CLASSIC,
     isPublic: false,
     maxPlayers: 8,
@@ -86,8 +86,9 @@ function createSetupState(
     minGeneralDistanceFactor: 0.6,
     generalInitialTroops: 50,
     cityInitialTroops: 50,
+    speed: 1,
     ...overrides,
-  };
+  } as SetupSettings;
 
   return createState({
     ...settings,

@@ -70,7 +70,7 @@ describe("TurfWarGame", () => {
 
     // Fast forward to MAX_TICKS
     // @ts-expect-error - bypassing private modifier
-    game.tick = game.MAX_TICKS - 1;
+    game.tick = game.maxTicks - 1;
     game.nextTick();
 
     expect(game.status).toBe(GameStatus.FINISHED);

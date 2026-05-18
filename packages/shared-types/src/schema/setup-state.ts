@@ -24,4 +24,10 @@ export class SetupState extends Schema {
   @type("number") minGeneralDistanceFactor: number = 0.6;
   @type("number") generalInitialTroops: number = 50;
   @type("number") cityInitialTroops: number = 50;
+
+  @type("number") speed: number = 1;
+  @type("number") duration: number = 1;
+
+  @type("number") tickInterval: number = 500;
+  @type("number") finishTick: number = 360;
 }

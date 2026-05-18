@@ -12,6 +12,7 @@ export interface CreateGameOptions {
   gridOptions?: GridInput;
   playerIds: string[];
   playerPerTeam: number;
+  finishTick?: number;
 }
 
 /**
@@ -51,7 +52,9 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       return game;
     }
     case GameMode.TURF_WAR: {
-      const game = new TurfWarGame(options.gridOptions ?? {});
+      const game = new TurfWarGame(options.gridOptions ?? {}, {
+        finishTick: options.finishTick,
+      });
 
       const teamsCount = Math.ceil(
         options.playerIds.length / options.playerPerTeam,

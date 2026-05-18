@@ -24,6 +24,13 @@ import { createGame } from "#/features/game/utils";
 import { createPlayerInit } from "#/features/player/utils";
 import { setupSettingsUpdateSchema } from "./schemas";
 
+const BASE_TICK_INTERVAL = 500;
+
+const MODE_SETTINGS: Record<string, { finishTick?: number }> = {
+  classic: {},
+  turf_war: { finishTick: 360 },
+};
+
 const DEFAULT_MAX_PLAYERS = 8;
 
 interface SetupRoomOptions {
@@ -167,8 +174,30 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         update.playersPerTeam = getDefaultPlayersPerTeam(update.gameMode);
       }
 
+      // Reset mode-specific defaults when gameMode changes.
+      if (update.gameMode !== undefined) {
+        const modeDefaults = MODE_SETTINGS[update.gameMode];
+        if (update.duration === undefined) {
+          this.state.duration = 1;
+        }
+        if (modeDefaults?.finishTick !== undefined) {
+          this.state.finishTick = modeDefaults.finishTick;
+        }
+      }
+
       // Apply valid updates to state
       Object.assign(this.state, update);
+
+      // Recompute derived values from multipliers.
+      this.state.tickInterval = Math.round(
+        BASE_TICK_INTERVAL / this.state.speed,
+      );
+      if (this.state.gameMode === "turf_war") {
+        const baseFinishTick = MODE_SETTINGS.turf_war.finishTick ?? 360;
+        this.state.finishTick = Math.round(
+          baseFinishTick * this.state.duration,
+        );
+      }
 
       // Synchronize room-level properties and visibility
       if (update.maxPlayers !== undefined) {
@@ -256,6 +285,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       gridOptions: this.getGridOptions(),
       playerIds: this.state.players.map((p) => p.id),
       playerPerTeam: this.state.playersPerTeam,
+      finishTick:
+        this.state.gameMode === "turf_war" ? this.state.finishTick : undefined,
     });
 
     const playerInit = createPlayerInit(this.state.players, game);
@@ -265,6 +296,9 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       game,
       playerInit,
       isPublic: false,
+      tickInterval: this.state.tickInterval,
+      finishTick:
+        this.state.gameMode === "turf_war" ? this.state.finishTick : undefined,
     };
 
     const room = await matchMaker.createRoom(ROOM_NAMES.MATCH, { metadata });

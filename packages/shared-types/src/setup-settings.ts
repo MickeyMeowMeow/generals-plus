@@ -1,6 +1,6 @@
 import type { GameMode } from "@generals-plus/engine";
 
-export interface SetupSettings {
+interface BaseSetupSettings {
   gameMode: GameMode;
   isPublic: boolean;
   maxPlayers: number;
@@ -13,4 +13,13 @@ export interface SetupSettings {
   minGeneralDistanceFactor: number;
   generalInitialTroops: number;
   cityInitialTroops: number;
+  speed: number;
 }
+
+export interface ClassicSetupSettings extends BaseSetupSettings {}
+
+export interface TurfWarSetupSettings extends BaseSetupSettings {
+  duration: number;
+}
+
+export type SetupSettings = ClassicSetupSettings | TurfWarSetupSettings;
