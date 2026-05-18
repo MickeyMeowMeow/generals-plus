@@ -1,5 +1,5 @@
 import { GameMode } from "@generals-plus/engine";
-import type { SetupSettings } from "@generals-plus/shared-types";
+import type { SetupSettings, SetupState } from "@generals-plus/shared-types";
 import { Check, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -20,7 +20,7 @@ interface GameSettingsProps {
   /** Whether the current player can edit setup-room settings. */
   isHost: boolean;
   /** Authoritative setup settings mirrored from the Colyseus room state. */
-  currentSettings: SetupSettings;
+  currentSettings: SetupState;
   /** Sends a validated settings patch to the setup room. */
   onChangeSettings: (settings: Partial<SetupSettings>) => void;
 }

@@ -1,5 +1,5 @@
 import type { ICoordinate } from "@generals-plus/engine";
-import { ActionType, PlayerStatus } from "@generals-plus/engine";
+import { ActionType, GameMode, PlayerStatus } from "@generals-plus/engine";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -266,8 +266,14 @@ export function GamePage({ connection, source }: GamePageProps) {
         scoreboard={gameState.scoreboard}
         timer={{
           currentTick: gameState.tick,
-          targetTick: 0,
-          tickInterval: 0,
+          targetTick:
+            gameState.mode === GameMode.TURF_WAR
+              ? gameState.finishTick > 0
+                ? gameState.finishTick
+                : 0
+              : 0,
+          tickInterval:
+            gameState.mode === GameMode.TURF_WAR ? gameState.tickInterval : 0,
         }}
       />
 

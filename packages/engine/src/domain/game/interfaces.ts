@@ -131,6 +131,7 @@ export interface ITurfWarScoreboard extends IBaseScoreboard {
     readonly playerId: string;
     readonly troops: number;
     readonly land: number;
+    readonly isAlive: boolean;
   }>;
   readonly teams: Array<{
     readonly teamId: string;

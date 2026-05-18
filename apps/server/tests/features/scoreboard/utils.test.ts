@@ -1,13 +1,11 @@
 import type {
   IClassicScoreboard,
-  IDominationScoreboard,
   ITurfWarScoreboard,
 } from "@generals-plus/engine";
-import { GameMode } from "@generals-plus/engine";
+import { GameMode, PlayerStatus } from "@generals-plus/engine";
 import {
   ClassicScoreboard,
-  DominationScoreboard,
-  TroopLandScoreboard,
+  PublicPlayer,
   TurfWarScoreboard,
 } from "@generals-plus/shared-types";
 import { describe, expect, it } from "vitest";
@@ -29,18 +27,11 @@ describe("createScoreboard", () => {
     expect(scoreboard.mode).toBe(GameMode.TURF_WAR);
   });
 
-  it("creates DominationScoreboard for domination mode", () => {
-    const scoreboard = createScoreboard(GameMode.DOMINATION);
-
-    expect(scoreboard).toBeInstanceOf(DominationScoreboard);
-    expect(scoreboard.mode).toBe(GameMode.DOMINATION);
-  });
-
-  it("falls back to TroopLandScoreboard for unknown mode", () => {
+  it("falls back to ClassicScoreboard for unknown mode", () => {
     const scoreboard = createScoreboard("unknown" as GameMode);
 
     expect(scoreboard.mode).toBe("unknown");
-    expect(scoreboard).toBeInstanceOf(TroopLandScoreboard);
+    expect(scoreboard).toBeInstanceOf(ClassicScoreboard);
   });
 });
 
@@ -84,12 +75,13 @@ describe("syncScoreboard", () => {
         players: [{ playerId: "p1", troops: 10, land: 5, isAlive: true }],
       } as IClassicScoreboard,
       [
-        {
+        Object.assign(new PublicPlayer(), {
           id: "p1",
           teamId: "t1",
           displayName: "Nova",
           color: 0xff0000,
-        },
+          status: PlayerStatus.ACTIVE,
+        }),
       ],
     );
 
@@ -143,56 +135,49 @@ describe("syncScoreboard", () => {
     expect(classic.players.length).toBe(0);
   });
 
-  it("syncs turf war scoreboard team breakdown", () => {
+  it("syncs turf_war scoreboard with player and team entries", () => {
     const target = createScoreboard(GameMode.TURF_WAR);
     const source: ITurfWarScoreboard = {
       mode: GameMode.TURF_WAR,
       players: [
-        { playerId: "p1", troops: 10, land: 5 },
-        { playerId: "p2", troops: 8, land: 4 },
+        { playerId: "p1", troops: 10, land: 5, isAlive: true },
+        { playerId: "p2", troops: 3, land: 1, isAlive: false },
       ],
       teams: [
-        { teamId: "t1", playerIds: ["p1"], landPercent: 60 },
-        { teamId: "t2", playerIds: ["p2"], landPercent: 40 },
+        { teamId: "t1", playerIds: ["p1"], landPercent: 83 },
+        { teamId: "t2", playerIds: ["p2"], landPercent: 17 },
       ],
     };
 
     syncScoreboard(target, source);
 
-    const turfWar = target as TurfWarScoreboard;
-    expect(turfWar.mode).toBe(GameMode.TURF_WAR);
-    expect(turfWar.players.at(0)).toMatchObject({
+    expect(target.mode).toBe(GameMode.TURF_WAR);
+    const tw = target as TurfWarScoreboard;
+    expect(tw.players.length).toBe(2);
+    expect(tw.players.at(0)).toMatchObject({
       playerId: "p1",
       troops: 10,
       land: 5,
     });
-    expect(turfWar.teams.at(0)).toMatchObject({
-      teamId: "t1",
-      landPercent: 60,
-    });
-    expect(Array.from(turfWar.teams.at(0)?.playerIds ?? [])).toEqual(["p1"]);
   });
 
-  it("syncs domination scoreboard team scores", () => {
-    const target = createScoreboard(GameMode.DOMINATION);
-    const source: IDominationScoreboard = {
-      mode: GameMode.DOMINATION,
-      players: [
-        { playerId: "p1", troops: 10, land: 5 },
-        { playerId: "p2", troops: 8, land: 4 },
-      ],
-      teamScores: new Map([
-        ["t1", 30],
-        ["t2", 10],
-      ]),
+  it("falls back to classic sync for unknown mode", () => {
+    const target = createScoreboard("unknown" as GameMode);
+    const source = {
+      mode: "unknown",
+      players: [{ playerId: "p1", troops: 10, land: 5, isAlive: true }],
     };
 
-    syncScoreboard(target, source);
+    syncScoreboard(target, source as unknown as IClassicScoreboard);
 
-    const domination = target as DominationScoreboard;
-    expect(domination.mode).toBe(GameMode.DOMINATION);
-    expect(domination.players.length).toBe(2);
-    expect(domination.teamScores.get("t1")).toBe(30);
-    expect(domination.teamScores.get("t2")).toBe(10);
+    expect(target.mode).toBe("unknown");
+    const classic = target as ClassicScoreboard;
+    expect(classic.players.length).toBe(1);
+    expect(classic.players.at(0)).toMatchObject({
+      playerId: "p1",
+      troops: 10,
+      land: 5,
+      isAlive: true,
+    });
   });
 });

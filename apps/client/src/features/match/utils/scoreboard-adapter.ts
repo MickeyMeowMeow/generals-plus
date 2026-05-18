@@ -81,14 +81,18 @@ interface ScoreboardWithTeamScores {
   teamScores?: TeamScoresLike;
 }
 
+interface TurfWarTeamEntryLike {
+  teamId: string;
+  landPercent: number;
+}
+
+interface ScoreboardWithTurfWarTeams {
+  teams?: Iterable<TurfWarTeamEntryLike>;
+}
+
 const troopLandColumns: GameHudColumn[] = [
   { key: "land", label: "Land" },
   { key: "troops", label: "Soldiers" },
-];
-
-const dominationColumns: GameHudColumn[] = [
-  { key: "score", label: "Score" },
-  ...troopLandColumns,
 ];
 
 /**
@@ -114,7 +118,9 @@ function getTroopLandEntries(scoreboard: BaseScoreboard) {
 /**
  * Extracts team scores from either native iterables or Colyseus-style maps.
  */
-function getTeamScoreEntries(scoreboard: BaseScoreboard): TeamScoreEntry[] {
+export function getTeamScoreEntries(
+  scoreboard: BaseScoreboard,
+): TeamScoreEntry[] {
   const teamScores = (scoreboard as ScoreboardWithTeamScores | undefined)
     ?.teamScores;
   if (!teamScores) return [];
@@ -128,6 +134,13 @@ function getTeamScoreEntries(scoreboard: BaseScoreboard): TeamScoreEntry[] {
     entries.push({ teamId, score });
   });
   return entries;
+}
+
+function getTurfWarTeamEntries(
+  scoreboard: BaseScoreboard,
+): TurfWarTeamEntryLike[] {
+  const teams = (scoreboard as ScoreboardWithTurfWarTeams | undefined)?.teams;
+  return teams ? Array.from(teams) : [];
 }
 
 /**
@@ -212,38 +225,34 @@ function createTroopLandModel(
 }
 
 /**
- * Creates a HUD model for Domination, adding team score as the leading metric.
+ * Creates a HUD model for Turf War, showing team land percentages in team labels.
  */
-function createDominationModel(
+function createTurfWarModel(
   scoreboard: BaseScoreboard,
 ): GameHudScoreboardModel {
   const rows = createPlayerRows(scoreboard);
-  const scoreByTeam = new Map(
-    getTeamScoreEntries(scoreboard).map((entry) => [entry.teamId, entry.score]),
+  const landPercentByTeam = new Map(
+    getTurfWarTeamEntries(scoreboard).map((entry) => [
+      entry.teamId,
+      entry.landPercent,
+    ]),
   );
+
   const groups = createTeamGroups(rows).map((group) => {
-    const score = scoreByTeam.get(group.id) ?? 0;
+    const percent = landPercentByTeam.get(group.id) ?? 0;
     return {
       ...group,
-      totals: {
-        score,
-        land: group.totals?.land ?? 0,
-        troops: group.totals?.troops ?? 0,
-      },
-      rows: group.rows.map((row) => ({
-        ...row,
-        values: { score: "", ...row.values },
-      })),
+      label: `${group.label} (${percent}%)`,
     };
   });
 
   return {
     title: "Teams",
-    columns: dominationColumns,
+    columns: troopLandColumns,
     groups: groups.sort(
       (a, b) =>
-        Number(b.totals?.score ?? 0) - Number(a.totals?.score ?? 0) ||
-        a.label.localeCompare(b.label),
+        (landPercentByTeam.get(b.id) ?? 0) -
+          (landPercentByTeam.get(a.id) ?? 0) || a.label.localeCompare(b.label),
     ),
   };
 }
@@ -252,8 +261,7 @@ function createDominationModel(
  * Converts the mode-specific match scoreboard schema into a single HUD model.
  *
  * The adapter keeps mode branching outside of the React component so the HUD can
- * render a stable column/group/row shape for Classic, Turf War, Domination, and
- * future modes.
+ * render a stable column/group/row shape for Classic, Turf War, and future modes.
  */
 export function createGameHudScoreboardModel(
   scoreboard: BaseScoreboard,
@@ -262,9 +270,7 @@ export function createGameHudScoreboardModel(
     case GameMode.CLASSIC:
       return createTroopLandModel("Players", scoreboard);
     case GameMode.TURF_WAR:
-      return createTroopLandModel("Players", scoreboard);
-    case GameMode.DOMINATION:
-      return createDominationModel(scoreboard);
+      return createTurfWarModel(scoreboard);
     default:
       return createTroopLandModel("Players", scoreboard);
   }

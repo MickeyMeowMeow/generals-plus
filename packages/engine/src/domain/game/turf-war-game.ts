@@ -13,12 +13,22 @@ import type {
   ITurfWarGame,
   ITurfWarScoreboard,
 } from "#/domain/game/interfaces";
+import type { GridInput } from "#/domain/grid/grid-generator";
 import { PlayerStatus } from "#/domain/player/player-status";
+
+export interface TurfWarGameOptions {
+  finishTick?: number;
+}
 
 export class TurfWarGame extends BaseGame implements ITurfWarGame {
   readonly mode = GameMode.TURF_WAR;
   private readonly combatResolver = new RespawningCombatResolver();
-  private readonly MAX_TICKS = 360; // 3 minutes at 2 ticks/sec
+  private readonly maxTicks: number;
+
+  constructor(input: GridInput, options?: TurfWarGameOptions) {
+    super(input);
+    this.maxTicks = options?.finishTick ?? 360;
+  }
 
   startGame(): void {
     super.startGame();
@@ -100,8 +110,8 @@ export class TurfWarGame extends BaseGame implements ITurfWarGame {
       };
     }
 
-    // Win condition 2: Time limit reached (3 minutes)
-    if (this.tick >= this.MAX_TICKS) {
+    // Win condition 2: Time limit reached
+    if (this.tick >= this.maxTicks) {
       // Count land per team
       const teamLand = new Map<string, number>();
       this.grid.forEach((cell) => {
@@ -142,6 +152,7 @@ export class TurfWarGame extends BaseGame implements ITurfWarGame {
         playerId,
         troops: score.troops,
         land: score.land,
+        isAlive: this.players.get(playerId)?.status === PlayerStatus.ACTIVE,
       }),
     );
 

@@ -51,8 +51,12 @@ export class MatchRoom extends Room<{
 
     this.game = metadata.game;
 
+    const tickInterval = metadata.tickInterval ?? TICK_INTERVAL;
+
     const state = new MatchState();
     state.mode = metadata.mode;
+    state.tickInterval = tickInterval;
+    state.finishTick = metadata.finishTick ?? -1;
     state.width = this.game.grid.width;
     state.height = this.game.grid.height;
     state.scoreboard = createScoreboard(metadata.mode);
@@ -112,7 +116,7 @@ export class MatchRoom extends Room<{
 
     this.setSimulationInterval(
       (deltaTime) => this.onTick(deltaTime),
-      TICK_INTERVAL,
+      tickInterval,
     );
 
     logger.info(
