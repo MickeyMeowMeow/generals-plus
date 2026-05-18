@@ -41,3 +41,11 @@ export function getDefaultPlayersPerTeam(mode: GameMode): number {
   if (mode === GameMode.CLASSIC) return 1;
   return 2;
 }
+
+/**
+ * Returns the default number of flags for a given game mode.
+ */
+export function getDefaultFlagCount(mode: GameMode): number {
+  if (mode === GameMode.DOMINATION) return 3;
+  return 0;
+}
