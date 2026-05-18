@@ -1,5 +1,11 @@
 import { GameMode } from "@generals-plus/engine";
-import type { SetupSettings, SetupState } from "@generals-plus/shared-types";
+import type {
+  ClassicSetupSettings,
+  DominationSetupSettings,
+  SetupSettings,
+  SetupState,
+  TurfWarSetupSettings,
+} from "@generals-plus/shared-types";
 import { useState } from "react";
 
 import { Input } from "#/components/ui/input";
@@ -24,10 +30,15 @@ interface GameSettingsProps {
   onChangeSettings: (settings: Partial<SetupSettings>) => void;
 }
 
-/** Utility type to extract only the keys of SetupSettings that hold numeric values. */
-type NumberKeys = {
-  [K in keyof SetupSettings]: SetupSettings[K] extends number ? K : never;
-}[keyof SetupSettings];
+/** Utility type to extract only the keys that hold numeric values. */
+type ExtractNumberKeys<T> = {
+  [K in keyof T]: T[K] extends number ? K : never;
+}[keyof T];
+
+type NumberKeys =
+  | ExtractNumberKeys<ClassicSetupSettings>
+  | ExtractNumberKeys<TurfWarSetupSettings>
+  | ExtractNumberKeys<DominationSetupSettings>;
 
 const NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "maxPlayers", label: "Max Players" },
@@ -41,6 +52,17 @@ const NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "generalInitialTroops", label: "General Troops" },
   { key: "cityInitialTroops", label: "City Troops" },
 ];
+
+/** Mode-specific numeric fields configuration. */
+const MODE_SPECIFIC_FIELDS: Partial<
+  Record<GameMode, Array<{ key: NumberKeys; label: string }>>
+> = {
+  [GameMode.TURF_WAR]: [{ key: "duration", label: "Duration (s)" }],
+  [GameMode.DOMINATION]: [
+    { key: "flagCount", label: "Flag Count" },
+    { key: "targetScore", label: "Target Score" },
+  ],
+};
 
 const GAME_SPEED_OPTIONS = [0.5, 1, 2, 4];
 
@@ -88,6 +110,12 @@ export function GameSettings({
   const fieldClassName = "grid gap-1.5";
   const inputClassName =
     "border-game-border bg-game-bg text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+
+  // Combine global number fields with those specific to the active game mode
+  const activeNumberFields = [
+    ...NUMBER_FIELDS,
+    ...(MODE_SPECIFIC_FIELDS[currentSettings.gameMode] ?? []),
+  ];
 
   return (
     <section aria-labelledby="game-settings-title" className="space-y-4">
@@ -191,7 +219,7 @@ export function GameSettings({
           </div>
         </div>
 
-        {NUMBER_FIELDS.map(({ key, label }) => (
+        {activeNumberFields.map(({ key, label }) => (
           <div key={key} className={fieldClassName}>
             <Label htmlFor={key} className={labelClassName}>
               {label}
