@@ -1,5 +1,10 @@
 import type { ICoordinate } from "@generals-plus/engine";
-import { ActionType, GameMode, PlayerStatus } from "@generals-plus/engine";
+import {
+  ActionType,
+  GameMode,
+  PlayerStatus,
+  Terrain,
+} from "@generals-plus/engine";
 import {
   MatchClientMessage,
   MatchServerMessage,
@@ -111,14 +116,15 @@ export function GamePage({
   );
   const {
     room,
+    playerColors,
+    playerNames,
+    currentPlayer,
     renderGrid,
     moveQueue,
     gameState,
     gameResult,
     sendMove,
     clearMoveQueue,
-    playerColors,
-    playerNames,
     error,
     errorCode,
     isConnecting,
@@ -195,6 +201,26 @@ export function GamePage({
   >(null);
   const renderGridWidth = renderGrid?.width ?? 0;
   const renderGridHeight = renderGrid?.height ?? 0;
+
+  const initialCoord = useRef<ICoordinate>(null);
+
+  useEffect(() => {
+    if (initialCoord.current || !renderGrid || !currentPlayer) return;
+
+    // Find the general's coordinate
+    for (const cell of renderGrid) {
+      if (
+        cell.terrain === Terrain.GENERAL &&
+        cell.ownerIndex === currentPlayer.id
+      ) {
+        initialCoord.current = cell.coordinate;
+        break;
+      }
+    }
+
+    // Selection starts on the general by default, if found
+    setSelection(initialCoord.current);
+  }, [renderGrid, currentPlayer]);
 
   const handleSelectCell = useCallback(
     (coord: ICoordinate) => {
@@ -338,14 +364,11 @@ export function GamePage({
       </StageCenter>
     );
 
-  const visiblePlayers = Array.from(gameState.players.values());
-  const currentPlayer = visiblePlayers.find(
-    (player) => player.sessionId === room?.sessionId,
-  );
   const isPlayerEliminated =
     currentPlayer?.status === PlayerStatus.ELIMINATED && !gameResult;
   const isReadOnly =
-    isViewingAsSpectator || Boolean(gameResult) || isPlayerEliminated;
+    isViewingAsSpectator || gameResult !== null || isPlayerEliminated;
+
   const winnerId = gameResult?.winnerTeamId
     ? Array.from(gameState.publicPlayers.values()).find(
         (p) => p.teamId === gameResult.winnerTeamId,
@@ -380,6 +403,7 @@ export function GamePage({
 
       <GameApp
         grid={renderGrid}
+        initialCoord={initialCoord.current ?? undefined}
         selection={isReadOnly ? null : selection}
         splitMoveSelection={isReadOnly ? null : splitMoveSelection}
         moveQueue={moveQueue}

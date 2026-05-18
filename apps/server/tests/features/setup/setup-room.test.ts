@@ -558,6 +558,28 @@ describe("SetupRoom", () => {
     });
   });
 
+  // ── seed randomization ─────────────────────────────────────
+
+  describe("seed randomization", () => {
+    it("uses a random seed instead of the fixed default", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+
+      // The old fixed seed was 20260428 — the new seed should be different
+      // (collision probability is astronomically low).
+      expect(room.state.seed).not.toBe(20260428);
+    });
+
+    it("generates different seeds for different rooms", async () => {
+      const room1 = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      const room2 = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+
+      expect(room1.state.seed).not.toBe(room2.state.seed);
+
+      room1.disconnect();
+      room2.disconnect();
+    });
+  });
+
   it("sends validationFailed for invalid setup settings without changing state", async () => {
     room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
 

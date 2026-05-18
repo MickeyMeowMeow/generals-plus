@@ -1,7 +1,42 @@
 import { DominationGame, GameMode, TurfWarGame } from "@generals-plus/engine";
 import { describe, expect, it } from "vitest";
 
-import { createGame } from "#/features/game/utils";
+import { createGame, generateSeed } from "#/features/game/utils";
+
+describe("generateSeed", () => {
+  it("returns a number", () => {
+    const seed = generateSeed();
+    expect(typeof seed).toBe("number");
+    expect(Number.isFinite(seed)).toBe(true);
+  });
+
+  it("returns a 32-bit unsigned integer", () => {
+    for (let i = 0; i < 100; i++) {
+      const seed = generateSeed();
+      expect(seed).toBeGreaterThanOrEqual(0);
+      expect(seed).toBeLessThanOrEqual(0xffffffff);
+      // After >>> 0 the value should be unchanged — already unsigned 32-bit.
+      expect(seed >>> 0).toBe(seed);
+    }
+  });
+
+  it("produces different values on successive calls", () => {
+    // Generate many seeds — they should not all be identical.
+    const seeds = Array.from({ length: 20 }, () => generateSeed());
+    const unique = new Set(seeds);
+    // Allow for extremely unlikely collision (1-2 duplicates in 20) but not all.
+    expect(unique.size).toBeGreaterThan(1);
+  });
+
+  it("produces valid seeds usable by grid generation", () => {
+    // Seeds must be integers that the engine's SeededRandom can accept.
+    for (let i = 0; i < 50; i++) {
+      const seed = generateSeed();
+      expect(Number.isInteger(seed)).toBe(true);
+      expect(seed).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
 
 describe("createGame", () => {
   it("creates a ClassicGame with correct teams and players", () => {

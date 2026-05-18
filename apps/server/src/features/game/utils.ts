@@ -12,7 +12,13 @@ import {
   TurfWarGame,
 } from "@generals-plus/engine";
 
-interface BaseCreateGameOptions {
+/** Generate a random 32-bit seed from current time and Math.random(). */
+export function generateSeed(): number {
+  return (Date.now() ^ (Math.random() * 0x100000000)) >>> 0;
+}
+
+export interface BaseCreateGameOptions {
+  mode: GameMode;
   gridOptions?: GridInput;
   playerIds: string[];
   playerPerTeam: number;

@@ -8,6 +8,7 @@ import { defineRoom, LobbyRoom, logger } from "@colyseus/core";
 import { monitor } from "@colyseus/monitor";
 import { Encoder } from "@colyseus/schema";
 import { defineServer, matchMaker } from "colyseus";
+import express from "express";
 import mongoose from "mongoose";
 
 import { ENV } from "#/env";
@@ -84,10 +85,13 @@ export default defineServer({
     // 1. Establish database connection before mounting routes
     await connectDB();
 
-    // 2. Bind Authentication module routes (/auth/register, /auth/login, etc.)
+    // 2. Parse JSON bodies for custom room HTTP endpoints.
+    app.use(express.json());
+
+    // 3. Bind Authentication module routes (/auth/register, /auth/login, etc.)
     app.use(auth.prefix, auth.routes());
 
-    // 3. (Optional) Bind Colyseus Monitor for development debugging
+    // 4. (Optional) Bind Colyseus Monitor for development debugging
     if (process.env.NODE_ENV !== "production") {
       app.use("/colyseus", monitor());
     }

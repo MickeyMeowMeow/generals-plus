@@ -27,7 +27,7 @@ import {
 } from "@generals-plus/shared-types";
 
 import type { CreateGameOptions } from "#/features/game/utils";
-import { createGame } from "#/features/game/utils";
+import { createGame, generateSeed } from "#/features/game/utils";
 import { createPlayerInit } from "#/features/player/utils";
 import {
   markCustomRoomMatchStarted,
@@ -101,7 +101,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     state.playersPerTeam = getDefaultPlayersPerTeam(gameMode);
     state.mapWidth = DefaultGridGeneratorOptions.width;
     state.mapHeight = DefaultGridGeneratorOptions.height;
-    state.seed = DefaultGridGeneratorOptions.seed;
+    state.seed = generateSeed();
     state.mountainRate = DefaultGridGeneratorOptions.mountainRate;
     state.cityRate = DefaultGridGeneratorOptions.cityRate;
     this.state = state;
@@ -155,14 +155,19 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     }
   }
 
-  onLeave(client: Client) {
+  async onLeave(client: Client) {
     const auth = client.auth as ClientAuth;
     const id = auth.id;
     const isHost = id === this.hostId;
 
     this.removePlayerFromState(id);
 
-    if (isHost && this.state.players.length > 0) {
+    if (this.state.players.length === 0) {
+      await this.disconnect();
+      return;
+    }
+
+    if (isHost) {
       this.transferHost();
     }
   }

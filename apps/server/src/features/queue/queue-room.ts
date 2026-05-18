@@ -12,7 +12,7 @@ import {
   ROOM_NAMES,
 } from "@generals-plus/shared-types";
 
-import { createGame } from "#/features/game/utils";
+import { createGame, generateSeed } from "#/features/game/utils";
 import { createPlayerInit } from "#/features/player/utils";
 import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
@@ -74,8 +74,9 @@ export class MatchQueueRoom extends QueueRoom {
             ? ({
                 generalCount: groupPlayers.length,
                 flagCount: 3,
+                seed: generateSeed(),
               } as DominationGridOptions)
-            : { generalCount: groupPlayers.length };
+            : { generalCount: groupPlayers.length, seed: generateSeed() };
 
         const game = createGame({
           mode: this.gameMode,

@@ -10,6 +10,7 @@ import type {
   MatchClientMessagePayload,
   MatchServerMessagePayload,
   MatchState,
+  Player,
 } from "@generals-plus/shared-types";
 import {
   MatchClientMessage,
@@ -329,16 +330,21 @@ export function useGameRoom(
   source: PersistedGameSource,
 ) {
   const [room, setRoom] = useState<GameRoomClient | null>(null);
-  const [renderGrid, setRenderGrid] = useState<RenderGrid | null>(null);
-  const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
   const [gameState, setGameState] = useState<MatchState | null>(null);
-  const [gameResult, setGameResult] = useState<IGameResult | null>(null);
+
   const [playerColors, setPlayerColors] = useState<Map<string, number>>(
     new Map(),
   );
   const [playerNames, setPlayerNames] = useState<Map<string, string>>(
     new Map(),
   );
+
+  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+  const [renderGrid, setRenderGrid] = useState<RenderGrid | null>(null);
+  const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
+
+  const [gameResult, setGameResult] = useState<IGameResult | null>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<GameRoomErrorCode | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -392,6 +398,10 @@ export function useGameRoom(
           });
           setPlayerColors(colorMap);
           setPlayerNames(nameMap);
+
+          // Extract the only player from state.players, which contains only the current client.
+          const [currentPlayer] = state.players.values();
+          setCurrentPlayer(currentPlayer);
 
           const myId = currentRoom.sessionId;
 
@@ -485,14 +495,15 @@ export function useGameRoom(
 
   return {
     room,
+    playerColors,
+    playerNames,
+    currentPlayer,
     renderGrid,
     moveQueue,
     gameState,
     gameResult,
     sendMove,
     clearMoveQueue,
-    playerColors,
-    playerNames,
     connectionStatus,
     errorCode,
     error,

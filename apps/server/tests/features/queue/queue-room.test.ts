@@ -26,6 +26,7 @@ function captureErrors(client: {
 const mocks = vi.hoisted(() => ({
   getRating: vi.fn().mockResolvedValue(1000),
   createGame: vi.fn(),
+  generateSeed: vi.fn(() => 12345),
 }));
 
 vi.mock("#/infra/db/repositories/MongoUserRepository", () => ({
@@ -36,6 +37,7 @@ vi.mock("#/infra/db/repositories/MongoUserRepository", () => ({
 
 vi.mock("#/features/game/utils", () => ({
   createGame: mocks.createGame,
+  generateSeed: mocks.generateSeed,
 }));
 
 interface QueueMatchGroup {
@@ -281,7 +283,7 @@ describe("MatchQueueRoom", () => {
       );
     });
 
-    it("passes flagCount in gridOptions for domination mode", async () => {
+    it("includes a random seed in grid options when creating game", async () => {
       room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
         gameMode: GameMode.DOMINATION,
         countdownCycles: 2,
@@ -299,9 +301,13 @@ describe("MatchQueueRoom", () => {
       expect(mocks.createGame).toHaveBeenCalledWith(
         expect.objectContaining({
           mode: GameMode.DOMINATION,
-          gridOptions: expect.objectContaining({ flagCount: 3 }),
+          gridOptions: expect.objectContaining({
+            seed: expect.any(Number),
+            flagCount: 3,
+          }),
         }),
       );
+      expect(mocks.generateSeed).toHaveBeenCalled();
     });
   });
 

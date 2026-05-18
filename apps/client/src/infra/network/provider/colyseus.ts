@@ -2,6 +2,7 @@ import type { Room } from "@colyseus/sdk";
 import { Client } from "@colyseus/sdk";
 import type {
   CustomRoomCreation,
+  CustomRoomCreationRequest,
   CustomRoomResolution,
   ExtractMessageKey,
   MessagePayload,
@@ -89,6 +90,16 @@ class ColyseusRoomAdapter<
   }
 }
 
+export class HttpRequestError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "HttpRequestError";
+    this.status = status;
+  }
+}
+
 /**
  * Implementation of `NetworkProvider` for the Colyseus SDK.
  */
@@ -141,7 +152,7 @@ export class ColyseusNetworkProvider<User = unknown>
       } catch {
         // Ignore non-JSON error bodies.
       }
-      throw new Error(message);
+      throw new HttpRequestError(response.status, message);
     }
 
     return (await response.json()) as Response;
@@ -250,10 +261,14 @@ export class ColyseusNetworkProvider<User = unknown>
     return new ColyseusRoomAdapter<State, Sent, Received>(room);
   }
 
-  async createCustomRoom(): Promise<CustomRoomCreation> {
+  async createCustomRoom(customRoomKey?: string): Promise<CustomRoomCreation> {
+    const payload: CustomRoomCreationRequest = {};
+    if (customRoomKey?.trim()) {
+      payload.customRoomKey = customRoomKey.trim();
+    }
     return this.requestJson<CustomRoomCreation>("/custom-rooms", {
       method: "POST",
-      body: JSON.stringify({}),
+      body: JSON.stringify(payload),
     });
   }
 

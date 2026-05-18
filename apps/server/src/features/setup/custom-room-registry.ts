@@ -10,6 +10,13 @@ interface CustomRoomResolution {
 
 interface CustomRoomCreation extends CustomRoomResolution {}
 
+export class CustomRoomAlreadyExistsError extends Error {
+  constructor(customRoomKey: string) {
+    super(`custom room already exists: ${customRoomKey}`);
+    this.name = "CustomRoomAlreadyExistsError";
+  }
+}
+
 interface CustomRoomRecord {
   key: string;
   activeSetupRoomId: string | null;
@@ -78,21 +85,49 @@ async function createOrJoinPendingSetupRoom(
 
 export async function createCustomRoom(
   ownerUserId: string | null,
+  requestedKey?: string,
 ): Promise<CustomRoomCreation> {
-  let key = generateCustomRoomKey();
-  while (customRooms.has(key)) {
+  let key = requestedKey?.trim() ?? "";
+  if (key) {
+    if (customRooms.has(key)) {
+      throw new CustomRoomAlreadyExistsError(key);
+    }
+  } else {
     key = generateCustomRoomKey();
+    while (customRooms.has(key)) {
+      key = generateCustomRoomKey();
+    }
   }
 
-  const setupRoomId = await createSetupRoomForKeyImpl(key);
-  customRooms.set(key, {
+  const record: CustomRoomRecord = {
     key,
-    activeSetupRoomId: setupRoomId,
+    activeSetupRoomId: null,
     pendingSetupRoomId: null,
-    status: "setup",
-    version: 1,
+    status: "idle",
+    version: 0,
     ownerUserId,
-  });
+  };
+  customRooms.set(key, record);
+
+  const pendingSetupRoomId = createSetupRoomForKeyImpl(key)
+    .then((setupRoomId) => {
+      record.activeSetupRoomId = setupRoomId;
+      record.status = "setup";
+      record.version = 1;
+      return setupRoomId;
+    })
+    .catch((error) => {
+      if (customRooms.get(key) === record) {
+        customRooms.delete(key);
+      }
+      throw error;
+    })
+    .finally(() => {
+      record.pendingSetupRoomId = null;
+    });
+
+  record.pendingSetupRoomId = pendingSetupRoomId;
+  const setupRoomId = await pendingSetupRoomId;
 
   return { customRoomKey: key, setupRoomId, created: true };
 }
