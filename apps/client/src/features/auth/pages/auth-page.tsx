@@ -38,6 +38,7 @@ export function AuthPage() {
           <AuthForm
             mode={mode}
             onModeChange={(nextMode) => {
+              if (isBusy) return;
               actions.clearError();
               setMode(nextMode);
             }}

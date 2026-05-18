@@ -53,6 +53,19 @@ describe("AuthForm", () => {
     expect(onModeChange).toHaveBeenCalledWith(AuthFormMode.REGISTER);
   });
 
+  it("disables mode switch controls while busy", () => {
+    render(<AuthForm {...defaultProps} isBusy={true} />);
+
+    expect(
+      (screen.getByRole("tab", { name: "Log in" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    expect(
+      (screen.getByRole("tab", { name: "Register" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
+
   it("submits sign-in values through react hook form", async () => {
     const onSignIn = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
@@ -117,6 +130,18 @@ describe("AuthForm", () => {
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(screen.getByText("Email cannot be empty.")).toBeTruthy();
+    expect(screen.getByText("Password cannot be empty.")).toBeTruthy();
+  });
+
+  it("shows required validation for empty registration password", async () => {
+    const user = userEvent.setup();
+    render(<AuthForm {...defaultProps} mode={AuthFormMode.REGISTER} />);
+
+    await user.clear(screen.getByLabelText("Username"));
+    await user.type(screen.getByLabelText("Username"), "Nova");
+    await user.type(screen.getByLabelText("Email"), "nova@example.com");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
     expect(screen.getByText("Password cannot be empty.")).toBeTruthy();
   });
 

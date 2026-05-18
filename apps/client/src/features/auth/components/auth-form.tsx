@@ -106,6 +106,7 @@ export function AuthForm({
           onClick={() => onModeChange(AuthFormMode.SIGN_IN)}
           role="tab"
           aria-selected={!isRegisterMode}
+          disabled={isBusy}
         >
           <LogIn className="size-4" />
           Log in
@@ -116,6 +117,7 @@ export function AuthForm({
           onClick={() => onModeChange(AuthFormMode.REGISTER)}
           role="tab"
           aria-selected={isRegisterMode}
+          disabled={isBusy}
         >
           <UserPlus className="size-4" />
           Register
@@ -199,6 +201,7 @@ export function AuthForm({
               }
               className="border-game-border bg-game-bg text-game-text"
               {...registerForm.register("password", {
+                required: "Password cannot be empty.",
                 minLength: {
                   value: 8,
                   message: "Password must be at least 8 characters.",
