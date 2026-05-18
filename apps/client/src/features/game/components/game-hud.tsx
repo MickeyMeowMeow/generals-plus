@@ -2,7 +2,9 @@ import type { BaseScoreboard, Player } from "@generals-plus/shared-types";
 import type { CSSProperties } from "react";
 
 import { FloatingHud } from "#/components/layout";
+import { Separator } from "#/components/ui/separator";
 import { colorToHex } from "#/features/game/components/room-controls";
+import { TimerBar } from "#/features/game/components/timer-bar";
 import type {
   MatchHudColumn,
   MatchHudRow,
@@ -17,11 +19,6 @@ interface TimerProps {
 }
 
 interface GameHudProps {
-interface MatchHudProps {
-  /** User-facing label for the active game mode. */
-  modeLabel: string | undefined;
-  /** Current network lifecycle state shown in the HUD. */
-  connectionStatus: string;
   /** Authoritative scoreboard schema from the match room state. */
   scoreboard: BaseScoreboard;
   /** Players currently visible to the client. */
@@ -32,8 +29,6 @@ interface MatchHudProps {
   playerNames: Map<string, string>;
   /** Current client's Colyseus session id, used to highlight the local player. */
   currentSessionId: string | null | undefined;
-  totalSeconds?: number;
-  remainingSeconds?: number;
   timer?: TimerProps;
 }
 
@@ -107,13 +102,10 @@ function PlayerRow({
   );
 }
 
-export function GameHud({
 /**
  * Floating in-game HUD for connection state and mode-specific scoreboard data.
  */
-export function MatchHud({
-  modeLabel,
-  connectionStatus,
+export function GameHud({
   scoreboard,
   visiblePlayers,
   playerColors,
@@ -121,8 +113,6 @@ export function MatchHud({
   currentSessionId,
   timer,
 }: GameHudProps) {
-  const players = getHudPlayers({
-}: MatchHudProps) {
   const scoreboardModel = createMatchHudScoreboardModel({
     scoreboard,
     visiblePlayers,
@@ -134,20 +124,24 @@ export function MatchHud({
     (group) => group.rows.length > 1 || "score" in (group.totals ?? {}),
   );
   const ungroupedRows = scoreboardModel.groups.flatMap((group) => group.rows);
+  const shouldShowTimer =
+    timer && timer.targetTick > 0 && timer.tickInterval > 0;
 
   return (
     <FloatingHud>
       <div className="space-y-2.5">
-        <div className="space-y-2">
-          {timer && (
+        {shouldShowTimer ? (
+          <>
             <TimerBar
               currentTick={timer.currentTick}
               targetTick={timer.targetTick}
               tickInterval={timer.tickInterval}
             />
-          )}
+            <Separator className="bg-game-border/70" />
+          </>
+        ) : null}
 
-          <div className="grid grid-cols-[1fr_2.5rem_3.25rem] gap-1.5 text-[9px] uppercase text-game-text-dim">
+        <div className="space-y-2">
           <div
             className="grid gap-1.5 text-[9px] uppercase text-game-text-dim"
             style={getScoreboardGridStyle(scoreboardModel.columns.length)}
