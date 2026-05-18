@@ -271,7 +271,7 @@ export function AuthProvider({
       const trimmedEmail = email.trim();
 
       if (trimmedName.length === 0) {
-        dispatch({ type: "ERROR", error: "Username cannot be empty." });
+        dispatch({ type: "ERROR", error: "Display name cannot be empty." });
         return;
       }
 

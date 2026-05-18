@@ -2,6 +2,7 @@
 
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthForm, AuthFormMode } from "#/features/auth/components/auth-form";
@@ -37,7 +38,7 @@ describe("AuthForm", () => {
     expect(
       screen.getByRole("heading", { name: "Create account" }),
     ).toBeTruthy();
-    expect(screen.getByLabelText("Username")).toBeTruthy();
+    expect(screen.getByLabelText("Display name")).toBeTruthy();
     expect(screen.getByLabelText("Email")).toBeTruthy();
     expect(screen.getByLabelText("Password")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Create account" })).toBeTruthy();
@@ -92,8 +93,8 @@ describe("AuthForm", () => {
       />,
     );
 
-    await user.clear(screen.getByLabelText("Username"));
-    await user.type(screen.getByLabelText("Username"), "Nova");
+    await user.clear(screen.getByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Nova");
     await user.type(screen.getByLabelText("Email"), "nova@example.com");
     await user.type(screen.getByLabelText("Password"), "hunter22");
     await user.click(screen.getByRole("button", { name: "Create account" }));
@@ -108,7 +109,13 @@ describe("AuthForm", () => {
   it("renders and submits the guest entry form", async () => {
     const onGuestSignIn = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
-    render(<AuthForm {...defaultProps} onGuestSignIn={onGuestSignIn} />);
+    render(
+      <AuthForm
+        {...defaultProps}
+        mode={AuthFormMode.GUEST}
+        onGuestSignIn={onGuestSignIn}
+      />,
+    );
 
     expect(
       screen.getByRole("heading", { name: "Continue as guest" }),
@@ -137,8 +144,8 @@ describe("AuthForm", () => {
     const user = userEvent.setup();
     render(<AuthForm {...defaultProps} mode={AuthFormMode.REGISTER} />);
 
-    await user.clear(screen.getByLabelText("Username"));
-    await user.type(screen.getByLabelText("Username"), "Nova");
+    await user.clear(screen.getByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Nova");
     await user.type(screen.getByLabelText("Email"), "nova@example.com");
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
@@ -146,8 +153,15 @@ describe("AuthForm", () => {
   });
 
   it("disables primary actions when busy", () => {
-    render(<AuthForm {...defaultProps} isBusy={true} />);
+    const { rerender } = render(<AuthForm {...defaultProps} isBusy={true} />);
 
+    expect(
+      (
+        screen.getByRole("tab", {
+          name: "Guest",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
     expect(
       (
         screen.getByRole("button", {
@@ -155,6 +169,18 @@ describe("AuthForm", () => {
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Signing in...",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+
+    rerender(
+      <AuthForm {...defaultProps} mode={AuthFormMode.GUEST} isBusy={true} />,
+    );
+
     expect(
       (
         screen.getByRole("button", {
@@ -170,9 +196,36 @@ describe("AuthForm", () => {
   });
 
   it("shows default guest display name", () => {
-    render(<AuthForm {...defaultProps} />);
+    render(<AuthForm {...defaultProps} mode={AuthFormMode.GUEST} />);
     expect(
       (screen.getByLabelText("Display name") as HTMLInputElement).value,
     ).toBe("Commander");
+  });
+
+  it("does not leak Commander into sign-in email after switching back from register or guest", async () => {
+    const user = userEvent.setup();
+
+    function ControlledAuthForm() {
+      const [mode, setMode] = useState<AuthFormMode>(AuthFormMode.SIGN_IN);
+      return <AuthForm {...defaultProps} mode={mode} onModeChange={setMode} />;
+    }
+
+    render(<ControlledAuthForm />);
+
+    await user.click(screen.getByRole("tab", { name: "Register" }));
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Commander");
+
+    await user.click(screen.getByRole("tab", { name: "Log in" }));
+    expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("");
+
+    await user.click(screen.getByRole("tab", { name: "Guest" }));
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Commander");
+
+    await user.click(screen.getByRole("tab", { name: "Log in" }));
+    expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("");
   });
 });
