@@ -208,17 +208,15 @@ export function GamePage({
     if (initialCoord.current || !renderGrid || !currentPlayer) return;
 
     // Find the general's coordinate
-    renderGrid.forEach((cell) => {
-      // Short-circuit if already found
-      if (initialCoord.current) return;
-
+    for (const cell of renderGrid) {
       if (
         cell.terrain === Terrain.GENERAL &&
         cell.ownerIndex === currentPlayer.id
       ) {
         initialCoord.current = cell.coordinate;
+        break;
       }
-    });
+    }
 
     // Selection starts on the general by default, if found
     setSelection(initialCoord.current);
