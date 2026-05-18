@@ -1,5 +1,6 @@
 import { describe, expect, it, test } from "vitest";
 
+import type { MoveActionType } from "#/domain/action/action-type";
 import { ActionType } from "#/domain/action/action-type";
 import type { Action, MoveAction } from "#/domain/action/interfaces";
 import { Cell } from "#/domain/cell/cell";
@@ -21,10 +22,13 @@ function createGridForAction(): Grid {
   ]);
 }
 
-function createMoveAction(playerId = "p1"): MoveAction {
+function createMoveAction(
+  playerId = "p1",
+  type: MoveActionType = ActionType.MOVE,
+): MoveAction {
   return {
     playerId,
-    type: ActionType.MOVE,
+    type,
     from: { x: 0, y: 0 },
     to: { x: 1, y: 0 },
   };
@@ -70,6 +74,37 @@ describe("ClassicGame", () => {
     expect(result).toBe(true);
     expect(source.troopCount).toBe(1);
     expect(target.owner).toBe(p1);
+  });
+
+  it("processes split move actions while playing", () => {
+    const grid = createGridForAction();
+    const game = new ClassicGame(grid);
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1");
+    const p2 = new Player(t2, "p2");
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+
+    const source = grid.get({ x: 0, y: 0 });
+    const target = grid.get({ x: 1, y: 0 });
+    if (!source || !target) {
+      throw new Error("cells should exist");
+    }
+    source.owner = p1;
+    source.troopCount = 5;
+    target.owner = p2;
+    target.troopCount = 1;
+
+    game.startGame();
+    const result = game.handleAction(
+      createMoveAction("p1", ActionType.SPLIT_MOVE),
+    );
+
+    expect(result).toBe(true);
+    expect(source.troopCount).toBe(3);
+    expect(target.owner).toBe(p1);
+    expect(target.troopCount).toBe(1);
   });
 
   it("finishes game when one or zero alive teams remain", () => {

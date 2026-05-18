@@ -32,8 +32,10 @@ function renderGameApp(overrides: Partial<Parameters<typeof GameApp>[0]> = {}) {
     <GameApp
       grid={{ width: 2, height: 2 } as RenderGrid}
       selection={null}
+      splitMoveSelection={null}
       moveQueue={[]}
       onSelectCell={vi.fn()}
+      onArmSplitMove={vi.fn()}
       onQueueMove={vi.fn()}
       onClearMoveQueue={vi.fn()}
       playerColors={new Map()}

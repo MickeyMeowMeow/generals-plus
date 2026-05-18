@@ -1,4 +1,5 @@
 import type { ICoordinate } from "@generals-plus/engine";
+import { ActionType } from "@generals-plus/engine";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -17,6 +18,7 @@ import {
   useGameRoom,
 } from "#/features/game/api/use-game-room";
 import { GameApp } from "#/features/game/renderer/game-app";
+import { isSameCoord } from "#/features/game/utils/coord";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 import { MatchHud } from "#/features/match/components/match-hud";
@@ -107,21 +109,38 @@ export function GamePage({ connection, source }: GamePageProps) {
   } = useGameRoom(stableConnection, persistedSource);
 
   const [selection, setSelection] = useState<ICoordinate | null>(null);
+  const [splitMoveSelection, setSplitMoveSelection] =
+    useState<ICoordinate | null>(null);
 
   const handleSelectCell = useCallback((coord: ICoordinate) => {
     setSelection(coord);
+    setSplitMoveSelection(null);
   }, []);
+
+  const handleArmSplitMove = useCallback(
+    (coord?: ICoordinate) => {
+      const nextSelection = coord ?? selection;
+      if (!nextSelection) return;
+      setSelection(nextSelection);
+      setSplitMoveSelection(nextSelection);
+    },
+    [selection],
+  );
 
   const handleQueueMove = useCallback(
     (direction: MoveDirection) => {
       if (!selection || !room) return;
       const from = selection;
       const to = getTargetCoord({ from, direction });
+      const moveType = isSameCoord(splitMoveSelection, from)
+        ? ActionType.SPLIT_MOVE
+        : ActionType.MOVE;
 
       setSelection(to);
-      sendMove(from, to);
+      setSplitMoveSelection(null);
+      sendMove(from, to, moveType);
     },
-    [selection, room, sendMove],
+    [selection, room, sendMove, splitMoveSelection],
   );
 
   const handleReturn = () => {
@@ -193,8 +212,10 @@ export function GamePage({ connection, source }: GamePageProps) {
       <GameApp
         grid={renderGrid}
         selection={selection}
+        splitMoveSelection={splitMoveSelection}
         moveQueue={moveQueue}
         onSelectCell={handleSelectCell}
+        onArmSplitMove={handleArmSplitMove}
         onQueueMove={handleQueueMove}
         onClearMoveQueue={clearMoveQueue}
         playerColors={playerColors}

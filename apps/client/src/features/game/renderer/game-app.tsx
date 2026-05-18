@@ -16,8 +16,10 @@ interface GameAppProps {
   /** Grid snapshot to render. */
   readonly grid: RenderGrid;
   readonly selection: ICoordinate | null;
+  readonly splitMoveSelection: ICoordinate | null;
   readonly moveQueue: MoveIntent[];
   readonly onSelectCell: (coord: ICoordinate) => void;
+  readonly onArmSplitMove: (coord?: ICoordinate) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
   readonly onClearMoveQueue: () => void;
   readonly playerColors: Map<string, number>;
@@ -33,8 +35,10 @@ interface GameAppProps {
 export function GameApp({
   grid,
   selection,
+  splitMoveSelection,
   moveQueue,
   onSelectCell,
+  onArmSplitMove,
   onQueueMove,
   onClearMoveQueue,
   playerColors,
@@ -60,14 +64,32 @@ export function GameApp({
   }, []);
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+    };
+
+    container.addEventListener("contextmenu", handleContextMenu);
+    return () => {
+      container.removeEventListener("contextmenu", handleContextMenu);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
+      if (key === "z") {
+        e.preventDefault();
+        onArmSplitMove();
+        return;
+      }
       if (key === ClearMoveQueueKey) {
         e.preventDefault();
         onClearMoveQueue();
         return;
       }
-
       if (KeyToDirection[key]) {
         e.preventDefault();
         onQueueMove(KeyToDirection[key]);
@@ -76,7 +98,7 @@ export function GameApp({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClearMoveQueue, onQueueMove]);
+  }, [onArmSplitMove, onClearMoveQueue, onQueueMove]);
 
   return (
     <div ref={containerRef} className={cn("h-full w-full", className)}>
@@ -107,8 +129,10 @@ export function GameApp({
               grid={grid}
               stride={RenderConfig.cellStride}
               selection={selection}
+              splitMoveSelection={splitMoveSelection}
               moveQueue={moveQueue}
               onCellClick={onSelectCell}
+              onSplitMoveCell={onArmSplitMove}
               playerColors={playerColors}
             />
           </Viewport>
