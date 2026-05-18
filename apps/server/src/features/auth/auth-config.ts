@@ -16,7 +16,7 @@ function sanitizeOptions(
   const {
     password: _pw,
     verified: _v,
-    elo: _elo,
+    ratings: _ratings,
     anonymous: _anon,
     email: _email,
     ...safe
@@ -83,10 +83,9 @@ auth.settings.onEmailConfirmed = async (email: string) => {
   return await userRepository.verifyEmail(email);
 };
 
-// Filter user data before sending to client (remove password)
+// Filter user data before sending to client (remove password, expose ratings)
 auth.settings.onParseToken = async (data: Record<string, unknown>) => {
-  const safeData = { ...data };
-  delete safeData.password;
+  const { password: _, ...safeData } = data;
   return safeData;
 };
 

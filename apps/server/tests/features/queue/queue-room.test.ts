@@ -1,11 +1,49 @@
 import { GameMode } from "@generals-plus/engine";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MatchQueueRoom } from "#/features/queue/queue-room";
-import { connectClient, createRoom, ROOM_NAMES } from "#tests/helpers";
+import {
+  connectClient,
+  createMockGame,
+  createRoom,
+  ROOM_NAMES,
+} from "#tests/helpers";
+
+const mocks = vi.hoisted(() => ({
+  getRating: vi.fn().mockResolvedValue(1000),
+  createGame: vi.fn(),
+}));
+
+vi.mock("#/infra/db/repositories/MongoUserRepository", () => ({
+  MongoUserRepository: class {
+    getRating = mocks.getRating;
+  },
+}));
+
+vi.mock("#/features/game/utils", () => ({
+  createGame: mocks.createGame,
+}));
+
+interface QueueMatchGroup {
+  averageRank: number;
+  clients: Array<{
+    auth: { id: string };
+    userData: { rank: number; currentCycle: number };
+  }>;
+  ready?: boolean;
+}
+
+function getGroups(room: MatchQueueRoom): QueueMatchGroup[] {
+  return (room as unknown as { groups: QueueMatchGroup[] }).groups;
+}
 
 describe("MatchQueueRoom", () => {
   let room: MatchQueueRoom;
+
+  beforeEach(() => {
+    mocks.getRating.mockResolvedValue(1000);
+    mocks.createGame.mockReturnValue(createMockGame());
+  });
 
   afterEach(() => {
     if (room) {
@@ -67,11 +105,166 @@ describe("MatchQueueRoom", () => {
     expect(room.clients.some((c) => c.userData.currentCycle > 0)).toBe(true);
   });
 
-  it("uses minPlayers as the default match group size", async () => {
+  it("uses DEFAULT_MAX_PLAYERS as the default match group size", async () => {
     room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
       gameMode: GameMode.CLASSIC,
     });
 
-    expect(room.maxPlayers).toBe(2);
+    expect(room.maxPlayers).toBe(8);
+  });
+
+  describe("rating-based grouping", () => {
+    it("groups players with similar ratings together", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+      });
+
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      c1.userData.rank = 1000;
+      const c2 = await connectClient(room, { id: "p2", email: "p2@t.com" });
+      c2.userData.rank = 1100;
+      const c3 = await connectClient(room, { id: "p3", email: "p3@t.com" });
+      c3.userData.rank = 1500;
+      const c4 = await connectClient(room, { id: "p4", email: "p4@t.com" });
+      c4.userData.rank = 1600;
+
+      room.reassignMatchGroups();
+
+      const groups = getGroups(room);
+      expect(groups).toHaveLength(2);
+
+      const group1Ids = groups[0].clients.map((c) => c.auth.id);
+      const group2Ids = groups[1].clients.map((c) => c.auth.id);
+
+      expect(group1Ids).toEqual(expect.arrayContaining(["p1", "p2"]));
+      expect(group2Ids).toEqual(expect.arrayContaining(["p3", "p4"]));
+    });
+
+    it("separates players when rating gap exceeds tolerance", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+      });
+
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      c1.userData.rank = 1000;
+      const c2 = await connectClient(room, { id: "p2", email: "p2@t.com" });
+      c2.userData.rank = 2000;
+
+      room.reassignMatchGroups();
+
+      const groups = getGroups(room);
+      expect(groups).toHaveLength(2);
+      expect(groups[0].clients).toHaveLength(1);
+      expect(groups[1].clients).toHaveLength(1);
+    });
+
+    it("keeps all players in one group when ratings are close", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+      });
+
+      await Promise.all(
+        [1000, 1050, 1100, 1150].map((rank, i) =>
+          connectClient(room, {
+            id: `p${i + 1}`,
+            email: `p${i + 1}@t.com`,
+          }).then((c) => {
+            c.userData.rank = rank;
+          }),
+        ),
+      );
+
+      room.reassignMatchGroups();
+
+      const groups = getGroups(room);
+      expect(groups).toHaveLength(1);
+      expect(groups[0].clients).toHaveLength(4);
+    });
+  });
+
+  describe("minPlayers enforcement", () => {
+    it("prevents undersized groups from becoming ready after timeout", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+        countdownCycles: 3,
+      });
+
+      // Two players far apart → two groups of 1 each, both < minPlayers(2)
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      c1.userData.rank = 1000;
+      const c2 = await connectClient(room, { id: "p2", email: "p2@t.com" });
+      c2.userData.rank = 2000;
+
+      for (let i = 0; i < 20; i++) {
+        room.reassignMatchGroups();
+      }
+
+      const groups = getGroups(room);
+      const readyGroups = groups.filter((g) => g.ready);
+      expect(readyGroups).toHaveLength(0);
+    });
+
+    it("resets cycle counter for undersized groups so they never reach priority", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+        countdownCycles: 3,
+      });
+
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      c1.userData.rank = 1000;
+      const c2 = await connectClient(room, { id: "p2", email: "p2@t.com" });
+      c2.userData.rank = 2000;
+
+      for (let i = 0; i < 20; i++) {
+        room.reassignMatchGroups();
+      }
+
+      // Cycles should stay low due to repeated resets
+      for (const client of room.clients) {
+        expect(client.userData.currentCycle).toBeLessThanOrEqual(2);
+      }
+    });
+
+    it("allows groups meeting minPlayers to become ready after timeout", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+        countdownCycles: 2,
+      });
+
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      c1.userData.rank = 1000;
+      const c2 = await connectClient(room, { id: "p2", email: "p2@t.com" });
+      c2.userData.rank = 1100;
+
+      for (let i = 0; i < 10; i++) {
+        room.reassignMatchGroups();
+      }
+
+      expect(mocks.createGame).toHaveBeenCalled();
+    });
+
+    it("creates match room with correct players when group is ready", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+        countdownCycles: 2,
+      });
+
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      c1.userData.rank = 1000;
+      const c2 = await connectClient(room, { id: "p2", email: "p2@t.com" });
+      c2.userData.rank = 1100;
+
+      for (let i = 0; i < 10; i++) {
+        room.reassignMatchGroups();
+      }
+
+      expect(mocks.createGame).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: GameMode.CLASSIC,
+          playerIds: expect.arrayContaining(["p1", "p2"]),
+          playerPerTeam: 1,
+        }),
+      );
+    });
   });
 });

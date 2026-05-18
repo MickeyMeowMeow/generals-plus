@@ -28,7 +28,8 @@ describe("DominationGame", () => {
     game.teams.set(t1.teamId, t1);
     game.players.set(p1.playerId, p1);
 
-    const flagCell = grid.get({ x: 0, y: 0 })!;
+    const flagCell = grid.get({ x: 0, y: 0 });
+    if (!flagCell) throw new Error("Missing flag cell");
     flagCell.owner = p1;
 
     game.startGame();
@@ -53,7 +54,8 @@ describe("DominationGame", () => {
     game.teams.set(t1.teamId, t1);
     game.players.set(p1.playerId, p1);
 
-    const flagCell = grid.get({ x: 0, y: 0 })!;
+    const flagCell = grid.get({ x: 0, y: 0 });
+    if (!flagCell) throw new Error("Missing flag cell");
     flagCell.owner = p1;
 
     game.startGame();
@@ -78,7 +80,8 @@ describe("DominationGame", () => {
     game.teams.set(t1.teamId, t1);
     game.players.set(p1.playerId, p1);
 
-    const flagCell = grid.get({ x: 0, y: 0 })!;
+    const flagCell = grid.get({ x: 0, y: 0 });
+    if (!flagCell) throw new Error("Missing flag cell");
     flagCell.owner = p1;
 
     game.startGame();
@@ -108,7 +111,8 @@ describe("DominationGame", () => {
     game.teams.set(t1.teamId, t1);
     game.players.set(p1.playerId, p1);
 
-    const flagCell = grid.get({ x: 0, y: 0 })!;
+    const flagCell = grid.get({ x: 0, y: 0 });
+    if (!flagCell) throw new Error("Missing flag cell");
     flagCell.owner = p1;
 
     game.startGame();

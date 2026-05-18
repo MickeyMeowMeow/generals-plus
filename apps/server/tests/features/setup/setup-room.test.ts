@@ -19,6 +19,7 @@ describe("SetupRoom", () => {
     expect(room.state.gameMode).toBe(GameMode.CLASSIC);
     expect(room.state.isPublic).toBe(true);
     expect(room.state.maxPlayers).toBe(8);
+    expect(room.state.playersPerTeam).toBe(1);
     expect(room.state.players.length).toBe(0);
   });
 

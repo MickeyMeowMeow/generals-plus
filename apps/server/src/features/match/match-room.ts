@@ -4,6 +4,7 @@ import { logger, Room } from "@colyseus/core";
 import { StateView } from "@colyseus/schema";
 import type {
   IBaseGame,
+  IGameResult,
   MoveAction,
   MoveActionType,
 } from "@generals-plus/engine";
@@ -20,10 +21,13 @@ import {
 } from "@generals-plus/shared-types";
 
 import { createPlayer } from "#/features/player/utils";
+import { calculateNewRatings } from "#/features/rating/rating-service";
 import { parseRoomData } from "#/features/room-data";
 import { createScoreboard, syncScoreboard } from "#/features/scoreboard/utils";
+import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
 const TICK_INTERVAL = 500;
+const userRepository = new MongoUserRepository();
 
 export class MatchRoom extends Room<{
   state: MatchState;
@@ -211,6 +215,8 @@ export class MatchRoom extends Room<{
       logger.error(`[MatchRoom] Error: Game instance not found on tick`);
       throw new Error("Game instance not found");
     }
+    if (this.state.status === GameStatus.FINISHED) return;
+
     this.processActionQueues();
 
     this.game.nextTick();
@@ -222,10 +228,45 @@ export class MatchRoom extends Room<{
 
     const result = this.game.checkGameEnd();
     if (result) {
-      this.state.status = GameStatus.FINISHED;
-      this.broadcast(MatchServerMessage.GAME_END, result);
-      this.disconnect();
+      this.finishMatch(result);
+      return;
     }
+
+    // Some engine flows can flip the game status during `nextTick()` without
+    // returning a fresh result payload here, so derive a minimal final result
+    // from synced room state before closing the room and broadcasting it.
+    if (this.game.status === GameStatus.FINISHED) {
+      this.finishMatch(this.createFinishedResultFromState());
+    }
+  }
+
+  private finishMatch(result: IGameResult) {
+    this.state.status = GameStatus.FINISHED;
+    this.broadcast(MatchServerMessage.GAME_END, result);
+    this.updateRatings(result).catch((err) => {
+      logger.error(`[MatchRoom] Failed to update ratings: ${err}`);
+    });
+  }
+
+  private createFinishedResultFromState(): IGameResult {
+    const activeTeamIds = new Set<string>();
+    for (const [, player] of this.state.players) {
+      if (player.status === PlayerStatus.ACTIVE) {
+        activeTeamIds.add(player.teamId);
+      }
+    }
+
+    let winnerTeamId: string | null = null;
+    if (activeTeamIds.size === 1) {
+      for (const teamId of activeTeamIds) {
+        winnerTeamId = teamId;
+      }
+    }
+
+    return {
+      mode: this.state.mode,
+      winnerTeamId,
+    };
   }
 
   private processActionQueues() {
@@ -319,6 +360,41 @@ export class MatchRoom extends Room<{
     }
 
     syncScoreboard(this.state.scoreboard, this.game.getScoreboard());
+  }
+
+  private async updateRatings(result: IGameResult) {
+    const players = Array.from(this.state.players.values());
+    if (players.length < 2) return;
+
+    const mode = result.mode;
+
+    const inputs = await Promise.all(
+      players.map(async (player) => {
+        const currentRating = await userRepository.getRating(player.id, mode);
+        const teamId = player.teamId;
+        const placement = teamId === result.winnerTeamId ? 1 : 2;
+
+        return {
+          playerId: player.id,
+          currentRating,
+          placement,
+        };
+      }),
+    );
+
+    const results = calculateNewRatings(inputs, mode);
+
+    await userRepository.updateRatings(
+      results.map((r) => ({
+        userId: r.playerId,
+        mode,
+        newRating: r.newRating,
+      })),
+    );
+
+    logger.info(
+      `[MatchRoom] Ratings updated for mode ${mode}: ${results.map((r) => `${r.playerId} ${r.oldRating}->${r.newRating}`).join(", ")}`,
+    );
   }
 
   private updateClientViews() {

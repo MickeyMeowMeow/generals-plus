@@ -360,5 +360,27 @@ describe("MatchRoom", () => {
 
       expect(room.state.status).toBe(GameStatus.FINISHED);
     });
+
+    it("syncs FINISHED status when engine already ended during tick", async () => {
+      const game = createMockGame({
+        checkGameEnd: vi.fn(() => null),
+        getPlayerState: vi.fn((playerId: string) => ({
+          playerId,
+          teamId: playerId === "p1" ? "team_0" : "team_1",
+          status:
+            playerId === "p1" ? PlayerStatus.ACTIVE : PlayerStatus.ELIMINATED,
+        })),
+      });
+      game.nextTick = () => {
+        game.tick++;
+        game.status = GameStatus.FINISHED;
+      };
+      const metadata = createValidRoomData({ game });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      await room.waitForNextSimulationTick();
+
+      expect(room.state.status).toBe(GameStatus.FINISHED);
+    });
   });
 });

@@ -2,7 +2,11 @@ import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, matchMaker, Room } from "@colyseus/core";
 import type { GridGeneratorOptions } from "@generals-plus/engine";
-import { DefaultGridGeneratorOptions, GameMode } from "@generals-plus/engine";
+import {
+  DefaultGridGeneratorOptions,
+  GameMode,
+  getDefaultPlayersPerTeam,
+} from "@generals-plus/engine";
 import type {
   ClientAuth,
   RoomData,
@@ -42,6 +46,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     state.gameMode = gameMode;
     state.isPublic = isPublic;
     state.maxPlayers = maxPlayers;
+    state.playersPerTeam = getDefaultPlayersPerTeam(gameMode);
     state.mapWidth = DefaultGridGeneratorOptions.width;
     state.mapHeight = DefaultGridGeneratorOptions.height;
     state.seed = DefaultGridGeneratorOptions.seed;
@@ -151,6 +156,15 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           client.send("error", "cityRate + mountainRate cannot exceed 1.0");
           return;
         }
+      }
+
+      // When gameMode changes without an explicit playersPerTeam, reset to the
+      // mode default so the host doesn't carry a stale value across modes.
+      if (
+        update.gameMode !== undefined &&
+        update.playersPerTeam === undefined
+      ) {
+        update.playersPerTeam = getDefaultPlayersPerTeam(update.gameMode);
       }
 
       // Apply valid updates to state

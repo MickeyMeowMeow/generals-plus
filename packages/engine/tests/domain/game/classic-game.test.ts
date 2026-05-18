@@ -126,9 +126,11 @@ describe("ClassicGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    const generalCell = grid.get({ x: 0, y: 0 })!;
-    const cityCell = grid.get({ x: 1, y: 0 })!;
-    const plainCell = grid.get({ x: 2, y: 0 })!;
+    const generalCell = grid.get({ x: 0, y: 0 });
+    const cityCell = grid.get({ x: 1, y: 0 });
+    const plainCell = grid.get({ x: 2, y: 0 });
+    if (!generalCell || !cityCell || !plainCell)
+      throw new Error("Missing cells");
 
     // Make p1 own everything
     cityCell.owner = p1;

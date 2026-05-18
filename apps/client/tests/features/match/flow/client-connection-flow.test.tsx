@@ -72,7 +72,7 @@ function createSetupState(
     gameMode: GameMode.CLASSIC,
     isPublic: false,
     maxPlayers: 8,
-    playersPerTeam: 2,
+    playersPerTeam: 1,
     mapWidth: 24,
     mapHeight: 16,
     seed: 0,
@@ -467,20 +467,23 @@ describe("client room flows", () => {
   it("does not allow a custom match to start when all players are on one team", async () => {
     const setupRoom = createRoom({
       roomId: "setup-one-team",
-      state: createSetupState([
-        {
-          id: "player-1",
-          displayName: "Nova",
-          color: PLAYER_COLOR_PALETTE[0],
-          isHost: true,
-        },
-        {
-          id: "player-2",
-          displayName: "Rook",
-          color: PLAYER_COLOR_PALETTE[1],
-          isHost: false,
-        },
-      ]),
+      state: createSetupState(
+        [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+            isHost: true,
+          },
+          {
+            id: "player-2",
+            displayName: "Rook",
+            color: PLAYER_COLOR_PALETTE[1],
+            isHost: false,
+          },
+        ],
+        { playersPerTeam: 2 },
+      ),
     });
     networkMocks.joinById.mockResolvedValue(setupRoom);
 
