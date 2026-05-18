@@ -78,6 +78,46 @@ describe("TurfWarGame", () => {
     expect(result).toEqual({ mode: GameMode.TURF_WAR, winnerTeamId: "t1" });
   });
 
+  describe("getScoreboard", () => {
+    it("returns team landPercent and playerIds", () => {
+      const grid = new Grid(4, 1, [
+        [
+          new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.GENERAL }),
+          new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.PLAIN }),
+          new Cell({ coordinate: { x: 2, y: 0 }, terrain: Terrain.MOUNTAIN }),
+          new Cell({ coordinate: { x: 3, y: 0 }, terrain: Terrain.GENERAL }),
+        ],
+      ]);
+      const game = new TurfWarGame(grid);
+      const t1 = new StandardTeam("t1");
+      const t2 = new StandardTeam("t2");
+      const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+      const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+      t1.addPlayer(p1);
+      t2.addPlayer(p2);
+      game.teams.set("t1", t1);
+      game.teams.set("t2", t2);
+      game.players.set(p1.playerId, p1);
+      game.players.set(p2.playerId, p2);
+
+      grid.get({ x: 0, y: 0 })!.owner = p1;
+      grid.get({ x: 1, y: 0 })!.owner = p1;
+      grid.get({ x: 3, y: 0 })!.owner = p2;
+
+      game.startGame();
+
+      const scoreboard = game.getScoreboard();
+      // 3 capturable tiles (excludes MOUNTAIN at x:2), t1 owns 2 → 67%, t2 owns 1 → 33%
+      const t1Entry = scoreboard.teams.find((t) => t.teamId === "t1")!;
+      const t2Entry = scoreboard.teams.find((t) => t.teamId === "t2")!;
+
+      expect(t1Entry.playerIds).toEqual(["p1"]);
+      expect(t1Entry.landPercent).toBe(67);
+      expect(t2Entry.playerIds).toEqual(["p2"]);
+      expect(t2Entry.landPercent).toBe(33);
+    });
+  });
+
   it("integrates with RespawningCombatResolver during action execution", () => {
     const grid = createGridForTurfWar();
     const game = new TurfWarGame(grid);
