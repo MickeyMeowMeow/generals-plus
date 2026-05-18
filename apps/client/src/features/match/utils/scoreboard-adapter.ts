@@ -90,6 +90,15 @@ interface ScoreboardWithTurfWarTeams {
   teams?: Iterable<TurfWarTeamEntryLike>;
 }
 
+interface DominationTeamEntryLike {
+  teamId: string;
+  score: number;
+}
+
+interface ScoreboardWithDominationTeams {
+  teams?: Iterable<DominationTeamEntryLike>;
+}
+
 const troopLandColumns: GameHudColumn[] = [
   { key: "land", label: "Land" },
   { key: "troops", label: "Soldiers" },
@@ -140,6 +149,14 @@ function getTurfWarTeamEntries(
   scoreboard: BaseScoreboard,
 ): TurfWarTeamEntryLike[] {
   const teams = (scoreboard as ScoreboardWithTurfWarTeams | undefined)?.teams;
+  return teams ? Array.from(teams) : [];
+}
+
+function getDominationTeamEntries(
+  scoreboard: BaseScoreboard,
+): DominationTeamEntryLike[] {
+  const teams = (scoreboard as ScoreboardWithDominationTeams | undefined)
+    ?.teams;
   return teams ? Array.from(teams) : [];
 }
 
@@ -257,6 +274,36 @@ function createTurfWarModel(
   };
 }
 
+function createDominationModel(
+  scoreboard: BaseScoreboard,
+): GameHudScoreboardModel {
+  const rows = createPlayerRows(scoreboard);
+  const scoreByTeam = new Map(
+    getDominationTeamEntries(scoreboard).map((entry) => [
+      entry.teamId,
+      entry.score,
+    ]),
+  );
+
+  const groups = createTeamGroups(rows).map((group) => {
+    const score = scoreByTeam.get(group.id) ?? 0;
+    return {
+      ...group,
+      label: `${group.label} (${score} / 1000)`,
+    };
+  });
+
+  return {
+    title: "Teams (Target: 1000)",
+    columns: troopLandColumns,
+    groups: groups.sort(
+      (a, b) =>
+        (scoreByTeam.get(b.id) ?? 0) - (scoreByTeam.get(a.id) ?? 0) ||
+        a.label.localeCompare(b.label),
+    ),
+  };
+}
+
 /**
  * Converts the mode-specific match scoreboard schema into a single HUD model.
  *
@@ -271,6 +318,8 @@ export function createGameHudScoreboardModel(
       return createTroopLandModel("Players", scoreboard);
     case GameMode.TURF_WAR:
       return createTurfWarModel(scoreboard);
+    case GameMode.DOMINATION:
+      return createDominationModel(scoreboard);
     default:
       return createTroopLandModel("Players", scoreboard);
   }

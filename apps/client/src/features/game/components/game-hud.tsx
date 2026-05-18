@@ -96,7 +96,7 @@ function PlayerRow({
 export function GameHud({ scoreboard, timer }: GameHudProps) {
   const scoreboardModel = createGameHudScoreboardModel(scoreboard);
   const shouldShowGroupRows =
-    scoreboardModel.title === "Teams" ||
+    scoreboardModel.title.startsWith("Teams") ||
     scoreboardModel.groups.some(
       (group) => group.rows.length > 1 || "score" in (group.totals ?? {}),
     );
