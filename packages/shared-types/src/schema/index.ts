@@ -12,6 +12,7 @@ export {
   TroopLandScoreboard,
   TroopLandScoreboardPlayerEntry,
   TurfWarScoreboard,
+  TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
 } from "#/schema/scoreboard";
 export { SetupPlayer, SetupState } from "#/schema/setup-state";

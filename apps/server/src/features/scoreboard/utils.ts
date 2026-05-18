@@ -5,55 +5,37 @@ import type {
   ITurfWarScoreboard,
 } from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
-import type { BaseScoreboard } from "@generals-plus/shared-types";
+import type {
+  BaseScoreboard,
+  BaseScoreboardPlayerEntry,
+  PublicPlayer,
+} from "@generals-plus/shared-types";
 import {
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
-  TroopLandScoreboard,
-  TroopLandScoreboardPlayerEntry,
   TurfWarScoreboard,
+  TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
 } from "@generals-plus/shared-types";
 
-/**
- * Allocates the Colyseus scoreboard schema that matches the engine mode.
- *
- * The room state must use a concrete schema with the fields that mode can
- * publish; otherwise Colyseus cannot serialize mode-specific aggregates such as
- * Domination team scores or Turf War team territory.
- */
 export function createScoreboard(mode: GameModeType): BaseScoreboard {
   let scoreboard: BaseScoreboard;
   switch (mode) {
-    case GameMode.CLASSIC: {
-      const sb = new ClassicScoreboard();
-      sb.mode = mode;
-      return sb;
-    }
-    case GameMode.TURF_WAR: {
-      const sb = new TurfWarScoreboard();
-      sb.mode = mode;
-      return sb;
-    }
+    case GameMode.TURF_WAR:
+      scoreboard = new TurfWarScoreboard();
+      break;
     default:
-      scoreboard = new TroopLandScoreboard();
+      scoreboard = new ClassicScoreboard();
       break;
   }
   scoreboard.mode = mode;
   return scoreboard;
 }
 
-/**
- * Copies an engine scoreboard into the room-state scoreboard schema.
- *
- * Engine scoreboards intentionally report game metrics only. During room-state
- * sync we enrich each row with public player metadata so the client HUD can
- * render names, colors, and team groups using only the scoreboard payload.
- */
 export function syncScoreboard(
   target: BaseScoreboard,
   source: IBaseScoreboard,
-  playerMetadata: Iterable<PlayerScoreboardMetadata> = [],
+  playerMetadata: Iterable<PublicPlayer> = [],
 ): void {
   target.mode = source.mode;
   const metadataByPlayer = new Map(
@@ -64,21 +46,33 @@ export function syncScoreboard(
     case GameMode.CLASSIC: {
       const classicTarget = target as ClassicScoreboard;
       const classicSource = source as IClassicScoreboard;
-      classicTarget.players.clear();
-      for (const entry of classicSource.players) {
-        const schema = new ClassicScoreboardPlayerEntry();
-        syncBasePlayerFields(schema, entry, metadataByPlayer);
-        schema.troops = entry.troops;
-        schema.land = entry.land;
-        schema.isAlive = entry.isAlive;
-        classicTarget.players.push(schema);
-      }
+      syncPlayers(
+        classicTarget,
+        classicSource.players,
+        metadataByPlayer,
+        () => new ClassicScoreboardPlayerEntry(),
+        (schema, entry) => {
+          schema.troops = entry.troops;
+          schema.land = entry.land;
+          schema.isAlive = entry.isAlive;
+        },
+      );
       break;
     }
     case GameMode.TURF_WAR: {
       const turfTarget = target as TurfWarScoreboard;
       const turfSource = source as ITurfWarScoreboard;
-      syncTroopLandPlayers(turfTarget, turfSource.players, metadataByPlayer);
+      syncPlayers(
+        turfTarget,
+        turfSource.players,
+        metadataByPlayer,
+        () => new TurfWarScoreboardPlayerEntry(),
+        (schema, entry) => {
+          schema.troops = entry.troops;
+          schema.land = entry.land;
+          schema.isAlive = entry.isAlive;
+        },
+      );
       turfTarget.teams.clear();
       for (const entry of turfSource.teams) {
         const schema = new TurfWarScoreboardTeamEntry();
@@ -89,57 +83,41 @@ export function syncScoreboard(
       }
       break;
     }
-    default: {
-      const players = (source as { players?: TroopLandScoreEntry[] }).players;
-      if (players) {
-        syncTroopLandPlayers(
-          target as TroopLandScoreboard,
-          players,
-          metadataByPlayer,
-        );
-      }
+    default:
+      syncPlayers(
+        target as ClassicScoreboard,
+        (source as IClassicScoreboard).players,
+        metadataByPlayer,
+        () => new ClassicScoreboardPlayerEntry(),
+        (schema, entry) => {
+          schema.troops = entry.troops;
+          schema.land = entry.land;
+          schema.isAlive = entry.isAlive;
+        },
+      );
       break;
-    }
   }
 }
 
-type TroopLandScoreEntry = {
-  readonly playerId: string;
-  readonly troops: number;
-  readonly land: number;
-  readonly teamId?: string;
-};
-
-type PlayerScoreboardMetadata = {
-  readonly id: string;
-  readonly teamId: string;
-  readonly displayName: string;
-  readonly color: number;
-};
-
-function syncTroopLandPlayers(
-  target: TroopLandScoreboard,
-  entries: readonly TroopLandScoreEntry[],
-  metadataByPlayer: ReadonlyMap<string, PlayerScoreboardMetadata>,
+function syncPlayers<
+  T extends BaseScoreboardPlayerEntry,
+  E extends { readonly playerId: string },
+>(
+  target: { players: { clear(): void; push(item: T): void } },
+  entries: readonly E[],
+  metadataByPlayer: ReadonlyMap<string, PublicPlayer>,
+  createEntry: () => T,
+  configure?: (schema: T, entry: E) => void,
 ) {
   target.players.clear();
   for (const entry of entries) {
-    const schema = new TroopLandScoreboardPlayerEntry();
-    syncBasePlayerFields(schema, entry, metadataByPlayer);
-    schema.troops = entry.troops;
-    schema.land = entry.land;
+    const schema = createEntry();
+    const metadata = metadataByPlayer.get(entry.playerId);
+    schema.playerId = entry.playerId;
+    schema.teamId = metadata?.teamId ?? "";
+    schema.displayName = metadata?.displayName ?? entry.playerId;
+    schema.color = metadata?.color ?? 0;
+    configure?.(schema, entry);
     target.players.push(schema);
   }
-}
-
-function syncBasePlayerFields(
-  target: TroopLandScoreboardPlayerEntry,
-  source: TroopLandScoreEntry,
-  metadataByPlayer: ReadonlyMap<string, PlayerScoreboardMetadata>,
-) {
-  const metadata = metadataByPlayer.get(source.playerId);
-  target.playerId = source.playerId;
-  target.teamId = source.teamId || metadata?.teamId || "";
-  target.displayName = metadata?.displayName || source.playerId;
-  target.color = metadata?.color ?? 0;
 }

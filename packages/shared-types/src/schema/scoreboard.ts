@@ -6,7 +6,7 @@ import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema";
  * The HUD intentionally renders scoreboard data without consulting match player
  * maps, so rows carry the identity, team, and color fields needed for display.
  */
-export class BaseScoreboardPlayerEntry extends Schema {
+export abstract class BaseScoreboardPlayerEntry extends Schema {
   @type("string") playerId: string = "";
   @type("string") teamId: string = "";
   @type("string") displayName: string = "";
@@ -25,6 +25,10 @@ export class TroopLandScoreboardPlayerEntry extends BaseScoreboardPlayerEntry {
  * Classic mode row, including whether the player's general is still alive.
  */
 export class ClassicScoreboardPlayerEntry extends TroopLandScoreboardPlayerEntry {
+  @type("boolean") isAlive: boolean = false;
+}
+
+export class TurfWarScoreboardPlayerEntry extends TroopLandScoreboardPlayerEntry {
   @type("boolean") isAlive: boolean = false;
 }
 
@@ -60,7 +64,9 @@ export class TurfWarScoreboardTeamEntry extends Schema {
 /**
  * Turf War scoreboard with per-player troop/land rows and team territory data.
  */
-export class TurfWarScoreboard extends TroopLandScoreboard {
+export class TurfWarScoreboard extends BaseScoreboard {
+  @type([TurfWarScoreboardPlayerEntry]) players =
+    new ArraySchema<TurfWarScoreboardPlayerEntry>();
   @type([TurfWarScoreboardTeamEntry]) teams =
     new ArraySchema<TurfWarScoreboardTeamEntry>();
 }

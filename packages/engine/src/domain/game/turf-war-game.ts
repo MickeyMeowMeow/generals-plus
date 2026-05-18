@@ -152,6 +152,7 @@ export class TurfWarGame extends BaseGame implements ITurfWarGame {
         playerId,
         troops: score.troops,
         land: score.land,
+        isAlive: this.players.get(playerId)?.status === PlayerStatus.ACTIVE,
       }),
     );
 

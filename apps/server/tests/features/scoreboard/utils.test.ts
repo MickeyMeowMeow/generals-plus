@@ -5,7 +5,6 @@ import type {
 import { GameMode } from "@generals-plus/engine";
 import {
   ClassicScoreboard,
-  TroopLandScoreboard,
   TurfWarScoreboard,
 } from "@generals-plus/shared-types";
 import { describe, expect, it } from "vitest";
@@ -27,11 +26,11 @@ describe("createScoreboard", () => {
     expect(scoreboard.mode).toBe(GameMode.TURF_WAR);
   });
 
-  it("falls back to TroopLandScoreboard for unknown mode", () => {
+  it("falls back to ClassicScoreboard for unknown mode", () => {
     const scoreboard = createScoreboard("unknown" as GameMode);
 
     expect(scoreboard.mode).toBe("unknown");
-    expect(scoreboard).toBeInstanceOf(TroopLandScoreboard);
+    expect(scoreboard).toBeInstanceOf(ClassicScoreboard);
   });
 });
 
