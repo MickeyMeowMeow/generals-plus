@@ -117,6 +117,41 @@ describe("createGameHudScoreboardModel", () => {
     });
   });
 
+  it("adapts classic troop-land scoreboard rows sorted by troops descending", () => {
+    const scoreboard = new ClassicScoreboard();
+    scoreboard.mode = GameMode.CLASSIC;
+
+    const p1 = playerScore({
+      playerId: "p1",
+      teamId: "p1",
+      displayName: "Nova",
+      troops: 10,
+      land: 4,
+    });
+    const entry1 = new ClassicScoreboardPlayerEntry();
+    Object.assign(entry1, p1, { isAlive: true });
+
+    const p2 = playerScore({
+      playerId: "p2",
+      teamId: "p2",
+      displayName: "Astra",
+      troops: 25,
+      land: 2,
+    });
+    const entry2 = new ClassicScoreboardPlayerEntry();
+    Object.assign(entry2, p2, { isAlive: true });
+
+    scoreboard.players.push(entry1, entry2);
+
+    const model = createGameHudScoreboardModel(scoreboard);
+
+    expect(model.title).toBe("Classic");
+    expect(model.groups).toHaveLength(2);
+    // p2 has 25 troops, p1 has 10 troops -> p2 should be first!
+    expect(model.groups[0].id).toBe("p2");
+    expect(model.groups[1].id).toBe("p1");
+  });
+
   it("adapts turf war scoreboard rows grouped by team with percentage", () => {
     const model = createGameHudScoreboardModel(turfWarScoreboard());
 
@@ -195,5 +230,80 @@ describe("createGameHudScoreboardModel", () => {
       label: "Nova",
       values: { land: 8, troops: 15 },
     });
+  });
+
+  it("adapts classic troop-land scoreboard rows with dead player", () => {
+    const scoreboard = new ClassicScoreboard();
+    scoreboard.mode = GameMode.CLASSIC;
+
+    const p1 = playerScore({
+      playerId: "p1",
+      teamId: "p1",
+      displayName: "Nova",
+      troops: 0,
+      land: 0,
+    });
+    const entry1 = new ClassicScoreboardPlayerEntry();
+    Object.assign(entry1, p1, { isAlive: false });
+
+    scoreboard.players.push(entry1);
+
+    const model = createGameHudScoreboardModel(scoreboard);
+
+    expect(model.groups[0].rows[0].isAlive).toBe(false);
+  });
+
+  it("adapts classic troop-land scoreboard in team mode", () => {
+    const scoreboard = new ClassicScoreboard();
+    scoreboard.mode = GameMode.CLASSIC;
+
+    // Two players on team_0 (total 35 troops)
+    const p1 = playerScore({
+      playerId: "p1",
+      teamId: "team_0",
+      displayName: "Nova",
+      troops: 10,
+      land: 4,
+    });
+    const entry1 = new ClassicScoreboardPlayerEntry();
+    Object.assign(entry1, p1, { isAlive: true });
+
+    const p2 = playerScore({
+      playerId: "p2",
+      teamId: "team_0",
+      displayName: "Astra",
+      troops: 25,
+      land: 2,
+    });
+    const entry2 = new ClassicScoreboardPlayerEntry();
+    Object.assign(entry2, p2, { isAlive: true });
+
+    // One player on team_1 (total 30 troops)
+    const p3 = playerScore({
+      playerId: "p3",
+      teamId: "team_1",
+      displayName: "Rook",
+      troops: 30,
+      land: 5,
+    });
+    const entry3 = new ClassicScoreboardPlayerEntry();
+    Object.assign(entry3, p3, { isAlive: true });
+
+    scoreboard.players.push(entry1, entry2, entry3);
+
+    const model = createGameHudScoreboardModel(scoreboard);
+
+    expect(model.hasTeams).toBe(true);
+    expect(model.groups).toHaveLength(2);
+
+    const g1 = model.groups[0];
+    expect(g1.id).toBe("team_0");
+    expect(g1.label).toBe("Team 1");
+    expect(g1.totals?.troops).toBe(35);
+
+    const g2 = model.groups[1];
+    expect(g2.id).toBe("team_1");
+    expect(g2.label).toBe("Team 2");
+    expect(g2.totals?.troops).toBe(30);
   });
 });

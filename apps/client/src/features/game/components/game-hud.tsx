@@ -42,7 +42,13 @@ function formatValue(value: number | string | undefined) {
 export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
   const scoreboardModel = createGameHudScoreboardModel(scoreboard, targetScore);
   const shouldShowGroupRows = scoreboardModel.hasTeams;
-  const ungroupedRows = scoreboardModel.groups.flatMap((group) => group.rows);
+  const ungroupedRows = scoreboardModel.groups
+    .flatMap((group) => group.rows)
+    .sort(
+      (a, b) =>
+        Number(b.values.troops) - Number(a.values.troops) ||
+        a.label.localeCompare(b.label),
+    );
   const shouldShowTimer =
     timer && timer.targetTick > 0 && timer.tickInterval > 0;
 
@@ -132,17 +138,21 @@ export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
                         className="flex items-center gap-1.5 min-w-0 text-[13px] font-normal tracking-wide"
                       >
                         <span
-                          className="size-2.5 shrink-0"
+                          className={`size-2.5 shrink-0 ${player.isAlive ? "" : "opacity-40"}`}
                           style={{ backgroundColor: colorToHex(player.color) }}
                         />
-                        <span className="truncate">{player.label}</span>
+                        <span
+                          className={`truncate ${player.isAlive ? "" : "text-game-text-dim/50"}`}
+                        >
+                          {player.label}
+                        </span>
                       </div>,
                     );
                     scoreboardModel.columns.forEach((column) => {
                       groupRows.push(
                         <span
                           key={`player-metric-${player.id}-${column.key}`}
-                          className="text-right tabular-nums text-[13px] font-normal"
+                          className={`text-right tabular-nums text-[13px] font-normal ${player.isAlive ? "" : "text-game-text-dim/50"}`}
                         >
                           {formatValue(player.values?.[column.key])}
                         </span>,
@@ -172,17 +182,21 @@ export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
                       className="flex items-center gap-1.5 min-w-0 text-[13px] font-normal tracking-wide"
                     >
                       <span
-                        className="size-2.5 shrink-0"
+                        className={`size-2.5 shrink-0 ${player.isAlive ? "" : "opacity-40"}`}
                         style={{ backgroundColor: colorToHex(player.color) }}
                       />
-                      <span className="truncate">{player.label}</span>
+                      <span
+                        className={`truncate ${player.isAlive ? "" : "text-game-text-dim/50"}`}
+                      >
+                        {player.label}
+                      </span>
                     </div>,
                   );
                   scoreboardModel.columns.forEach((column) => {
                     playerRows.push(
                       <span
                         key={`player-metric-${player.id}-${column.key}`}
-                        className="text-right tabular-nums text-[13px] font-normal"
+                        className={`text-right tabular-nums text-[13px] font-normal ${player.isAlive ? "" : "text-game-text-dim/50"}`}
                       >
                         {formatValue(player.values?.[column.key])}
                       </span>,
