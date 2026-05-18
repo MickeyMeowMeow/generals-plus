@@ -12,21 +12,23 @@ import type {
 import type { AuthData } from "#/infra/network/auth";
 import type { NetworkProvider } from "#/infra/network/provider/interfaces";
 import type { RoomClient } from "#/infra/network/room";
-import { RoomStatus } from "#/infra/network/room";
 import type { UnsubscribeFn } from "#/infra/network/types";
 
-/**
- * Concrete implementation of RoomClient for the Colyseus SDK.
- *
- * @template State The Colyseus schema state.
- * @template Sent Mapping of message types that can be sent to the server.
- * @template Received Mapping of message types that can be received from the server.
- */
+export class HttpRequestError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "HttpRequestError";
+    this.status = status;
+  }
+}
+
 class ColyseusRoomAdapter<
   State,
   Sent extends MessagePayload,
   Received extends MessagePayload,
-> implements RoomClient<State>
+> implements RoomClient<State, Sent, Received>
 {
   private readonly room: Room<unknown, State>;
 
@@ -37,9 +39,11 @@ class ColyseusRoomAdapter<
   get roomId(): string {
     return this.room.roomId;
   }
+
   get sessionId(): string {
     return this.room.sessionId;
   }
+
   get state(): State {
     return this.room.state;
   }
@@ -65,44 +69,17 @@ class ColyseusRoomAdapter<
     return this.room.onMessage(type, callback);
   }
 
-  onStatusChange(
-    callback: (status: RoomStatus, details?: string) => void,
-  ): UnsubscribeFn {
-    const unsubError = this.room.onError((code, message) =>
-      callback(RoomStatus.ERROR, `[${code}] ${message}`),
-    );
-
-    const unsubLeave = this.room.onLeave((code) => {
-      // 1000 is Normal Closure; higher codes imply unexpected drops
-      const status =
-        code > 1000 ? RoomStatus.RECONNECTING : RoomStatus.DISCONNECTED;
-      callback(status);
-    });
-
-    return () => {
-      unsubError.clear();
-      unsubLeave.clear();
-    };
+  onError(callback: (code: number, message?: string) => void): UnsubscribeFn {
+    const signal = this.room.onError(callback);
+    return () => signal.clear();
   }
 
-  getRecoveryToken(): string | null {
-    return this.room.reconnectionToken || null;
+  onLeave(callback: (code: number, reason?: string) => void): UnsubscribeFn {
+    const signal = this.room.onLeave(callback);
+    return () => signal.clear();
   }
 }
 
-export class HttpRequestError extends Error {
-  status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.name = "HttpRequestError";
-    this.status = status;
-  }
-}
-
-/**
- * Implementation of `NetworkProvider` for the Colyseus SDK.
- */
 export class ColyseusNetworkProvider<User = unknown>
   implements NetworkProvider<User>
 {
@@ -114,13 +91,6 @@ export class ColyseusNetworkProvider<User = unknown>
     this.httpEndpoint = httpEndpoint;
   }
 
-  /**
-   * Creates a new `ColyseusNetworkProvider` instance connected to the specified WebSocket endpoint.
-   *
-   * @param endpoint The WebSocket endpoint of the Colyseus server.
-   *
-   * @returns A new instance of `ColyseusNetworkProvider` connected to the specified endpoint.
-   */
   static fromEndpoint<User = unknown>(
     endpoint: string,
   ): ColyseusNetworkProvider<User> {
@@ -282,14 +252,5 @@ export class ColyseusNetworkProvider<User = unknown>
         body: JSON.stringify({}),
       },
     );
-  }
-
-  async restoreSession<
-    State,
-    Sent extends MessagePayload,
-    Received extends MessagePayload,
-  >(recoveryToken: string): Promise<RoomClient<State, Sent, Received>> {
-    const room = await this.client.reconnect<State>(recoveryToken);
-    return new ColyseusRoomAdapter<State, Sent, Received>(room);
   }
 }

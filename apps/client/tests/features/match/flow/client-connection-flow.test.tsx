@@ -9,6 +9,7 @@ import {
   MatchServerMessage,
   PLAYER_COLOR_PALETTE,
   QueueClientMessage,
+  QueueServerMessage,
   ROOM_NAMES,
   SetupClientMessage,
   SetupServerMessage,
@@ -42,7 +43,6 @@ const networkMocks = vi.hoisted(() => ({
   joinById: vi.fn(),
   resolveCustomRoom: vi.fn(),
   consumeSeatReservation: vi.fn(),
-  restoreSession: vi.fn(),
 }));
 
 const { toastMock } = vi.hoisted(() => ({
@@ -195,16 +195,16 @@ function createRoom({
   state,
   currentState = state,
   emitInitialState = true,
-  recoveryToken = null,
 }: {
   roomId?: string;
   state: unknown;
   currentState?: unknown;
   emitInitialState?: boolean;
-  recoveryToken?: string | null;
 }) {
   const messageHandlers = new Map<string, (payload: unknown) => void>();
   const stateHandlers = new Set<(nextState: unknown) => void>();
+  const errorHandlers = new Set<(code: number, message?: string) => void>();
+  const leaveHandlers = new Set<(code: number, reason?: string) => void>();
   const room = {
     roomId,
     sessionId: "session-1",
@@ -222,8 +222,14 @@ function createRoom({
       messageHandlers.set(type, callback);
       return () => {};
     }),
-    onStatusChange: vi.fn().mockReturnValue(() => {}),
-    getRecoveryToken: vi.fn().mockReturnValue(recoveryToken),
+    onError: vi.fn((callback: (code: number, message?: string) => void) => {
+      errorHandlers.add(callback);
+      return () => errorHandlers.delete(callback);
+    }),
+    onLeave: vi.fn((callback: (code: number, reason?: string) => void) => {
+      leaveHandlers.add(callback);
+      return () => leaveHandlers.delete(callback);
+    }),
     emitState(nextState: unknown) {
       room.state = nextState;
       for (const callback of stateHandlers) {
@@ -232,6 +238,16 @@ function createRoom({
     },
     emitMessage(type: string, payload: unknown) {
       messageHandlers.get(type)?.(payload);
+    },
+    emitError(code: number, message?: string) {
+      for (const callback of errorHandlers) {
+        callback(code, message);
+      }
+    },
+    emitLeave(code: number, reason?: string) {
+      for (const callback of leaveHandlers) {
+        callback(code, reason);
+      }
     },
   };
   return room;
@@ -845,136 +861,6 @@ describe("client room flows", () => {
     expect(matchRoom.send).toHaveBeenCalledWith(MatchClientMessage.CLEAR_QUEUE);
   });
 
-  it("restores an official match after refreshing on the root route", async () => {
-    const matchRoom = createRoom({
-      roomId: "match-refresh",
-      state: createMatchState(),
-    });
-    networkMocks.restoreSession.mockResolvedValue(matchRoom);
-    localStorage.setItem(
-      "generals_plus_active_game_session",
-      JSON.stringify({
-        recoveryToken: "official-token",
-        source: { type: "official" },
-      }),
-    );
-
-    renderRoute("/", auth());
-
-    expect(await screen.findByTestId("game-app")).toBeTruthy();
-    expect(networkMocks.restoreSession).toHaveBeenCalledWith("official-token");
-  });
-
-  it("restores a custom match after refreshing its setup URL", async () => {
-    const matchRoom = createRoom({
-      roomId: "match-custom-refresh",
-      state: createMatchState(),
-    });
-    networkMocks.restoreSession.mockResolvedValue(matchRoom);
-    localStorage.setItem(
-      "generals_plus_active_game_session",
-      JSON.stringify({
-        recoveryToken: "custom-token",
-        source: { type: "custom", customRoomKey: "setup-refresh" },
-      }),
-    );
-
-    renderRoute("/match/setup-refresh", auth());
-
-    expect(await screen.findByTestId("game-app")).toBeTruthy();
-    expect(networkMocks.restoreSession).toHaveBeenCalledWith("custom-token");
-    expect(networkMocks.joinById).not.toHaveBeenCalled();
-  });
-
-  it("falls back to the setup room when a persisted custom recovery token is stale", async () => {
-    networkMocks.restoreSession.mockRejectedValue(new Error("room not found"));
-    const setupRoom = createRoom({
-      roomId: "setup-stale",
-      state: createSetupState([
-        {
-          id: "player-1",
-          displayName: "Nova",
-          color: PLAYER_COLOR_PALETTE[0],
-          isHost: true,
-        },
-      ]),
-    });
-    networkMocks.joinById.mockResolvedValue(setupRoom);
-    localStorage.setItem(
-      "generals_plus_active_game_session",
-      JSON.stringify({
-        recoveryToken: "stale-token",
-        source: { type: "custom", customRoomKey: "setup-stale" },
-      }),
-    );
-
-    renderRoute("/match/setup-stale", auth());
-
-    expect(await screen.findByText("You are host")).toBeTruthy();
-    expect(
-      localStorage.getItem("generals_plus_active_game_session"),
-    ).toBeNull();
-    expect(networkMocks.restoreSession).toHaveBeenCalledWith("stale-token");
-    expect(networkMocks.resolveCustomRoom).toHaveBeenCalledWith("setup-stale");
-    expect(networkMocks.joinById).toHaveBeenCalledWith("setup-stale");
-  });
-
-  it("stops waiting when persisted match recovery never resolves", async () => {
-    vi.useFakeTimers();
-    networkMocks.restoreSession.mockReturnValue(new Promise(() => {}));
-    const persistedSession = JSON.stringify({
-      recoveryToken: "hung-token",
-      source: { type: "official" },
-    });
-    localStorage.setItem("generals_plus_active_game_session", persistedSession);
-
-    renderRoute("/", auth());
-
-    expect(screen.getByText("Connecting to match")).toBeTruthy();
-
-    await act(async () => {
-      vi.advanceTimersByTime(10_000);
-      await Promise.resolve();
-    });
-
-    expect(
-      screen.getByRole("heading", { name: "Connection failed" }),
-    ).toBeTruthy();
-    expect(screen.getByText(/Unable to restore the match/)).toBeTruthy();
-    expect(localStorage.getItem("generals_plus_active_game_session")).toBe(
-      persistedSession,
-    );
-  });
-
-  it("keeps custom recovery timeouts on the error panel instead of silently rejoining setup", async () => {
-    vi.useFakeTimers();
-    networkMocks.restoreSession.mockReturnValue(new Promise(() => {}));
-    const persistedSession = JSON.stringify({
-      recoveryToken: "hung-custom-token",
-      source: { type: "custom", customRoomKey: "setup-timeout" },
-    });
-    localStorage.setItem("generals_plus_active_game_session", persistedSession);
-
-    renderRoute("/match/setup-timeout", auth());
-
-    expect(screen.getByText("Connecting to match")).toBeTruthy();
-
-    await act(async () => {
-      vi.advanceTimersByTime(10_000);
-      await Promise.resolve();
-    });
-
-    expect(
-      screen.getByRole("heading", { name: "Connection failed" }),
-    ).toBeTruthy();
-    expect(screen.getByText(/Unable to restore the match/)).toBeTruthy();
-    expect(networkMocks.resolveCustomRoom).not.toHaveBeenCalled();
-    expect(networkMocks.joinById).not.toHaveBeenCalled();
-    expect(localStorage.getItem("generals_plus_active_game_session")).toBe(
-      persistedSession,
-    );
-  });
-
   it("resolves a fresh setup room after returning from a finished custom match", async () => {
     const setupRoom = createRoom({
       roomId: "setup-result-a",
@@ -1104,5 +990,55 @@ describe("client room flows", () => {
       await screen.findByRole("heading", { name: "Room unavailable" }),
     ).toBeTruthy();
     expect(screen.getByText(/room not found/)).toBeTruthy();
+  });
+
+  it("shows a disconnect dialog when the active match room drops", async () => {
+    const queueRoom = createRoom({
+      roomId: "queue-disconnect",
+      state: createState({
+        players: [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+          },
+        ],
+      }),
+    });
+    const matchRoom = createRoom({
+      roomId: "match-disconnect",
+      state: createMatchState(),
+    });
+    const reservation = {
+      name: ROOM_NAMES.MATCH,
+      roomId: "match-disconnect",
+      sessionId: "session-1",
+    };
+
+    networkMocks.joinOrCreate.mockResolvedValue(queueRoom);
+    networkMocks.consumeSeatReservation.mockResolvedValue(matchRoom);
+
+    renderRoute("/", auth());
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Start" }));
+    await user.click(screen.getByRole("button", { name: "Classic, Ready" }));
+
+    await screen.findByText("Pick Your Color");
+    queueRoom.emitMessage(QueueServerMessage.SEAT_RESERVATION, reservation);
+    await screen.findByTestId("game-app");
+
+    await act(async () => {
+      matchRoom.emitLeave(1006, "Your connection to the match was lost.");
+    });
+
+    expect(await screen.findByText("Disconnected")).toBeTruthy();
+    expect(
+      screen.getByText("Your connection to the match was lost."),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Return to lobby" }));
+
+    expect(await screen.findByRole("button", { name: "Start" })).toBeTruthy();
   });
 });

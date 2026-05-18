@@ -5,16 +5,12 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthStatus } from "#/features/auth/auth-store";
-import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 import { createMockAuth } from "#/tests/helpers/auth";
 import { renderRoute } from "#/tests/helpers/render";
-
-const initialMatchState = useMatchConnectionStore.getInitialState();
 
 describe("index route", () => {
   beforeEach(() => {
     localStorage.clear();
-    useMatchConnectionStore.setState(initialMatchState, true);
   });
 
   afterEach(() => {
@@ -87,23 +83,20 @@ describe("index route", () => {
     ).toBeDisabled();
   });
 
-  it("signs out from lobby and clears active room state", async () => {
+  it("signs out from lobby", async () => {
     const signOut = vi.fn().mockResolvedValue(undefined);
-    const resetMatchConnection = vi.fn().mockResolvedValue(undefined);
     const auth = createMockAuth({
       status: AuthStatus.AUTHENTICATED,
       user: { id: "helix", displayName: "Helix" },
       token: "tok",
     });
     auth.actions.signOut = signOut;
-    useMatchConnectionStore.setState({ reset: resetMatchConnection });
 
     renderRoute("/", auth);
 
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Sign out" }));
 
-    expect(resetMatchConnection).toHaveBeenCalledTimes(1);
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 });

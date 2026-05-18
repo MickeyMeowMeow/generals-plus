@@ -25,20 +25,6 @@ export function createRoom<State = unknown, Message = unknown>(
     roomId: "room-1",
     name,
     sessionId: "session-1",
-    reconnectionToken: "room-1:token-abc",
-    reconnection: {
-      enabled: true,
-      maxRetries: 15,
-      minDelay: 100,
-      maxDelay: 5000,
-      minUptime: 5000,
-      delay: 100,
-      backoff: vi.fn(),
-      maxEnqueuedMessages: 10,
-      enqueuedMessages: [],
-      retryCount: 0,
-      isReconnecting: false,
-    },
     state: {} as State,
     leave: vi.fn().mockResolvedValue(1000),
     send: vi.fn(),
@@ -50,8 +36,6 @@ export function createRoom<State = unknown, Message = unknown>(
     onMessage: vi.fn().mockReturnValue(() => {}),
     onError: vi.fn().mockReturnValue({ clear: vi.fn() }),
     onLeave: vi.fn().mockReturnValue({ clear: vi.fn() }),
-    onDrop: vi.fn().mockReturnValue({ clear: vi.fn() }),
-    onReconnect: vi.fn().mockReturnValue({ clear: vi.fn() }),
   };
 }
 
@@ -64,7 +48,6 @@ export function createMockClient(
     joinById: vi.fn(),
     create: vi.fn(),
     join: vi.fn(),
-    reconnect: vi.fn(),
     consumeSeatReservation: vi.fn(),
     getLatency: vi.fn(),
     http: {},

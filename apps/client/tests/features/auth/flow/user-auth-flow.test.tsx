@@ -2,20 +2,13 @@
 
 import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthStatus } from "#/features/auth/auth-store";
-import { useMatchConnectionStore } from "#/features/match/store/match-connection-store";
 import { createMockAuth } from "#/tests/helpers/auth";
 import { renderRoute, setAuthValue } from "#/tests/helpers/render";
 
-const initialMatchState = useMatchConnectionStore.getInitialState();
-
 describe("user auth flow", () => {
-  beforeEach(() => {
-    useMatchConnectionStore.setState(initialMatchState, true);
-  });
-
   afterEach(() => {
     cleanup();
   });

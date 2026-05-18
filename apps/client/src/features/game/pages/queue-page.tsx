@@ -35,10 +35,6 @@ export function QueuePage({
   const modeLabel = getModeOption(gameMode)?.label ?? gameMode;
 
   if (seatReservation) {
-    /**
-     * Seat reservations are consumed by `GamePage`, which then persists a
-     * recovery token for refresh-safe official matches.
-     */
     return (
       <GamePage
         connection={{ type: "reservation", reservation: seatReservation }}
