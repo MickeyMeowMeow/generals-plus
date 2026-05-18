@@ -111,16 +111,11 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
   }, [clearSeatReservation]);
 
   if (seatReservation) {
-    /**
-     * Custom matches keep the stable room URL in the address bar; `GamePage`
-     * persists that key with the recovery token so refresh can restore the match.
-     */
     return (
       <GamePage
         connection={{ type: "reservation", reservation: seatReservation }}
         source={{
           type: "custom",
-          customRoomKey: roomId,
           onReturn: handleReturnToSetup,
         }}
       />

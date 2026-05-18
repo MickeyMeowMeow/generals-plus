@@ -169,21 +169,4 @@ export interface NetworkProvider<User = unknown> {
   createCustomRoom(): Promise<CustomRoomCreation>;
 
   resolveCustomRoom(customRoomKey: string): Promise<CustomRoomResolution>;
-
-  /**
-   * Re-establishes a connection using a previously issued recovery token.
-   *
-   * @template State The structure of the synchronized game state.
-   * @template Sent Map of messages the client is permitted to send.
-   * @template Received Map of messages the client expects to receive.
-   *
-   * @param recoveryToken The token obtained from a previous session for recovery.
-   *
-   * @returns A promise that resolves to a RoomClient instance if the session is successfully restored.
-   */
-  restoreSession<
-    State,
-    Sent extends MessagePayload,
-    Received extends MessagePayload,
-  >(recoveryToken: string): Promise<RoomClient<State, Sent, Received>>;
 }

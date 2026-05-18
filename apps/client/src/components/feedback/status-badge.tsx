@@ -14,7 +14,6 @@ const STATUS_VARIANT_MAP: Record<
   authenticating: "secondary",
   connecting: "secondary",
   hydrating: "secondary",
-  reconnecting: "secondary",
   error: "destructive",
 };
 

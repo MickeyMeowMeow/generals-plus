@@ -110,7 +110,7 @@ export function LoadingPanel({ message }: { message: string }) {
  * Error surface for room, auth, and route failures.
  *
  * `action` lets connection-oriented callers offer a concrete escape hatch, such
- * as returning to the lobby after a stale room link or failed recovery attempt.
+ * as returning to the lobby after a stale room link or join failure.
  */
 export function ErrorPanel({
   title = "Connection failed",

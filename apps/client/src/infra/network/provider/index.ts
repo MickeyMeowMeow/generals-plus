@@ -25,8 +25,8 @@ function getNetworkProvider(): NetworkProvider<UserProfile> {
  * Stable network facade used by auth, queue, setup, and match hooks.
  *
  * The facade keeps callers decoupled from the Colyseus implementation and makes
- * room operations (`joinOrCreate`, `joinById`, `create`, seat consumption, and
- * reconnect) share one endpoint/auth source.
+ * room operations (`joinOrCreate`, `joinById`, `create`, and seat consumption)
+ * share one endpoint/auth source.
  */
 export const networkProvider: NetworkProvider<UserProfile> = {
   signInWithEmailAndPassword: (...args) =>
@@ -48,5 +48,4 @@ export const networkProvider: NetworkProvider<UserProfile> = {
   createCustomRoom: () => getNetworkProvider().createCustomRoom(),
   resolveCustomRoom: (...args) =>
     getNetworkProvider().resolveCustomRoom(...args),
-  restoreSession: (...args) => getNetworkProvider().restoreSession(...args),
 };

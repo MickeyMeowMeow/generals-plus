@@ -5,8 +5,7 @@ import {
   MatchServerMessage,
 } from "@generals-plus/shared-types";
 import { Flag, Shield, Swords } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
@@ -16,12 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
-import { isTerminalRecoveryErrorCode } from "#/features/game/api/game-room-errors";
 import type { GameRoomConnection } from "#/features/game/api/use-game-room";
-import {
-  clearPersistedGameSession,
-  useGameRoom,
-} from "#/features/game/api/use-game-room";
+import { useGameRoom } from "#/features/game/api/use-game-room";
 import { GameHud } from "#/features/game/components/game-hud";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { Ping } from "#/features/game/renderer/layers/ping";
@@ -40,26 +35,18 @@ export type GamePageSource =
   | {
       /** Custom setup flow rendered from `/match/:roomId`. */
       type: "custom";
-      /** Stable custom room URL key used to scope persisted match recovery. */
-      customRoomKey: string;
       /** Returns from a finished custom match to its setup route. */
       onReturn: () => void;
     };
 
 interface GamePageProps {
-  /** Seat reservation or recovery token used to enter the match room. */
+  /** Seat reservation used to enter the match room. */
   connection: GameRoomConnection;
   /** Return behavior and metadata for the flow that launched the match. */
   source: GamePageSource;
-  /** Optional hook for routes that should abandon a stale recovery path. */
-  onRecoveryFailed?: () => void;
 }
 
 /**
- * Only terminal recovery failures should abandon the match URL and return to
- * setup. Transient network failures still need the visible error panel so the
- * user can retry/diagnose without discarding a potentially valid live match.
- *
  * Match view rendered after queue/setup hands the client a seat reservation.
  *
  * The page delegates socket ownership and state adaptation to `useGameRoom`,
@@ -68,12 +55,7 @@ interface GamePageProps {
  * official matches and `/match/:roomId` custom matches can reuse the same game
  * surface after their respective seat-reservation handoff.
  */
-export function GamePage({
-  connection,
-  source,
-  onRecoveryFailed,
-}: GamePageProps) {
-  const navigate = useNavigate();
+export function GamePage({ connection, source }: GamePageProps) {
   /**
    * Keep the full connection payload stable across parent re-renders.
    *
@@ -82,10 +64,7 @@ export function GamePage({
    * intact, because Colyseus may attach SDK-specific fields beyond the visible
    * `{ name, roomId, sessionId }` tuple.
    */
-  const connectionKey =
-    connection.type === "reservation"
-      ? `reservation:${connection.reservation.name}:${connection.reservation.roomId}:${connection.reservation.sessionId}`
-      : `recovery:${connection.recoveryToken}`;
+  const connectionKey = `reservation:${connection.reservation.name}:${connection.reservation.roomId}:${connection.reservation.sessionId}`;
   const stableConnectionRef = useRef<{
     key: string;
     value: GameRoomConnection;
@@ -94,21 +73,6 @@ export function GamePage({
     stableConnectionRef.current = { key: connectionKey, value: connection };
   }
   const stableConnection = stableConnectionRef.current.value;
-  const customRoomKey = source.type === "custom" ? source.customRoomKey : null;
-  const hasHandledRecoveryFailureRef = useRef(false);
-  const recoveryFailedHandlerRef = useRef(onRecoveryFailed);
-  recoveryFailedHandlerRef.current = onRecoveryFailed;
-
-  /**
-   * Memoized route context persisted alongside the recovery token.
-   */
-  const persistedSource = useMemo(
-    () =>
-      source.type === "official"
-        ? { type: "official" as const }
-        : { type: "custom" as const, customRoomKey: customRoomKey ?? "" },
-    [source.type, customRoomKey],
-  );
   const {
     room,
     renderGrid,
@@ -120,15 +84,8 @@ export function GamePage({
     playerColors,
     playerNames,
     error,
-    errorCode,
     isConnecting,
-  } = useGameRoom(stableConnection, persistedSource);
-  const shouldFallbackToSetup =
-    Boolean(errorCode) &&
-    connection.type === "recovery" &&
-    source.type === "custom" &&
-    Boolean(onRecoveryFailed) &&
-    isTerminalRecoveryErrorCode(errorCode);
+  } = useGameRoom(stableConnection);
 
   const [pings, setPings] = useState<Ping[]>([]);
   const [activeBrush, setActiveBrush] = useState<
@@ -260,22 +217,7 @@ export function GamePage({
   );
 
   const handleReturn = () => {
-    clearPersistedGameSession();
     source.onReturn();
-  };
-
-  /**
-   * Leave the failed match recovery path and send users to a usable lobby.
-   *
-   * Custom games live under `/match/:roomId`, so a failed custom recovery needs
-   * an explicit navigation away from the stale setup URL after clearing state.
-   */
-  const handleConnectionFailedReturn = () => {
-    clearPersistedGameSession();
-    source.onReturn();
-    if (source.type === "custom") {
-      navigate("/");
-    }
   };
 
   useEffect(() => {
@@ -285,37 +227,16 @@ export function GamePage({
     }
   }, [gameResult, spectatorSource]);
 
-  useEffect(() => {
-    if (!shouldFallbackToSetup) {
-      hasHandledRecoveryFailureRef.current = false;
-      return;
-    }
-
-    const recoveryFailedHandler = recoveryFailedHandlerRef.current;
-    if (hasHandledRecoveryFailureRef.current || !recoveryFailedHandler) {
-      return;
-    }
-
-    hasHandledRecoveryFailureRef.current = true;
-    recoveryFailedHandler();
-  }, [shouldFallbackToSetup]);
-
-  if (shouldFallbackToSetup) {
-    return (
-      <StageCenter>
-        <LoadingPanel message="Rejoining custom room" />
-      </StageCenter>
-    );
-  }
-
   if (error) {
     return (
       <StageCenter>
         <ErrorPanel
           message={error}
           action={
-            <Button type="button" onClick={handleConnectionFailedReturn}>
-              Return to lobby
+            <Button type="button" onClick={handleReturn}>
+              {source.type === "official"
+                ? "Return to lobby"
+                : "Return to setup room"}
             </Button>
           }
         />
