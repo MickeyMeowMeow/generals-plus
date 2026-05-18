@@ -1,7 +1,9 @@
 import { StrictMode } from "react";
 import { Links, Meta, Outlet, Scripts } from "react-router";
 
-import "./index.css";
+import { LoadingPanel, Stage, StageCenter } from "#/components/layout";
+
+import "#/index.css";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -32,8 +34,10 @@ export default function Root() {
 
 export function HydrateFallback() {
   return (
-    <div id="root">
-      <p>Loading...</p>
-    </div>
+    <Stage>
+      <StageCenter>
+        <LoadingPanel message="Loading..." />
+      </StageCenter>
+    </Stage>
   );
 }

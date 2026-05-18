@@ -99,13 +99,6 @@
   --sidebar-ring: oklch(0.723 0.014 214.4);
 }
 
-/* The React root should let the match screen own the full viewport. */
-#root {
-  display: flex;
-  flex-direction: column;
-  min-height: 100svh;
-}
-
 body {
   margin: 0;
 }
