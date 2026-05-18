@@ -16,10 +16,23 @@ interface BaseSetupSettings {
   speed: number;
 }
 
-export interface ClassicSetupSettings extends BaseSetupSettings {}
+export interface ClassicSetupSettings extends BaseSetupSettings {
+  gameMode: typeof GameMode.CLASSIC;
+}
 
 export interface TurfWarSetupSettings extends BaseSetupSettings {
+  gameMode: typeof GameMode.TURF_WAR;
   duration: number;
 }
 
-export type SetupSettings = ClassicSetupSettings | TurfWarSetupSettings;
+export interface OtherSettings extends BaseSetupSettings {
+  gameMode: Exclude<
+    GameMode,
+    typeof GameMode.CLASSIC | typeof GameMode.TURF_WAR
+  >;
+}
+
+export type SetupSettings =
+  | ClassicSetupSettings
+  | TurfWarSetupSettings
+  | OtherSettings;

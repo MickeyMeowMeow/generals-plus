@@ -12,7 +12,7 @@ export class MatchState extends Schema {
   @type("string") status: GameStatus = GameStatus.NOT_STARTED;
   @type("number") tick: number = 0;
   @type("number") tickInterval: number = 500;
-  @type("number") finishTick?: number = 1000;
+  @type("number") finishTick: number = -1;
 
   @type("number") width: number = 0;
   @type("number") height: number = 0;

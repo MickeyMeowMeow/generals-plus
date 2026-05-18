@@ -204,8 +204,9 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       Object.assign(this.state, update);
 
       // Recompute derived values from multipliers.
-      this.state.tickInterval = Math.round(
-        BASE_TICK_INTERVAL / this.state.speed,
+      this.state.tickInterval = Math.max(
+        100,
+        Math.round(BASE_TICK_INTERVAL / this.state.speed),
       );
       if (this.state.gameMode === "turf_war") {
         const baseFinishTick = MODE_SETTINGS.turf_war.finishTick ?? 360;

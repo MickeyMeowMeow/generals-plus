@@ -480,11 +480,11 @@ describe("MatchRoom", () => {
       expect(room.state.finishTick).toBe(720);
     });
 
-    it("defaults finishTick to undefined when metadata omits it", async () => {
+    it("defaults finishTick to 0 when metadata omits it", async () => {
       const metadata = createValidRoomData();
       room = await createRoom<MatchRoom>("match", { metadata });
 
-      expect(room.state.finishTick).toBeUndefined();
+      expect(room.state.finishTick).toBe(-1);
     });
   });
 

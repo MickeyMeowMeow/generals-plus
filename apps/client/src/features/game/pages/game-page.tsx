@@ -234,7 +234,9 @@ export function GamePage({ connection, source }: GamePageProps) {
           currentTick: gameState.tick,
           targetTick:
             gameState.mode === GameMode.TURF_WAR
-              ? (gameState.finishTick ?? 0)
+              ? gameState.finishTick > 0
+                ? gameState.finishTick
+                : 0
               : 0,
           tickInterval:
             gameState.mode === GameMode.TURF_WAR ? gameState.tickInterval : 0,
