@@ -8,7 +8,6 @@ import type { UnsubscribeFn } from "#/infra/network/types";
 export const RoomStatus = {
   CONNECTED: "connected",
   DISCONNECTED: "disconnected",
-  RECONNECTING: "reconnecting",
   ERROR: "error",
 } as const;
 

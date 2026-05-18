@@ -77,10 +77,8 @@ class ColyseusRoomAdapter<
       callback(RoomStatus.ERROR, `[${code}] ${message}`),
     );
 
-    const unsubLeave = this.room.onLeave((code, reason) => {
-      const status =
-        code > 1000 ? RoomStatus.RECONNECTING : RoomStatus.DISCONNECTED;
-      callback(status, reason);
+    const unsubLeave = this.room.onLeave((_code, reason) => {
+      callback(RoomStatus.DISCONNECTED, reason);
     });
 
     return () => {

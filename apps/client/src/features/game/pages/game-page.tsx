@@ -10,8 +10,7 @@ import {
   MatchServerMessage,
 } from "@generals-plus/shared-types";
 import { Flag, Shield, Swords, Undo2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";

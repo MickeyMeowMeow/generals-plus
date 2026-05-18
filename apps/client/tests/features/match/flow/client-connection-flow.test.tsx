@@ -486,7 +486,7 @@ describe("client room flows", () => {
     await screen.findByRole("heading", { name: "Pick Your Color" });
 
     act(() => {
-      queueRoom.emitStatus(RoomStatus.RECONNECTING, "connection lost");
+      queueRoom.emitStatus(RoomStatus.DISCONNECTED, "connection lost");
     });
 
     expect(onLeave).toHaveBeenCalledTimes(1);

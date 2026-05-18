@@ -70,11 +70,7 @@ export function QueuePage({
 
   useEffect(() => {
     if (!status || seatReservation) return;
-    if (
-      status === RoomStatus.DISCONNECTED ||
-      status === RoomStatus.RECONNECTING ||
-      status === RoomStatus.ERROR
-    ) {
+    if (status === RoomStatus.DISCONNECTED || status === RoomStatus.ERROR) {
       onLeave();
     }
   }, [onLeave, seatReservation, status]);
