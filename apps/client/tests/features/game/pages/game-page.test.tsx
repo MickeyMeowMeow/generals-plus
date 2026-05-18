@@ -125,7 +125,16 @@ function createGameState(
     mode: GameMode.CLASSIC,
     scoreboard: createScoreboard(),
     players: new Map([["player-1", player]]),
-    publicPlayers: new Map([
+    publicPlayers: new Map<
+      string,
+      {
+        id: string;
+        teamId: string;
+        displayName: string;
+        color: number;
+        status: PlayerStatus;
+      }
+    >([
       [
         "player-1",
         {
@@ -136,10 +145,9 @@ function createGameState(
           status: player.status,
         },
       ],
-      ...extraPublicPlayers.map((publicPlayer) => [
-        publicPlayer.id,
-        publicPlayer,
-      ]),
+      ...extraPublicPlayers.map(
+        (publicPlayer) => [publicPlayer.id, publicPlayer] as const,
+      ),
     ]),
   };
 }
