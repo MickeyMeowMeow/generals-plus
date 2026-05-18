@@ -230,10 +230,11 @@ export function GamePage({ connection, source }: GamePageProps) {
 
       <GameHud
         scoreboard={gameState.scoreboard}
-        visiblePlayers={visiblePlayers}
-        playerColors={playerColors}
-        playerNames={playerNames}
-        currentSessionId={room?.sessionId}
+        timer={{
+          currentTick: gameState.tick,
+          targetTick: 0,
+          tickInterval: 0,
+        }}
       />
 
       {gameResult ? (

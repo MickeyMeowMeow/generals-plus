@@ -2,40 +2,36 @@ import { GameMode } from "@generals-plus/engine";
 import {
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
-  Player,
+  DominationScoreboard,
+  TroopLandScoreboardPlayerEntry,
 } from "@generals-plus/shared-types";
 import { describe, expect, it } from "vitest";
 
 import { createGameHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
 
 /**
- * Creates a Colyseus player schema fixture with overridable identity fields.
- */
-function player(overrides: Partial<Player> = {}): Player {
-  const value = new Player();
-  value.id = "p1";
-  value.displayName = "Nova";
-  value.teamId = "t1";
-  value.color = 0xff0000;
-  value.sessionId = "s1";
-  Object.assign(value, overrides);
-  return value;
-}
-
-/**
  * Creates one scoreboard player entry using the real shared schema class.
  */
 function playerScore({
   playerId,
+  teamId = "t1",
+  displayName = "Nova",
+  color = 0xff0000,
   troops,
   land,
 }: {
   playerId: string;
+  teamId?: string;
+  displayName?: string;
+  color?: number;
   troops: number;
   land: number;
-}) {
-  const value = new ClassicScoreboardPlayerEntry();
+}): TroopLandScoreboardPlayerEntry {
+  const value = new TroopLandScoreboardPlayerEntry();
   value.playerId = playerId;
+  value.teamId = teamId;
+  value.displayName = displayName;
+  value.color = color;
   value.troops = troops;
   value.land = land;
   return value;
@@ -47,37 +43,35 @@ function playerScore({
 function classicScoreboard() {
   const scoreboard = new ClassicScoreboard();
   scoreboard.mode = GameMode.CLASSIC;
-  scoreboard.players.push(playerScore({ playerId: "p1", troops: 12, land: 4 }));
+  const score = playerScore({ playerId: "p1", troops: 12, land: 4 });
+  const classicScore = new ClassicScoreboardPlayerEntry();
+  Object.assign(classicScore, score, { isAlive: true });
+  scoreboard.players.push(classicScore);
   return scoreboard;
 }
 
-/**
- * Creates a Domination-like scoreboard fixture without requiring shared schema changes.
- */
 function dominationScoreboard() {
-  const scoreboard = Object.assign(new ClassicScoreboard(), {
-    teamScores: new Map([
-      ["t1", 30],
-      ["t2", 10],
-    ]),
-  });
+  const scoreboard = new DominationScoreboard();
   scoreboard.mode = GameMode.DOMINATION;
+  scoreboard.teamScores.set("t1", 30);
+  scoreboard.teamScores.set("t2", 10);
   scoreboard.players.push(
     playerScore({ playerId: "p1", troops: 12, land: 4 }),
-    playerScore({ playerId: "p2", troops: 8, land: 3 }),
+    playerScore({
+      playerId: "p2",
+      teamId: "t2",
+      displayName: "Rook",
+      color: 0x00ff00,
+      troops: 8,
+      land: 3,
+    }),
   );
   return scoreboard;
 }
 
 describe("createGameHudScoreboardModel", () => {
   it("adapts classic troop-land scoreboard rows", () => {
-    const model = createGameHudScoreboardModel({
-      scoreboard: classicScoreboard(),
-      visiblePlayers: [player()],
-      playerColors: new Map(),
-      playerNames: new Map(),
-      currentSessionId: "s1",
-    });
+    const model = createGameHudScoreboardModel(classicScoreboard());
 
     expect(model.title).toBe("Players");
     expect(model.columns.map((column) => column.key)).toEqual([
@@ -87,28 +81,12 @@ describe("createGameHudScoreboardModel", () => {
     expect(model.groups.at(0)?.rows.at(0)).toMatchObject({
       id: "p1",
       label: "Nova",
-      isCurrent: true,
       values: { land: 4, troops: 12 },
     });
   });
 
   it("adapts domination team scores when present", () => {
-    const model = createGameHudScoreboardModel({
-      scoreboard: dominationScoreboard(),
-      visiblePlayers: [
-        player({ id: "p1", displayName: "Nova", teamId: "t1" }),
-        player({
-          id: "p2",
-          displayName: "Rook",
-          teamId: "t2",
-          color: 0x00ff00,
-          sessionId: "s2",
-        }),
-      ],
-      playerColors: new Map(),
-      playerNames: new Map(),
-      currentSessionId: "s1",
-    });
+    const model = createGameHudScoreboardModel(dominationScoreboard());
 
     expect(model.title).toBe("Teams");
     expect(model.columns.map((column) => column.key)).toEqual([
@@ -124,6 +102,10 @@ describe("createGameHudScoreboardModel", () => {
       score: "",
       land: 4,
       troops: 12,
+    });
+    expect(model.groups.at(1)).toMatchObject({
+      id: "t2",
+      totals: { score: 10, land: 3, troops: 8 },
     });
   });
 });

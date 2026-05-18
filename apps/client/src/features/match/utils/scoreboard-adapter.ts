@@ -1,5 +1,5 @@
 import { GameMode } from "@generals-plus/engine";
-import type { BaseScoreboard, Player } from "@generals-plus/shared-types";
+import type { BaseScoreboard } from "@generals-plus/shared-types";
 
 /**
  * Column metadata used by the match HUD scoreboard table.
@@ -17,12 +17,12 @@ export interface GameHudColumn {
 export interface GameHudRow {
   /** Stable player id. */
   id: string;
+  /** Team id used for grouping when known. */
+  teamId?: string;
   /** Display name shown in the HUD. */
   label: string;
   /** Player color as a numeric RGB value. */
   color: number;
-  /** Whether this row represents the current client. */
-  isCurrent: boolean;
   /** Metric values keyed by {@link GameHudColumn.key}. */
   values: Record<string, number | string>;
 }
@@ -56,6 +56,8 @@ export interface GameHudScoreboardModel {
 interface TroopLandScoreEntry {
   playerId: string;
   teamId?: string;
+  displayName?: string;
+  color?: number;
   land: number;
   troops: number;
 }
@@ -79,19 +81,6 @@ interface ScoreboardWithTeamScores {
   teamScores?: TeamScoresLike;
 }
 
-interface CreateGameHudScoreboardModelOptions {
-  /** Raw Colyseus scoreboard schema received from match state. */
-  scoreboard: BaseScoreboard;
-  /** Player schemas visible to the current client. */
-  visiblePlayers: Iterable<Player>;
-  /** Fallback color lookup for players not present in visible state. */
-  playerColors: Map<string, number>;
-  /** Fallback display-name lookup for players not present in visible state. */
-  playerNames: Map<string, string>;
-  /** Current client's Colyseus session id, used to highlight its row. */
-  currentSessionId: string | null | undefined;
-}
-
 const troopLandColumns: GameHudColumn[] = [
   { key: "land", label: "Land" },
   { key: "troops", label: "Soldiers" },
@@ -104,6 +93,9 @@ const dominationColumns: GameHudColumn[] = [
 
 /**
  * Extracts common troop and land entries from scoreboards that expose players.
+ *
+ * Scoreboard rows are expected to already contain public display metadata; the
+ * HUD adapter does not reach into match player maps for names, colors, or teams.
  */
 function getTroopLandEntries(scoreboard: BaseScoreboard) {
   const players = (scoreboard as ScoreboardWithPlayers | undefined)?.players;
@@ -111,6 +103,8 @@ function getTroopLandEntries(scoreboard: BaseScoreboard) {
     ? Array.from(players, (entry) => ({
         playerId: entry.playerId,
         teamId: entry.teamId,
+        displayName: entry.displayName,
+        color: entry.color,
         land: entry.land,
         troops: entry.troops,
       }))
@@ -146,39 +140,23 @@ function isIterableTeamScores(
 }
 
 /**
- * Merges scoreboard entries with visible player metadata into HUD rows.
+ * Converts scoreboard player entries into HUD rows.
+ *
+ * Keeping this conversion scoreboard-only makes the HUD independent from
+ * view-scoped Colyseus player state, which may contain only the local player.
  */
-function createPlayerRows({
-  scoreboard,
-  visiblePlayers,
-  playerColors,
-  playerNames,
-  currentSessionId,
-}: CreateGameHudScoreboardModelOptions): GameHudRow[] {
+function createPlayerRows(scoreboard: BaseScoreboard): GameHudRow[] {
   const scoreEntries = getTroopLandEntries(scoreboard);
-  const scoreByPlayer = new Map(
-    scoreEntries.map((entry) => [entry.playerId, entry]),
-  );
-  const playersById = new Map(
-    Array.from(visiblePlayers).map((player) => [player.id, player]),
-  );
-  const playerIds = new Set([
-    ...scoreEntries.map((entry) => entry.playerId),
-    ...Array.from(playersById.keys()),
-  ]);
-
-  return Array.from(playerIds)
-    .map((playerId) => {
-      const player = playersById.get(playerId);
-      const score = scoreByPlayer.get(playerId);
+  return scoreEntries
+    .map((score) => {
       return {
-        id: playerId,
-        label: player?.displayName || playerNames.get(playerId) || playerId,
-        color: player?.color ?? playerColors.get(playerId) ?? 0,
-        isCurrent: player?.sessionId === currentSessionId,
+        id: score.playerId,
+        teamId: score.teamId,
+        label: score.displayName || score.playerId,
+        color: score.color ?? 0,
         values: {
-          land: score?.land ?? 0,
-          troops: score?.troops ?? 0,
+          land: score.land,
+          troops: score.troops,
         },
       };
     })
@@ -192,20 +170,14 @@ function createPlayerRows({
 /**
  * Groups player rows by team and computes troop/land totals for each group.
  */
-function createTeamGroups(
-  rows: GameHudRow[],
-  visiblePlayers: Iterable<Player>,
-) {
-  const teamByPlayer = new Map(
-    Array.from(visiblePlayers).map((player) => [player.id, player.teamId]),
-  );
+function createTeamGroups(rows: GameHudRow[]) {
   const groups = new Map<string, GameHudGroup>();
 
   for (const row of rows) {
-    const teamId = teamByPlayer.get(row.id) || row.id;
+    const teamId = row.teamId || row.id;
     const group = groups.get(teamId) ?? {
       id: teamId,
-      label: teamByPlayer.get(row.id) ? `Team ${teamId}` : "Unassigned",
+      label: row.teamId ? `Team ${teamId}` : "Unassigned",
       totals: { land: 0, troops: 0 },
       rows: [],
     };
@@ -229,13 +201,13 @@ function createTeamGroups(
  */
 function createTroopLandModel(
   title: string,
-  options: CreateGameHudScoreboardModelOptions,
+  scoreboard: BaseScoreboard,
 ): GameHudScoreboardModel {
-  const rows = createPlayerRows(options);
+  const rows = createPlayerRows(scoreboard);
   return {
     title,
     columns: troopLandColumns,
-    groups: createTeamGroups(rows, options.visiblePlayers),
+    groups: createTeamGroups(rows),
   };
 }
 
@@ -243,16 +215,13 @@ function createTroopLandModel(
  * Creates a HUD model for Domination, adding team score as the leading metric.
  */
 function createDominationModel(
-  options: CreateGameHudScoreboardModelOptions,
+  scoreboard: BaseScoreboard,
 ): GameHudScoreboardModel {
-  const rows = createPlayerRows(options);
+  const rows = createPlayerRows(scoreboard);
   const scoreByTeam = new Map(
-    getTeamScoreEntries(options.scoreboard).map((entry) => [
-      entry.teamId,
-      entry.score,
-    ]),
+    getTeamScoreEntries(scoreboard).map((entry) => [entry.teamId, entry.score]),
   );
-  const groups = createTeamGroups(rows, options.visiblePlayers).map((group) => {
+  const groups = createTeamGroups(rows).map((group) => {
     const score = scoreByTeam.get(group.id) ?? 0;
     return {
       ...group,
@@ -287,16 +256,16 @@ function createDominationModel(
  * future modes.
  */
 export function createGameHudScoreboardModel(
-  options: CreateGameHudScoreboardModelOptions,
+  scoreboard: BaseScoreboard,
 ): GameHudScoreboardModel {
-  switch (options.scoreboard.mode) {
+  switch (scoreboard.mode) {
     case GameMode.CLASSIC:
-      return createTroopLandModel("Players", options);
+      return createTroopLandModel("Players", scoreboard);
     case GameMode.TURF_WAR:
-      return createTroopLandModel("Players", options);
+      return createTroopLandModel("Players", scoreboard);
     case GameMode.DOMINATION:
-      return createDominationModel(options);
+      return createDominationModel(scoreboard);
     default:
-      return createTroopLandModel("Players", options);
+      return createTroopLandModel("Players", scoreboard);
   }
 }

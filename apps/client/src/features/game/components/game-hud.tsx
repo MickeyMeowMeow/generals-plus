@@ -1,4 +1,4 @@
-import type { BaseScoreboard, Player } from "@generals-plus/shared-types";
+import type { BaseScoreboard } from "@generals-plus/shared-types";
 import type { CSSProperties } from "react";
 
 import { FloatingHud } from "#/components/layout";
@@ -10,7 +10,6 @@ import type {
   GameHudRow,
 } from "#/features/match/utils/scoreboard-adapter";
 import { createGameHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
-import { cn } from "#/lib/utils";
 
 interface TimerProps {
   currentTick: number;
@@ -21,14 +20,6 @@ interface TimerProps {
 interface GameHudProps {
   /** Authoritative scoreboard schema from the match room state. */
   scoreboard: BaseScoreboard;
-  /** Players currently visible to the client. */
-  visiblePlayers: Iterable<Player>;
-  /** Fallback player color lookup keyed by player id. */
-  playerColors: Map<string, number>;
-  /** Fallback display-name lookup keyed by player id. */
-  playerNames: Map<string, string>;
-  /** Current client's Colyseus session id, used to highlight the local player. */
-  currentSessionId: string | null | undefined;
   timer?: TimerProps;
 }
 
@@ -86,10 +77,7 @@ function PlayerRow({
 }) {
   return (
     <li
-      className={cn(
-        "grid items-center gap-1.5 text-[11px]",
-        player.isCurrent && "font-semibold",
-      )}
+      className="grid items-center gap-1.5 text-[11px]"
       style={getPlayerGridStyle(columns.length)}
     >
       <span
@@ -105,21 +93,8 @@ function PlayerRow({
 /**
  * Floating in-game HUD for connection state and mode-specific scoreboard data.
  */
-export function GameHud({
-  scoreboard,
-  visiblePlayers,
-  playerColors,
-  playerNames,
-  currentSessionId,
-  timer,
-}: GameHudProps) {
-  const scoreboardModel = createGameHudScoreboardModel({
-    scoreboard,
-    visiblePlayers,
-    playerColors,
-    playerNames,
-    currentSessionId,
-  });
+export function GameHud({ scoreboard, timer }: GameHudProps) {
+  const scoreboardModel = createGameHudScoreboardModel(scoreboard);
   const shouldShowGroupRows = scoreboardModel.groups.some(
     (group) => group.rows.length > 1 || "score" in (group.totals ?? {}),
   );
