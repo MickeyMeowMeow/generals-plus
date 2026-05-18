@@ -121,6 +121,12 @@ describe("colyseus connection gateway", () => {
     auth.token = "token-1";
     auth.onChange = vi.fn().mockReturnValue(() => {});
     auth.getUserData = vi.fn().mockResolvedValue({ user: { id: "user-1" } });
+    auth.signInWithEmailAndPassword = vi
+      .fn()
+      .mockResolvedValue({ user: { id: "user-1" }, token: "token-1" });
+    auth.registerWithEmailAndPassword = vi
+      .fn()
+      .mockResolvedValue({ user: { id: "user-1" }, token: "token-1" });
     auth.signInAnonymously = vi
       .fn()
       .mockResolvedValue({ user: { id: "user-1" }, token: "token-1" });
@@ -145,6 +151,20 @@ describe("colyseus connection gateway", () => {
     expect(auth.onChange).toHaveBeenCalledWith(onAuthChange);
 
     await expect(gateway.getUserData()).resolves.toEqual({ id: "user-1" });
+    await expect(
+      gateway.signInWithEmailAndPassword("nova@example.com", "hunter22"),
+    ).resolves.toEqual({
+      user: { id: "user-1" },
+      token: "token-1",
+    });
+    await expect(
+      gateway.registerWithEmailAndPassword("nova@example.com", "hunter22", {
+        displayName: "Nova",
+      }),
+    ).resolves.toEqual({
+      user: { id: "user-1" },
+      token: "token-1",
+    });
     await expect(gateway.signInAnonymously({ name: "fox" })).resolves.toEqual({
       user: { id: "user-1" },
       token: "token-1",
@@ -152,6 +172,15 @@ describe("colyseus connection gateway", () => {
     await expect(gateway.signOut()).resolves.toBeUndefined();
 
     expect(auth.getUserData).toHaveBeenCalledTimes(1);
+    expect(auth.signInWithEmailAndPassword).toHaveBeenCalledWith(
+      "nova@example.com",
+      "hunter22",
+    );
+    expect(auth.registerWithEmailAndPassword).toHaveBeenCalledWith(
+      "nova@example.com",
+      "hunter22",
+      { displayName: "Nova" },
+    );
     expect(auth.signInAnonymously).toHaveBeenCalledWith({ name: "fox" });
     expect(auth.signOut).toHaveBeenCalledTimes(1);
   });

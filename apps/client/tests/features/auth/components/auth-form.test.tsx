@@ -4,14 +4,16 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { AuthForm } from "#/features/auth/components/auth-form";
+import { AuthForm, AuthFormMode } from "#/features/auth/components/auth-form";
 
 const defaultProps = {
-  displayName: "Commander",
-  onDisplayNameChange: vi.fn(),
+  mode: AuthFormMode.SIGN_IN,
+  onModeChange: vi.fn(),
   isBusy: false,
   lastError: null,
-  onSignIn: vi.fn().mockImplementation((e) => e.preventDefault()),
+  onSignIn: vi.fn().mockResolvedValue(undefined),
+  onRegister: vi.fn().mockResolvedValue(undefined),
+  onGuestSignIn: vi.fn().mockResolvedValue(undefined),
 };
 
 describe("AuthForm", () => {
@@ -20,33 +22,118 @@ describe("AuthForm", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders sign-in heading", () => {
+  it("renders sign-in mode by default", () => {
     render(<AuthForm {...defaultProps} />);
+
     expect(screen.getByRole("heading", { name: "Sign in" })).toBeTruthy();
+    expect(screen.getByLabelText("Email")).toBeTruthy();
+    expect(screen.getByLabelText("Password")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeTruthy();
   });
 
-  it("renders display name input with provided value", () => {
-    render(<AuthForm {...defaultProps} />);
+  it("renders registration fields when in register mode", () => {
+    render(<AuthForm {...defaultProps} mode={AuthFormMode.REGISTER} />);
+
     expect(
-      (screen.getByLabelText("Display name") as HTMLInputElement).value,
-    ).toBe("Commander");
+      screen.getByRole("heading", { name: "Create account" }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Username")).toBeTruthy();
+    expect(screen.getByLabelText("Email")).toBeTruthy();
+    expect(screen.getByLabelText("Password")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Create account" })).toBeTruthy();
   });
 
-  it("calls onSignIn on form submit", async () => {
-    const onSignIn = vi.fn().mockImplementation((e) => e.preventDefault());
+  it("calls onModeChange when switching modes", async () => {
+    const onModeChange = vi.fn();
+    const user = userEvent.setup();
+    render(<AuthForm {...defaultProps} onModeChange={onModeChange} />);
+
+    await user.click(screen.getByRole("tab", { name: "Register" }));
+
+    expect(onModeChange).toHaveBeenCalledWith(AuthFormMode.REGISTER);
+  });
+
+  it("submits sign-in values through react hook form", async () => {
+    const onSignIn = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
     render(<AuthForm {...defaultProps} onSignIn={onSignIn} />);
 
+    await user.type(screen.getByLabelText("Email"), "nova@example.com");
+    await user.type(screen.getByLabelText("Password"), "hunter22");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(onSignIn).toHaveBeenCalledTimes(1);
+
+    expect(onSignIn).toHaveBeenCalledWith({
+      email: "nova@example.com",
+      password: "hunter22",
+    });
   });
 
-  it("disables submit button when busy", () => {
+  it("submits registration values through react hook form", async () => {
+    const onRegister = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <AuthForm
+        {...defaultProps}
+        mode={AuthFormMode.REGISTER}
+        onRegister={onRegister}
+      />,
+    );
+
+    await user.clear(screen.getByLabelText("Username"));
+    await user.type(screen.getByLabelText("Username"), "Nova");
+    await user.type(screen.getByLabelText("Email"), "nova@example.com");
+    await user.type(screen.getByLabelText("Password"), "hunter22");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(onRegister).toHaveBeenCalledWith({
+      displayName: "Nova",
+      email: "nova@example.com",
+      password: "hunter22",
+    });
+  });
+
+  it("renders and submits the guest entry form", async () => {
+    const onGuestSignIn = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<AuthForm {...defaultProps} onGuestSignIn={onGuestSignIn} />);
+
+    expect(
+      screen.getByRole("heading", { name: "Continue as guest" }),
+    ).toBeTruthy();
+
+    await user.clear(screen.getByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Nova");
+    await user.click(screen.getByRole("button", { name: "Enter as guest" }));
+
+    expect(onGuestSignIn).toHaveBeenCalledWith({
+      displayName: "Nova",
+    });
+  });
+
+  it("shows field-level validation errors", async () => {
+    const user = userEvent.setup();
+    render(<AuthForm {...defaultProps} />);
+
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(screen.getByText("Email cannot be empty.")).toBeTruthy();
+    expect(screen.getByText("Password cannot be empty.")).toBeTruthy();
+  });
+
+  it("disables primary actions when busy", () => {
     render(<AuthForm {...defaultProps} isBusy={true} />);
+
     expect(
       (
         screen.getByRole("button", {
           name: "Signing in...",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Entering...",
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
@@ -57,21 +144,10 @@ describe("AuthForm", () => {
     expect(screen.getByRole("alert").textContent).toContain("Network error");
   });
 
-  it("does not render session controls", () => {
+  it("shows default guest display name", () => {
     render(<AuthForm {...defaultProps} />);
-    expect(screen.queryByRole("button", { name: "Enter war room" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
-  });
-
-  it("calls onDisplayNameChange when typing", async () => {
-    const onDisplayNameChange = vi.fn();
-    const user = userEvent.setup();
-    render(
-      <AuthForm {...defaultProps} onDisplayNameChange={onDisplayNameChange} />,
-    );
-
-    const input = screen.getByLabelText("Display name");
-    await user.type(input, "A");
-    expect(onDisplayNameChange).toHaveBeenCalled();
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Commander");
   });
 });
