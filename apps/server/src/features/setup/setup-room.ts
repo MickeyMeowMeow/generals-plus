@@ -148,14 +148,19 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     }
   }
 
-  onLeave(client: Client) {
+  async onLeave(client: Client) {
     const auth = client.auth as ClientAuth;
     const id = auth.id;
     const isHost = id === this.hostId;
 
     this.removePlayerFromState(id);
 
-    if (isHost && this.state.players.length > 0) {
+    if (this.state.players.length === 0) {
+      await this.disconnect();
+      return;
+    }
+
+    if (isHost) {
       this.transferHost();
     }
   }

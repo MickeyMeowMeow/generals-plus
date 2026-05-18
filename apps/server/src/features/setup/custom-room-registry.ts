@@ -10,6 +10,13 @@ interface CustomRoomResolution {
 
 interface CustomRoomCreation extends CustomRoomResolution {}
 
+export class CustomRoomAlreadyExistsError extends Error {
+  constructor(customRoomKey: string) {
+    super(`custom room already exists: ${customRoomKey}`);
+    this.name = "CustomRoomAlreadyExistsError";
+  }
+}
+
 interface CustomRoomRecord {
   key: string;
   activeSetupRoomId: string | null;
@@ -78,10 +85,18 @@ async function createOrJoinPendingSetupRoom(
 
 export async function createCustomRoom(
   ownerUserId: string | null,
+  requestedKey?: string,
 ): Promise<CustomRoomCreation> {
-  let key = generateCustomRoomKey();
-  while (customRooms.has(key)) {
+  let key = requestedKey?.trim() ?? "";
+  if (key) {
+    if (customRooms.has(key)) {
+      throw new CustomRoomAlreadyExistsError(key);
+    }
+  } else {
     key = generateCustomRoomKey();
+    while (customRooms.has(key)) {
+      key = generateCustomRoomKey();
+    }
   }
 
   const setupRoomId = await createSetupRoomForKeyImpl(key);

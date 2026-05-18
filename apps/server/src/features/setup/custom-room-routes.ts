@@ -1,7 +1,17 @@
 import { JWT } from "@colyseus/auth";
+import type { CustomRoomCreationRequest } from "@generals-plus/shared-types";
+import {
+  CUSTOM_ROOM_KEY_MAX_LENGTH,
+  CUSTOM_ROOM_KEY_MIN_LENGTH,
+  isValidCustomRoomKeyLength,
+} from "@generals-plus/shared-types";
 import type { Request, Response } from "express";
 
-import { createCustomRoom, resolveCustomRoom } from "./custom-room-registry";
+import {
+  CustomRoomAlreadyExistsError,
+  createCustomRoom,
+  resolveCustomRoom,
+} from "./custom-room-registry";
 
 async function getAuthorizedUserId(request: Request) {
   const header = request.header("authorization");
@@ -17,6 +27,8 @@ async function getAuthorizedUserId(request: Request) {
   }
 }
 
+const CUSTOM_ROOM_KEY_LENGTH_ERROR = `Room id must be ${CUSTOM_ROOM_KEY_MIN_LENGTH} - ${CUSTOM_ROOM_KEY_MAX_LENGTH} characters.`;
+
 export function registerCustomRoomRoutes(app: {
   post: (
     path: string,
@@ -30,7 +42,28 @@ export function registerCustomRoomRoutes(app: {
       return;
     }
 
-    const room = await createCustomRoom(ownerUserId);
+    const requestedKey =
+      (request.body as CustomRoomCreationRequest | undefined)?.customRoomKey ??
+      undefined;
+    if (requestedKey !== undefined && typeof requestedKey !== "string") {
+      response.status(400).json({ error: "Invalid custom room key" });
+      return;
+    }
+    if (requestedKey && !isValidCustomRoomKeyLength(requestedKey.trim())) {
+      response.status(400).json({ error: CUSTOM_ROOM_KEY_LENGTH_ERROR });
+      return;
+    }
+
+    let room = null;
+    try {
+      room = await createCustomRoom(ownerUserId, requestedKey);
+    } catch (error) {
+      if (error instanceof CustomRoomAlreadyExistsError) {
+        response.status(409).json({ error: "room already exists" });
+        return;
+      }
+      throw error;
+    }
     response.status(201).json(room);
   });
 
@@ -46,6 +79,10 @@ export function registerCustomRoomRoutes(app: {
       const customRoomKey = request.params.customRoomKey;
       if (typeof customRoomKey !== "string") {
         response.status(400).json({ error: "Invalid custom room key" });
+        return;
+      }
+      if (!isValidCustomRoomKeyLength(customRoomKey.trim())) {
+        response.status(400).json({ error: CUSTOM_ROOM_KEY_LENGTH_ERROR });
         return;
       }
 

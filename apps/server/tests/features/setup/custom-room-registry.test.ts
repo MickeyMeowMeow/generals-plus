@@ -2,6 +2,7 @@ import { matchMaker } from "@colyseus/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  CustomRoomAlreadyExistsError,
   createCustomRoom,
   markCustomRoomMatchStarted,
   onSetupRoomDisposed,
@@ -70,6 +71,29 @@ describe("custom room registry", () => {
       setupRoomId: "setup-rematch",
       created: false,
     });
+  });
+
+  it("creates a custom room with a requested key", async () => {
+    setCreateSetupRoomForKeyForTesting(async (customRoomKey) => {
+      expect(customRoomKey).toBe("my-room");
+      return "setup-my-room";
+    });
+
+    await expect(createCustomRoom("host-1", "my-room")).resolves.toEqual({
+      customRoomKey: "my-room",
+      setupRoomId: "setup-my-room",
+      created: true,
+    });
+  });
+
+  it("rejects duplicate requested custom room keys", async () => {
+    setCreateSetupRoomForKeyForTesting(async () => "setup-abc");
+
+    await createCustomRoom("host-1", "taken-room");
+
+    await expect(
+      createCustomRoom("host-2", "taken-room"),
+    ).rejects.toBeInstanceOf(CustomRoomAlreadyExistsError);
   });
 
   // --- Coverage for lines 29-34: real createSetupRoomForKey implementation ---
