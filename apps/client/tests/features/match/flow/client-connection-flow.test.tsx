@@ -722,10 +722,12 @@ describe("client room flows", () => {
       screen.getByRole("button", { name: "Force start game" }),
     ).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText("Max Players"), {
+    const maxPlayersInput = screen.getByLabelText("Max Players");
+    fireEvent.focus(maxPlayersInput);
+    fireEvent.change(maxPlayersInput, {
       target: { value: "6" },
     });
-    await user.click(screen.getByRole("button", { name: "Apply Changes" }));
+    fireEvent.blur(maxPlayersInput);
     expect(setupRoom.send).toHaveBeenCalledWith(
       SetupClientMessage.UPDATE_SETTINGS,
       expect.objectContaining({ maxPlayers: 6 }),
