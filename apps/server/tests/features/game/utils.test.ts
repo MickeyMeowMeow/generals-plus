@@ -135,6 +135,31 @@ describe("createGame", () => {
       expect(game.players.size).toBe(2);
     });
 
+    it("passes targetScore to DominationGame", () => {
+      const game = createGame({
+        mode: GameMode.DOMINATION,
+        playerIds: ["p1", "p2"],
+        playerPerTeam: 1,
+        finishTick: 200,
+        targetScore: 500,
+      });
+
+      expect(game).toBeInstanceOf(DominationGame);
+      expect((game as DominationGame).targetScore).toBe(500);
+      // @ts-expect-error - bypassing private modifier
+      expect(game.maxTicks).toBe(200);
+    });
+
+    it("uses default targetScore when omitted for DominationGame", () => {
+      const game = createGame({
+        mode: GameMode.DOMINATION,
+        playerIds: ["p1", "p2"],
+        playerPerTeam: 1,
+      });
+
+      expect((game as DominationGame).targetScore).toBe(1000);
+    });
+
     it("throws if team not found during player assignment", () => {
       const originalSet = Map.prototype.set;
       Map.prototype.set = function () {

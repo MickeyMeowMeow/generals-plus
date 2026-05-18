@@ -7,7 +7,8 @@ export type SetupValidationField =
   | keyof SetupSettings
   | "color"
   | "players"
-  | "flagCount";
+  | "flagCount"
+  | "targetScore";
 
 export interface SetupValidationFailedMessage extends ToastMessage {
   field?: SetupValidationField;

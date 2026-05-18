@@ -57,6 +57,7 @@ export class MatchRoom extends Room<{
     state.mode = metadata.mode;
     state.tickInterval = tickInterval;
     state.finishTick = metadata.finishTick ?? -1;
+    state.targetScore = metadata.targetScore ?? -1;
     state.width = this.game.grid.width;
     state.height = this.game.grid.height;
     state.scoreboard = createScoreboard(metadata.mode);

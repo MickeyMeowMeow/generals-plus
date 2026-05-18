@@ -241,6 +241,7 @@ describe("SetupRoom", () => {
       expect(room.state.duration).toBe(1);
       expect(room.state.finishTick).toBe(600);
       expect(room.state.flagCount).toBe(3);
+      expect(room.state.targetScore).toBe(1000);
     });
 
     it("computes finishTick from duration multiplier in domination", async () => {
@@ -287,6 +288,37 @@ describe("SetupRoom", () => {
 
       expect(sent).toContain(
         "Flag count is only available in Domination mode.",
+      );
+    });
+
+    it("allows targetScore update in domination mode", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: "domination",
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        targetScore: 500,
+      });
+      await msgPromise;
+
+      expect(room.state.targetScore).toBe(500);
+    });
+
+    it("rejects targetScore in non-domination mode", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      const sent = captureErrors(room.clients[0]);
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        targetScore: 500,
+      });
+      await msgPromise;
+
+      expect(sent).toContain(
+        "Target score is only available in Domination mode.",
       );
     });
   });

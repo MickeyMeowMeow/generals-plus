@@ -28,6 +28,7 @@ export class SetupState extends Schema {
   @type("number") speed: number = 1;
   @type("number") duration: number = 1;
   @type("number") flagCount: number = 3;
+  @type("number") targetScore: number = 1000;
 
   @type("number") tickInterval: number = 500;
   @type("number") finishTick: number = 360;

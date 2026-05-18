@@ -29,6 +29,7 @@ export interface DominationSetupSettings extends BaseSetupSettings {
   gameMode: typeof GameMode.DOMINATION;
   duration: number;
   flagCount: number;
+  targetScore: number;
 }
 
 export interface OtherSettings extends BaseSetupSettings {

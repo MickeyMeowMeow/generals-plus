@@ -22,6 +22,7 @@ export const setupSettingsUpdateSchema = z
     speed: z.number().min(0.5).max(10),
     duration: z.number().min(0.5).max(10),
     flagCount: z.number().int().min(1).max(20),
+    targetScore: z.number().int().min(100).max(10000),
   })
   .partial()
   .strict();

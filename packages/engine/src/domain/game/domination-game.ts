@@ -12,20 +12,32 @@ import type {
   IDominationGame,
   IDominationScoreboard,
 } from "#/domain/game/interfaces";
+import type { GridInput } from "#/domain/grid/grid-generator";
 import { PlayerStatus } from "#/domain/player/player-status";
+
+export interface DominationGameOptions {
+  targetScore?: number;
+  finishTick?: number;
+}
 
 export class DominationGame extends BaseGame implements IDominationGame {
   readonly mode = GameMode.DOMINATION;
   private readonly combatResolver = new StandardCombatResolver();
 
-  readonly targetScore: number = 1000;
+  readonly targetScore: number;
   readonly teamScores = new Map<string, number>();
 
-  private readonly MAX_TICKS = 600; // 5 minutes
+  private readonly maxTicks: number;
   private readonly flagHoldState = new Map<
     string,
     { teamId: string; ticks: number }
   >();
+
+  constructor(input: GridInput, options?: DominationGameOptions) {
+    super(input);
+    this.targetScore = options?.targetScore ?? 1000;
+    this.maxTicks = options?.finishTick ?? 600;
+  }
 
   startGame(): void {
     super.startGame();
@@ -156,7 +168,7 @@ export class DominationGame extends BaseGame implements IDominationGame {
       }
     }
 
-    if (targetReached || this.tick >= this.MAX_TICKS) {
+    if (targetReached || this.tick >= this.maxTicks) {
       return {
         mode: this.mode,
         winnerTeamId,

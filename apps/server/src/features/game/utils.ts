@@ -12,13 +12,36 @@ import {
   TurfWarGame,
 } from "@generals-plus/engine";
 
-export interface CreateGameOptions {
-  mode: GameMode;
+interface BaseCreateGameOptions {
   gridOptions?: GridInput;
   playerIds: string[];
   playerPerTeam: number;
+}
+
+interface ClassicCreateGameOptions extends BaseCreateGameOptions {
+  mode: typeof GameMode.CLASSIC;
+}
+
+interface TurfWarCreateGameOptions extends BaseCreateGameOptions {
+  mode: typeof GameMode.TURF_WAR;
   finishTick?: number;
 }
+
+interface DominationCreateGameOptions extends BaseCreateGameOptions {
+  mode: typeof GameMode.DOMINATION;
+  finishTick?: number;
+  targetScore?: number;
+}
+
+interface OtherCreateGameOptions extends BaseCreateGameOptions {
+  mode: Exclude<GameMode, "classic" | "turf_war" | "domination">;
+}
+
+export type CreateGameOptions =
+  | ClassicCreateGameOptions
+  | TurfWarCreateGameOptions
+  | DominationCreateGameOptions
+  | OtherCreateGameOptions;
 
 /**
  * Factory function to create a game instance based on mode and options.
@@ -89,6 +112,10 @@ export function createGame(options: CreateGameOptions): IBaseGame {
     case GameMode.DOMINATION: {
       const game = new DominationGame(
         (options.gridOptions ?? {}) as DominationGridOptions,
+        {
+          finishTick: options.finishTick,
+          targetScore: options.targetScore,
+        },
       );
 
       const teamsCount = Math.ceil(
