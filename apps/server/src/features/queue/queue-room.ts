@@ -11,7 +11,7 @@ import {
   ROOM_NAMES,
 } from "@generals-plus/shared-types";
 
-import { createGame } from "#/features/game/utils";
+import { createGame, generateSeed } from "#/features/game/utils";
 import { createPlayerInit } from "#/features/player/utils";
 import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
@@ -70,7 +70,10 @@ export class MatchQueueRoom extends QueueRoom {
 
         const game = createGame({
           mode: this.gameMode,
-          gridOptions: { generalCount: groupPlayers.length },
+          gridOptions: {
+            generalCount: groupPlayers.length,
+            seed: generateSeed(),
+          },
           playerIds: groupPlayers.map((p) => p.id),
           playerPerTeam: getDefaultPlayersPerTeam(this.gameMode),
         });
