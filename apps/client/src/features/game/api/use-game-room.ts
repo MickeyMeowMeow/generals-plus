@@ -30,6 +30,8 @@ type GameRoomClient = RoomClient<
   MatchServerMessagePayload
 >;
 
+const DISCONNECTED_MESSAGE = "Your connection to the match was lost.";
+
 export interface GameRoomConnection {
   /** Consume a server-issued seat reservation for the first match entry. */
   type: "reservation";
@@ -142,6 +144,9 @@ export function useGameRoom(connection: GameRoomConnection) {
     new Map(),
   );
   const [error, setError] = useState<string | null>(null);
+  const [disconnectMessage, setDisconnectMessage] = useState<string | null>(
+    null,
+  );
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
@@ -151,6 +156,7 @@ export function useGameRoom(connection: GameRoomConnection) {
     const connect = async () => {
       setIsConnecting(true);
       setError(null);
+      setDisconnectMessage(null);
       setGameResult(null);
 
       try {
@@ -211,6 +217,20 @@ export function useGameRoom(connection: GameRoomConnection) {
             setGameResult(result);
           }),
         );
+        unsubscribers.push(
+          currentRoom.onError((_code, message) => {
+            if (!isCurrent) return;
+            const nextMessage = message?.trim() || DISCONNECTED_MESSAGE;
+            setDisconnectMessage((prev) => prev ?? nextMessage);
+          }),
+        );
+        unsubscribers.push(
+          currentRoom.onLeave((code, reason) => {
+            if (!isCurrent || code === 1000) return;
+            const nextMessage = reason?.trim() || DISCONNECTED_MESSAGE;
+            setDisconnectMessage((prev) => prev ?? nextMessage);
+          }),
+        );
       } catch (error) {
         if (!isCurrent) return;
         setIsConnecting(false);
@@ -265,6 +285,7 @@ export function useGameRoom(connection: GameRoomConnection) {
     playerColors,
     playerNames,
     error,
+    disconnectMessage,
     isConnecting,
   };
 }

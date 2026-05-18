@@ -7,6 +7,7 @@ import {
   MatchServerMessage,
   PLAYER_COLOR_PALETTE,
   QueueClientMessage,
+  QueueServerMessage,
   ROOM_NAMES,
   SetupClientMessage,
   SetupServerMessage,
@@ -199,6 +200,8 @@ function createRoom({
 }) {
   const messageHandlers = new Map<string, (payload: unknown) => void>();
   const stateHandlers = new Set<(nextState: unknown) => void>();
+  const errorHandlers = new Set<(code: number, message?: string) => void>();
+  const leaveHandlers = new Set<(code: number, reason?: string) => void>();
   const room = {
     roomId,
     sessionId: "session-1",
@@ -216,6 +219,14 @@ function createRoom({
       messageHandlers.set(type, callback);
       return () => {};
     }),
+    onError: vi.fn((callback: (code: number, message?: string) => void) => {
+      errorHandlers.add(callback);
+      return () => errorHandlers.delete(callback);
+    }),
+    onLeave: vi.fn((callback: (code: number, reason?: string) => void) => {
+      leaveHandlers.add(callback);
+      return () => leaveHandlers.delete(callback);
+    }),
     emitState(nextState: unknown) {
       room.state = nextState;
       for (const callback of stateHandlers) {
@@ -224,6 +235,16 @@ function createRoom({
     },
     emitMessage(type: string, payload: unknown) {
       messageHandlers.get(type)?.(payload);
+    },
+    emitError(code: number, message?: string) {
+      for (const callback of errorHandlers) {
+        callback(code, message);
+      }
+    },
+    emitLeave(code: number, reason?: string) {
+      for (const callback of leaveHandlers) {
+        callback(code, reason);
+      }
     },
   };
   return room;
@@ -893,5 +914,55 @@ describe("client room flows", () => {
       await screen.findByRole("heading", { name: "Room unavailable" }),
     ).toBeTruthy();
     expect(screen.getByText(/room not found/)).toBeTruthy();
+  });
+
+  it("shows a disconnect dialog when the active match room drops", async () => {
+    const queueRoom = createRoom({
+      roomId: "queue-disconnect",
+      state: createState({
+        players: [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+          },
+        ],
+      }),
+    });
+    const matchRoom = createRoom({
+      roomId: "match-disconnect",
+      state: createMatchState(),
+    });
+    const reservation = {
+      name: ROOM_NAMES.MATCH,
+      roomId: "match-disconnect",
+      sessionId: "session-1",
+    };
+
+    networkMocks.joinOrCreate.mockResolvedValue(queueRoom);
+    networkMocks.consumeSeatReservation.mockResolvedValue(matchRoom);
+
+    renderRoute("/", auth());
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Start" }));
+    await user.click(screen.getByRole("button", { name: "Classic, Ready" }));
+
+    await screen.findByText("Pick Your Color");
+    queueRoom.emitMessage(QueueServerMessage.SEAT_RESERVATION, reservation);
+    await screen.findByTestId("game-app");
+
+    await act(async () => {
+      matchRoom.emitLeave(1006, "Your connection to the match was lost.");
+    });
+
+    expect(await screen.findByText("Disconnected")).toBeTruthy();
+    expect(
+      screen.getByText("Your connection to the match was lost."),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Return to lobby" }));
+
+    expect(await screen.findByRole("button", { name: "Start" })).toBeTruthy();
   });
 });

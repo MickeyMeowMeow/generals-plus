@@ -12,6 +12,8 @@ import { Button } from "#/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
@@ -84,6 +86,7 @@ export function GamePage({ connection, source }: GamePageProps) {
     playerColors,
     playerNames,
     error,
+    disconnectMessage,
     isConnecting,
   } = useGameRoom(stableConnection);
 
@@ -266,7 +269,10 @@ export function GamePage({ connection, source }: GamePageProps) {
   const isPlayerEliminated =
     currentPlayer?.status === PlayerStatus.ELIMINATED && !gameResult;
   const isReadOnly =
-    isViewingAsSpectator || Boolean(gameResult) || isPlayerEliminated;
+    isViewingAsSpectator ||
+    Boolean(gameResult) ||
+    isPlayerEliminated ||
+    Boolean(disconnectMessage);
   const winnerId = gameResult?.winnerTeamId
     ? Array.from(gameState.publicPlayers.values()).find(
         (p) => p.teamId === gameResult.winnerTeamId,
@@ -277,13 +283,15 @@ export function GamePage({ connection, source }: GamePageProps) {
     gameResult?.winnerTeamId &&
       currentPlayer?.teamId === gameResult.winnerTeamId,
   );
-  const activeModal = gameResult
-    ? isViewingAsSpectator && spectatorSource === "game-end"
-      ? null
-      : "game-end"
-    : !isViewingAsSpectator && isPlayerEliminated
-      ? "eliminated"
-      : null;
+  const activeModal = disconnectMessage
+    ? null
+    : gameResult
+      ? isViewingAsSpectator && spectatorSource === "game-end"
+        ? null
+        : "game-end"
+      : !isViewingAsSpectator && isPlayerEliminated
+        ? "eliminated"
+        : null;
   const returnLabel =
     source.type === "official" ? "Return to lobby" : "Return to setup room";
 
@@ -399,6 +407,28 @@ export function GamePage({ connection, source }: GamePageProps) {
         </Button>
       </div>
 
+      {disconnectMessage ? (
+        <Dialog open={true}>
+          <DialogContent
+            className="max-w-sm"
+            aria-describedby={undefined}
+            showCloseButton={false}
+            onEscapeKeyDown={(event) => event.preventDefault()}
+            onInteractOutside={(event) => event.preventDefault()}
+          >
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Disconnected</DialogTitle>
+              <DialogDescription>{disconnectMessage}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button type="button" onClick={handleReturn}>
+                {returnLabel}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+
       {activeModal ? (
         <Dialog open={true}>
           <DialogContent
@@ -429,7 +459,7 @@ export function GamePage({ connection, source }: GamePageProps) {
                 </>
               )}
             </div>
-            <div className="mt-5 flex flex-col gap-2">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -447,7 +477,7 @@ export function GamePage({ connection, source }: GamePageProps) {
               <Button type="button" onClick={handleReturn}>
                 {returnLabel}
               </Button>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       ) : null}

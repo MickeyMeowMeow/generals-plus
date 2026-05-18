@@ -31,4 +31,8 @@ export interface RoomClient<
     type: K,
     callback: (payload: Received[K]) => void,
   ): UnsubscribeFn;
+
+  onError(callback: (code: number, message?: string) => void): UnsubscribeFn;
+
+  onLeave(callback: (code: number, reason?: string) => void): UnsubscribeFn;
 }

@@ -61,6 +61,12 @@ vi.mock("#/components/ui/dialog", () => ({
   DialogContent: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
+  DialogDescription: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DialogFooter: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   DialogHeader: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
@@ -172,6 +178,7 @@ describe("GamePage", () => {
       playerColors: new Map(),
       playerNames: new Map(),
       error: null,
+      disconnectMessage: null,
       isConnecting: false,
     });
 
@@ -216,6 +223,7 @@ describe("GamePage", () => {
       playerColors: new Map(),
       playerNames: new Map([["player-2", "Rook"]]),
       error: null,
+      disconnectMessage: null,
       isConnecting: false,
     });
 
@@ -255,6 +263,7 @@ describe("GamePage", () => {
       playerColors: new Map(),
       playerNames: new Map(),
       error: null,
+      disconnectMessage: null,
       isConnecting: false,
     });
 
@@ -287,6 +296,7 @@ describe("GamePage", () => {
       playerColors: new Map(),
       playerNames: new Map(),
       error: "Failed to connect to match",
+      disconnectMessage: null,
       isConnecting: false,
     });
 
@@ -300,6 +310,43 @@ describe("GamePage", () => {
     const button = screen.getByRole("button", { name: "Return to setup room" });
     fireEvent.click(button);
 
+    expect(onReturn).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a disconnect dialog after the player loses connection", () => {
+    const onReturn = vi.fn();
+
+    useGameRoomMock.mockReturnValue({
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
+      renderGrid: createRenderGrid(2, 2),
+      moveQueue: [],
+      gameState: createGameState(),
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      playerColors: new Map(),
+      playerNames: new Map(),
+      error: null,
+      disconnectMessage: "Your connection to the match was lost.",
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={createConnection()}
+        source={{ type: "official", onReturn }}
+      />,
+    );
+
+    expect(screen.getByText("Disconnected")).toBeTruthy();
+    expect(
+      screen.getByText("Your connection to the match was lost."),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Return to lobby" }));
     expect(onReturn).toHaveBeenCalledTimes(1);
   });
 });

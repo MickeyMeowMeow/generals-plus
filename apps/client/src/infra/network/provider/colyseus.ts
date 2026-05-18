@@ -57,6 +57,16 @@ class ColyseusRoomAdapter<
   ): UnsubscribeFn {
     return this.room.onMessage(type, callback);
   }
+
+  onError(callback: (code: number, message?: string) => void): UnsubscribeFn {
+    const signal = this.room.onError(callback);
+    return () => signal.clear();
+  }
+
+  onLeave(callback: (code: number, reason?: string) => void): UnsubscribeFn {
+    const signal = this.room.onLeave(callback);
+    return () => signal.clear();
+  }
 }
 
 export class ColyseusNetworkProvider<User = unknown>
