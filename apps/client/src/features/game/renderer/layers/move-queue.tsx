@@ -112,17 +112,16 @@ function drawArrow(
 
 function drawSplitArrow(
   g: Graphics,
+  points: { x: number; y: number }[],
   edgeX: number,
   edgeY: number,
   trigonometry: ArrowTrigonometry,
 ) {
-  const points = transformArrowPoints(
-    createArrowPoints(),
-    edgeX,
-    edgeY,
-    trigonometry,
+  drawArrow(
+    g,
+    transformArrowPoints(points, edgeX, edgeY, trigonometry),
+    RenderConfig.arrowStrokeWidth,
   );
-  drawArrow(g, points, RenderConfig.arrowStrokeWidth);
 
   const halfLength = RenderConfig.arrowLength / 2;
   const barCenterX =
@@ -170,7 +169,7 @@ export function MoveQueueLayer({ stride, moveQueue }: MoveQueueLayerProps) {
         const trigonometry = DIRECTION_TRIGONOMETRY[move.direction];
 
         if (move.type === ActionType.SPLIT_MOVE) {
-          drawSplitArrow(g, edgeX, edgeY, trigonometry);
+          drawSplitArrow(g, points, edgeX, edgeY, trigonometry);
           return;
         }
 
