@@ -2,6 +2,7 @@ import type {
   GameMode as GameModeType,
   IBaseScoreboard,
   IClassicScoreboard,
+  IDominationScoreboard,
   ITurfWarScoreboard,
 } from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
@@ -13,6 +14,9 @@ import type {
 import {
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
+  DominationScoreboard,
+  DominationScoreboardPlayerEntry,
+  DominationScoreboardTeamEntry,
   TurfWarScoreboard,
   TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
@@ -30,6 +34,9 @@ export function createScoreboard(mode: GameModeType): BaseScoreboard {
   switch (mode) {
     case GameMode.TURF_WAR:
       scoreboard = new TurfWarScoreboard();
+      break;
+    case GameMode.DOMINATION:
+      scoreboard = new DominationScoreboard();
       break;
     default:
       scoreboard = new ClassicScoreboard();
@@ -94,6 +101,44 @@ export function syncScoreboard(
         schema.landPercent = entry.landPercent;
         schema.playerIds.push(...entry.playerIds);
         turfTarget.teams.push(schema);
+      }
+      break;
+    }
+    case GameMode.DOMINATION: {
+      const domTarget = target as DominationScoreboard;
+      const domSource = source as IDominationScoreboard;
+      syncPlayers(
+        domTarget,
+        domSource.players,
+        metadataByPlayer,
+        () => new DominationScoreboardPlayerEntry(),
+        (schema, entry) => {
+          schema.troops = entry.troops;
+          schema.land = entry.land;
+          schema.isAlive = entry.isAlive;
+        },
+      );
+      domTarget.teams.clear();
+      const teamPlayers = new Map<string, string[]>();
+      for (const entry of domSource.players) {
+        const meta = metadataByPlayer.get(entry.playerId);
+        const teamId = meta?.teamId ?? "";
+        let ids = teamPlayers.get(teamId);
+        if (!ids) {
+          ids = [];
+          teamPlayers.set(teamId, ids);
+        }
+        ids.push(entry.playerId);
+      }
+      for (const [teamId, score] of domSource.teamScores.entries()) {
+        const schema = new DominationScoreboardTeamEntry();
+        schema.teamId = teamId;
+        schema.score = score;
+        const ids = teamPlayers.get(teamId);
+        if (ids) {
+          schema.playerIds.push(...ids);
+        }
+        domTarget.teams.push(schema);
       }
       break;
     }

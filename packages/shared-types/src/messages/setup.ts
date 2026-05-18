@@ -3,7 +3,12 @@ import type { ToastMessage } from "#/messages/common";
 import type { SeatReservation } from "#/seat";
 import type { SetupSettings } from "#/setup-settings";
 
-export type SetupValidationField = keyof SetupSettings | "color" | "players";
+export type SetupValidationField =
+  | keyof SetupSettings
+  | "color"
+  | "players"
+  | "flagCount"
+  | "targetScore";
 
 export interface SetupValidationFailedMessage extends ToastMessage {
   field?: SetupValidationField;

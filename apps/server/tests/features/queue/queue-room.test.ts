@@ -285,7 +285,7 @@ describe("MatchQueueRoom", () => {
 
     it("includes a random seed in grid options when creating game", async () => {
       room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
-        gameMode: GameMode.CLASSIC,
+        gameMode: GameMode.DOMINATION,
         countdownCycles: 2,
       });
 
@@ -300,8 +300,10 @@ describe("MatchQueueRoom", () => {
 
       expect(mocks.createGame).toHaveBeenCalledWith(
         expect.objectContaining({
+          mode: GameMode.DOMINATION,
           gridOptions: expect.objectContaining({
             seed: expect.any(Number),
+            flagCount: 3,
           }),
         }),
       );

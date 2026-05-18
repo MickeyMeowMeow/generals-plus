@@ -29,4 +29,5 @@ export interface RoomData {
   isPublic?: boolean;
   tickInterval?: number;
   finishTick?: number;
+  targetScore?: number;
 }

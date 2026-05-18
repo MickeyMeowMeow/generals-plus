@@ -2,6 +2,9 @@ import { GameMode } from "@generals-plus/engine";
 import {
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
+  DominationScoreboard,
+  DominationScoreboardPlayerEntry,
+  DominationScoreboardTeamEntry,
   TroopLandScoreboardPlayerEntry,
   TurfWarScoreboard,
   TurfWarScoreboardPlayerEntry,
@@ -102,7 +105,7 @@ describe("createGameHudScoreboardModel", () => {
   it("adapts classic troop-land scoreboard rows", () => {
     const model = createGameHudScoreboardModel(classicScoreboard());
 
-    expect(model.title).toBe("Players");
+    expect(model.title).toBe("Classic");
     expect(model.columns.map((column) => column.key)).toEqual([
       "land",
       "troops",
@@ -117,8 +120,9 @@ describe("createGameHudScoreboardModel", () => {
   it("adapts turf war scoreboard rows grouped by team with percentage", () => {
     const model = createGameHudScoreboardModel(turfWarScoreboard());
 
-    expect(model.title).toBe("Teams");
+    expect(model.title).toBe("Turf War");
     expect(model.columns.map((column) => column.key)).toEqual([
+      "percent",
       "land",
       "troops",
     ]);
@@ -128,7 +132,8 @@ describe("createGameHudScoreboardModel", () => {
     // Sorted descending by percentage (63% first, then 37%)
     const g1 = model.groups[0];
     expect(g1.id).toBe("t1");
-    expect(g1.label).toBe("Team t1 (63%)");
+    expect(g1.label).toBe("Team t1");
+    expect(g1.totals?.percent).toBe("63%");
     expect(g1.rows[0]).toMatchObject({
       id: "p1",
       label: "Nova",
@@ -137,11 +142,58 @@ describe("createGameHudScoreboardModel", () => {
 
     const g2 = model.groups[1];
     expect(g2.id).toBe("t2");
-    expect(g2.label).toBe("Team t2 (37%)");
+    expect(g2.label).toBe("Team t2");
+    expect(g2.totals?.percent).toBe("37%");
     expect(g2.rows[0]).toMatchObject({
       id: "p2",
       label: "Astra",
       values: { land: 3, troops: 8 },
+    });
+  });
+
+  it("adapts domination scoreboard rows with dynamic targetScore support", () => {
+    const scoreboard = new DominationScoreboard();
+    scoreboard.mode = GameMode.DOMINATION;
+
+    // Add player
+    const p1 = playerScore({
+      playerId: "p1",
+      teamId: "t1",
+      displayName: "Nova",
+      troops: 15,
+      land: 8,
+    });
+    const entry1 = new DominationScoreboardPlayerEntry();
+    Object.assign(entry1, p1, { isAlive: true });
+    scoreboard.players.push(entry1);
+
+    // Add team
+    const team1 = new DominationScoreboardTeamEntry();
+    team1.teamId = "t1";
+    team1.score = 450;
+    team1.playerIds.push("p1");
+    scoreboard.teams.push(team1);
+
+    // Call adapter with dynamic targetScore: 2500
+    const model = createGameHudScoreboardModel(scoreboard, 2500);
+
+    expect(model.title).toBe("Domination");
+    expect(model.subtitle).toBe("Target: 2500");
+    expect(model.columns.map((column) => column.key)).toEqual([
+      "score",
+      "land",
+      "troops",
+    ]);
+
+    expect(model.groups).toHaveLength(1);
+    const g1 = model.groups[0];
+    expect(g1.id).toBe("t1");
+    expect(g1.label).toBe("Team t1");
+    expect(g1.totals?.score).toBe("450/2500");
+    expect(g1.rows[0]).toMatchObject({
+      id: "p1",
+      label: "Nova",
+      values: { land: 8, troops: 15 },
     });
   });
 });

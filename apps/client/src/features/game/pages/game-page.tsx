@@ -163,23 +163,40 @@ export function GamePage({ connection, source }: GamePageProps) {
   const renderGridHeight = renderGrid?.height ?? 0;
 
   const initialCoord = useRef<ICoordinate>(null);
+  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (initialCoord.current || !renderGrid || !currentPlayer) return;
+    if (hasInitializedRef.current || !renderGrid || !currentPlayer) return;
 
-    // Find the general's coordinate
+    // Find the player's general or any owned spawn cell to start selection
+    let startCoord: ICoordinate | null = null;
+
+    // 1. Try to find a General
     for (const cell of renderGrid) {
       if (
         cell.terrain === Terrain.GENERAL &&
         cell.ownerIndex === currentPlayer.id
       ) {
-        initialCoord.current = cell.coordinate;
+        startCoord = cell.coordinate;
         break;
       }
     }
 
-    // Selection starts on the general by default, if found
-    setSelection(initialCoord.current);
+    // 2. Fallback to any owned spawn cell (like the starting city in Domination)
+    if (!startCoord) {
+      for (const cell of renderGrid) {
+        if (cell.ownerIndex === currentPlayer.id) {
+          startCoord = cell.coordinate;
+          break;
+        }
+      }
+    }
+
+    if (startCoord) {
+      initialCoord.current = startCoord;
+      setSelection(startCoord);
+      hasInitializedRef.current = true;
+    }
   }, [renderGrid, currentPlayer]);
 
   const handleSelectCell = useCallback(
@@ -345,16 +362,21 @@ export function GamePage({ connection, source }: GamePageProps) {
 
       <GameHud
         scoreboard={gameState.scoreboard}
+        targetScore={gameState.targetScore}
         timer={{
           currentTick: gameState.tick,
           targetTick:
-            gameState.mode === GameMode.TURF_WAR
+            gameState.mode === GameMode.TURF_WAR ||
+            gameState.mode === GameMode.DOMINATION
               ? gameState.finishTick > 0
                 ? gameState.finishTick
                 : 0
               : 0,
           tickInterval:
-            gameState.mode === GameMode.TURF_WAR ? gameState.tickInterval : 0,
+            gameState.mode === GameMode.TURF_WAR ||
+            gameState.mode === GameMode.DOMINATION
+              ? gameState.tickInterval
+              : 0,
         }}
       />
 

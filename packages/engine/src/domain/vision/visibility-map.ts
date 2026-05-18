@@ -80,7 +80,10 @@ export class VisibilityMap {
     );
 
     this.gameGrid.forEach((cell, coord) => {
-      if (cell.owner && teamPlayerIds.has(cell.owner.playerId)) {
+      if (
+        (cell.owner && teamPlayerIds.has(cell.owner.playerId)) ||
+        cell.terrain === Terrain.FLAG
+      ) {
         const radius = cell.vision?.radius ?? 1; // 1 means 3x3 square, 2 means 5x5 square
 
         // Mark all cells within Chebyshev distance <= radius as VISIBLE

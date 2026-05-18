@@ -1,10 +1,12 @@
 import type {
   IClassicScoreboard,
+  IDominationScoreboard,
   ITurfWarScoreboard,
 } from "@generals-plus/engine";
 import { GameMode, PlayerStatus } from "@generals-plus/engine";
 import {
   ClassicScoreboard,
+  DominationScoreboard,
   PublicPlayer,
   TurfWarScoreboard,
 } from "@generals-plus/shared-types";
@@ -178,6 +180,131 @@ describe("syncScoreboard", () => {
       troops: 10,
       land: 5,
       isAlive: true,
+    });
+  });
+
+  describe("domination mode", () => {
+    it("creates DominationScoreboard for domination mode", () => {
+      const scoreboard = createScoreboard(GameMode.DOMINATION);
+
+      expect(scoreboard).toBeInstanceOf(DominationScoreboard);
+      expect(scoreboard.mode).toBe(GameMode.DOMINATION);
+    });
+
+    it("syncs domination scoreboard with player and team entries", () => {
+      const target = createScoreboard(GameMode.DOMINATION);
+      const source: IDominationScoreboard = {
+        mode: GameMode.DOMINATION,
+        players: [
+          { playerId: "p1", troops: 10, land: 5, isAlive: true },
+          { playerId: "p2", troops: 3, land: 1, isAlive: false },
+        ],
+        teamScores: new Map([
+          ["t1", 150],
+          ["t2", 80],
+        ]),
+      };
+
+      syncScoreboard(target, source, [
+        Object.assign(new PublicPlayer(), {
+          id: "p1",
+          teamId: "t1",
+          displayName: "Alpha",
+          color: 1,
+          status: PlayerStatus.ACTIVE,
+        }),
+        Object.assign(new PublicPlayer(), {
+          id: "p2",
+          teamId: "t2",
+          displayName: "Beta",
+          color: 2,
+          status: PlayerStatus.ELIMINATED,
+        }),
+      ]);
+
+      expect(target.mode).toBe(GameMode.DOMINATION);
+      const dom = target as DominationScoreboard;
+      expect(dom.players.length).toBe(2);
+      expect(dom.players.at(0)).toMatchObject({
+        playerId: "p1",
+        teamId: "t1",
+        displayName: "Alpha",
+        troops: 10,
+        land: 5,
+        isAlive: true,
+      });
+      expect(dom.players.at(1)).toMatchObject({
+        playerId: "p2",
+        teamId: "t2",
+        displayName: "Beta",
+        troops: 3,
+        land: 1,
+        isAlive: false,
+      });
+      expect(dom.teams.length).toBe(2);
+      expect(dom.teams.at(0)).toMatchObject({
+        teamId: "t1",
+        score: 150,
+      });
+      expect(Array.from(dom.teams.at(0)?.playerIds ?? [])).toEqual(["p1"]);
+      expect(dom.teams.at(1)).toMatchObject({
+        teamId: "t2",
+        score: 80,
+      });
+      expect(Array.from(dom.teams.at(1)?.playerIds ?? [])).toEqual(["p2"]);
+    });
+
+    it("replaces previous team entries on re-sync", () => {
+      const target = createScoreboard(GameMode.DOMINATION);
+
+      const source1: IDominationScoreboard = {
+        mode: GameMode.DOMINATION,
+        players: [{ playerId: "p1", troops: 5, land: 2, isAlive: true }],
+        teamScores: new Map([["t1", 50]]),
+      };
+      syncScoreboard(target, source1, [
+        Object.assign(new PublicPlayer(), {
+          id: "p1",
+          teamId: "t1",
+          displayName: "A",
+          color: 1,
+          status: PlayerStatus.ACTIVE,
+        }),
+      ]);
+
+      const source2: IDominationScoreboard = {
+        mode: GameMode.DOMINATION,
+        players: [
+          { playerId: "p1", troops: 20, land: 8, isAlive: true },
+          { playerId: "p2", troops: 15, land: 6, isAlive: true },
+        ],
+        teamScores: new Map([
+          ["t1", 200],
+          ["t2", 180],
+        ]),
+      };
+      syncScoreboard(target, source2, [
+        Object.assign(new PublicPlayer(), {
+          id: "p1",
+          teamId: "t1",
+          displayName: "A",
+          color: 1,
+          status: PlayerStatus.ACTIVE,
+        }),
+        Object.assign(new PublicPlayer(), {
+          id: "p2",
+          teamId: "t2",
+          displayName: "B",
+          color: 2,
+          status: PlayerStatus.ACTIVE,
+        }),
+      ]);
+
+      const dom = target as DominationScoreboard;
+      expect(dom.players.length).toBe(2);
+      expect(dom.teams.length).toBe(2);
+      expect(dom.teams.at(0)?.score).toBe(200);
+      expect(dom.teams.at(1)?.score).toBe(180);
     });
   });
 });
