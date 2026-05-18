@@ -104,6 +104,20 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     state.seed = generateSeed();
     state.mountainRate = DefaultGridGeneratorOptions.mountainRate;
     state.cityRate = DefaultGridGeneratorOptions.cityRate;
+
+    // Initialize mode-specific defaults so startGame sees the right values
+    // even if the host never opens the settings panel.
+    const modeDefaults = MODE_SETTINGS[gameMode];
+    if (modeDefaults?.finishTick !== undefined) {
+      state.finishTick = modeDefaults.finishTick;
+    }
+    if (modeDefaults?.flagCount !== undefined) {
+      state.flagCount = modeDefaults.flagCount;
+    }
+    if (modeDefaults?.targetScore !== undefined) {
+      state.targetScore = modeDefaults.targetScore;
+    }
+
     this.state = state;
 
     if (!isPublic) {
@@ -243,7 +257,10 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
       // flagCount and targetScore are only allowed for domination mode
       const activeMode = update.gameMode ?? this.state.gameMode;
-      if (update.flagCount !== undefined && activeMode !== "domination") {
+      if (
+        update.flagCount !== undefined &&
+        activeMode !== GameMode.DOMINATION
+      ) {
         this.sendValidationFailed(client, {
           severity: "warning",
           field: "flagCount",
@@ -251,7 +268,10 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         });
         return;
       }
-      if (update.targetScore !== undefined && activeMode !== "domination") {
+      if (
+        update.targetScore !== undefined &&
+        activeMode !== GameMode.DOMINATION
+      ) {
         this.sendValidationFailed(client, {
           severity: "warning",
           field: "targetScore",
@@ -301,8 +321,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         Math.round(BASE_TICK_INTERVAL / this.state.speed),
       );
       if (
-        this.state.gameMode === "turf_war" ||
-        this.state.gameMode === "domination"
+        this.state.gameMode === GameMode.TURF_WAR ||
+        this.state.gameMode === GameMode.DOMINATION
       ) {
         const baseFinishTick = MODE_SETTINGS[this.state.gameMode].finishTick;
         if (baseFinishTick === undefined) {
@@ -498,7 +518,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       cityInitialTroops: this.state.cityInitialTroops,
     };
 
-    if (this.state.gameMode === "domination") {
+    if (this.state.gameMode === GameMode.DOMINATION) {
       return { ...base, flagCount: this.state.flagCount };
     }
 
@@ -507,8 +527,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
   private async startGame() {
     const isTimedMode =
-      this.state.gameMode === "turf_war" ||
-      this.state.gameMode === "domination";
+      this.state.gameMode === GameMode.TURF_WAR ||
+      this.state.gameMode === GameMode.DOMINATION;
 
     const game = createGame({
       mode: this.state.gameMode as GameMode,
@@ -517,7 +537,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       playerPerTeam: this.state.playersPerTeam,
       finishTick: isTimedMode ? this.state.finishTick : undefined,
       targetScore:
-        this.state.gameMode === "domination"
+        this.state.gameMode === GameMode.DOMINATION
           ? this.state.targetScore
           : undefined,
     } as CreateGameOptions);
@@ -532,7 +552,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       tickInterval: this.state.tickInterval,
       finishTick: isTimedMode ? this.state.finishTick : undefined,
       targetScore:
-        this.state.gameMode === "domination"
+        this.state.gameMode === GameMode.DOMINATION
           ? this.state.targetScore
           : undefined,
     };
