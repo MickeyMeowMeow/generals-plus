@@ -82,6 +82,14 @@ interface SetupRoomOptions {
   isPublic?: boolean;
 }
 
+function calculateTickInterval(speed: number): number {
+  return Math.max(100, Math.round(BASE_TICK_INTERVAL / speed));
+}
+
+function calculateFinishTick(duration: number, tickInterval: number): number {
+  return Math.round((duration * 1000) / tickInterval);
+}
+
 export class SetupRoom extends Room<{ state: SetupState }> {
   private hostId = "";
   private customRoomKey: string | null = null;
@@ -104,12 +112,17 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     state.seed = generateSeed();
     state.mountainRate = DefaultGridGeneratorOptions.mountainRate;
     state.cityRate = DefaultGridGeneratorOptions.cityRate;
+    state.tickInterval = calculateTickInterval(state.speed);
 
     // Initialize mode-specific defaults so startGame sees the right values
     // even if the host never opens the settings panel.
     const modeDefaults = MODE_SETTINGS[gameMode];
     if (modeDefaults?.duration !== undefined) {
       state.duration = modeDefaults.duration;
+      state.finishTick = calculateFinishTick(
+        modeDefaults.duration,
+        state.tickInterval,
+      );
     }
     if (modeDefaults?.flagCount !== undefined) {
       state.flagCount = modeDefaults.flagCount;
@@ -316,16 +329,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       Object.assign(this.state, update);
 
       // Recompute derived values from multipliers.
-      this.state.tickInterval = Math.max(
-        100,
-        Math.round(BASE_TICK_INTERVAL / this.state.speed),
-      );
+      this.state.tickInterval = calculateTickInterval(this.state.speed);
       if (
         this.state.gameMode === GameMode.TURF_WAR ||
         this.state.gameMode === GameMode.DOMINATION
       ) {
-        this.state.finishTick = Math.round(
-          (this.state.duration * 1000) / this.state.tickInterval,
+        this.state.finishTick = calculateFinishTick(
+          this.state.duration,
+          this.state.tickInterval,
         );
       }
 
