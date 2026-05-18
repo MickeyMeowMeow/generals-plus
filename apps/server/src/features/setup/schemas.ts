@@ -22,6 +22,7 @@ export const setupSettingsUpdateSchema = z
     speed: z.number().min(0.5).max(10),
     duration: z.number().min(0.5).max(10),
   })
-  .partial();
+  .partial()
+  .strict();
 
 export type SetupSettingsUpdate = z.infer<typeof setupSettingsUpdateSchema>;

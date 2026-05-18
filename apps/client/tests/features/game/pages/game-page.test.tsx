@@ -110,6 +110,48 @@ function createScoreboard() {
   return scoreboard;
 }
 
+function createGameState(
+  playerOverrides: Partial<Player> = {},
+  extraPublicPlayers: Array<{
+    id: string;
+    teamId: string;
+    displayName: string;
+    color: number;
+    status: PlayerStatus;
+  }> = [],
+) {
+  const player = createPlayer(playerOverrides);
+  return {
+    mode: GameMode.CLASSIC,
+    scoreboard: createScoreboard(),
+    players: new Map([["player-1", player]]),
+    publicPlayers: new Map<
+      string,
+      {
+        id: string;
+        teamId: string;
+        displayName: string;
+        color: number;
+        status: PlayerStatus;
+      }
+    >([
+      [
+        "player-1",
+        {
+          id: "player-1",
+          teamId: player.teamId,
+          displayName: player.displayName,
+          color: player.color,
+          status: player.status,
+        },
+      ],
+      ...extraPublicPlayers.map(
+        (publicPlayer) => [publicPlayer.id, publicPlayer] as const,
+      ),
+    ]),
+  };
+}
+
 describe("GamePage keyboard move bounds", () => {
   beforeEach(() => {
     clearPersistedGameSessionMock.mockReset();
@@ -119,18 +161,11 @@ describe("GamePage keyboard move bounds", () => {
   });
 
   it("does not queue a move that would leave the map", () => {
-    const player = createPlayer();
-
     useGameRoomMock.mockReturnValue({
       room: { sessionId: "player-1" },
       renderGrid: createRenderGrid(1, 1),
       moveQueue: [],
-      gameState: {
-        mode: GameMode.CLASSIC,
-        scoreboard: createScoreboard(),
-        players: new Map([["player-1", player]]),
-        publicPlayers: new Map(),
-      },
+      gameState: createGameState(),
       gameResult: null,
       sendMove: sendMoveMock,
       clearMoveQueue: vi.fn(),
@@ -155,5 +190,93 @@ describe("GamePage keyboard move bounds", () => {
     fireEvent.click(screen.getByTestId("move-left"));
 
     expect(sendMoveMock).not.toHaveBeenCalled();
+  });
+
+  it("allows viewing a finished game as spectator before returning", () => {
+    const onReturn = vi.fn();
+
+    useGameRoomMock.mockReturnValue({
+      room: { sessionId: "player-1" },
+      renderGrid: createRenderGrid(2, 2),
+      moveQueue: [],
+      gameState: createGameState({}, [
+        {
+          id: "player-2",
+          teamId: "team-2",
+          displayName: "Rook",
+          color: 0xff6633,
+          status: PlayerStatus.ACTIVE,
+        },
+      ]),
+      gameResult: {
+        mode: GameMode.CLASSIC,
+        winnerTeamId: "team-2",
+      },
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      playerColors: new Map(),
+      playerNames: new Map([["player-2", "Rook"]]),
+      connectionStatus: "connected",
+      error: null,
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={{
+          type: "recovery",
+          recoveryToken: "token-1",
+        }}
+        source={{ type: "official", onReturn }}
+      />,
+    );
+
+    expect(screen.getByText("You lost")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "View as spectator" }));
+
+    expect(screen.queryByText("You lost")).toBeNull();
+    expect(screen.getByRole("button", { name: "Return" })).toBeTruthy();
+    expect(onReturn).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Return" }));
+
+    expect(clearPersistedGameSessionMock).toHaveBeenCalled();
+    expect(onReturn).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers spectator view after the current player is eliminated", () => {
+    const onReturn = vi.fn();
+
+    useGameRoomMock.mockReturnValue({
+      room: { sessionId: "player-1" },
+      renderGrid: createRenderGrid(2, 2),
+      moveQueue: [],
+      gameState: createGameState({ status: PlayerStatus.ELIMINATED }),
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      playerColors: new Map(),
+      playerNames: new Map(),
+      connectionStatus: "connected",
+      error: null,
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={{
+          type: "recovery",
+          recoveryToken: "token-2",
+        }}
+        source={{ type: "official", onReturn }}
+      />,
+    );
+
+    expect(screen.getByText("You have been eliminated")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "View as spectator" }));
+
+    expect(screen.queryByText("You have been eliminated")).toBeNull();
+    expect(screen.getByRole("button", { name: "Return" })).toBeTruthy();
+    expect(onReturn).not.toHaveBeenCalled();
   });
 });

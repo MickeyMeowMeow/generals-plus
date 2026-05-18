@@ -1,5 +1,8 @@
 import { GameMode, getDefaultPlayersPerTeam } from "@generals-plus/engine";
-import { SetupClientMessage } from "@generals-plus/shared-types";
+import {
+  SetupClientMessage,
+  SetupServerMessage,
+} from "@generals-plus/shared-types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { SetupRoom } from "#/features/setup/setup-room";
@@ -12,7 +15,11 @@ function captureErrors(client: {
   const sent: string[] = [];
   const originalSend = client.send.bind(client);
   client.send = (type: string, data?: unknown) => {
-    if (type === "error") sent.push(data as string);
+    if (type === SetupServerMessage.ERROR) {
+      sent.push(data as string);
+    } else if (type === SetupServerMessage.VALIDATION_FAILED) {
+      sent.push((data as { message: string }).message);
+    }
     originalSend(type, data);
   };
   return sent;
@@ -245,7 +252,7 @@ describe("SetupRoom", () => {
         playersPerTeam: 2,
       });
 
-      expect(sent).toContain("playersPerTeam must be less than maxPlayers");
+      expect(sent).toContain("Players per team must be less than max players.");
     });
 
     it("rejects cityRate + mountainRate > 1", async () => {
@@ -259,7 +266,9 @@ describe("SetupRoom", () => {
         mountainRate: 0.5,
       });
 
-      expect(sent).toContain("cityRate + mountainRate cannot exceed 1.0");
+      expect(sent).toContain(
+        "Mountain rate and city rate must add up to 1.0 or less.",
+      );
     });
 
     it("rejects invalid settings update", async () => {
@@ -272,7 +281,7 @@ describe("SetupRoom", () => {
         maxPlayers: "not a number",
       });
 
-      expect(sent.some((s) => s.includes("invalid settings update"))).toBe(
+      expect(sent.some((s) => s.includes("Max players must be a number"))).toBe(
         true,
       );
     });
@@ -302,7 +311,7 @@ describe("SetupRoom", () => {
         color: 999999,
       });
 
-      expect(sent).toContain("invalid color");
+      expect(sent).toContain("Choose one of the available colors.");
     });
 
     it("rejects already taken color", async () => {
@@ -317,7 +326,7 @@ describe("SetupRoom", () => {
         color: p1Color,
       });
 
-      expect(sent).toContain("color already taken");
+      expect(sent).toContain("That color is already taken.");
     });
   });
 
@@ -373,7 +382,7 @@ describe("SetupRoom", () => {
       const sent = captureErrors(room.clients[0]);
       room.clients[0].send(SetupClientMessage.START_GAME);
 
-      expect(sent).toContain("need at least 2 players to start");
+      expect(sent).toContain("Need at least 2 players to start.");
     });
 
     it("creates match room and sends seats on successful start", async () => {
@@ -448,5 +457,28 @@ describe("SetupRoom", () => {
       await connectClient(room, { id: "p1", email: "p1@test.com" });
       expect(oldLeft).toBe(true);
     });
+  });
+
+  it("sends validationFailed for invalid setup settings without changing state", async () => {
+    room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+
+    const client = await connectClient(room, {
+      id: "p1",
+      email: "p1@test.com",
+    });
+    const sendSpy = vi.spyOn(client, "send");
+
+    const messagePromise = room.waitForMessage(
+      SetupClientMessage.UPDATE_SETTINGS,
+    );
+    client.send(SetupClientMessage.UPDATE_SETTINGS, { maxPlayers: 1 });
+    await messagePromise;
+
+    expect(sendSpy).toHaveBeenCalledWith(SetupServerMessage.VALIDATION_FAILED, {
+      severity: "warning",
+      field: "maxPlayers",
+      message: "Max players must be at least 2.",
+    });
+    expect(room.state.maxPlayers).toBe(8);
   });
 });
