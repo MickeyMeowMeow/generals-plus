@@ -1,7 +1,7 @@
 import type { ICoordinate } from "@generals-plus/engine";
 import { Application } from "@pixi/react";
 import { Assets } from "pixi.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { MapRenderer } from "#/features/game/renderer/map-renderer";
@@ -9,13 +9,14 @@ import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 import { Viewport } from "#/features/game/renderer/viewport";
+import { getCoordWorldPosition } from "#/features/game/utils/coord";
 import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
 import { ClearMoveQueueKey, KeyToDirection } from "#/features/game/utils/move";
-import { cn } from "#/lib/utils";
 
 interface GameAppProps {
   /** Grid snapshot to render. */
   readonly grid: RenderGrid;
+  readonly initialCoord?: ICoordinate;
   readonly selection: ICoordinate | null;
   readonly splitMoveSelection: ICoordinate | null;
   readonly moveQueue: MoveIntent[];
@@ -25,7 +26,6 @@ interface GameAppProps {
   readonly onClearMoveQueue: () => void;
   readonly playerColors: Map<string, number>;
   readonly pings?: Ping[];
-  readonly className?: string;
 }
 
 /**
@@ -36,6 +36,7 @@ interface GameAppProps {
  */
 export function GameApp({
   grid,
+  initialCoord,
   selection,
   splitMoveSelection,
   moveQueue,
@@ -45,7 +46,6 @@ export function GameApp({
   onClearMoveQueue,
   playerColors,
   pings = [],
-  className,
 }: GameAppProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
@@ -103,8 +103,19 @@ export function GameApp({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onArmSplitMove, onClearMoveQueue, onQueueMove]);
 
+  const initialTarget = useMemo(
+    () =>
+      initialCoord &&
+      getCoordWorldPosition(
+        initialCoord,
+        RenderConfig.cellStride,
+        RenderConfig.cellStride - RenderConfig.cellGap,
+      ),
+    [initialCoord],
+  );
+
   return (
-    <div ref={containerRef} className={cn("h-full w-full", className)}>
+    <div ref={containerRef} className={"h-full w-full"}>
       {!isReady ? (
         <div className="grid h-full place-items-center text-sm text-game-text-dim">
           Loading battlefield
@@ -113,7 +124,7 @@ export function GameApp({
         <Application
           resizeTo={containerRef}
           className="h-full w-full"
-          backgroundColor={RenderConfig.stageBackground}
+          backgroundColor={RenderConfig.background}
           antialias={true}
           autoDensity={true}
           resolution={window.devicePixelRatio}
@@ -121,12 +132,7 @@ export function GameApp({
           <Viewport
             worldWidth={worldWidth}
             worldHeight={worldHeight}
-            initialFitRatio={RenderConfig.initialFitRatio}
-            initialHudReserveRight={RenderConfig.initialHudReserveRight}
-            initialHudReserveTop={RenderConfig.initialHudReserveTop}
-            initialMaxScale={RenderConfig.initialMaxScale}
-            minScale={RenderConfig.minScale}
-            maxScale={RenderConfig.maxScale}
+            initialTarget={initialTarget}
           >
             <MapRenderer
               grid={grid}

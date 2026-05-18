@@ -97,10 +97,15 @@ export abstract class Grid2D<T> implements IGrid2D<T> {
   forEach(callback: (element: T, coordinate: ICoordinate) => void): void {
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
-        const cell = this.get({ x, y });
-        if (cell !== null) {
-          callback(cell, { x, y });
-        }
+        callback(this.gridData[y][x], { x, y });
+      }
+    }
+  }
+
+  *[Symbol.iterator](): IterableIterator<T> {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        yield this.gridData[y][x];
       }
     }
   }
