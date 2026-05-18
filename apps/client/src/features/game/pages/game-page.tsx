@@ -193,12 +193,22 @@ export function GamePage({ connection, source }: GamePageProps) {
 
   const handleArmSplitMove = useCallback(
     (coord?: ICoordinate) => {
+      if (activeBrush) {
+        if (coord) {
+          room?.send(MatchClientMessage.PING, {
+            x: coord.x,
+            y: coord.y,
+            type: activeBrush,
+          });
+        }
+        return;
+      }
       const nextSelection = coord ?? selection;
       if (!nextSelection) return;
       setSelection(nextSelection);
       setSplitMoveSelection(nextSelection);
     },
-    [selection],
+    [activeBrush, selection, room],
   );
 
   const handleQueueMove = useCallback(
