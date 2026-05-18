@@ -18,7 +18,7 @@ import {
 } from "#/features/game/api/use-game-room";
 import { GameHud } from "#/features/game/components/game-hud";
 import { GameApp } from "#/features/game/renderer/game-app";
-import { isSameCoord } from "#/features/game/utils/coord";
+import { isCoordInBounds, isSameCoord } from "#/features/game/utils/coord";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 
@@ -105,6 +105,8 @@ export function GamePage({ connection, source }: GamePageProps) {
   const [selection, setSelection] = useState<ICoordinate | null>(null);
   const [splitMoveSelection, setSplitMoveSelection] =
     useState<ICoordinate | null>(null);
+  const renderGridWidth = renderGrid?.width ?? 0;
+  const renderGridHeight = renderGrid?.height ?? 0;
 
   const handleSelectCell = useCallback((coord: ICoordinate) => {
     setSelection(coord);
@@ -123,9 +125,12 @@ export function GamePage({ connection, source }: GamePageProps) {
 
   const handleQueueMove = useCallback(
     (direction: MoveDirection) => {
-      if (!selection || !room) return;
+      if (!selection || !room || !renderGrid) return;
       const from = selection;
       const to = getTargetCoord({ from, direction });
+      if (!isCoordInBounds(to, renderGridWidth, renderGridHeight)) {
+        return;
+      }
       const moveType = isSameCoord(splitMoveSelection, from)
         ? ActionType.SPLIT_MOVE
         : ActionType.MOVE;
@@ -134,7 +139,15 @@ export function GamePage({ connection, source }: GamePageProps) {
       setSplitMoveSelection(null);
       sendMove(from, to, moveType);
     },
-    [selection, room, sendMove, splitMoveSelection],
+    [
+      renderGrid,
+      renderGridHeight,
+      renderGridWidth,
+      selection,
+      room,
+      sendMove,
+      splitMoveSelection,
+    ],
   );
 
   const handleReturn = () => {
