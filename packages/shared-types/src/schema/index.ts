@@ -9,7 +9,11 @@ export {
   BaseScoreboardPlayerEntry,
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
+  DominationScoreboard,
+  TroopLandScoreboard,
   TroopLandScoreboardPlayerEntry,
+  TurfWarScoreboard,
+  TurfWarScoreboardTeamEntry,
 } from "#/schema/scoreboard";
 export { SetupPlayer, SetupState } from "#/schema/setup-state";
 export { ClientVision } from "#/schema/vision-cell";
