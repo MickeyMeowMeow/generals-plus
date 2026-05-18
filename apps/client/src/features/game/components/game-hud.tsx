@@ -10,6 +10,13 @@ import type {
 import { createMatchHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
 import { cn } from "#/lib/utils";
 
+interface TimerProps {
+  currentTick: number;
+  targetTick: number;
+  tickInterval: number;
+}
+
+interface GameHudProps {
 interface MatchHudProps {
   /** User-facing label for the active game mode. */
   modeLabel: string | undefined;
@@ -25,6 +32,9 @@ interface MatchHudProps {
   playerNames: Map<string, string>;
   /** Current client's Colyseus session id, used to highlight the local player. */
   currentSessionId: string | null | undefined;
+  totalSeconds?: number;
+  remainingSeconds?: number;
+  timer?: TimerProps;
 }
 
 /**
@@ -97,6 +107,7 @@ function PlayerRow({
   );
 }
 
+export function GameHud({
 /**
  * Floating in-game HUD for connection state and mode-specific scoreboard data.
  */
@@ -108,6 +119,9 @@ export function MatchHud({
   playerColors,
   playerNames,
   currentSessionId,
+  timer,
+}: GameHudProps) {
+  const players = getHudPlayers({
 }: MatchHudProps) {
   const scoreboardModel = createMatchHudScoreboardModel({
     scoreboard,
@@ -124,18 +138,16 @@ export function MatchHud({
   return (
     <FloatingHud>
       <div className="space-y-2.5">
-        <div className="space-y-0.5 text-[11px]">
-          <div className="flex justify-between gap-2">
-            <span className="text-game-text-dim">Mode</span>
-            <span>{modeLabel}</span>
-          </div>
-          <div className="flex justify-between gap-2">
-            <span className="text-game-text-dim">Connection</span>
-            <span>{connectionStatus}</span>
-          </div>
-        </div>
-
         <div className="space-y-2">
+          {timer && (
+            <TimerBar
+              currentTick={timer.currentTick}
+              targetTick={timer.targetTick}
+              tickInterval={timer.tickInterval}
+            />
+          )}
+
+          <div className="grid grid-cols-[1fr_2.5rem_3.25rem] gap-1.5 text-[9px] uppercase text-game-text-dim">
           <div
             className="grid gap-1.5 text-[9px] uppercase text-game-text-dim"
             style={getScoreboardGridStyle(scoreboardModel.columns.length)}
