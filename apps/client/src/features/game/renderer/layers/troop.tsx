@@ -32,7 +32,6 @@ export function TroopLayer({
       if (cell.troopCount || isSplitMoveCell) {
         cells.push({
           cell,
-          // ensure `text` is always a string: coerce troopCount to string with a safe fallback
           text: isSplitMoveCell ? "50%" : (cell.troopCount ?? "").toString(),
         });
       }
@@ -49,6 +48,13 @@ export function TroopLayer({
       stroke: {
         color: RenderConfig.troopTextStrokeColor,
         width: RenderConfig.troopTextStrokeWidth,
+      },
+      dropShadow: {
+        color: RenderConfig.troopTextShadowColor,
+        alpha: RenderConfig.troopTextShadowAlpha,
+        blur: RenderConfig.troopTextShadowBlur,
+        distance: RenderConfig.troopTextShadowDistance,
+        angle: RenderConfig.troopTextShadowAngle,
       },
     });
   }, [cellSize]);

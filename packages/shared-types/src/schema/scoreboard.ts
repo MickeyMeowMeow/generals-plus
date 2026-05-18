@@ -1,4 +1,4 @@
-import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema";
+import { ArraySchema, Schema, type } from "@colyseus/schema";
 
 /**
  * Public player metadata embedded in every scoreboard row.
@@ -39,6 +39,9 @@ export abstract class BaseScoreboard extends Schema {
   @type("string") mode: string = "";
 }
 
+/**
+ * Classic scoreboard schema with classic-specific player rows.
+ */
 export class ClassicScoreboard extends BaseScoreboard {
   @type([ClassicScoreboardPlayerEntry]) players =
     new ArraySchema<ClassicScoreboardPlayerEntry>();
@@ -69,11 +72,4 @@ export class TurfWarScoreboard extends BaseScoreboard {
     new ArraySchema<TurfWarScoreboardPlayerEntry>();
   @type([TurfWarScoreboardTeamEntry]) teams =
     new ArraySchema<TurfWarScoreboardTeamEntry>();
-}
-
-/**
- * Domination scoreboard with per-player troop/land rows and team scores.
- */
-export class DominationScoreboard extends TroopLandScoreboard {
-  @type({ map: "number" }) teamScores = new MapSchema<number>();
 }

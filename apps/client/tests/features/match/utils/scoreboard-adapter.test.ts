@@ -97,6 +97,7 @@ function turfWarScoreboard() {
 
   return scoreboard;
 }
+
 describe("createGameHudScoreboardModel", () => {
   it("adapts classic troop-land scoreboard rows", () => {
     const model = createGameHudScoreboardModel(classicScoreboard());

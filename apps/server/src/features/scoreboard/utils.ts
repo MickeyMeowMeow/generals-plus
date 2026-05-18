@@ -18,6 +18,13 @@ import {
   TurfWarScoreboardTeamEntry,
 } from "@generals-plus/shared-types";
 
+/**
+ * Allocates the Colyseus scoreboard schema that matches the engine mode.
+ *
+ * The room state must use a concrete schema with the fields that mode can
+ * publish; otherwise Colyseus cannot serialize mode-specific aggregates such as
+ * Domination team scores or Turf War team territory.
+ */
 export function createScoreboard(mode: GameModeType): BaseScoreboard {
   let scoreboard: BaseScoreboard;
   switch (mode) {
@@ -32,6 +39,13 @@ export function createScoreboard(mode: GameModeType): BaseScoreboard {
   return scoreboard;
 }
 
+/**
+ * Copies an engine scoreboard into the room-state scoreboard schema.
+ *
+ * Engine scoreboards intentionally report game metrics only. During room-state
+ * sync we enrich each row with public player metadata so the client HUD can
+ * render names, colors, and team groups using only the scoreboard payload.
+ */
 export function syncScoreboard(
   target: BaseScoreboard,
   source: IBaseScoreboard,

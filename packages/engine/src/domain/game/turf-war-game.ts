@@ -110,7 +110,7 @@ export class TurfWarGame extends BaseGame implements ITurfWarGame {
       };
     }
 
-    // Win condition 2: Time limit reached (3 minutes)
+    // Win condition 2: Time limit reached
     if (this.tick >= this.maxTicks) {
       // Count land per team
       const teamLand = new Map<string, number>();

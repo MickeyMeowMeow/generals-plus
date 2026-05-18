@@ -9,35 +9,41 @@ import { MoveDirection } from "#/features/game/utils/move";
 
 extend({ Graphics });
 
+interface ArrowTrigonometry {
+  cos: number;
+  sin: number;
+}
+
+const DIRECTION_TRIGONOMETRY: Record<MoveDirection, ArrowTrigonometry> = {
+  [MoveDirection.UP]: { cos: 0, sin: -1 },
+  [MoveDirection.DOWN]: { cos: 0, sin: 1 },
+  [MoveDirection.LEFT]: { cos: -1, sin: 0 },
+  [MoveDirection.RIGHT]: { cos: 1, sin: 0 },
+};
+
 function getArrowPosition(move: MoveIntent, stride: number) {
   let edgeX = move.from.x * stride;
   let edgeY = move.from.y * stride;
-  let rotation = 0;
 
   switch (move.direction) {
     case MoveDirection.UP:
       edgeX += stride / 2;
-      // edgeY remains top edge
-      rotation = -Math.PI / 2;
       break;
     case MoveDirection.DOWN:
       edgeX += stride / 2;
       edgeY += stride; // bottom edge
-      rotation = Math.PI / 2;
       break;
     case MoveDirection.LEFT:
       // edgeX remains left edge
       edgeY += stride / 2;
-      rotation = Math.PI;
       break;
     case MoveDirection.RIGHT:
       edgeX += stride; // right edge
       edgeY += stride / 2;
-      rotation = 0;
       break;
   }
 
-  return { edgeX, edgeY, rotation };
+  return { edgeX, edgeY };
 }
 
 function createArrowPoints(thicknessRatio = 1): { x: number; y: number }[] {
@@ -62,11 +68,10 @@ function transformArrowPoints(
   points: { x: number; y: number }[],
   edgeX: number,
   edgeY: number,
-  rotation: number,
+  trigonometry: ArrowTrigonometry,
   offset = 0,
 ) {
-  const cos = Math.cos(rotation);
-  const sin = Math.sin(rotation);
+  const { cos, sin } = trigonometry;
 
   return points.map(({ x, y }) => {
     const localY = y + offset;
@@ -74,6 +79,73 @@ function transformArrowPoints(
       x: x * cos - localY * sin + edgeX,
       y: x * sin + localY * cos + edgeY,
     };
+  });
+}
+
+function transformArrowPoint(
+  point: { x: number; y: number },
+  edgeX: number,
+  edgeY: number,
+  trigonometry: ArrowTrigonometry,
+) {
+  const { cos, sin } = trigonometry;
+  return {
+    x: point.x * cos - point.y * sin + edgeX,
+    y: point.x * sin + point.y * cos + edgeY,
+  };
+}
+
+function drawArrow(
+  g: Graphics,
+  points: { x: number; y: number }[],
+  strokeWidth: number,
+) {
+  const shape = g.poly(points).fill(RenderConfig.arrowColor);
+  if (strokeWidth > 0) {
+    shape.stroke({
+      width: strokeWidth,
+      color: RenderConfig.arrowStrokeColor,
+      join: "round",
+    });
+  }
+}
+
+function drawSplitArrow(
+  g: Graphics,
+  points: { x: number; y: number }[],
+  edgeX: number,
+  edgeY: number,
+  trigonometry: ArrowTrigonometry,
+) {
+  drawArrow(
+    g,
+    transformArrowPoints(points, edgeX, edgeY, trigonometry),
+    RenderConfig.arrowStrokeWidth,
+  );
+
+  const halfLength = RenderConfig.arrowLength / 2;
+  const barCenterX =
+    -halfLength +
+    RenderConfig.splitArrowBarInset +
+    RenderConfig.splitArrowBarWidth / 2;
+  const halfBarLength = RenderConfig.splitArrowBarLength / 2;
+  const barStart = transformArrowPoint(
+    { x: barCenterX, y: -halfBarLength },
+    edgeX,
+    edgeY,
+    trigonometry,
+  );
+  const barEnd = transformArrowPoint(
+    { x: barCenterX, y: halfBarLength },
+    edgeX,
+    edgeY,
+    trigonometry,
+  );
+
+  g.moveTo(barStart.x, barStart.y).lineTo(barEnd.x, barEnd.y).stroke({
+    width: RenderConfig.splitArrowBarWidth,
+    color: RenderConfig.arrowColor,
+    cap: "round",
   });
 }
 
@@ -87,52 +159,25 @@ export function MoveQueueLayer({ stride, moveQueue }: MoveQueueLayerProps) {
     (g: Graphics) => {
       g.clear();
 
-      // Apply dark stroke and white fill to the polygon
-      g.setStrokeStyle({
-        width: RenderConfig.arrowStrokeWidth,
-        color: RenderConfig.arrowStrokeColor,
-        join: "round",
-      });
-
       // Create the base arrow shape points.
       const points = createArrowPoints();
-      const splitPoints = createArrowPoints(0.45);
-      const splitOffset = RenderConfig.arrowThickness * 0.75;
 
       // Draw move queue arrows
       moveQueue.forEach((move) => {
         // Find the center point of the edge between the "from" cell and the target
-        const { edgeX, edgeY, rotation } = getArrowPosition(move, stride);
+        const { edgeX, edgeY } = getArrowPosition(move, stride);
+        const trigonometry = DIRECTION_TRIGONOMETRY[move.direction];
 
         if (move.type === ActionType.SPLIT_MOVE) {
-          g.poly(
-            transformArrowPoints(
-              splitPoints,
-              edgeX,
-              edgeY,
-              rotation,
-              -splitOffset,
-            ),
-          )
-            .fill(RenderConfig.arrowColor)
-            .stroke();
-          g.poly(
-            transformArrowPoints(
-              splitPoints,
-              edgeX,
-              edgeY,
-              rotation,
-              splitOffset,
-            ),
-          )
-            .fill(RenderConfig.arrowColor)
-            .stroke();
+          drawSplitArrow(g, points, edgeX, edgeY, trigonometry);
           return;
         }
 
-        g.poly(transformArrowPoints(points, edgeX, edgeY, rotation))
-          .fill(RenderConfig.arrowColor)
-          .stroke();
+        drawArrow(
+          g,
+          transformArrowPoints(points, edgeX, edgeY, trigonometry),
+          RenderConfig.arrowStrokeWidth,
+        );
       });
     },
     [moveQueue, stride],
