@@ -9,7 +9,7 @@ import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 import { Viewport } from "#/features/game/renderer/viewport";
 import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
-import { KeyToDirection } from "#/features/game/utils/move";
+import { ClearMoveQueueKey, KeyToDirection } from "#/features/game/utils/move";
 import { cn } from "#/lib/utils";
 
 interface GameAppProps {
@@ -19,6 +19,7 @@ interface GameAppProps {
   readonly moveQueue: MoveIntent[];
   readonly onSelectCell: (coord: ICoordinate) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
+  readonly onClearMoveQueue: () => void;
   readonly playerColors: Map<string, number>;
   readonly className?: string;
 }
@@ -35,6 +36,7 @@ export function GameApp({
   moveQueue,
   onSelectCell,
   onQueueMove,
+  onClearMoveQueue,
   playerColors,
   className,
 }: GameAppProps) {
@@ -60,6 +62,12 @@ export function GameApp({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
+      if (key === ClearMoveQueueKey) {
+        e.preventDefault();
+        onClearMoveQueue();
+        return;
+      }
+
       if (KeyToDirection[key]) {
         e.preventDefault();
         onQueueMove(KeyToDirection[key]);
@@ -68,7 +76,7 @@ export function GameApp({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onQueueMove]);
+  }, [onClearMoveQueue, onQueueMove]);
 
   return (
     <div ref={containerRef} className={cn("h-full w-full", className)}>

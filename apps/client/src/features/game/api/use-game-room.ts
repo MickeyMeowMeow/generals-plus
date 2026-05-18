@@ -11,7 +11,7 @@ import {
   MatchClientMessage,
   MatchServerMessage,
 } from "@generals-plus/shared-types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { createRenderGrid } from "#/features/game/utils/grid-adapter";
@@ -310,7 +310,7 @@ function isReadyMatchState(state: MatchState) {
  * The hook consumes a seat reservation or restores a persisted recovery token,
  * subscribes to authoritative match state, adapts the current client's vision
  * schema into a render grid, mirrors the player's server-side action queue for
- * the movement overlay, and exposes a typed `sendMove` command for user input.
+ * the movement overlay, and exposes typed queue commands for user input.
  */
 export function useGameRoom(
   connection: GameRoomConnection,
@@ -443,15 +443,23 @@ export function useGameRoom(
     };
   }, [connection, source]);
 
-  const sendMove = (from: ICoordinate, to: ICoordinate) => {
-    if (!room) return;
-    room.send(MatchClientMessage.ACTION, {
-      playerId: room.sessionId,
-      type: ActionType.MOVE,
-      from,
-      to,
-    });
-  };
+  const sendMove = useCallback(
+    (from: ICoordinate, to: ICoordinate) => {
+      if (!room) return;
+      room.send(MatchClientMessage.ACTION, {
+        playerId: room.sessionId,
+        type: ActionType.MOVE,
+        from,
+        to,
+      });
+    },
+    [room],
+  );
+
+  const clearMoveQueue = useCallback(() => {
+    setMoveQueue([]);
+    room?.send(MatchClientMessage.CLEAR_QUEUE);
+  }, [room]);
 
   return {
     room,
@@ -460,6 +468,7 @@ export function useGameRoom(
     gameState,
     gameResult,
     sendMove,
+    clearMoveQueue,
     playerColors,
     playerNames,
     connectionStatus,
