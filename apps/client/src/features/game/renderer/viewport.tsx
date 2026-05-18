@@ -6,6 +6,8 @@ import { Viewport as BaseViewport } from "pixi-viewport";
 import type { PropsWithChildren } from "react";
 import { useLayoutEffect, useRef } from "react";
 
+import { RenderConfig } from "#/features/game/renderer/render-config";
+
 class ViewportWrapper extends BaseViewport {
   constructor(
     options: Omit<IViewportOptions, "events"> & { app: Application },
@@ -34,12 +36,27 @@ declare module "@pixi/react" {
 interface ViewportProps {
   worldWidth: number;
   worldHeight: number;
-  initialFitRatio: number;
-  initialMaxScale: number;
-  initialHudReserveRight: number;
-  initialHudReserveTop: number;
-  minScale: number;
-  maxScale: number;
+  initialTarget?: { x: number; y: number };
+}
+
+function calculateZoomScale(
+  screenWidth: number,
+  screenHeight: number,
+  worldWidth: number,
+  worldHeight: number,
+) {
+  const fitScale = Math.min(
+    screenWidth / worldWidth,
+    screenHeight / worldHeight,
+  );
+  const clampedScale = Math.max(
+    RenderConfig.initialMinScale,
+    Math.min(
+      RenderConfig.initialMaxScale,
+      fitScale * RenderConfig.initialFitRatio,
+    ),
+  );
+  return clampedScale;
 }
 
 /**
@@ -49,84 +66,107 @@ export function Viewport({
   children,
   worldWidth,
   worldHeight,
-  initialFitRatio,
-  initialMaxScale,
-  initialHudReserveRight,
-  initialHudReserveTop,
-  minScale,
-  maxScale,
+  initialTarget,
 }: PropsWithChildren<ViewportProps>) {
   const { app } = useApplication();
   const viewportRef = useRef<ViewportWrapper>(null);
-  const initializedWorldRef = useRef<string | null>(null);
+
+  const isZoomInitialized = useRef(false);
+  const cameraInitializedWith = useRef<typeof initialTarget>(null);
+
+  const defaultZoom = calculateZoomScale(
+    app.screen.width,
+    app.screen.height,
+    worldWidth,
+    worldHeight,
+  );
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    if (app.screen.width <= 0 || app.screen.height <= 0) return;
 
-    viewport.eventMode = "static";
-    // Let pixi-viewport keep its hit area aligned with the visible world.
-    // A forced screen-sized rect lives in local/world coordinates, so it gets
-    // scaled with the camera and can silently shrink the clickable region.
-    viewport.forceHitArea = null;
+    // Resizing and clamping boundaries should happen on every screen resize
     viewport.resize(
       app.screen.width,
       app.screen.height,
       worldWidth,
       worldHeight,
     );
-    viewport.clampZoom({ minScale, maxScale });
-    viewport.clamp({
-      left: 0,
-      top: 0,
-      right: worldWidth,
-      bottom: worldHeight,
-      direction: "all",
-      underflow: "center",
+
+    viewport.clampZoom({
+      minScale: RenderConfig.minScale,
+      maxScale: RenderConfig.maxScale,
     });
 
-    const viewportKey = `${app.screen.width}:${app.screen.height}:${worldWidth}:${worldHeight}`;
-    if (initializedWorldRef.current !== viewportKey) {
-      const reservedWidth = Math.min(
-        initialHudReserveRight,
-        app.screen.width * 0.42,
+    const marginX =
+      (app.screen.width * RenderConfig.clampMarginRatioX) / defaultZoom;
+    const marginY =
+      (app.screen.height * RenderConfig.clampMarginRatioY) / defaultZoom;
+    viewport.clamp({
+      left: -marginX,
+      top: -marginY,
+      right: worldWidth + marginX,
+      bottom: worldHeight + marginY,
+      underflow: "none",
+    });
+  }, [
+    app.screen.width,
+    app.screen.height,
+    worldWidth,
+    worldHeight,
+    defaultZoom,
+  ]);
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    // Initial zoom should only happen once
+    if (isZoomInitialized.current === false) {
+      viewport.setZoom(defaultZoom, true);
+      isZoomInitialized.current = true;
+    }
+  }, [defaultZoom]);
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    // Initial camera centering should only run after zoom initialized
+    if (!isZoomInitialized.current) return;
+
+    // Initial camera centering should only run when the initial target changes
+    if (cameraInitializedWith.current !== initialTarget) {
+      // Determine initial target coordinates, defaulting to world center
+      const { x, y } = initialTarget ?? {
+        x: worldWidth / 2,
+        y: worldHeight / 2,
+      };
+
+      const marginX = Math.min(
+        (app.screen.width * (0.5 - RenderConfig.initialMarginRatioX)) /
+          defaultZoom,
+        worldWidth / 2,
       );
-      const reservedHeight = Math.min(
-        initialHudReserveTop,
-        app.screen.height * 0.32,
+      const marginY = Math.min(
+        (app.screen.height * (0.5 - RenderConfig.initialMarginRatioX)) /
+          defaultZoom,
+        worldHeight / 2,
       );
-      const availableWidth = Math.max(1, app.screen.width - reservedWidth);
-      const availableHeight = Math.max(1, app.screen.height - reservedHeight);
-      const fitScale = Math.min(
-        availableWidth / worldWidth,
-        availableHeight / worldHeight,
-      );
-      const adaptiveInitialScale = Math.min(
-        initialMaxScale,
-        fitScale * initialFitRatio,
-      );
-      const clampedInitialScale = Math.min(
-        maxScale,
-        Math.max(minScale, adaptiveInitialScale),
-      );
-      viewport.setZoom(clampedInitialScale, true);
-      viewport.moveCenter(worldWidth / 2, worldHeight / 2);
-      viewport.x -= reservedWidth / 2;
-      viewport.y += reservedHeight / 2;
-      initializedWorldRef.current = viewportKey;
+
+      const clampedX = Math.max(marginX, Math.min(x, worldWidth - marginX));
+      const clampedY = Math.max(marginY, Math.min(y, worldHeight - marginY));
+
+      viewport.moveCenter(clampedX, clampedY);
+      cameraInitializedWith.current = initialTarget;
     }
   }, [
     app.screen.width,
     app.screen.height,
     worldWidth,
     worldHeight,
-    initialFitRatio,
-    initialMaxScale,
-    initialHudReserveRight,
-    initialHudReserveTop,
-    minScale,
-    maxScale,
+    initialTarget,
+    defaultZoom,
   ]);
 
   return (

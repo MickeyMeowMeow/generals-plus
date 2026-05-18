@@ -1,5 +1,10 @@
 import type { ICoordinate } from "@generals-plus/engine";
-import { ActionType, GameMode, PlayerStatus } from "@generals-plus/engine";
+import {
+  ActionType,
+  GameMode,
+  PlayerStatus,
+  Terrain,
+} from "@generals-plus/engine";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -90,14 +95,15 @@ export function GamePage({ connection, source }: GamePageProps) {
   );
   const {
     room,
+    playerColors,
+    playerNames,
+    currentPlayer,
     renderGrid,
     moveQueue,
     gameState,
     gameResult,
     sendMove,
     clearMoveQueue,
-    playerColors,
-    playerNames,
     error,
     isConnecting,
   } = useGameRoom(stableConnection, persistedSource);
@@ -111,6 +117,28 @@ export function GamePage({ connection, source }: GamePageProps) {
   >(null);
   const renderGridWidth = renderGrid?.width ?? 0;
   const renderGridHeight = renderGrid?.height ?? 0;
+
+  const initialCoord = useRef<ICoordinate>(null);
+
+  useEffect(() => {
+    if (initialCoord.current || !renderGrid || !currentPlayer) return;
+
+    // Find the general's coordinate
+    renderGrid.forEach((cell) => {
+      // Short-circuit if already found
+      if (initialCoord.current) return;
+
+      if (
+        cell.terrain === Terrain.GENERAL &&
+        cell.ownerIndex === currentPlayer.id
+      ) {
+        initialCoord.current = cell.coordinate;
+      }
+    });
+
+    // Selection starts on the general by default, if found
+    setSelection(initialCoord.current);
+  }, [renderGrid, currentPlayer]);
 
   const handleSelectCell = useCallback((coord: ICoordinate) => {
     setSelection(coord);
@@ -210,14 +238,11 @@ export function GamePage({ connection, source }: GamePageProps) {
       </StageCenter>
     );
 
-  const visiblePlayers = Array.from(gameState.players.values());
-  const currentPlayer = visiblePlayers.find(
-    (player) => player.sessionId === room?.sessionId,
-  );
   const isPlayerEliminated =
     currentPlayer?.status === PlayerStatus.ELIMINATED && !gameResult;
   const isReadOnly =
-    isViewingAsSpectator || Boolean(gameResult) || isPlayerEliminated;
+    isViewingAsSpectator || gameResult !== null || isPlayerEliminated;
+
   const winnerId = gameResult?.winnerTeamId
     ? Array.from(gameState.publicPlayers.values()).find(
         (p) => p.teamId === gameResult.winnerTeamId,
@@ -252,6 +277,7 @@ export function GamePage({ connection, source }: GamePageProps) {
 
       <GameApp
         grid={renderGrid}
+        initialCoord={initialCoord.current ?? undefined}
         selection={isReadOnly ? null : selection}
         splitMoveSelection={isReadOnly ? null : splitMoveSelection}
         moveQueue={moveQueue}

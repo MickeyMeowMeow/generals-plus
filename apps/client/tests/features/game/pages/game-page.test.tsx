@@ -163,14 +163,15 @@ describe("GamePage keyboard move bounds", () => {
   it("does not queue a move that would leave the map", () => {
     useGameRoomMock.mockReturnValue({
       room: { sessionId: "player-1" },
+      playerColors: new Map(),
+      playerNames: new Map(),
+      currentPlayer: createPlayer(),
       renderGrid: createRenderGrid(1, 1),
       moveQueue: [],
       gameState: createGameState(),
       gameResult: null,
       sendMove: sendMoveMock,
       clearMoveQueue: vi.fn(),
-      playerColors: new Map(),
-      playerNames: new Map(),
       connectionStatus: "connected",
       error: null,
       isConnecting: false,
@@ -197,6 +198,9 @@ describe("GamePage keyboard move bounds", () => {
 
     useGameRoomMock.mockReturnValue({
       room: { sessionId: "player-1" },
+      playerColors: new Map(),
+      playerNames: new Map([["player-2", "Rook"]]),
+      currentPlayer: createPlayer(),
       renderGrid: createRenderGrid(2, 2),
       moveQueue: [],
       gameState: createGameState({}, [
@@ -214,8 +218,6 @@ describe("GamePage keyboard move bounds", () => {
       },
       sendMove: sendMoveMock,
       clearMoveQueue: vi.fn(),
-      playerColors: new Map(),
-      playerNames: new Map([["player-2", "Rook"]]),
       connectionStatus: "connected",
       error: null,
       isConnecting: false,
@@ -249,14 +251,15 @@ describe("GamePage keyboard move bounds", () => {
 
     useGameRoomMock.mockReturnValue({
       room: { sessionId: "player-1" },
+      playerColors: new Map(),
+      playerNames: new Map(),
+      currentPlayer: createPlayer({ status: PlayerStatus.ELIMINATED }),
       renderGrid: createRenderGrid(2, 2),
       moveQueue: [],
-      gameState: createGameState({ status: PlayerStatus.ELIMINATED }),
+      gameState: createGameState(),
       gameResult: null,
       sendMove: sendMoveMock,
       clearMoveQueue: vi.fn(),
-      playerColors: new Map(),
-      playerNames: new Map(),
       connectionStatus: "connected",
       error: null,
       isConnecting: false,
