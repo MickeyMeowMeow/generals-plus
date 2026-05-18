@@ -102,6 +102,7 @@ export function MapRenderer({
         playerColors={playerColors}
       />
       <IconLayer grid={grid} stride={stride} />
+      <MoveQueueLayer stride={stride} moveQueue={moveQueue} />
       <TroopLayer
         grid={grid}
         stride={stride}
@@ -113,7 +114,6 @@ export function MapRenderer({
         cellSize={cellSize}
         selection={selection}
       />
-      <MoveQueueLayer stride={stride} moveQueue={moveQueue} />
     </pixiContainer>
   );
 }
