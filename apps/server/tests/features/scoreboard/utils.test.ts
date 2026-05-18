@@ -1,5 +1,9 @@
-import type { IClassicScoreboard } from "@generals-plus/engine";
+import type {
+  IClassicScoreboard,
+  ITurfWarScoreboard,
+} from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
+import type { TurfWarScoreboard } from "@generals-plus/shared-types";
 import { ClassicScoreboard } from "@generals-plus/shared-types";
 import { describe, expect, it } from "vitest";
 
@@ -88,5 +92,31 @@ describe("syncScoreboard", () => {
 
     const classic = target as ClassicScoreboard;
     expect(classic.players.length).toBe(0);
+  });
+
+  it("syncs turf_war scoreboard with player and team entries", () => {
+    const target = createScoreboard(GameMode.TURF_WAR);
+    const source: ITurfWarScoreboard = {
+      mode: GameMode.TURF_WAR,
+      players: [
+        { playerId: "p1", troops: 10, land: 5 },
+        { playerId: "p2", troops: 3, land: 1 },
+      ],
+      teams: [
+        { teamId: "t1", playerIds: ["p1"], landPercent: 83 },
+        { teamId: "t2", playerIds: ["p2"], landPercent: 17 },
+      ],
+    };
+
+    syncScoreboard(target, source);
+
+    expect(target.mode).toBe(GameMode.TURF_WAR);
+    const tw = target as TurfWarScoreboard;
+    expect(tw.players.length).toBe(2);
+    expect(tw.players.at(0)).toMatchObject({
+      playerId: "p1",
+      troops: 10,
+      land: 5,
+    });
   });
 });

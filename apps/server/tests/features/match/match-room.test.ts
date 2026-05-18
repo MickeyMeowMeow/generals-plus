@@ -1,12 +1,16 @@
-import type { IPlayerState } from "@generals-plus/engine";
+import type { IGameResult, IPlayerState } from "@generals-plus/engine";
 import {
+  ActionType,
   GameStatus,
   PlayerStatus,
   Terrain,
   Visibility,
 } from "@generals-plus/engine";
 import type { ClassicScoreboard } from "@generals-plus/shared-types";
-import { MatchClientMessage } from "@generals-plus/shared-types";
+import {
+  MatchClientMessage,
+  MatchServerMessage,
+} from "@generals-plus/shared-types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { MatchRoom } from "#/features/match/match-room";
@@ -16,6 +20,25 @@ import {
   createRoom,
   createValidRoomData,
 } from "#tests/helpers";
+
+const ratingMocks = vi.hoisted(() => ({
+  getRating: vi.fn().mockResolvedValue(1000),
+  updateRatings: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("#/infra/db/repositories/MongoUserRepository", () => ({
+  MongoUserRepository: class {
+    getRating = ratingMocks.getRating;
+    updateRatings = ratingMocks.updateRatings;
+  },
+}));
+
+vi.mock("#/features/rating/rating-service", () => ({
+  calculateNewRatings: () => [
+    { playerId: "p1", oldRating: 1000, newRating: 1050 },
+    { playerId: "p2", oldRating: 1000, newRating: 950 },
+  ],
+}));
 
 describe("MatchRoom", () => {
   let room: MatchRoom;
@@ -287,6 +310,47 @@ describe("MatchRoom", () => {
 
       expect(handleAction).toHaveBeenCalled();
     });
+
+    it("clears remaining queue on CLEAR_QUEUE action type", async () => {
+      const handleAction = vi.fn(() => true);
+      const game = createMockGame({ handleAction });
+      game.nextTick = () => {
+        game.tick++;
+      };
+      const metadata = createValidRoomData({ game });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      // Enqueue: move, clear_queue, move
+      client.send("action", {
+        type: "move",
+        from: { x: 0, y: 0 },
+        to: { x: 1, y: 0 },
+      });
+      client.send("action", {
+        type: "clear_queue",
+        from: { x: 0, y: 0 },
+        to: { x: 1, y: 0 },
+      });
+      client.send("action", {
+        type: "move",
+        from: { x: 1, y: 0 },
+        to: { x: 2, y: 0 },
+      });
+
+      const queue = room.state.clientActionQueues.get(client.sessionId);
+      if (!queue) throw new Error("queue not found");
+      expect(queue.queue.length).toBe(3);
+
+      await room.waitForNextSimulationTick();
+
+      // First move executed, then clear_queue hit → remaining cleared
+      expect(handleAction).toHaveBeenCalledTimes(1);
+    });
   });
 
   // ── Vision sync ────────────────────────────────────────────
@@ -416,6 +480,207 @@ describe("MatchRoom", () => {
       room = await createRoom<MatchRoom>("match", { metadata });
 
       expect(room.state.finishTick).toBeUndefined();
+    });
+  });
+
+  // ── Player leave / dispose ────────────────────────────────
+
+  describe("player leave and dispose", () => {
+    it("surrenders active player on leave", async () => {
+      const handleAction = vi.fn(() => true);
+      const metadata = createValidRoomData({
+        game: createMockGame({ handleAction }),
+      });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      await (
+        room as unknown as { _onLeave: (c: unknown) => Promise<void> }
+      )._onLeave(client);
+
+      expect(handleAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          playerId: "p1",
+          type: ActionType.SURRENDER,
+        }),
+      );
+    });
+
+    it("cleans up session mappings on leave", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      await (
+        room as unknown as { _onLeave: (c: unknown) => Promise<void> }
+      )._onLeave(client);
+
+      expect(room.state.clientVisions.get(client.sessionId)).toBeUndefined();
+      expect(
+        room.state.clientActionQueues.get(client.sessionId),
+      ).toBeUndefined();
+    });
+
+    it("replaces old session on duplicate connection", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const c1 = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+      const oldSessionId = c1.sessionId;
+
+      // Connect same player again — should replace old session
+      const c2 = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      // Old session's data should be cleaned up
+      expect(room.state.clientVisions.get(oldSessionId)).toBeUndefined();
+      expect(room.state.clientActionQueues.get(oldSessionId)).toBeUndefined();
+
+      // New session should have data
+      expect(room.state.clientVisions.get(c2.sessionId)).toBeDefined();
+      expect(room.state.clientActionQueues.get(c2.sessionId)).toBeDefined();
+    });
+  });
+
+  // ── Player elimination ──────────────────────────────────────
+
+  describe("player elimination", () => {
+    it("removes action queue when player is eliminated", async () => {
+      const getPlayerState = vi.fn((playerId: string) => ({
+        playerId,
+        teamId: playerId === "p1" ? "team_0" : "team_1",
+        status:
+          playerId === "p1" ? PlayerStatus.ELIMINATED : PlayerStatus.ACTIVE,
+      }));
+      const game = createMockGame({ getPlayerState });
+      game.nextTick = () => {
+        game.tick++;
+      };
+      const metadata = createValidRoomData({ game });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+      const sessionId = client.sessionId;
+
+      expect(room.state.clientActionQueues.get(sessionId)).toBeDefined();
+
+      await room.waitForNextSimulationTick();
+
+      expect(room.state.clientActionQueues.get(sessionId)).toBeUndefined();
+    });
+  });
+
+  // ── Game end with no clear winner ───────────────────────────
+
+  describe("game end from engine status", () => {
+    it("sets winnerTeamId to null when multiple teams active", async () => {
+      const getPlayerState = vi.fn((playerId: string) => ({
+        playerId,
+        teamId: playerId === "p1" ? "team_0" : "team_1",
+        status: PlayerStatus.ACTIVE,
+      }));
+      const game = createMockGame({
+        checkGameEnd: vi.fn(() => null),
+        getPlayerState,
+      });
+      game.nextTick = () => {
+        game.tick++;
+        game.status = GameStatus.FINISHED;
+      };
+      const metadata = createValidRoomData({ game });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const broadcastData: IGameResult[] = [];
+      const origBroadcast = room.broadcast.bind(room);
+      room.broadcast = ((type: string, data: unknown) => {
+        if (type === MatchServerMessage.GAME_END) {
+          broadcastData.push(data as IGameResult);
+        }
+        return origBroadcast(type, data);
+      }) as typeof room.broadcast;
+
+      await room.waitForNextSimulationTick();
+
+      expect(room.state.status).toBe(GameStatus.FINISHED);
+      expect(broadcastData).toHaveLength(1);
+      expect(broadcastData[0].winnerTeamId).toBeNull();
+    });
+  });
+
+  // ── Rating update ───────────────────────────────────────────
+
+  describe("rating update", () => {
+    it("updates player ratings when game ends with a winner", async () => {
+      let callCount = 0;
+      const game = createMockGame({
+        checkGameEnd: vi.fn(() => {
+          callCount++;
+          if (callCount >= 2) {
+            return { mode: "classic" as const, winnerTeamId: "team_0" };
+          }
+          return null;
+        }),
+      });
+      game.nextTick = () => {
+        game.tick++;
+      };
+      const metadata = createValidRoomData({ game });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      await room.waitForNextSimulationTick();
+      await room.waitForNextSimulationTick();
+
+      expect(room.state.status).toBe(GameStatus.FINISHED);
+
+      // updateRatings is async and fire-and-forget — wait for mocks
+      await vi.waitFor(() => {
+        expect(ratingMocks.getRating).toHaveBeenCalled();
+      });
+      expect(ratingMocks.updateRatings).toHaveBeenCalled();
+    });
+  });
+
+  // ── onDispose ───────────────────────────────────────────────
+
+  describe("onDispose", () => {
+    it("clears session maps on dispose", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      const internal = room as unknown as {
+        sessionToPlayerId: Map<string, string>;
+        playerToSessionId: Map<string, string>;
+      };
+
+      expect(internal.sessionToPlayerId.size).toBeGreaterThan(0);
+      expect(internal.playerToSessionId.size).toBeGreaterThan(0);
+
+      room.disconnect();
+      room = null as unknown as MatchRoom;
+
+      expect(internal.sessionToPlayerId.size).toBe(0);
+      expect(internal.playerToSessionId.size).toBe(0);
     });
   });
 });

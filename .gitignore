@@ -27,3 +27,5 @@ build
 *.njsproj
 *.sln
 *.sw?
+
+coverage/
