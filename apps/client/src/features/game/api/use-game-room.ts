@@ -11,7 +11,7 @@ import {
   MatchClientMessage,
   MatchServerMessage,
 } from "@generals-plus/shared-types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { createRenderGrid } from "#/features/game/utils/grid-adapter";
@@ -443,21 +443,22 @@ export function useGameRoom(
     };
   }, [connection, source]);
 
-  const sendMove = (from: ICoordinate, to: ICoordinate) => {
-    if (!room) return;
-    room.send(MatchClientMessage.ACTION, {
-      playerId: room.sessionId,
-      type: ActionType.MOVE,
-      from,
-      to,
-    });
-  };
+  const sendMove = useCallback(
+    (from: ICoordinate, to: ICoordinate) => {
+      room?.send(MatchClientMessage.ACTION, {
+        playerId: room.sessionId,
+        type: ActionType.MOVE,
+        from,
+        to,
+      });
+    },
+    [room],
+  );
 
-  const clearMoveQueue = () => {
-    if (!room) return;
+  const clearMoveQueue = useCallback(() => {
     setMoveQueue([]);
-    room.send(MatchClientMessage.CLEAR_QUEUE);
-  };
+    room?.send(MatchClientMessage.CLEAR_QUEUE);
+  }, [room]);
 
   return {
     room,
