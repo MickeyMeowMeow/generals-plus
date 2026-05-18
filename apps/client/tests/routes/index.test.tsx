@@ -13,6 +13,7 @@ const initialMatchState = useMatchConnectionStore.getInitialState();
 
 describe("index route", () => {
   beforeEach(() => {
+    localStorage.clear();
     useMatchConnectionStore.setState(initialMatchState, true);
   });
 

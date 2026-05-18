@@ -81,6 +81,15 @@ interface ScoreboardWithTeamScores {
   teamScores?: TeamScoresLike;
 }
 
+interface TurfWarTeamEntryLike {
+  teamId: string;
+  landPercent: number;
+}
+
+interface ScoreboardWithTurfWarTeams {
+  teams?: Iterable<TurfWarTeamEntryLike>;
+}
+
 const troopLandColumns: GameHudColumn[] = [
   { key: "land", label: "Land" },
   { key: "troops", label: "Soldiers" },
@@ -128,6 +137,13 @@ function getTeamScoreEntries(scoreboard: BaseScoreboard): TeamScoreEntry[] {
     entries.push({ teamId, score });
   });
   return entries;
+}
+
+function getTurfWarTeamEntries(
+  scoreboard: BaseScoreboard,
+): TurfWarTeamEntryLike[] {
+  const teams = (scoreboard as ScoreboardWithTurfWarTeams | undefined)?.teams;
+  return teams ? Array.from(teams) : [];
 }
 
 /**
@@ -249,6 +265,39 @@ function createDominationModel(
 }
 
 /**
+ * Creates a HUD model for Turf War, showing team land percentages in team labels.
+ */
+function createTurfWarModel(
+  scoreboard: BaseScoreboard,
+): GameHudScoreboardModel {
+  const rows = createPlayerRows(scoreboard);
+  const landPercentByTeam = new Map(
+    getTurfWarTeamEntries(scoreboard).map((entry) => [
+      entry.teamId,
+      entry.landPercent,
+    ]),
+  );
+
+  const groups = createTeamGroups(rows).map((group) => {
+    const percent = landPercentByTeam.get(group.id) ?? 0;
+    return {
+      ...group,
+      label: `${group.label} (${percent}%)`,
+    };
+  });
+
+  return {
+    title: "Teams",
+    columns: troopLandColumns,
+    groups: groups.sort(
+      (a, b) =>
+        (landPercentByTeam.get(b.id) ?? 0) -
+          (landPercentByTeam.get(a.id) ?? 0) || a.label.localeCompare(b.label),
+    ),
+  };
+}
+
+/**
  * Converts the mode-specific match scoreboard schema into a single HUD model.
  *
  * The adapter keeps mode branching outside of the React component so the HUD can
@@ -262,7 +311,7 @@ export function createGameHudScoreboardModel(
     case GameMode.CLASSIC:
       return createTroopLandModel("Players", scoreboard);
     case GameMode.TURF_WAR:
-      return createTroopLandModel("Players", scoreboard);
+      return createTurfWarModel(scoreboard);
     case GameMode.DOMINATION:
       return createDominationModel(scoreboard);
     default:
