@@ -5,6 +5,7 @@ import type { MessagePayload } from "#/messages";
 export const MatchClientMessage = {
   ACTION: "action",
   CLEAR_QUEUE: "clear_queue",
+  PING: "ping",
 } as const;
 
 export type MatchClientMessage =
@@ -13,10 +14,12 @@ export type MatchClientMessage =
 export interface MatchClientMessagePayload extends MessagePayload {
   [MatchClientMessage.ACTION]: Action;
   [MatchClientMessage.CLEAR_QUEUE]: never;
+  [MatchClientMessage.PING]: { x: number; y: number; type: string };
 }
 
 export const MatchServerMessage = {
   GAME_END: "game_end",
+  PING: "ping",
 } as const;
 
 export type MatchServerMessage =
@@ -24,4 +27,10 @@ export type MatchServerMessage =
 
 export interface MatchServerMessagePayload extends MessagePayload {
   [MatchServerMessage.GAME_END]: IGameResult;
+  [MatchServerMessage.PING]: {
+    playerId: string;
+    x: number;
+    y: number;
+    type: string;
+  };
 }

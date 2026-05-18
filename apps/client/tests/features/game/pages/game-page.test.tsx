@@ -162,7 +162,10 @@ describe("GamePage keyboard move bounds", () => {
 
   it("does not queue a move that would leave the map", () => {
     useGameRoomMock.mockReturnValue({
-      room: { sessionId: "player-1" },
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
       renderGrid: createRenderGrid(1, 1),
       moveQueue: [],
       gameState: createGameState(),
@@ -196,7 +199,10 @@ describe("GamePage keyboard move bounds", () => {
     const onReturn = vi.fn();
 
     useGameRoomMock.mockReturnValue({
-      room: { sessionId: "player-1" },
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
       renderGrid: createRenderGrid(2, 2),
       moveQueue: [],
       gameState: createGameState({}, [
@@ -248,7 +254,10 @@ describe("GamePage keyboard move bounds", () => {
     const onReturn = vi.fn();
 
     useGameRoomMock.mockReturnValue({
-      room: { sessionId: "player-1" },
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
       renderGrid: createRenderGrid(2, 2),
       moveQueue: [],
       gameState: createGameState({ status: PlayerStatus.ELIMINATED }),
