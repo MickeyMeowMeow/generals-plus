@@ -44,7 +44,7 @@ export function GridLayer({
           color = 0x000000; // Total black for undiscovered
         } else if (cell.visibility === Visibility.SHROUDED) {
           // Simple way to "tint" for fog: darken the color
-          color = tintColor(color, 0.5);
+          color = tintColor(color, 0.38);
         }
 
         g.rect(x, y, cellSize, cellSize).fill(color);
