@@ -32,7 +32,7 @@ export function TroopLayer({
       if (cell.troopCount || isSplitMoveCell) {
         cells.push({
           cell,
-          text: isSplitMoveCell ? "50%" : cell.troopCount!.toString(),
+          text: isSplitMoveCell ? "50%" : (cell.troopCount ?? "").toString(),
         });
       }
     });

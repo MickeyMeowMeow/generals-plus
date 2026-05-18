@@ -1,13 +1,27 @@
+import { JWT } from "@colyseus/auth";
 import { GameMode } from "@generals-plus/engine";
+import type { QueuePlayer } from "@generals-plus/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { MatchQueueRoom } from "#/features/queue/queue-room";
+import { MatchQueueRoom } from "#/features/queue/queue-room";
 import {
   connectClient,
   createMockGame,
   createRoom,
   ROOM_NAMES,
 } from "#tests/helpers";
+
+function captureErrors(client: {
+  send: (type: string, data?: unknown) => void;
+}) {
+  const sent: string[] = [];
+  const originalSend = client.send.bind(client);
+  client.send = (type: string, data?: unknown) => {
+    if (type === "error") sent.push(data as string);
+    originalSend(type, data);
+  };
+  return sent;
+}
 
 const mocks = vi.hoisted(() => ({
   getRating: vi.fn().mockResolvedValue(1000),
@@ -265,6 +279,97 @@ describe("MatchQueueRoom", () => {
           playerPerTeam: 1,
         }),
       );
+    });
+  });
+
+  describe("duplicate connection handling", () => {
+    it("kicks old session when same player reconnects", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+      });
+
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      expect(room.clients.length).toBe(1);
+
+      let oldLeft = false;
+      c1.leave = () => {
+        oldLeft = true;
+      };
+
+      // Same player joins again — should kick old session
+      await connectClient(room, { id: "p1", email: "p1@t.com" });
+
+      expect(oldLeft).toBe(true);
+    });
+  });
+
+  // ── pickColor ──────────────────────────────────────────────
+
+  describe("pickColor", () => {
+    it("updates player color on valid pick", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+      });
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+
+      c1.send("pickColor", { color: 0xe74c3c });
+
+      const player = room.state.players.find((p: QueuePlayer) => p.id === "p1");
+      expect(player?.color).toBe(0xe74c3c);
+    });
+
+    it("rejects invalid color", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+      });
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+
+      const sent = captureErrors(c1);
+      c1.send("pickColor", { color: 999999 });
+
+      expect(sent).toContain("invalid color");
+    });
+
+    it("rejects already taken color", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+      });
+      await connectClient(room, { id: "p1", email: "p1@t.com" });
+      const c2 = await connectClient(room, { id: "p2", email: "p2@t.com" });
+
+      const p1Color = room.state.players.find(
+        (p: QueuePlayer) => p.id === "p1",
+      )?.color;
+      const sent = captureErrors(c2);
+      c2.send("pickColor", { color: p1Color });
+
+      expect(sent).toContain("color already taken");
+    });
+  });
+
+  // ── onAuth ────────────────────────────────────────────────────
+
+  describe("onAuth", () => {
+    it("returns decoded data for a valid token", async () => {
+      const token = await JWT.sign({
+        id: "u1",
+        email: "u1@test.com",
+        displayName: "Test",
+      });
+
+      const result = await MatchQueueRoom.onAuth(token);
+
+      expect(result).toMatchObject({
+        id: "u1",
+        email: "u1@test.com",
+        displayName: "Test",
+      });
+    });
+
+    it("throws for an invalid token", async () => {
+      await expect(
+        MatchQueueRoom.onAuth("invalid.token.here"),
+      ).rejects.toThrow();
     });
   });
 });

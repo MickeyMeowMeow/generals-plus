@@ -14,12 +14,15 @@ import type {
   ClientAuth,
   RoomData,
   SetupSettings,
+  SetupValidationFailedMessage,
 } from "@generals-plus/shared-types";
 import {
   isPaletteColor,
   nextAvailableColor,
   ROOM_NAMES,
+  SetupClientMessage,
   SetupPlayer,
+  SetupServerMessage,
   SetupState,
 } from "@generals-plus/shared-types";
 
@@ -31,7 +34,40 @@ import {
 } from "./custom-room-registry";
 import { setupSettingsUpdateSchema } from "./schemas";
 
+const BASE_TICK_INTERVAL = 500;
+
+const MODE_SETTINGS: Record<string, { finishTick?: number }> = {
+  classic: {},
+  turf_war: { finishTick: 360 },
+};
+
 const DEFAULT_MAX_PLAYERS = 8;
+
+const SETTING_LABELS: Record<string, string> = {
+  gameMode: "Game mode",
+  isPublic: "Visibility",
+  maxPlayers: "Max players",
+  playersPerTeam: "Players per team",
+  mapWidth: "Map width",
+  mapHeight: "Map height",
+  seed: "Map seed",
+  mountainRate: "Mountain rate",
+  cityRate: "City rate",
+  minGeneralDistanceFactor: "Minimum general distance",
+  generalInitialTroops: "General troops",
+  cityInitialTroops: "City troops",
+  speed: "Speed",
+  duration: "Duration",
+};
+
+type SetupSettingsIssue = {
+  code: string;
+  path: PropertyKey[];
+  message: string;
+  expected?: unknown;
+  minimum?: unknown;
+  maximum?: unknown;
+};
 
 interface SetupRoomOptions {
   gameMode?: GameMode;
@@ -131,17 +167,23 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   messages = {
-    updateSettings: async (client: Client, message: Partial<SetupSettings>) => {
+    [SetupClientMessage.UPDATE_SETTINGS]: async (
+      client: Client,
+      message: Partial<SetupSettings>,
+    ) => {
       if (!this.isHost(client)) {
-        client.send("error", "only the host can update settings");
+        client.send(
+          SetupServerMessage.ERROR,
+          "only the host can update settings",
+        );
         return;
       }
 
       const result = setupSettingsUpdateSchema.safeParse(message);
       if (!result.success) {
-        client.send(
-          "error",
-          `invalid settings update: ${result.error.message}`,
+        this.sendValidationFailed(
+          client,
+          this.formatSettingsValidationError(result.error.issues[0]),
         );
         return;
       }
@@ -157,7 +199,18 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         const activePlayersPerTeam =
           update.playersPerTeam ?? this.state.playersPerTeam;
         if (activePlayersPerTeam >= activeMaxPlayers) {
-          client.send("error", "playersPerTeam must be less than maxPlayers");
+          this.sendValidationFailed(client, {
+            severity: "warning",
+            message: "Players per team must be less than max players.",
+          });
+          return;
+        }
+        if (activeMaxPlayers < this.state.players.length) {
+          this.sendValidationFailed(client, {
+            severity: "warning",
+            message:
+              "Max players cannot be lower than the players already here.",
+          });
           return;
         }
       }
@@ -168,7 +221,10 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         const activeMountainRate =
           update.mountainRate ?? this.state.mountainRate;
         if (activeCityRate + activeMountainRate > 1) {
-          client.send("error", "cityRate + mountainRate cannot exceed 1.0");
+          this.sendValidationFailed(client, {
+            severity: "warning",
+            message: "Mountain rate and city rate must add up to 1.0 or less.",
+          });
           return;
         }
       }
@@ -182,8 +238,31 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         update.playersPerTeam = getDefaultPlayersPerTeam(update.gameMode);
       }
 
+      // Reset mode-specific defaults when gameMode changes.
+      if (update.gameMode !== undefined) {
+        const modeDefaults = MODE_SETTINGS[update.gameMode];
+        if (update.duration === undefined) {
+          this.state.duration = 1;
+        }
+        if (modeDefaults?.finishTick !== undefined) {
+          this.state.finishTick = modeDefaults.finishTick;
+        }
+      }
+
       // Apply valid updates to state
       Object.assign(this.state, update);
+
+      // Recompute derived values from multipliers.
+      this.state.tickInterval = Math.max(
+        100,
+        Math.round(BASE_TICK_INTERVAL / this.state.speed),
+      );
+      if (this.state.gameMode === "turf_war") {
+        const baseFinishTick = MODE_SETTINGS.turf_war.finishTick ?? 360;
+        this.state.finishTick = Math.round(
+          baseFinishTick * this.state.duration,
+        );
+      }
 
       // Synchronize room-level properties and visibility
       if (update.maxPlayers !== undefined) {
@@ -197,23 +276,53 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       });
     },
 
-    start: async (client: Client) => {
+    [SetupClientMessage.START_GAME]: async (client: Client) => {
       if (!this.isHost(client)) {
-        client.send("error", "only the host can start the game");
+        client.send(
+          SetupServerMessage.ERROR,
+          "only the host can start the game",
+        );
         return;
       }
 
       if (this.state.players.length < 2) {
-        client.send("error", "need at least 2 players to start");
+        this.sendValidationFailed(client, {
+          severity: "warning",
+          message: "Need at least 2 players to start.",
+        });
         return;
       }
 
-      await this.startGame();
+      if (
+        Math.ceil(this.state.players.length / this.state.playersPerTeam) < 2
+      ) {
+        this.sendValidationFailed(client, {
+          severity: "warning",
+          message:
+            "Players per team is too high; the room needs at least two teams to start.",
+        });
+        return;
+      }
+
+      try {
+        await this.startGame();
+      } catch (error) {
+        logger.warn(
+          `[SetupRoom] Could not start game for room ${this.roomId}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+        this.sendValidationFailed(client, {
+          severity: "warning",
+          message:
+            "Those map settings cannot start a game. Try a larger map, fewer mountains, or a lower minimum general distance.",
+        });
+      }
     },
 
     kick: (client: Client, message: { playerId: string }) => {
       if (!this.isHost(client)) {
-        client.send("error", "only the host can kick players");
+        client.send(SetupServerMessage.ERROR, "only the host can kick players");
         return;
       }
 
@@ -225,13 +334,20 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       }
     },
 
-    pickColor: (client: Client, message: { color: number }) => {
+    [SetupClientMessage.PICK_COLOR]: (
+      client: Client,
+      message: { color: number },
+    ) => {
       const auth = client.auth as ClientAuth;
       const player = this.state.players.find((p) => p.id === auth.id);
       if (!player) return;
 
       if (!isPaletteColor(message.color)) {
-        client.send("error", "invalid color");
+        this.sendValidationFailed(client, {
+          severity: "warning",
+          field: "color",
+          message: "Choose one of the available colors.",
+        });
         return;
       }
 
@@ -239,7 +355,11 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         (p) => p.id !== auth.id && p.color === message.color,
       );
       if (taken) {
-        client.send("error", "color already taken");
+        this.sendValidationFailed(client, {
+          severity: "warning",
+          field: "color",
+          message: "That color is already taken.",
+        });
         return;
       }
 
@@ -249,6 +369,71 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
   private isHost(client: Client): boolean {
     return (client.auth as ClientAuth)?.id === this.hostId;
+  }
+
+  private sendValidationFailed(
+    client: Client,
+    payload: SetupValidationFailedMessage,
+  ) {
+    client.send(SetupServerMessage.VALIDATION_FAILED, payload);
+  }
+
+  private formatSettingsValidationError(
+    issue: SetupSettingsIssue,
+  ): SetupValidationFailedMessage {
+    const path = issue.path[0];
+    const field =
+      typeof path === "string" && path in SETTING_LABELS
+        ? (path as keyof SetupSettings)
+        : undefined;
+    const label = field ? SETTING_LABELS[field] : "Settings";
+
+    switch (issue.code) {
+      case "invalid_type":
+        return {
+          severity: "warning",
+          field,
+          message:
+            typeof issue.expected === "string"
+              ? `${label} must be a ${issue.expected}.`
+              : `${label} has the wrong value type.`,
+        };
+      case "too_small":
+        return {
+          severity: "warning",
+          field,
+          message:
+            issue.minimum === undefined
+              ? `${label} is below the allowed minimum.`
+              : `${label} must be at least ${issue.minimum}.`,
+        };
+      case "too_big":
+        return {
+          severity: "warning",
+          field,
+          message:
+            issue.maximum === undefined
+              ? `${label} is above the allowed maximum.`
+              : `${label} must be at most ${issue.maximum}.`,
+        };
+      case "invalid_value":
+        return {
+          severity: "warning",
+          field,
+          message: `${label} is not supported.`,
+        };
+      case "unrecognized_keys":
+        return {
+          severity: "warning",
+          message: "Settings include an unsupported field.",
+        };
+      default:
+        return {
+          severity: "warning",
+          field,
+          message: `${label}: ${issue.message}`,
+        };
+    }
   }
 
   private getGridOptions(): GridGeneratorOptions | DominationGridOptions {
@@ -271,6 +456,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       gridOptions: this.getGridOptions(),
       playerIds: this.state.players.map((p) => p.id),
       playerPerTeam: this.state.playersPerTeam,
+      finishTick:
+        this.state.gameMode === "turf_war" ? this.state.finishTick : undefined,
     });
 
     const playerInit = createPlayerInit(this.state.players, game);
@@ -280,6 +467,9 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       game,
       playerInit,
       isPublic: false,
+      tickInterval: this.state.tickInterval,
+      finishTick:
+        this.state.gameMode === "turf_war" ? this.state.finishTick : undefined,
     };
 
     const room = await matchMaker.createRoom(ROOM_NAMES.MATCH, { metadata });
@@ -295,7 +485,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
     for (const client of this.clients) {
       client.send(
-        "seat",
+        SetupServerMessage.SEAT_RESERVATION,
         matchMaker.buildSeatReservation(room, client.sessionId),
       );
     }

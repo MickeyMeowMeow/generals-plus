@@ -2,8 +2,10 @@ import { GameMode } from "@generals-plus/engine";
 import {
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
-  DominationScoreboard,
   TroopLandScoreboardPlayerEntry,
+  TurfWarScoreboard,
+  TurfWarScoreboardPlayerEntry,
+  TurfWarScoreboardTeamEntry,
 } from "@generals-plus/shared-types";
 import { describe, expect, it } from "vitest";
 
@@ -50,22 +52,49 @@ function classicScoreboard() {
   return scoreboard;
 }
 
-function dominationScoreboard() {
-  const scoreboard = new DominationScoreboard();
-  scoreboard.mode = GameMode.DOMINATION;
-  scoreboard.teamScores.set("t1", 30);
-  scoreboard.teamScores.set("t2", 10);
-  scoreboard.players.push(
-    playerScore({ playerId: "p1", troops: 12, land: 4 }),
-    playerScore({
-      playerId: "p2",
-      teamId: "t2",
-      displayName: "Rook",
-      color: 0x00ff00,
-      troops: 8,
-      land: 3,
-    }),
-  );
+/**
+ * Creates a Turf War scoreboard fixture with two teams and players.
+ */
+function turfWarScoreboard() {
+  const scoreboard = new TurfWarScoreboard();
+  scoreboard.mode = GameMode.TURF_WAR;
+
+  // Add players
+  const p1 = playerScore({
+    playerId: "p1",
+    teamId: "t1",
+    displayName: "Nova",
+    troops: 10,
+    land: 5,
+  });
+  const entry1 = new TurfWarScoreboardPlayerEntry();
+  Object.assign(entry1, p1, { isAlive: true });
+
+  const p2 = playerScore({
+    playerId: "p2",
+    teamId: "t2",
+    displayName: "Astra",
+    troops: 8,
+    land: 3,
+  });
+  const entry2 = new TurfWarScoreboardPlayerEntry();
+  Object.assign(entry2, p2, { isAlive: true });
+
+  scoreboard.players.push(entry1, entry2);
+
+  // Add teams
+  const team1 = new TurfWarScoreboardTeamEntry();
+  team1.teamId = "t1";
+  team1.landPercent = 63;
+  team1.playerIds.push("p1");
+
+  const team2 = new TurfWarScoreboardTeamEntry();
+  team2.teamId = "t2";
+  team2.landPercent = 37;
+  team2.playerIds.push("p2");
+
+  scoreboard.teams.push(team1, team2);
+
   return scoreboard;
 }
 
@@ -85,27 +114,34 @@ describe("createGameHudScoreboardModel", () => {
     });
   });
 
-  it("adapts domination team scores when present", () => {
-    const model = createGameHudScoreboardModel(dominationScoreboard());
+  it("adapts turf war scoreboard rows grouped by team with percentage", () => {
+    const model = createGameHudScoreboardModel(turfWarScoreboard());
 
     expect(model.title).toBe("Teams");
     expect(model.columns.map((column) => column.key)).toEqual([
-      "score",
       "land",
       "troops",
     ]);
-    expect(model.groups.at(0)).toMatchObject({
-      id: "t1",
-      totals: { score: 30, land: 4, troops: 12 },
+
+    expect(model.groups).toHaveLength(2);
+
+    // Sorted descending by percentage (63% first, then 37%)
+    const g1 = model.groups[0];
+    expect(g1.id).toBe("t1");
+    expect(g1.label).toBe("Team t1 (63%)");
+    expect(g1.rows[0]).toMatchObject({
+      id: "p1",
+      label: "Nova",
+      values: { land: 5, troops: 10 },
     });
-    expect(model.groups.at(0)?.rows.at(0)?.values).toEqual({
-      score: "",
-      land: 4,
-      troops: 12,
-    });
-    expect(model.groups.at(1)).toMatchObject({
-      id: "t2",
-      totals: { score: 10, land: 3, troops: 8 },
+
+    const g2 = model.groups[1];
+    expect(g2.id).toBe("t2");
+    expect(g2.label).toBe("Team t2 (37%)");
+    expect(g2.rows[0]).toMatchObject({
+      id: "p2",
+      label: "Astra",
+      values: { land: 3, troops: 8 },
     });
   });
 });

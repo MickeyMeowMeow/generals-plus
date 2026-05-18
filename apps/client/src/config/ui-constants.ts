@@ -9,6 +9,7 @@ export const DEFAULT_GAME_MODE = GameMode.CLASSIC;
 /** Client-side mode gate while only Classic is implemented end to end. */
 const SUPPORTED_GAME_MODES: ReadonlySet<GameMode> = new Set([
   DEFAULT_GAME_MODE,
+  GameMode.TURF_WAR,
 ]);
 
 /** Formats serialized game-mode ids for compact UI labels. */

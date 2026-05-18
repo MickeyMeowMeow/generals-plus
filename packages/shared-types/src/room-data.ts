@@ -27,4 +27,6 @@ export interface RoomData {
   game: IBaseGame;
   playerInit: PlayerInit[];
   isPublic?: boolean;
+  tickInterval?: number;
+  finishTick?: number;
 }

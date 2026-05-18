@@ -1,5 +1,5 @@
 import type { ICoordinate } from "@generals-plus/engine";
-import { ActionType, GameMode } from "@generals-plus/engine";
+import { ActionType, GameMode, PlayerStatus } from "@generals-plus/engine";
 import {
   MatchClientMessage,
   MatchServerMessage,
@@ -31,19 +31,19 @@ import { cn } from "#/lib/utils";
 
 export type GamePageSource =
   | {
-      /** Official queue flow rendered on the root route. */
-      type: "official";
-      /** Returns from a finished/failed official match to the lobby. */
-      onReturn: () => void;
-    }
+    /** Official queue flow rendered on the root route. */
+    type: "official";
+    /** Returns from a finished/failed official match to the lobby. */
+    onReturn: () => void;
+  }
   | {
-      /** Custom setup flow rendered from `/match/:roomId`. */
-      type: "custom";
-      /** Stable custom room URL key used to scope persisted match recovery. */
-      customRoomKey: string;
-      /** Returns from a finished custom match to its setup route. */
-      onReturn: () => void;
-    };
+    /** Custom setup flow rendered from `/match/:roomId`. */
+    type: "custom";
+    /** Stable custom room URL key used to scope persisted match recovery. */
+    customRoomKey: string;
+    /** Returns from a finished custom match to its setup route. */
+    onReturn: () => void;
+  };
 
 interface GamePageProps {
   /** Seat reservation or recovery token used to enter the match room. */
@@ -168,6 +168,10 @@ export function GamePage({ connection, source }: GamePageProps) {
   const [selection, setSelection] = useState<ICoordinate | null>(null);
   const [splitMoveSelection, setSplitMoveSelection] =
     useState<ICoordinate | null>(null);
+  const [isViewingAsSpectator, setIsViewingAsSpectator] = useState(false);
+  const [spectatorSource, setSpectatorSource] = useState<
+    "eliminated" | "game-end" | null
+  >(null);
   const renderGridWidth = renderGrid?.width ?? 0;
   const renderGridHeight = renderGrid?.height ?? 0;
 
@@ -243,6 +247,13 @@ export function GamePage({ connection, source }: GamePageProps) {
     }
   };
 
+  useEffect(() => {
+    if (gameResult && spectatorSource === "eliminated") {
+      setIsViewingAsSpectator(false);
+      setSpectatorSource(null);
+    }
+  }, [gameResult, spectatorSource]);
+
   if (error) {
     return (
       <StageCenter>
@@ -277,28 +288,51 @@ export function GamePage({ connection, source }: GamePageProps) {
   const currentPlayer = visiblePlayers.find(
     (player) => player.sessionId === room?.sessionId,
   );
+  const isPlayerEliminated =
+    currentPlayer?.status === PlayerStatus.ELIMINATED && !gameResult;
+  const isReadOnly =
+    isViewingAsSpectator || Boolean(gameResult) || isPlayerEliminated;
   const winnerId = gameResult?.winnerTeamId
     ? Array.from(gameState.publicPlayers.values()).find(
-        (p) => p.teamId === gameResult.winnerTeamId,
-      )?.id
+      (p) => p.teamId === gameResult.winnerTeamId,
+    )?.id
     : null;
   const winnerName = winnerId ? playerNames.get(winnerId) : null;
   const didWin = Boolean(
     gameResult?.winnerTeamId &&
-      currentPlayer?.teamId === gameResult.winnerTeamId,
+    currentPlayer?.teamId === gameResult.winnerTeamId,
   );
+  const activeModal = gameResult
+    ? isViewingAsSpectator && spectatorSource === "game-end"
+      ? null
+      : "game-end"
+    : !isViewingAsSpectator && isPlayerEliminated
+      ? "eliminated"
+      : null;
+  const returnLabel =
+    source.type === "official" ? "Return to lobby" : "Return to setup room";
 
   return (
     <div className="fixed inset-0 z-20 bg-game-bg">
+      {isViewingAsSpectator ? (
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-30 p-3">
+          <div className="pointer-events-auto">
+            <Button type="button" variant="outline" onClick={handleReturn}>
+              Return
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <GameApp
         grid={renderGrid}
-        selection={selection}
-        splitMoveSelection={splitMoveSelection}
+        selection={isReadOnly ? null : selection}
+        splitMoveSelection={isReadOnly ? null : splitMoveSelection}
         moveQueue={moveQueue}
-        onSelectCell={handleSelectCell}
-        onArmSplitMove={handleArmSplitMove}
-        onQueueMove={handleQueueMove}
-        onClearMoveQueue={clearMoveQueue}
+        onSelectCell={isReadOnly ? () => { } : handleSelectCell}
+        onArmSplitMove={isReadOnly ? () => { } : handleArmSplitMove}
+        onQueueMove={isReadOnly ? () => { } : handleQueueMove}
+        onClearMoveQueue={isReadOnly ? () => { } : clearMoveQueue}
         playerColors={playerColors}
         pings={pings}
       />
@@ -309,7 +343,9 @@ export function GamePage({ connection, source }: GamePageProps) {
           currentTick: gameState.tick,
           targetTick:
             gameState.mode === GameMode.TURF_WAR
-              ? (gameState.finishTick ?? 0)
+              ? gameState.finishTick > 0
+                ? gameState.finishTick
+                : 0
               : 0,
           tickInterval:
             gameState.mode === GameMode.TURF_WAR ? gameState.tickInterval : 0,
@@ -388,32 +424,60 @@ export function GamePage({ connection, source }: GamePageProps) {
         </Button>
       </div>
 
-      {gameResult ? (
-        <Dialog open={true}>
-          <DialogContent
-            className="max-w-sm"
-            aria-describedby={undefined}
-            showCloseButton={false}
-            onEscapeKeyDown={(event) => event.preventDefault()}
-            onInteractOutside={(event) => event.preventDefault()}
-          >
-            <DialogHeader>
-              <DialogTitle className="text-2xl">
-                {didWin ? "You won" : winnerId ? "You lost" : "Game over"}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="mt-3 space-y-1 text-sm text-game-text-dim">
-              {!didWin && winnerName ? <p>Winner: {winnerName}</p> : null}
-              {!gameResult.winnerTeamId ? <p>No winner was reported.</p> : null}
-            </div>
-            <Button type="button" onClick={handleReturn} className="mt-5">
-              {source.type === "official"
-                ? "Return to lobby"
-                : "Return to setup room"}
-            </Button>
-          </DialogContent>
-        </Dialog>
-      ) : null}
-    </div>
+      {
+        gameResult ? (
+          <Dialog open={true}>
+            <DialogContent
+              className="max-w-sm"
+              aria-describedby={undefined}
+              showCloseButton={false}
+              onEscapeKeyDown={(event) => event.preventDefault()}
+              onInteractOutside={(event) => event.preventDefault()}
+            >
+              <DialogHeader>
+                <DialogTitle className="text-2xl">
+                  {activeModal === "eliminated"
+                    ? "You have been eliminated"
+                    : didWin
+                      ? "You won"
+                      : winnerId
+                        ? "You lost"
+                        : "Game over"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="mt-3 space-y-1 text-sm text-game-text-dim">
+                {activeModal === "eliminated" ? null : (
+                  <>
+                    {!didWin && winnerName ? <p>Winner: {winnerName}</p> : null}
+                    {!gameResult?.winnerTeamId ? (
+                      <p>No winner was reported.</p>
+                    ) : null}
+                  </>
+                )}
+              </div>
+              <div className="mt-5 flex flex-col gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsViewingAsSpectator(true);
+                    setSpectatorSource(
+                      activeModal === "eliminated" ? "eliminated" : "game-end",
+                    );
+                    setSelection(null);
+                    setSplitMoveSelection(null);
+                  }}
+                >
+                  View as spectator
+                </Button>
+                <Button type="button" onClick={handleReturn}>
+                  {returnLabel}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        ) : null
+      }
+    </div >
   );
 }

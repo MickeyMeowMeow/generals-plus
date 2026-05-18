@@ -19,7 +19,10 @@ export const setupSettingsUpdateSchema = z
     minGeneralDistanceFactor: z.number().min(0).max(1),
     generalInitialTroops: z.number().int().min(1),
     cityInitialTroops: z.number().int().min(0),
+    speed: z.number().min(0.5).max(10),
+    duration: z.number().min(0.5).max(10),
   })
-  .partial();
+  .partial()
+  .strict();
 
 export type SetupSettingsUpdate = z.infer<typeof setupSettingsUpdateSchema>;

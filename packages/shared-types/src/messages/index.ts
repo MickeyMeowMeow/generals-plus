@@ -9,6 +9,7 @@ export type MessagePayload = object;
 export type ExtractMessageKey<T extends MessagePayload> = keyof T &
   (string | number);
 
+export * from "#/messages/common";
 export * from "#/messages/match";
 export * from "#/messages/queue";
 export * from "#/messages/setup";

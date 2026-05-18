@@ -5,13 +5,14 @@ import type {
   SetupServerMessagePayload,
   SetupSettings,
   SetupState,
+  SetupValidationFailedMessage,
 } from "@generals-plus/shared-types";
 import {
   ROOM_NAMES,
   SetupClientMessage,
   SetupServerMessage,
 } from "@generals-plus/shared-types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { networkProvider } from "#/infra/network/provider";
 import type { RoomClient } from "#/infra/network/room";
@@ -137,6 +138,8 @@ export function useSetupRoom({
   const [seatReservation, setSeatReservation] =
     useState<SeatReservation | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] =
+    useState<SetupValidationFailedMessage | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
@@ -151,6 +154,7 @@ export function useSetupRoom({
       setError(null);
       setRoom(null);
       setSetupState(null);
+      setValidationError(null);
       try {
         currentRoom = await acquireSetupRoom(roomId);
 
@@ -185,6 +189,18 @@ export function useSetupRoom({
             setError(message);
           }),
         );
+        unsubscribers.push(
+          currentRoom.onMessage(
+            SetupServerMessage.VALIDATION_FAILED,
+            (message) => {
+              setValidationError({
+                severity: message.severity,
+                message: message.message,
+                field: message.field,
+              });
+            },
+          ),
+        );
       } catch (e) {
         if (!isCurrent) return;
         setIsConnecting(false);
@@ -216,7 +232,12 @@ export function useSetupRoom({
     setRoom(null);
     setSetupState(null);
     setError(null);
+    setValidationError(null);
   };
+
+  const clearValidationError = useCallback(() => {
+    setValidationError(null);
+  }, []);
 
   return {
     room,
@@ -225,7 +246,9 @@ export function useSetupRoom({
     startGame,
     updateSettings,
     clearSeatReservation,
+    clearValidationError,
     error,
+    validationError,
     isConnecting,
   };
 }
