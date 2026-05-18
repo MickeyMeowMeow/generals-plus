@@ -149,7 +149,7 @@ export function Viewport({
         worldWidth / 2,
       );
       const marginY = Math.min(
-        (app.screen.height * (0.5 - RenderConfig.initialMarginRatioX)) /
+        (app.screen.height * (0.5 - RenderConfig.initialMarginRatioY)) /
           defaultZoom,
         worldHeight / 2,
       );
