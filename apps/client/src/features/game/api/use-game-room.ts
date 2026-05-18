@@ -17,6 +17,12 @@ import {
 } from "@generals-plus/shared-types";
 import { useCallback, useEffect, useState } from "react";
 
+import type { GameRoomErrorCode } from "#/features/game/api/game-room-errors";
+import {
+  GameRoomError,
+  isTerminalRecoveryErrorCode,
+  normalizeGameRoomError,
+} from "#/features/game/api/game-room-errors";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { createRenderGrid } from "#/features/game/utils/grid-adapter";
 import type { MoveIntent } from "#/features/game/utils/move";
@@ -77,6 +83,8 @@ export interface PersistedGameSession {
 const ACTIVE_GAME_SESSION_KEY = "generals_plus_active_game_session";
 /** Upper bound for recovery attempts so stale tokens cannot trap the UI. */
 const RECOVERY_TIMEOUT_MS = 10_000;
+const RECOVERY_TIMEOUT_MESSAGE =
+  "Unable to restore the match. The room may have ended or expired.";
 
 /**
  * Read the persisted match recovery session, ignoring malformed or unavailable
@@ -244,11 +252,11 @@ function acquireGameRoom(connection: GameRoomConnection) {
 function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
-  timeoutMessage: string,
+  timeoutErrorFactory: () => Error,
 ) {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
-      reject(new Error(timeoutMessage));
+      reject(timeoutErrorFactory());
     }, timeoutMs);
 
     promise
@@ -332,6 +340,7 @@ export function useGameRoom(
     new Map(),
   );
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<GameRoomErrorCode | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
 
@@ -344,6 +353,7 @@ export function useGameRoom(
     const connect = async () => {
       setIsConnecting(true);
       setError(null);
+      setErrorCode(null);
       setGameResult(null);
       setConnectionStatus("connecting");
       try {
@@ -351,7 +361,8 @@ export function useGameRoom(
           ? withTimeout(
               acquireGameRoom(connection),
               RECOVERY_TIMEOUT_MS,
-              "Unable to restore the match. The room may have ended or expired.",
+              () =>
+                new GameRoomError("RECOVERY_TIMEOUT", RECOVERY_TIMEOUT_MESSAGE),
             )
           : acquireGameRoom(connection));
         if (!isCurrent) {
@@ -427,13 +438,16 @@ export function useGameRoom(
         );
       } catch (error) {
         if (!isCurrent) return;
-        if (connection.type === "recovery") {
+        const normalizedError = normalizeGameRoomError(error, connection.type);
+        if (
+          connection.type === "recovery" &&
+          isTerminalRecoveryErrorCode(normalizedError.code)
+        ) {
           clearPersistedGameSession();
         }
         setIsConnecting(false);
-        setError(
-          error instanceof Error ? error.message : "Failed to connect to match",
-        );
+        setErrorCode(normalizedError.code);
+        setError(normalizedError.message);
       }
     };
 
@@ -480,6 +494,7 @@ export function useGameRoom(
     playerColors,
     playerNames,
     connectionStatus,
+    errorCode,
     error,
     isConnecting,
   };

@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
+import { isTerminalRecoveryErrorCode } from "#/features/game/api/game-room-errors";
 import type { GameRoomConnection } from "#/features/game/api/use-game-room";
 import {
   clearPersistedGameSession,
@@ -50,9 +51,15 @@ interface GamePageProps {
   connection: GameRoomConnection;
   /** Return behavior and metadata for the flow that launched the match. */
   source: GamePageSource;
+  /** Optional hook for routes that should abandon a stale recovery path. */
+  onRecoveryFailed?: () => void;
 }
 
 /**
+ * Only terminal recovery failures should abandon the match URL and return to
+ * setup. Transient network failures still need the visible error panel so the
+ * user can retry/diagnose without discarding a potentially valid live match.
+ *
  * Match view rendered after queue/setup hands the client a seat reservation.
  *
  * The page delegates socket ownership and state adaptation to `useGameRoom`,
@@ -61,7 +68,11 @@ interface GamePageProps {
  * official matches and `/match/:roomId` custom matches can reuse the same game
  * surface after their respective seat-reservation handoff.
  */
-export function GamePage({ connection, source }: GamePageProps) {
+export function GamePage({
+  connection,
+  source,
+  onRecoveryFailed,
+}: GamePageProps) {
   const navigate = useNavigate();
   /**
    * Keep the full connection payload stable across parent re-renders.
@@ -84,6 +95,9 @@ export function GamePage({ connection, source }: GamePageProps) {
   }
   const stableConnection = stableConnectionRef.current.value;
   const customRoomKey = source.type === "custom" ? source.customRoomKey : null;
+  const hasHandledRecoveryFailureRef = useRef(false);
+  const recoveryFailedHandlerRef = useRef(onRecoveryFailed);
+  recoveryFailedHandlerRef.current = onRecoveryFailed;
 
   /**
    * Memoized route context persisted alongside the recovery token.
@@ -106,8 +120,15 @@ export function GamePage({ connection, source }: GamePageProps) {
     playerColors,
     playerNames,
     error,
+    errorCode,
     isConnecting,
   } = useGameRoom(stableConnection, persistedSource);
+  const shouldFallbackToSetup =
+    Boolean(errorCode) &&
+    connection.type === "recovery" &&
+    source.type === "custom" &&
+    Boolean(onRecoveryFailed) &&
+    isTerminalRecoveryErrorCode(errorCode);
 
   const [pings, setPings] = useState<Ping[]>([]);
   const [activeBrush, setActiveBrush] = useState<
@@ -263,6 +284,29 @@ export function GamePage({ connection, source }: GamePageProps) {
       setSpectatorSource(null);
     }
   }, [gameResult, spectatorSource]);
+
+  useEffect(() => {
+    if (!shouldFallbackToSetup) {
+      hasHandledRecoveryFailureRef.current = false;
+      return;
+    }
+
+    const recoveryFailedHandler = recoveryFailedHandlerRef.current;
+    if (hasHandledRecoveryFailureRef.current || !recoveryFailedHandler) {
+      return;
+    }
+
+    hasHandledRecoveryFailureRef.current = true;
+    recoveryFailedHandler();
+  }, [shouldFallbackToSetup]);
+
+  if (shouldFallbackToSetup) {
+    return (
+      <StageCenter>
+        <LoadingPanel message="Rejoining custom room" />
+      </StageCenter>
+    );
+  }
 
   if (error) {
     return (
