@@ -1,7 +1,10 @@
 import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, matchMaker, Room } from "@colyseus/core";
-import type { GridGeneratorOptions } from "@generals-plus/engine";
+import type {
+  DominationGridOptions,
+  GridGeneratorOptions,
+} from "@generals-plus/engine";
 import {
   DefaultGridGeneratorOptions,
   GameMode,
@@ -236,7 +239,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     return (client.auth as ClientAuth)?.id === this.hostId;
   }
 
-  private getGridOptions(): GridGeneratorOptions {
+  private getGridOptions(): GridGeneratorOptions | DominationGridOptions {
     return {
       width: this.state.mapWidth,
       height: this.state.mapHeight,

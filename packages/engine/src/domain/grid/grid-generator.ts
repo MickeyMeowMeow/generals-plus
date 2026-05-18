@@ -112,13 +112,13 @@ export const DefaultGridGeneratorOptions: Required<GridGeneratorOptions> = {
  * Grid generator interface for creating new grid instances.
  */
 export interface GridGenerator {
-  generate(options?: GridGeneratorOptions): IGrid;
+  generate(options?: GridGeneratorOptions | DominationGridOptions): IGrid;
 }
 
 /**
  * Union type representing either a pre-built grid or generation options.
  */
-export type GridInput = IGrid | GridGeneratorOptions;
+export type GridInput = IGrid | GridGeneratorOptions | DominationGridOptions;
 
 /**
  * Type guard to check if a GridInput is a pre-built IGrid.
@@ -164,7 +164,7 @@ interface ResolvedConfig {
  * On validation failure, derives a new seed and retries up to MAX_RETRY_COUNT.
  */
 export class DefaultGridGenerator implements GridGenerator {
-  generate(options: GridGeneratorOptions = {}): IGrid {
+  generate(options: GridGeneratorOptions | DominationGridOptions = {}): IGrid {
     const config = this.resolveOptions(options);
     const baseSeed = options.seed ?? DEFAULT_SEED;
     const baseRng = new SeededRandom(options.seed ?? DEFAULT_SEED);
@@ -500,7 +500,7 @@ export class DefaultGridGenerator implements GridGenerator {
     terrain: Terrain[][],
     width: number,
     height: number,
-    options: GridGeneratorOptions,
+    options: GridGeneratorOptions | DominationGridOptions,
   ): IGrid {
     const cells = Array.from({ length: height }, (_, y) =>
       Array.from(
@@ -593,7 +593,7 @@ export class DefaultGridGenerator implements GridGenerator {
 
   private initialTroops(
     terrain: Terrain,
-    options: GridGeneratorOptions,
+    options: GridGeneratorOptions | DominationGridOptions,
   ): number | null {
     if (terrain === Terrain.GENERAL)
       return options.generalInitialTroops ?? GENERAL_INITIAL_TROOPS;
