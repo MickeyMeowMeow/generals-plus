@@ -14,6 +14,7 @@ import { ENV } from "#/env";
 import { auth } from "#/features/auth/auth-config";
 import { MatchRoom } from "#/features/match/match-room";
 import { MatchQueueRoom } from "#/features/queue/queue-room";
+import { registerCustomRoomRoutes } from "#/features/setup/custom-room-routes";
 import { SetupRoom } from "#/features/setup/setup-room";
 
 Encoder.BUFFER_SIZE = 1024 * 1024;
@@ -90,6 +91,8 @@ export default defineServer({
     if (process.env.NODE_ENV !== "production") {
       app.use("/colyseus", monitor());
     }
+
+    registerCustomRoomRoutes(app);
 
     // Health check endpoint
     app.get("/health", (_req, res) => {
