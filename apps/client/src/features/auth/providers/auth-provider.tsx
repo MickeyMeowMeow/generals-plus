@@ -9,7 +9,11 @@ import {
 } from "react";
 
 import type { UserProfile } from "#/common/types/user-profile";
-import type { AuthContextValue, AuthState } from "#/features/auth/auth-store";
+import type {
+  AuthContextValue,
+  AuthState,
+  RegisterWithEmailInput,
+} from "#/features/auth/auth-store";
 import {
   AuthStatus,
   authReducer,
@@ -44,6 +48,46 @@ function normalizeError(error: unknown, fallback: string): string {
     return error.message;
   }
   return fallback;
+}
+
+function toHumanReadableAuthError(error: unknown, fallback: string): string {
+  const message = normalizeError(error, fallback).trim();
+  const normalized = message.toLowerCase();
+
+  if (
+    normalized === "invalid_credentials" ||
+    normalized === "invalid-credentials"
+  ) {
+    return "Incorrect email or password.";
+  }
+
+  if (
+    normalized === "already_exists" ||
+    normalized === "email_already_exists" ||
+    normalized === "user_already_exists" ||
+    normalized.includes("duplicate key") ||
+    normalized.includes("e11000")
+  ) {
+    return "An account with this email already exists.";
+  }
+
+  if (normalized === "email_not_verified") {
+    return "Please verify your email address before signing in.";
+  }
+
+  if (normalized === "too_many_requests") {
+    return "Too many attempts. Please wait a moment and try again.";
+  }
+
+  if (/^[a-z0-9_-]+$/i.test(message)) {
+    return fallback;
+  }
+
+  return message;
+}
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 /**
@@ -169,7 +213,109 @@ export function AuthProvider({
       } catch (error) {
         dispatch({
           type: "ERROR",
-          error: normalizeError(error, "Failed to sign in anonymously."),
+          error: toHumanReadableAuthError(error, "Failed to sign in as guest."),
+        });
+      }
+    },
+    [provider],
+  );
+
+  const signInWithEmailAndPassword = useCallback(
+    async (email: string, password: string) => {
+      const trimmedEmail = email.trim();
+
+      if (trimmedEmail.length === 0) {
+        dispatch({ type: "ERROR", error: "Email cannot be empty." });
+        return;
+      }
+
+      if (!isValidEmail(trimmedEmail)) {
+        dispatch({ type: "ERROR", error: "Enter a valid email address." });
+        return;
+      }
+
+      if (password.length === 0) {
+        dispatch({ type: "ERROR", error: "Password cannot be empty." });
+        return;
+      }
+
+      dispatch({ type: "AUTHENTICATING" });
+
+      try {
+        const response = await provider.signInWithEmailAndPassword(
+          trimmedEmail,
+          password,
+        );
+
+        dispatch({
+          type: "AUTHENTICATED",
+          user: response.user,
+          token: response.token ?? provider.getAuthToken(),
+        });
+      } catch (error) {
+        dispatch({
+          type: "ERROR",
+          error: toHumanReadableAuthError(
+            error,
+            "Failed to sign in with email and password.",
+          ),
+        });
+      }
+    },
+    [provider],
+  );
+
+  const registerWithEmailAndPassword = useCallback(
+    async ({ displayName, email, password }: RegisterWithEmailInput) => {
+      const trimmedName = displayName.trim();
+      const trimmedEmail = email.trim();
+
+      if (trimmedName.length === 0) {
+        dispatch({ type: "ERROR", error: "Username cannot be empty." });
+        return;
+      }
+
+      if (trimmedEmail.length === 0) {
+        dispatch({ type: "ERROR", error: "Email cannot be empty." });
+        return;
+      }
+
+      if (!isValidEmail(trimmedEmail)) {
+        dispatch({ type: "ERROR", error: "Enter a valid email address." });
+        return;
+      }
+
+      if (password.length < 8) {
+        dispatch({
+          type: "ERROR",
+          error: "Password must be at least 8 characters.",
+        });
+        return;
+      }
+
+      dispatch({ type: "AUTHENTICATING" });
+
+      try {
+        const response = await provider.registerWithEmailAndPassword(
+          trimmedEmail,
+          password,
+          {
+            displayName: trimmedName,
+          },
+        );
+
+        dispatch({
+          type: "AUTHENTICATED",
+          user: response.user,
+          token: response.token ?? provider.getAuthToken(),
+        });
+      } catch (error) {
+        dispatch({
+          type: "ERROR",
+          error: toHumanReadableAuthError(
+            error,
+            "Failed to create your account with email and password.",
+          ),
         });
       }
     },
@@ -193,8 +339,22 @@ export function AuthProvider({
   }, []);
 
   const actions = useMemo(
-    () => ({ hydrate, signInAnonymously, signOut, clearError }),
-    [hydrate, signInAnonymously, signOut, clearError],
+    () => ({
+      hydrate,
+      signInWithEmailAndPassword,
+      registerWithEmailAndPassword,
+      signInAnonymously,
+      signOut,
+      clearError,
+    }),
+    [
+      hydrate,
+      signInWithEmailAndPassword,
+      registerWithEmailAndPassword,
+      signInAnonymously,
+      signOut,
+      clearError,
+    ],
   );
 
   const contextValue = useMemo<AuthContextValue>(
