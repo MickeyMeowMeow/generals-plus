@@ -1,6 +1,11 @@
 import type { ICoordinate } from "@generals-plus/engine";
-import { ActionType } from "@generals-plus/engine";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { ActionType, GameMode } from "@generals-plus/engine";
+import {
+  MatchClientMessage,
+  MatchServerMessage,
+} from "@generals-plus/shared-types";
+import { Flag, Shield, Swords } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
@@ -18,9 +23,11 @@ import {
 } from "#/features/game/api/use-game-room";
 import { GameHud } from "#/features/game/components/game-hud";
 import { GameApp } from "#/features/game/renderer/game-app";
+import type { Ping } from "#/features/game/renderer/layers/ping";
 import { isCoordInBounds, isSameCoord } from "#/features/game/utils/coord";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
+import { cn } from "#/lib/utils";
 
 export type GamePageSource =
   | {
@@ -102,16 +109,83 @@ export function GamePage({ connection, source }: GamePageProps) {
     isConnecting,
   } = useGameRoom(stableConnection, persistedSource);
 
+  const [pings, setPings] = useState<Ping[]>([]);
+  const [activeBrush, setActiveBrush] = useState<
+    "attack" | "defense" | "rally" | null
+  >(null);
+
+  useEffect(() => {
+    if (!room) return;
+
+    const unsubscribe = room.onMessage(MatchServerMessage.PING, (message) => {
+      const pingId = `${message.x},${message.y}-${message.type}-${Date.now()}-${Math.random()}`;
+      setPings((prev) => [
+        ...prev,
+        {
+          id: pingId,
+          x: message.x,
+          y: message.y,
+          type: message.type,
+        },
+      ]);
+
+      // Remove after 5 seconds
+      setTimeout(() => {
+        setPings((prev) => prev.filter((p) => p.id !== pingId));
+      }, 5000);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [room]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore shortcuts if the user is typing in a text field
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        document.activeElement?.hasAttribute("contenteditable")
+      ) {
+        return;
+      }
+
+      if (e.key === "Escape") {
+        setActiveBrush(null);
+      } else if (e.key === "1") {
+        setActiveBrush((prev) => (prev === "attack" ? null : "attack"));
+      } else if (e.key === "2") {
+        setActiveBrush((prev) => (prev === "defense" ? null : "defense"));
+      } else if (e.key === "3") {
+        setActiveBrush((prev) => (prev === "rally" ? null : "rally"));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const [selection, setSelection] = useState<ICoordinate | null>(null);
   const [splitMoveSelection, setSplitMoveSelection] =
     useState<ICoordinate | null>(null);
   const renderGridWidth = renderGrid?.width ?? 0;
   const renderGridHeight = renderGrid?.height ?? 0;
 
-  const handleSelectCell = useCallback((coord: ICoordinate) => {
-    setSelection(coord);
-    setSplitMoveSelection(null);
-  }, []);
+  const handleSelectCell = useCallback(
+    (coord: ICoordinate) => {
+      if (activeBrush) {
+        room?.send(MatchClientMessage.PING, {
+          x: coord.x,
+          y: coord.y,
+          type: activeBrush,
+        });
+        return;
+      }
+      setSelection(coord);
+      setSplitMoveSelection(null);
+    },
+    [activeBrush, room],
+  );
 
   const handleArmSplitMove = useCallback(
     (coord?: ICoordinate) => {
@@ -226,16 +300,93 @@ export function GamePage({ connection, source }: GamePageProps) {
         onQueueMove={handleQueueMove}
         onClearMoveQueue={clearMoveQueue}
         playerColors={playerColors}
+        pings={pings}
       />
 
       <GameHud
         scoreboard={gameState.scoreboard}
         timer={{
           currentTick: gameState.tick,
-          targetTick: 0,
-          tickInterval: 0,
+          targetTick:
+            gameState.mode === GameMode.TURF_WAR
+              ? (gameState.finishTick ?? 0)
+              : 0,
+          tickInterval:
+            gameState.mode === GameMode.TURF_WAR ? gameState.tickInterval : 0,
         }}
       />
+
+      {/* Floating Brush Tool Panel */}
+      <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2 rounded-none border border-game-border/80 bg-[rgb(27_27_27/0.76)] p-2 shadow-xl shadow-black/25 backdrop-blur-sm">
+        <Button
+          type="button"
+          variant={activeBrush === "attack" ? "default" : "outline"}
+          size="icon"
+          onClick={() =>
+            setActiveBrush(activeBrush === "attack" ? null : "attack")
+          }
+          className={cn(
+            "size-9 transition-all hover:scale-105 rounded-none",
+            activeBrush === "attack"
+              ? "ring-2 ring-red-400/50 bg-red-950/20 border-red-400"
+              : "border-game-border",
+          )}
+          title="Mark Attack (Swords) [1]"
+        >
+          <Swords
+            className={cn(
+              "size-4 text-red-400",
+              activeBrush === "attack" && "animate-pulse",
+            )}
+          />
+        </Button>
+
+        <Button
+          type="button"
+          variant={activeBrush === "defense" ? "default" : "outline"}
+          size="icon"
+          onClick={() =>
+            setActiveBrush(activeBrush === "defense" ? null : "defense")
+          }
+          className={cn(
+            "size-9 transition-all hover:scale-105 rounded-none",
+            activeBrush === "defense"
+              ? "ring-2 ring-blue-400/50 bg-blue-950/20 border-blue-400"
+              : "border-game-border",
+          )}
+          title="Mark Defense (Shield) [2]"
+        >
+          <Shield
+            className={cn(
+              "size-4 text-blue-400",
+              activeBrush === "defense" && "animate-pulse",
+            )}
+          />
+        </Button>
+
+        <Button
+          type="button"
+          variant={activeBrush === "rally" ? "default" : "outline"}
+          size="icon"
+          onClick={() =>
+            setActiveBrush(activeBrush === "rally" ? null : "rally")
+          }
+          className={cn(
+            "size-9 transition-all hover:scale-105 rounded-none",
+            activeBrush === "rally"
+              ? "ring-2 ring-green-400/50 bg-green-950/20 border-green-400"
+              : "border-game-border",
+          )}
+          title="Mark Rally (Flag) [3]"
+        >
+          <Flag
+            className={cn(
+              "size-4 text-green-400",
+              activeBrush === "rally" && "animate-pulse",
+            )}
+          />
+        </Button>
+      </div>
 
       {gameResult ? (
         <Dialog open={true}>

@@ -3,6 +3,7 @@ import { Application } from "@pixi/react";
 import { Assets } from "pixi.js";
 import { useEffect, useRef, useState } from "react";
 
+import type { Ping } from "#/features/game/renderer/layers/ping";
 import { MapRenderer } from "#/features/game/renderer/map-renderer";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
@@ -23,6 +24,7 @@ interface GameAppProps {
   readonly onQueueMove: (direction: MoveDirection) => void;
   readonly onClearMoveQueue: () => void;
   readonly playerColors: Map<string, number>;
+  readonly pings?: Ping[];
   readonly className?: string;
 }
 
@@ -42,6 +44,7 @@ export function GameApp({
   onQueueMove,
   onClearMoveQueue,
   playerColors,
+  pings = [],
   className,
 }: GameAppProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -134,6 +137,7 @@ export function GameApp({
               onCellClick={onSelectCell}
               onSplitMoveCell={onArmSplitMove}
               playerColors={playerColors}
+              pings={pings}
             />
           </Viewport>
         </Application>

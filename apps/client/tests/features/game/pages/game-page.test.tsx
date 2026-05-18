@@ -122,7 +122,10 @@ describe("GamePage keyboard move bounds", () => {
     const player = createPlayer();
 
     useGameRoomMock.mockReturnValue({
-      room: { sessionId: "player-1" },
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
       renderGrid: createRenderGrid(1, 1),
       moveQueue: [],
       gameState: {
