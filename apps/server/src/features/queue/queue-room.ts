@@ -60,15 +60,22 @@ export class MatchQueueRoom extends QueueRoom {
         const diff = Math.abs(clientData.rank - group.averageRank);
         return diff <= RATING_TOLERANCE;
       },
-      onGroupReady: async () => {
+      onGroupReady: async (group) => {
+        const groupPlayerIds = group.clients.map(
+          (c: Client) => (c.auth as ClientAuth).id,
+        );
+        const groupPlayers = this.state.players.filter((p) =>
+          groupPlayerIds.includes(p.id),
+        );
+
         const game = createGame({
           mode: this.gameMode,
-          gridOptions: { generalCount: this.state.players.length },
-          playerIds: this.state.players.map((p) => p.id),
+          gridOptions: { generalCount: groupPlayers.length },
+          playerIds: groupPlayers.map((p) => p.id),
           playerPerTeam: getDefaultPlayersPerTeam(this.gameMode),
         });
 
-        const playerInit = createPlayerInit(this.state.players, game);
+        const playerInit = createPlayerInit(groupPlayers, game);
 
         const metadata: RoomData = {
           mode: this.gameMode,

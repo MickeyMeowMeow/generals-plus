@@ -99,7 +99,7 @@ export class MongoUserRepository implements IUserRepository {
     if (!user) {
       return 1000;
     }
-    return user.ratings[mode] ?? 1000;
+    return user.ratings?.[mode] ?? 1000;
   }
 
   async updateRatings(
