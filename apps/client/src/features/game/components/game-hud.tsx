@@ -6,6 +6,7 @@ import type {
 
 import { FloatingHud } from "#/components/layout";
 import { colorToHex } from "#/features/game/components/room-controls";
+import { TimerBar } from "#/features/game/components/timer-bar";
 import { cn } from "#/lib/utils";
 
 interface GameHudPlayer {
@@ -18,6 +19,12 @@ interface GameHudPlayer {
   isCurrent: boolean;
 }
 
+interface TimerProps {
+  currentTick: number;
+  targetTick: number;
+  tickInterval: number;
+}
+
 interface GameHudProps {
   scoreboard: BaseScoreboard;
   visiblePlayers: Iterable<Player>;
@@ -26,6 +33,7 @@ interface GameHudProps {
   currentSessionId: string | null | undefined;
   totalSeconds?: number;
   remainingSeconds?: number;
+  timer?: TimerProps;
 }
 
 function getScoreEntries(scoreboard: BaseScoreboard) {
@@ -147,6 +155,7 @@ export function GameHud({
   playerColors,
   playerNames,
   currentSessionId,
+  timer,
 }: GameHudProps) {
   const players = getHudPlayers({
     scoreboard,
@@ -164,6 +173,14 @@ export function GameHud({
     <FloatingHud>
       <div className="space-y-2.5">
         <div className="space-y-2">
+          {timer && (
+            <TimerBar
+              currentTick={timer.currentTick}
+              targetTick={timer.targetTick}
+              tickInterval={timer.tickInterval}
+            />
+          )}
+
           <div className="grid grid-cols-[1fr_2.5rem_3.25rem] gap-1.5 text-[9px] uppercase text-game-text-dim">
             <h2 className="text-xs font-semibold normal-case text-game-text">
               Players
