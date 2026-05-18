@@ -16,6 +16,34 @@ import type { UnsubscribeFn } from "#/infra/network/types";
  */
 export interface NetworkProvider<User = unknown> {
   /**
+   * Performs an email/password sign-in to the server.
+   *
+   * @param email The user's email address.
+   * @param password The user's raw password.
+   *
+   * @returns A promise that resolves to authentication data.
+   */
+  signInWithEmailAndPassword(
+    email: string,
+    password: string,
+  ): Promise<AuthData<User>>;
+
+  /**
+   * Registers a new user with email/password and optional profile data.
+   *
+   * @param email The user's email address.
+   * @param password The user's raw password.
+   * @param options Optional account profile data to persist with the user.
+   *
+   * @returns A promise that resolves to authentication data.
+   */
+  registerWithEmailAndPassword(
+    email: string,
+    password: string,
+    options?: Record<string, unknown>,
+  ): Promise<AuthData<User>>;
+
+  /**
    * Performs an anonymous sign-in to the server.
    *
    * @param options Optional parameters for the sign-in process.

@@ -8,6 +8,8 @@ import { GridLayer } from "#/features/game/renderer/layers/grid";
 import { HighlightLayer } from "#/features/game/renderer/layers/highlight";
 import { IconLayer } from "#/features/game/renderer/layers/icon";
 import { MoveQueueLayer } from "#/features/game/renderer/layers/move-queue";
+import type { Ping } from "#/features/game/renderer/layers/ping";
+import { PingLayer } from "#/features/game/renderer/layers/ping";
 import { TroopLayer } from "#/features/game/renderer/layers/troop";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
@@ -24,6 +26,7 @@ interface MapRendererProps {
   onCellClick: (coordinate: ICoordinate) => void;
   onSplitMoveCell: (coordinate: ICoordinate) => void;
   playerColors: Map<string, number>;
+  pings: Ping[];
 }
 
 export function MapRenderer({
@@ -35,6 +38,7 @@ export function MapRenderer({
   onCellClick,
   onSplitMoveCell,
   playerColors,
+  pings,
 }: MapRendererProps) {
   const cellSize = stride - RenderConfig.cellGap;
   const lastPrimaryClickRef = useRef<{
@@ -114,6 +118,7 @@ export function MapRenderer({
         cellSize={cellSize}
         selection={selection}
       />
+      <PingLayer pings={pings} stride={stride} />
     </pixiContainer>
   );
 }

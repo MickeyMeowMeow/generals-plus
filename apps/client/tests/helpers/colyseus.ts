@@ -11,6 +11,8 @@ export function createAuthStub(): ColyseusAuth {
     token: null,
     onChange: vi.fn().mockReturnValue(() => {}),
     getUserData: vi.fn(),
+    signInWithEmailAndPassword: vi.fn(),
+    registerWithEmailAndPassword: vi.fn(),
     signInAnonymously: vi.fn(),
     signOut: vi.fn(),
   };

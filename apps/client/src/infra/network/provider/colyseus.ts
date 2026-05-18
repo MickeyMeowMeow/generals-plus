@@ -153,6 +153,25 @@ export class ColyseusNetworkProvider<User = unknown>
     return this.client.auth.signInAnonymously(options);
   }
 
+  async signInWithEmailAndPassword(
+    email: string,
+    password: string,
+  ): Promise<AuthData<User>> {
+    return this.client.auth.signInWithEmailAndPassword(email, password);
+  }
+
+  async registerWithEmailAndPassword(
+    email: string,
+    password: string,
+    options?: Record<string, unknown>,
+  ): Promise<AuthData<User>> {
+    return this.client.auth.registerWithEmailAndPassword(
+      email,
+      password,
+      options,
+    );
+  }
+
   async signOut(): Promise<void> {
     return this.client.auth.signOut();
   }

@@ -1,5 +1,11 @@
 import type { UserProfile } from "#/common/types/user-profile";
 
+export interface RegisterWithEmailInput {
+  readonly displayName: string;
+  readonly email: string;
+  readonly password: string;
+}
+
 /**
  * Defines the possible lifecycle states of the user's authentication session.
  */
@@ -46,6 +52,16 @@ export interface AuthActions {
    * Deduplicates concurrent calls to prevent redundant network requests.
    */
   hydrate(): Promise<void>;
+
+  /**
+   * Authenticates the user with an email address and password.
+   */
+  signInWithEmailAndPassword(email: string, password: string): Promise<void>;
+
+  /**
+   * Registers a user with display name, email address, and password.
+   */
+  registerWithEmailAndPassword(input: RegisterWithEmailInput): Promise<void>;
 
   /**
    * Authenticates the user as a guest using a provided display name.

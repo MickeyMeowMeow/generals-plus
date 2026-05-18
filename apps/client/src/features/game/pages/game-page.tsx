@@ -5,6 +5,11 @@ import {
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
+import {
+  MatchClientMessage,
+  MatchServerMessage,
+} from "@generals-plus/shared-types";
+import { Flag, Shield, Swords } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -16,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
+import { isTerminalRecoveryErrorCode } from "#/features/game/api/game-room-errors";
 import type { GameRoomConnection } from "#/features/game/api/use-game-room";
 import {
   clearPersistedGameSession,
@@ -23,9 +29,11 @@ import {
 } from "#/features/game/api/use-game-room";
 import { GameHud } from "#/features/game/components/game-hud";
 import { GameApp } from "#/features/game/renderer/game-app";
+import type { Ping } from "#/features/game/renderer/layers/ping";
 import { isCoordInBounds, isSameCoord } from "#/features/game/utils/coord";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
+import { cn } from "#/lib/utils";
 
 export type GamePageSource =
   | {
@@ -48,9 +56,15 @@ interface GamePageProps {
   connection: GameRoomConnection;
   /** Return behavior and metadata for the flow that launched the match. */
   source: GamePageSource;
+  /** Optional hook for routes that should abandon a stale recovery path. */
+  onRecoveryFailed?: () => void;
 }
 
 /**
+ * Only terminal recovery failures should abandon the match URL and return to
+ * setup. Transient network failures still need the visible error panel so the
+ * user can retry/diagnose without discarding a potentially valid live match.
+ *
  * Match view rendered after queue/setup hands the client a seat reservation.
  *
  * The page delegates socket ownership and state adaptation to `useGameRoom`,
@@ -59,7 +73,11 @@ interface GamePageProps {
  * official matches and `/match/:roomId` custom matches can reuse the same game
  * surface after their respective seat-reservation handoff.
  */
-export function GamePage({ connection, source }: GamePageProps) {
+export function GamePage({
+  connection,
+  source,
+  onRecoveryFailed,
+}: GamePageProps) {
   const navigate = useNavigate();
   /**
    * Keep the full connection payload stable across parent re-renders.
@@ -82,6 +100,9 @@ export function GamePage({ connection, source }: GamePageProps) {
   }
   const stableConnection = stableConnectionRef.current.value;
   const customRoomKey = source.type === "custom" ? source.customRoomKey : null;
+  const hasHandledRecoveryFailureRef = useRef(false);
+  const recoveryFailedHandlerRef = useRef(onRecoveryFailed);
+  recoveryFailedHandlerRef.current = onRecoveryFailed;
 
   /**
    * Memoized route context persisted alongside the recovery token.
@@ -105,8 +126,71 @@ export function GamePage({ connection, source }: GamePageProps) {
     sendMove,
     clearMoveQueue,
     error,
+    errorCode,
     isConnecting,
   } = useGameRoom(stableConnection, persistedSource);
+  const shouldFallbackToSetup =
+    Boolean(errorCode) &&
+    connection.type === "recovery" &&
+    source.type === "custom" &&
+    Boolean(onRecoveryFailed) &&
+    isTerminalRecoveryErrorCode(errorCode);
+
+  const [pings, setPings] = useState<Ping[]>([]);
+  const [activeBrush, setActiveBrush] = useState<
+    "attack" | "defense" | "rally" | null
+  >(null);
+
+  useEffect(() => {
+    if (!room) return;
+
+    const unsubscribe = room.onMessage(MatchServerMessage.PING, (message) => {
+      const pingId = `${message.x},${message.y}-${message.type}-${Date.now()}-${Math.random()}`;
+      setPings((prev) => [
+        ...prev,
+        {
+          id: pingId,
+          x: message.x,
+          y: message.y,
+          type: message.type,
+        },
+      ]);
+
+      // Remove after 5 seconds
+      setTimeout(() => {
+        setPings((prev) => prev.filter((p) => p.id !== pingId));
+      }, 5000);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [room]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore shortcuts if the user is typing in a text field
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        document.activeElement?.hasAttribute("contenteditable")
+      ) {
+        return;
+      }
+
+      if (e.key === "Escape") {
+        setActiveBrush(null);
+      } else if (e.key === "1") {
+        setActiveBrush((prev) => (prev === "attack" ? null : "attack"));
+      } else if (e.key === "2") {
+        setActiveBrush((prev) => (prev === "defense" ? null : "defense"));
+      } else if (e.key === "3") {
+        setActiveBrush((prev) => (prev === "rally" ? null : "rally"));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const [selection, setSelection] = useState<ICoordinate | null>(null);
   const [splitMoveSelection, setSplitMoveSelection] =
@@ -140,19 +224,40 @@ export function GamePage({ connection, source }: GamePageProps) {
     setSelection(initialCoord.current);
   }, [renderGrid, currentPlayer]);
 
-  const handleSelectCell = useCallback((coord: ICoordinate) => {
-    setSelection(coord);
-    setSplitMoveSelection(null);
-  }, []);
+  const handleSelectCell = useCallback(
+    (coord: ICoordinate) => {
+      if (activeBrush) {
+        room?.send(MatchClientMessage.PING, {
+          x: coord.x,
+          y: coord.y,
+          type: activeBrush,
+        });
+        return;
+      }
+      setSelection(coord);
+      setSplitMoveSelection(null);
+    },
+    [activeBrush, room],
+  );
 
   const handleArmSplitMove = useCallback(
     (coord?: ICoordinate) => {
+      if (activeBrush) {
+        if (coord) {
+          room?.send(MatchClientMessage.PING, {
+            x: coord.x,
+            y: coord.y,
+            type: activeBrush,
+          });
+        }
+        return;
+      }
       const nextSelection = coord ?? selection;
       if (!nextSelection) return;
       setSelection(nextSelection);
       setSplitMoveSelection(nextSelection);
     },
-    [selection],
+    [activeBrush, selection, room],
   );
 
   const handleQueueMove = useCallback(
@@ -207,6 +312,29 @@ export function GamePage({ connection, source }: GamePageProps) {
       setSpectatorSource(null);
     }
   }, [gameResult, spectatorSource]);
+
+  useEffect(() => {
+    if (!shouldFallbackToSetup) {
+      hasHandledRecoveryFailureRef.current = false;
+      return;
+    }
+
+    const recoveryFailedHandler = recoveryFailedHandlerRef.current;
+    if (hasHandledRecoveryFailureRef.current || !recoveryFailedHandler) {
+      return;
+    }
+
+    hasHandledRecoveryFailureRef.current = true;
+    recoveryFailedHandler();
+  }, [shouldFallbackToSetup]);
+
+  if (shouldFallbackToSetup) {
+    return (
+      <StageCenter>
+        <LoadingPanel message="Rejoining custom room" />
+      </StageCenter>
+    );
+  }
 
   if (error) {
     return (
@@ -286,6 +414,7 @@ export function GamePage({ connection, source }: GamePageProps) {
         onQueueMove={isReadOnly ? () => {} : handleQueueMove}
         onClearMoveQueue={isReadOnly ? () => {} : clearMoveQueue}
         playerColors={playerColors}
+        pings={pings}
       />
 
       <GameHud
@@ -302,6 +431,78 @@ export function GamePage({ connection, source }: GamePageProps) {
             gameState.mode === GameMode.TURF_WAR ? gameState.tickInterval : 0,
         }}
       />
+
+      {/* Floating Brush Tool Panel */}
+      <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2 rounded-none border border-game-border/80 bg-[rgb(27_27_27/0.76)] p-2 shadow-xl shadow-black/25 backdrop-blur-sm">
+        <Button
+          type="button"
+          variant={activeBrush === "attack" ? "default" : "outline"}
+          size="icon"
+          onClick={() =>
+            setActiveBrush(activeBrush === "attack" ? null : "attack")
+          }
+          className={cn(
+            "size-9 transition-all hover:scale-105 rounded-none",
+            activeBrush === "attack"
+              ? "ring-2 ring-red-400/50 bg-red-950/20 border-red-400"
+              : "border-game-border",
+          )}
+          title="Mark Attack (Swords) [1]"
+        >
+          <Swords
+            className={cn(
+              "size-4 text-red-400",
+              activeBrush === "attack" && "animate-pulse",
+            )}
+          />
+        </Button>
+
+        <Button
+          type="button"
+          variant={activeBrush === "defense" ? "default" : "outline"}
+          size="icon"
+          onClick={() =>
+            setActiveBrush(activeBrush === "defense" ? null : "defense")
+          }
+          className={cn(
+            "size-9 transition-all hover:scale-105 rounded-none",
+            activeBrush === "defense"
+              ? "ring-2 ring-blue-400/50 bg-blue-950/20 border-blue-400"
+              : "border-game-border",
+          )}
+          title="Mark Defense (Shield) [2]"
+        >
+          <Shield
+            className={cn(
+              "size-4 text-blue-400",
+              activeBrush === "defense" && "animate-pulse",
+            )}
+          />
+        </Button>
+
+        <Button
+          type="button"
+          variant={activeBrush === "rally" ? "default" : "outline"}
+          size="icon"
+          onClick={() =>
+            setActiveBrush(activeBrush === "rally" ? null : "rally")
+          }
+          className={cn(
+            "size-9 transition-all hover:scale-105 rounded-none",
+            activeBrush === "rally"
+              ? "ring-2 ring-green-400/50 bg-green-950/20 border-green-400"
+              : "border-game-border",
+          )}
+          title="Mark Rally (Flag) [3]"
+        >
+          <Flag
+            className={cn(
+              "size-4 text-green-400",
+              activeBrush === "rally" && "animate-pulse",
+            )}
+          />
+        </Button>
+      </div>
 
       {activeModal ? (
         <Dialog open={true}>

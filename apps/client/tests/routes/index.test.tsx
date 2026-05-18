@@ -25,11 +25,13 @@ describe("index route", () => {
     renderRoute("/", createMockAuth());
 
     expect(screen.getByRole("heading", { name: "Sign in" })).toBeTruthy();
-    expect(screen.getByLabelText("Display name")).toBeTruthy();
+    expect(screen.getByLabelText("Email")).toBeTruthy();
+    expect(screen.getByLabelText("Password")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Sign in" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Enter as guest" })).toBeTruthy();
   });
 
-  it("shows default display name in input", () => {
+  it("shows default guest display name in input", () => {
     renderRoute("/", createMockAuth());
 
     expect(
@@ -40,7 +42,8 @@ describe("index route", () => {
   it("disables sign-in button while authenticating", () => {
     renderRoute("/", createMockAuth({ status: AuthStatus.AUTHENTICATING }));
 
-    expect(screen.getByText("Checking session...")).toBeTruthy();
+    expect(screen.queryByText("Checking session...")).toBeNull();
+    expect(screen.getByRole("button", { name: "Signing in..." })).toBeTruthy();
   });
 
   it("shows official lobby when authenticated", () => {
