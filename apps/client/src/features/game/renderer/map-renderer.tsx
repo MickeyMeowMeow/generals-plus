@@ -60,7 +60,6 @@ export function MapRenderer({
       if (x >= 0 && x < grid.width && y >= 0 && y < grid.height) {
         const coord = { x, y };
         if (e.button === 2) {
-          e.preventDefault();
           onSplitMoveCell(coord);
           lastPrimaryClickRef.current = null;
           return;
