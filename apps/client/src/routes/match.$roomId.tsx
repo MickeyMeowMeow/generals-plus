@@ -51,6 +51,9 @@ export default function MatchRoute() {
             type: "recovery",
             recoveryToken: customRecoveryToken,
           }}
+          onRecoveryFailed={() => {
+            setPersistedGameSession(null);
+          }}
           source={{
             type: "custom",
             customRoomKey: roomId,

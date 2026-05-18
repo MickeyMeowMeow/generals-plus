@@ -809,8 +809,20 @@ describe("client room flows", () => {
     expect(networkMocks.joinById).not.toHaveBeenCalled();
   });
 
-  it("shows a lobby escape when a persisted match recovery token is stale", async () => {
+  it("falls back to the setup room when a persisted custom recovery token is stale", async () => {
     networkMocks.restoreSession.mockRejectedValue(new Error("room not found"));
+    const setupRoom = createRoom({
+      roomId: "setup-stale",
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: true,
+        },
+      ]),
+    });
+    networkMocks.joinById.mockResolvedValue(setupRoom);
     localStorage.setItem(
       "generals_plus_active_game_session",
       JSON.stringify({
@@ -821,17 +833,13 @@ describe("client room flows", () => {
 
     renderRoute("/match/setup-stale", auth());
 
-    expect(
-      await screen.findByRole("heading", { name: "Connection failed" }),
-    ).toBeTruthy();
-    expect(screen.getByText(/room not found/)).toBeTruthy();
+    expect(await screen.findByText("You are host")).toBeTruthy();
     expect(
       localStorage.getItem("generals_plus_active_game_session"),
     ).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "Return to lobby" }));
-
-    expect(await screen.findByRole("button", { name: "Start" })).toBeTruthy();
+    expect(networkMocks.restoreSession).toHaveBeenCalledWith("stale-token");
+    expect(networkMocks.resolveCustomRoom).toHaveBeenCalledWith("setup-stale");
+    expect(networkMocks.joinById).toHaveBeenCalledWith("setup-stale");
   });
 
   it("stops waiting when persisted match recovery never resolves", async () => {

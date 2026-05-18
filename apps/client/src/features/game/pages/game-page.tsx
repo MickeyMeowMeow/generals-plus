@@ -43,6 +43,8 @@ interface GamePageProps {
   connection: GameRoomConnection;
   /** Return behavior and metadata for the flow that launched the match. */
   source: GamePageSource;
+  /** Optional hook for routes that should abandon a stale recovery path. */
+  onRecoveryFailed?: () => void;
 }
 
 /**
@@ -54,7 +56,11 @@ interface GamePageProps {
  * official matches and `/match/:roomId` custom matches can reuse the same game
  * surface after their respective seat-reservation handoff.
  */
-export function GamePage({ connection, source }: GamePageProps) {
+export function GamePage({
+  connection,
+  source,
+  onRecoveryFailed,
+}: GamePageProps) {
   const navigate = useNavigate();
   /**
    * Keep the full connection payload stable across parent re-renders.
@@ -77,6 +83,7 @@ export function GamePage({ connection, source }: GamePageProps) {
   }
   const stableConnection = stableConnectionRef.current.value;
   const customRoomKey = source.type === "custom" ? source.customRoomKey : null;
+  const hasHandledRecoveryFailureRef = useRef(false);
 
   /**
    * Memoized route context persisted alongside the recovery token.
@@ -179,6 +186,38 @@ export function GamePage({ connection, source }: GamePageProps) {
       setSpectatorSource(null);
     }
   }, [gameResult, spectatorSource]);
+
+  useEffect(() => {
+    hasHandledRecoveryFailureRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (
+      !error ||
+      connection.type !== "recovery" ||
+      source.type !== "custom" ||
+      !onRecoveryFailed ||
+      hasHandledRecoveryFailureRef.current
+    ) {
+      return;
+    }
+
+    hasHandledRecoveryFailureRef.current = true;
+    onRecoveryFailed();
+  }, [connection.type, error, onRecoveryFailed, source.type]);
+
+  if (
+    error &&
+    connection.type === "recovery" &&
+    source.type === "custom" &&
+    onRecoveryFailed
+  ) {
+    return (
+      <StageCenter>
+        <LoadingPanel message="Rejoining custom room" />
+      </StageCenter>
+    );
+  }
 
   if (error) {
     return (
