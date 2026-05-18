@@ -9,6 +9,7 @@ export {
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
   ScoreboardPlayerEntry,
+  TurfWarScoreboard,
 } from "#/schema/scoreboard";
 export { SetupPlayer, SetupState } from "#/schema/setup-state";
 export { ClientVision } from "#/schema/vision-cell";

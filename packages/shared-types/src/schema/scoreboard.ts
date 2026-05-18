@@ -14,7 +14,12 @@ export class BaseScoreboard extends Schema {
   @type("string") mode: string = "";
 }
 
+export class TurfWarScoreboard extends BaseScoreboard {
+  @type([ScoreboardPlayerEntry])
+  players = new ArraySchema<ScoreboardPlayerEntry>();
+}
+
 export class ClassicScoreboard extends BaseScoreboard {
-  @type([ClassicScoreboardPlayerEntry]) players =
-    new ArraySchema<ClassicScoreboardPlayerEntry>();
+  @type([ClassicScoreboardPlayerEntry])
+  players = new ArraySchema<ClassicScoreboardPlayerEntry>();
 }
