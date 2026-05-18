@@ -231,4 +231,25 @@ describe("createGameHudScoreboardModel", () => {
       values: { land: 8, troops: 15 },
     });
   });
+
+  it("adapts classic troop-land scoreboard rows with dead player", () => {
+    const scoreboard = new ClassicScoreboard();
+    scoreboard.mode = GameMode.CLASSIC;
+
+    const p1 = playerScore({
+      playerId: "p1",
+      teamId: "p1",
+      displayName: "Nova",
+      troops: 0,
+      land: 0,
+    });
+    const entry1 = new ClassicScoreboardPlayerEntry();
+    Object.assign(entry1, p1, { isAlive: false });
+
+    scoreboard.players.push(entry1);
+
+    const model = createGameHudScoreboardModel(scoreboard);
+
+    expect(model.groups[0].rows[0].isAlive).toBe(false);
+  });
 });

@@ -25,6 +25,8 @@ export interface GameHudRow {
   color: number;
   /** Metric values keyed by {@link GameHudColumn.key}. */
   values: Record<string, number | string>;
+  /** Whether the player is alive. */
+  isAlive: boolean;
 }
 
 /**
@@ -64,6 +66,7 @@ interface TroopLandScoreEntry {
   color?: number;
   land: number;
   troops: number;
+  isAlive?: boolean;
 }
 
 interface TeamScoreEntry {
@@ -136,6 +139,7 @@ function getTroopLandEntries(scoreboard: BaseScoreboard) {
         color: entry.color,
         land: entry.land,
         troops: entry.troops,
+        isAlive: (entry as unknown as { isAlive?: boolean }).isAlive ?? true,
       }))
     : [];
 }
@@ -204,6 +208,7 @@ function createPlayerRows(scoreboard: BaseScoreboard): GameHudRow[] {
           land: score.land,
           troops: score.troops,
         },
+        isAlive: score.isAlive ?? true,
       };
     })
     .sort(
