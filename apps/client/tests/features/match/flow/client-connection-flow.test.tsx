@@ -35,7 +35,9 @@ import { renderRoute } from "#/tests/helpers/render";
 const networkMocks = vi.hoisted(() => ({
   joinOrCreate: vi.fn(),
   create: vi.fn(),
+  createCustomRoom: vi.fn(),
   joinById: vi.fn(),
+  resolveCustomRoom: vi.fn(),
   consumeSeatReservation: vi.fn(),
   restoreSession: vi.fn(),
 }));
@@ -219,6 +221,13 @@ describe("client room flows", () => {
     resetGameConnectionsForTesting();
     resetQueueConnectionsForTesting();
     resetSetupConnectionsForTesting();
+    networkMocks.resolveCustomRoom.mockImplementation(
+      async (customRoomKey: string) => ({
+        customRoomKey,
+        setupRoomId: customRoomKey,
+        created: false,
+      }),
+    );
   });
 
   afterEach(() => {
@@ -361,7 +370,17 @@ describe("client room flows", () => {
         },
       ]),
     });
-    networkMocks.create.mockResolvedValue(setupRoom);
+    networkMocks.createCustomRoom.mockResolvedValue({
+      customRoomKey: "custom-123",
+      setupRoomId: "setup-123",
+      created: true,
+    });
+    networkMocks.resolveCustomRoom.mockResolvedValue({
+      customRoomKey: "custom-123",
+      setupRoomId: "setup-123",
+      created: false,
+    });
+    networkMocks.joinById.mockResolvedValue(setupRoom);
 
     renderRoute("/", auth());
 
@@ -374,10 +393,9 @@ describe("client room flows", () => {
     expect(
       screen.queryByRole("button", { name: "Force start game" }),
     ).toBeNull();
-    expect(networkMocks.create).toHaveBeenCalledWith(ROOM_NAMES.SETUP, {
-      gameMode: GameMode.CLASSIC,
-      isPublic: false,
-    });
+    expect(networkMocks.createCustomRoom).toHaveBeenCalledTimes(1);
+    expect(networkMocks.resolveCustomRoom).toHaveBeenCalledWith("custom-123");
+    expect(networkMocks.joinById).toHaveBeenCalledWith("setup-123");
   });
 
   it("renders custom setup state when the initial room patch arrived before navigation", async () => {
@@ -393,7 +411,17 @@ describe("client room flows", () => {
         },
       ]),
     });
-    networkMocks.create.mockResolvedValue(setupRoom);
+    networkMocks.createCustomRoom.mockResolvedValue({
+      customRoomKey: "custom-cached",
+      setupRoomId: "setup-cached",
+      created: true,
+    });
+    networkMocks.resolveCustomRoom.mockResolvedValue({
+      customRoomKey: "custom-cached",
+      setupRoomId: "setup-cached",
+      created: false,
+    });
+    networkMocks.joinById.mockResolvedValue(setupRoom);
 
     renderRoute("/", auth());
 
@@ -692,7 +720,7 @@ describe("client room flows", () => {
       "generals_plus_active_game_session",
       JSON.stringify({
         recoveryToken: "custom-token",
-        source: { type: "custom", setupRoomId: "setup-refresh" },
+        source: { type: "custom", customRoomKey: "setup-refresh" },
       }),
     );
 
@@ -709,7 +737,7 @@ describe("client room flows", () => {
       "generals_plus_active_game_session",
       JSON.stringify({
         recoveryToken: "stale-token",
-        source: { type: "custom", setupRoomId: "setup-stale" },
+        source: { type: "custom", customRoomKey: "setup-stale" },
       }),
     );
 
@@ -757,9 +785,9 @@ describe("client room flows", () => {
     ).toBeNull();
   });
 
-  it("shows match results and returns custom games to the same setup URL", async () => {
+  it("resolves a fresh setup room after returning from a finished custom match", async () => {
     const setupRoom = createRoom({
-      roomId: "setup-result",
+      roomId: "setup-result-a",
       state: createSetupState([
         {
           id: "player-1",
@@ -775,6 +803,17 @@ describe("client room flows", () => {
         },
       ]),
     });
+    const recreatedSetupRoom = createRoom({
+      roomId: "setup-result-b",
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: true,
+        },
+      ]),
+    });
     const matchRoom = createRoom({
       roomId: "match-result",
       state: createMatchState(),
@@ -784,18 +823,33 @@ describe("client room flows", () => {
       roomId: "match-result",
       sessionId: "session-1",
     };
-    networkMocks.joinById.mockResolvedValue(setupRoom);
+    networkMocks.resolveCustomRoom
+      .mockResolvedValueOnce({
+        customRoomKey: "custom-result",
+        setupRoomId: "setup-result-a",
+        created: false,
+      })
+      .mockResolvedValueOnce({
+        customRoomKey: "custom-result",
+        setupRoomId: "setup-result-b",
+        created: true,
+      });
+    networkMocks.joinById
+      .mockResolvedValueOnce(setupRoom)
+      .mockResolvedValueOnce(recreatedSetupRoom);
     networkMocks.consumeSeatReservation.mockResolvedValue(matchRoom);
 
-    renderRoute("/match/setup-result", auth());
+    renderRoute("/match/custom-result", auth());
 
     await screen.findByText("You are host");
     setupRoom.emitMessage(SetupServerMessage.SEAT_RESERVATION, reservation);
     await screen.findByTestId("game-app");
 
-    matchRoom.emitMessage(MatchServerMessage.GAME_END, {
-      mode: GameMode.CLASSIC,
-      winnerTeamId: "team_1",
+    await act(async () => {
+      matchRoom.emitMessage(MatchServerMessage.GAME_END, {
+        mode: GameMode.CLASSIC,
+        winnerTeamId: "team_1",
+      });
     });
 
     expect(
@@ -804,16 +858,55 @@ describe("client room flows", () => {
     expect(screen.getByText("Winner: Rook")).toBeTruthy();
 
     const user = userEvent.setup();
-    await user.click(
-      screen.getByRole("button", { name: "Return to setup room" }),
-    );
+    await act(async () => {
+      await user.click(
+        screen.getByRole("button", { name: "Return to setup room" }),
+      );
+    });
 
     expect(await screen.findByText("You are host")).toBeTruthy();
-    expect(networkMocks.joinById).toHaveBeenCalledTimes(1);
+    expect(networkMocks.resolveCustomRoom).toHaveBeenNthCalledWith(
+      2,
+      "custom-result",
+    );
+    expect(networkMocks.joinById).toHaveBeenNthCalledWith(1, "setup-result-a");
+    expect(networkMocks.joinById).toHaveBeenNthCalledWith(2, "setup-result-b");
+
+    await act(async () => {
+      recreatedSetupRoom.emitState(
+        createSetupState([
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+            isHost: true,
+          },
+          {
+            id: "player-2",
+            displayName: "Rook",
+            color: PLAYER_COLOR_PALETTE[1],
+            isHost: false,
+          },
+        ]),
+      );
+    });
+
+    await act(async () => {
+      await user.click(
+        await screen.findByRole("button", { name: "Force start game" }),
+      );
+    });
+    await waitFor(() => {
+      expect(recreatedSetupRoom.send).toHaveBeenLastCalledWith(
+        SetupClientMessage.START_GAME,
+      );
+    });
   });
 
   it("shows a clear error for unavailable custom rooms", async () => {
-    networkMocks.joinById.mockRejectedValue(new Error("room not found"));
+    networkMocks.resolveCustomRoom.mockRejectedValue(
+      new Error("room not found"),
+    );
 
     renderRoute("/match/missing-room", auth());
 

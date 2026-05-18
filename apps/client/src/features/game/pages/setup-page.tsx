@@ -1,5 +1,6 @@
 import { SetupClientMessage } from "@generals-plus/shared-types";
 import { LogOut, Play } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
@@ -10,6 +11,7 @@ import { ColorPicker } from "#/features/game/components/color-picker";
 import { GameSettings } from "#/features/game/components/game-settings";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
+import { networkProvider } from "#/infra/network/provider";
 
 /**
  * Computes how many teams the current setup settings will produce.
@@ -35,6 +37,48 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
   const navigate = useNavigate();
   const userId = useUser((user) => user?.id);
   const displayName = useUser((user) => user?.displayName ?? "Commander");
+  const [resolvedRoomId, setResolvedRoomId] = useState<string | null>(null);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [isResolvingRoom, setIsResolvingRoom] = useState(true);
+  const [resolveRequestId, setResolveRequestId] = useState(0);
+  const latestResolveRequestId = useRef(resolveRequestId);
+
+  useEffect(() => {
+    latestResolveRequestId.current = resolveRequestId;
+  }, [resolveRequestId]);
+
+  useEffect(() => {
+    let isCurrent = true;
+    const requestId = resolveRequestId;
+
+    const run = async () => {
+      setIsResolvingRoom(true);
+      setResolveError(null);
+      setResolvedRoomId(null);
+      try {
+        const resolution = await networkProvider.resolveCustomRoom(roomId);
+        if (!isCurrent || latestResolveRequestId.current !== requestId) return;
+        setResolvedRoomId(resolution.setupRoomId);
+      } catch (error) {
+        if (!isCurrent || latestResolveRequestId.current !== requestId) return;
+        setResolveError(
+          error instanceof Error
+            ? error.message
+            : "Failed to resolve custom room",
+        );
+      } finally {
+        if (isCurrent) {
+          setIsResolvingRoom(false);
+        }
+      }
+    };
+
+    void run();
+    return () => {
+      isCurrent = false;
+    };
+  }, [resolveRequestId, roomId]);
+
   const {
     room,
     setupState,
@@ -44,26 +88,34 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
     clearSeatReservation,
     error,
     isConnecting,
-  } = useSetupRoom({ roomId });
+  } = useSetupRoom({
+    roomId: resolvedRoomId ?? undefined,
+    enabled: Boolean(resolvedRoomId),
+  });
+
+  const handleReturnToSetup = useCallback(() => {
+    clearSeatReservation();
+    setResolveRequestId((requestId) => requestId + 1);
+  }, [clearSeatReservation]);
 
   if (seatReservation) {
     /**
-     * Custom matches keep the setup URL in the address bar; `GamePage` persists
-     * the setup room id with the recovery token so refresh can restore the match.
+     * Custom matches keep the stable room URL in the address bar; `GamePage`
+     * persists that key with the recovery token so refresh can restore the match.
      */
     return (
       <GamePage
         connection={{ type: "reservation", reservation: seatReservation }}
         source={{
           type: "custom",
-          setupRoomId: roomId,
-          onReturn: clearSeatReservation,
+          customRoomKey: roomId,
+          onReturn: handleReturnToSetup,
         }}
       />
     );
   }
 
-  if (error) {
+  if (resolveError || error) {
     /**
      * A failed setup join usually means the shared room URL is stale. Provide an
      * explicit lobby escape instead of trapping the user on the broken URL.
@@ -72,7 +124,7 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
       <StageCenter>
         <ErrorPanel
           title="Room unavailable"
-          message={`${error}. Check the shared URL or ask the host for a fresh room link.`}
+          message={`${resolveError ?? error}. Check the shared URL or ask the host for a fresh room link.`}
           action={
             <Button type="button" onClick={() => navigate("/")}>
               Return to lobby
@@ -83,7 +135,13 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
     );
   }
 
-  if (isConnecting || !setupState) {
+  if (
+    isResolvingRoom ||
+    isConnecting ||
+    !resolvedRoomId ||
+    !setupState ||
+    !room
+  ) {
     return (
       <StageCenter>
         <LoadingPanel message="Joining custom room" />

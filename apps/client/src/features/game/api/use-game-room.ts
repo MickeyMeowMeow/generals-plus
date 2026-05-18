@@ -53,7 +53,7 @@ export type GameRoomConnection =
  * Minimal route context needed to bring a recovered match back to the right UI.
  *
  * Official games recover on `/`; custom games recover only when the current
- * `/match/:roomId` URL matches the setup room that originally launched them.
+ * `/match/:roomId` URL matches the stable custom room key that launched them.
  */
 export type PersistedGameSource =
   | {
@@ -61,7 +61,7 @@ export type PersistedGameSource =
     }
   | {
       type: "custom";
-      setupRoomId: string;
+      customRoomKey: string;
     };
 
 /**

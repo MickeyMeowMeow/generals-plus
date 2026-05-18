@@ -1,6 +1,8 @@
 import type { Room } from "@colyseus/sdk";
 import { Client } from "@colyseus/sdk";
 import type {
+  CustomRoomCreation,
+  CustomRoomResolution,
   ExtractMessageKey,
   MessagePayload,
   SeatReservation,
@@ -94,9 +96,11 @@ export class ColyseusNetworkProvider<User = unknown>
   implements NetworkProvider<User>
 {
   private readonly client: Client<never, User>;
+  private readonly httpEndpoint: string;
 
-  constructor(client: Client<never, User>) {
+  constructor(client: Client<never, User>, httpEndpoint: string) {
     this.client = client;
+    this.httpEndpoint = httpEndpoint;
   }
 
   /**
@@ -109,7 +113,38 @@ export class ColyseusNetworkProvider<User = unknown>
   static fromEndpoint<User = unknown>(
     endpoint: string,
   ): ColyseusNetworkProvider<User> {
-    return new ColyseusNetworkProvider<User>(new Client<never, User>(endpoint));
+    return new ColyseusNetworkProvider<User>(
+      new Client<never, User>(endpoint),
+      endpoint.replace(/^ws/i, "http"),
+    );
+  }
+
+  private async requestJson<Response>(
+    path: string,
+    init: RequestInit = {},
+  ): Promise<Response> {
+    const token = this.getAuthToken();
+    const response = await fetch(new URL(path, this.httpEndpoint), {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init.headers ?? {}),
+      },
+    });
+
+    if (!response.ok) {
+      let message = response.statusText;
+      try {
+        const payload = (await response.json()) as { error?: string };
+        message = payload.error ?? message;
+      } catch {
+        // Ignore non-JSON error bodies.
+      }
+      throw new Error(message);
+    }
+
+    return (await response.json()) as Response;
   }
 
   async signInAnonymously(
@@ -194,6 +229,25 @@ export class ColyseusNetworkProvider<User = unknown>
   ): Promise<RoomClient<State, Sent, Received>> {
     const room = await this.client.create<State>(roomName, options);
     return new ColyseusRoomAdapter<State, Sent, Received>(room);
+  }
+
+  async createCustomRoom(): Promise<CustomRoomCreation> {
+    return this.requestJson<CustomRoomCreation>("/custom-rooms", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  }
+
+  async resolveCustomRoom(
+    customRoomKey: string,
+  ): Promise<CustomRoomResolution> {
+    return this.requestJson<CustomRoomResolution>(
+      `/custom-rooms/${encodeURIComponent(customRoomKey)}/resolve`,
+      {
+        method: "POST",
+        body: JSON.stringify({}),
+      },
+    );
   }
 
   async restoreSession<

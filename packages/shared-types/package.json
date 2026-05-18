@@ -2,6 +2,7 @@
   "name": "@generals-plus/shared-types",
   "private": true,
   "version": "0.1.0",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
       "default": "./dist/index.mjs",

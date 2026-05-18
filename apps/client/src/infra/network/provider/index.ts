@@ -41,5 +41,8 @@ export const networkProvider: NetworkProvider<UserProfile> = {
   consumeSeatReservation: (...args) =>
     getNetworkProvider().consumeSeatReservation(...args),
   create: (...args) => getNetworkProvider().create(...args),
+  createCustomRoom: () => getNetworkProvider().createCustomRoom(),
+  resolveCustomRoom: (...args) =>
+    getNetworkProvider().resolveCustomRoom(...args),
   restoreSession: (...args) => getNetworkProvider().restoreSession(...args),
 };
