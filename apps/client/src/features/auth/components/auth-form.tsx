@@ -1,5 +1,4 @@
 import { Loader2, LogIn, ShieldUser, UserPlus } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { ErrorAlert } from "#/components/feedback/error-alert";
@@ -64,8 +63,6 @@ export function AuthForm({
   onRegister,
   onGuestSignIn,
 }: AuthFormProps) {
-  const [displayNameDraft, setDisplayNameDraft] = useState("Commander");
-  const [emailDraft, setEmailDraft] = useState("");
   const signInForm = useForm<SignInFormValues>({
     defaultValues: {
       email: "",
@@ -87,31 +84,36 @@ export function AuthForm({
   const isRegisterMode = mode === AuthFormMode.REGISTER;
   const isGuestMode = mode === AuthFormMode.GUEST;
 
-  useEffect(() => {
-    if (registerForm.getValues("displayName") !== displayNameDraft) {
-      registerForm.setValue("displayName", displayNameDraft, {
-        shouldDirty: displayNameDraft !== "Commander",
-      });
-    }
-    if (guestForm.getValues("displayName") !== displayNameDraft) {
-      guestForm.setValue("displayName", displayNameDraft, {
-        shouldDirty: displayNameDraft !== "Commander",
-      });
-    }
-  }, [displayNameDraft, guestForm, registerForm]);
+  const syncSharedDrafts = () => {
+    const displayName =
+      mode === AuthFormMode.GUEST
+        ? guestForm.getValues("displayName")
+        : mode === AuthFormMode.REGISTER
+          ? registerForm.getValues("displayName")
+          : registerForm.getValues("displayName");
+    const email =
+      mode === AuthFormMode.REGISTER
+        ? registerForm.getValues("email")
+        : signInForm.getValues("email");
 
-  useEffect(() => {
-    if (signInForm.getValues("email") !== emailDraft) {
-      signInForm.setValue("email", emailDraft, {
-        shouldDirty: emailDraft.length > 0,
-      });
-    }
-    if (registerForm.getValues("email") !== emailDraft) {
-      registerForm.setValue("email", emailDraft, {
-        shouldDirty: emailDraft.length > 0,
-      });
-    }
-  }, [emailDraft, registerForm, signInForm]);
+    registerForm.setValue("displayName", displayName, {
+      shouldDirty: displayName !== "Commander",
+    });
+    guestForm.setValue("displayName", displayName, {
+      shouldDirty: displayName !== "Commander",
+    });
+    registerForm.setValue("email", email, {
+      shouldDirty: email.length > 0,
+    });
+    signInForm.setValue("email", email, {
+      shouldDirty: email.length > 0,
+    });
+  };
+
+  const handleModeChange = (nextMode: AuthFormMode) => {
+    syncSharedDrafts();
+    onModeChange(nextMode);
+  };
 
   return (
     <section className="game-panel space-y-5 rounded-none p-5 text-game-text">
@@ -133,7 +135,7 @@ export function AuthForm({
         <Button
           type="button"
           variant={!isRegisterMode && !isGuestMode ? "default" : "outline"}
-          onClick={() => onModeChange(AuthFormMode.SIGN_IN)}
+          onClick={() => handleModeChange(AuthFormMode.SIGN_IN)}
           role="tab"
           aria-selected={!isRegisterMode && !isGuestMode}
           disabled={isBusy}
@@ -144,7 +146,7 @@ export function AuthForm({
         <Button
           type="button"
           variant={isRegisterMode ? "default" : "outline"}
-          onClick={() => onModeChange(AuthFormMode.REGISTER)}
+          onClick={() => handleModeChange(AuthFormMode.REGISTER)}
           role="tab"
           aria-selected={isRegisterMode}
           disabled={isBusy}
@@ -155,7 +157,7 @@ export function AuthForm({
         <Button
           type="button"
           variant={isGuestMode ? "default" : "outline"}
-          onClick={() => onModeChange(AuthFormMode.GUEST)}
+          onClick={() => handleModeChange(AuthFormMode.GUEST)}
           role="tab"
           aria-selected={isGuestMode}
           disabled={isBusy}
@@ -189,7 +191,6 @@ export function AuthForm({
             <Input
               id="register-display-name"
               autoComplete="nickname"
-              value={displayNameDraft}
               aria-invalid={
                 registerForm.formState.errors.displayName ? true : undefined
               }
@@ -197,9 +198,6 @@ export function AuthForm({
               {...registerForm.register("displayName", {
                 validate: (value) =>
                   value.trim().length > 0 || "Display name cannot be empty.",
-                onChange: (event) => {
-                  setDisplayNameDraft(event.target.value);
-                },
               })}
             />
             <FieldError
@@ -215,7 +213,6 @@ export function AuthForm({
               id="register-email"
               type="email"
               autoComplete="email"
-              value={emailDraft}
               aria-invalid={
                 registerForm.formState.errors.email ? true : undefined
               }
@@ -227,9 +224,6 @@ export function AuthForm({
                   return (
                     isValidEmail(trimmed) || "Enter a valid email address."
                   );
-                },
-                onChange: (event) => {
-                  setEmailDraft(event.target.value);
                 },
               })}
             />
@@ -289,7 +283,6 @@ export function AuthForm({
             <Input
               id="guest-display-name"
               autoComplete="nickname"
-              value={displayNameDraft}
               aria-invalid={
                 guestForm.formState.errors.displayName ? true : undefined
               }
@@ -297,9 +290,6 @@ export function AuthForm({
               {...guestForm.register("displayName", {
                 validate: (value) =>
                   value.trim().length > 0 || "Display name cannot be empty.",
-                onChange: (event) => {
-                  setDisplayNameDraft(event.target.value);
-                },
               })}
             />
             <FieldError
@@ -340,7 +330,6 @@ export function AuthForm({
               id="sign-in-email"
               type="email"
               autoComplete="email"
-              value={emailDraft}
               aria-invalid={
                 signInForm.formState.errors.email ? true : undefined
               }
@@ -352,9 +341,6 @@ export function AuthForm({
                   return (
                     isValidEmail(trimmed) || "Enter a valid email address."
                   );
-                },
-                onChange: (event) => {
-                  setEmailDraft(event.target.value);
                 },
               })}
             />
