@@ -13,6 +13,7 @@ interface CustomRoomCreation extends CustomRoomResolution {}
 interface CustomRoomRecord {
   key: string;
   activeSetupRoomId: string | null;
+  pendingSetupRoomId: Promise<string> | null;
   status: "setup" | "match" | "idle";
   version: number;
   ownerUserId: string | null;
@@ -33,6 +34,48 @@ async function createSetupRoomForKey(customRoomKey: string) {
   return listing.roomId;
 }
 
+let createSetupRoomForKeyImpl = createSetupRoomForKey;
+
+async function createOrJoinPendingSetupRoom(
+  record: CustomRoomRecord,
+  ownerUserId: string | null,
+): Promise<CustomRoomResolution> {
+  if (record.activeSetupRoomId) {
+    return {
+      customRoomKey: record.key,
+      setupRoomId: record.activeSetupRoomId,
+      created: false,
+    };
+  }
+
+  let startedCreation = false;
+  if (!record.pendingSetupRoomId) {
+    startedCreation = true;
+    record.pendingSetupRoomId = createSetupRoomForKeyImpl(record.key)
+      .then((setupRoomId) => {
+        record.activeSetupRoomId = setupRoomId;
+        record.status = "setup";
+        record.version += 1;
+        record.ownerUserId = ownerUserId;
+        return setupRoomId;
+      })
+      .finally(() => {
+        record.pendingSetupRoomId = null;
+      });
+  }
+
+  const pendingSetupRoomId = record.pendingSetupRoomId;
+  if (!pendingSetupRoomId) {
+    throw new Error("pending setup room promise must exist before awaiting");
+  }
+  const setupRoomId = await pendingSetupRoomId;
+  return {
+    customRoomKey: record.key,
+    setupRoomId,
+    created: startedCreation,
+  };
+}
+
 export async function createCustomRoom(
   ownerUserId: string | null,
 ): Promise<CustomRoomCreation> {
@@ -41,10 +84,11 @@ export async function createCustomRoom(
     key = generateCustomRoomKey();
   }
 
-  const setupRoomId = await createSetupRoomForKey(key);
+  const setupRoomId = await createSetupRoomForKeyImpl(key);
   customRooms.set(key, {
     key,
     activeSetupRoomId: setupRoomId,
+    pendingSetupRoomId: null,
     status: "setup",
     version: 1,
     ownerUserId,
@@ -60,20 +104,7 @@ export async function resolveCustomRoom(
   const record = customRooms.get(customRoomKey);
   if (!record) return null;
 
-  if (record.activeSetupRoomId) {
-    return {
-      customRoomKey,
-      setupRoomId: record.activeSetupRoomId,
-      created: false,
-    };
-  }
-
-  const setupRoomId = await createSetupRoomForKey(customRoomKey);
-  record.activeSetupRoomId = setupRoomId;
-  record.status = "setup";
-  record.version += 1;
-  record.ownerUserId = ownerUserId;
-  return { customRoomKey, setupRoomId, created: true };
+  return createOrJoinPendingSetupRoom(record, ownerUserId);
 }
 
 export function markCustomRoomMatchStarted(
@@ -98,4 +129,11 @@ export function onSetupRoomDisposed(
 
 export function resetCustomRoomsForTesting() {
   customRooms.clear();
+  createSetupRoomForKeyImpl = createSetupRoomForKey;
+}
+
+export function setCreateSetupRoomForKeyForTesting(
+  createSetupRoom: (customRoomKey: string) => Promise<string>,
+) {
+  createSetupRoomForKeyImpl = createSetupRoom;
 }
