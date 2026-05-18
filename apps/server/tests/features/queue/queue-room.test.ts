@@ -26,6 +26,7 @@ function captureErrors(client: {
 const mocks = vi.hoisted(() => ({
   getRating: vi.fn().mockResolvedValue(1000),
   createGame: vi.fn(),
+  generateSeed: vi.fn(() => 12345),
 }));
 
 vi.mock("#/infra/db/repositories/MongoUserRepository", () => ({
@@ -36,6 +37,7 @@ vi.mock("#/infra/db/repositories/MongoUserRepository", () => ({
 
 vi.mock("#/features/game/utils", () => ({
   createGame: mocks.createGame,
+  generateSeed: mocks.generateSeed,
 }));
 
 interface QueueMatchGroup {
@@ -279,6 +281,31 @@ describe("MatchQueueRoom", () => {
           playerPerTeam: 1,
         }),
       );
+    });
+
+    it("includes a random seed in grid options when creating game", async () => {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode: GameMode.CLASSIC,
+        countdownCycles: 2,
+      });
+
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      c1.userData.rank = 1000;
+      const c2 = await connectClient(room, { id: "p2", email: "p2@t.com" });
+      c2.userData.rank = 1100;
+
+      for (let i = 0; i < 10; i++) {
+        room.reassignMatchGroups();
+      }
+
+      expect(mocks.createGame).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gridOptions: expect.objectContaining({
+            seed: expect.any(Number),
+          }),
+        }),
+      );
+      expect(mocks.generateSeed).toHaveBeenCalled();
     });
   });
 

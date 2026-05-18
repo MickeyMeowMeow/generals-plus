@@ -26,7 +26,7 @@ import {
   SetupState,
 } from "@generals-plus/shared-types";
 
-import { createGame } from "#/features/game/utils";
+import { createGame, generateSeed } from "#/features/game/utils";
 import { createPlayerInit } from "#/features/player/utils";
 import {
   markCustomRoomMatchStarted,
@@ -94,7 +94,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     state.playersPerTeam = getDefaultPlayersPerTeam(gameMode);
     state.mapWidth = DefaultGridGeneratorOptions.width;
     state.mapHeight = DefaultGridGeneratorOptions.height;
-    state.seed = DefaultGridGeneratorOptions.seed;
+    state.seed = generateSeed();
     state.mountainRate = DefaultGridGeneratorOptions.mountainRate;
     state.cityRate = DefaultGridGeneratorOptions.cityRate;
     this.state = state;
