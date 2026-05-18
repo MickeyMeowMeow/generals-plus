@@ -29,6 +29,10 @@ function getNetworkProvider(): NetworkProvider<UserProfile> {
  * reconnect) share one endpoint/auth source.
  */
 export const networkProvider: NetworkProvider<UserProfile> = {
+  signInWithEmailAndPassword: (...args) =>
+    getNetworkProvider().signInWithEmailAndPassword(...args),
+  registerWithEmailAndPassword: (...args) =>
+    getNetworkProvider().registerWithEmailAndPassword(...args),
   signInAnonymously: (...args) =>
     getNetworkProvider().signInAnonymously(...args),
   signOut: () => getNetworkProvider().signOut(),

@@ -112,6 +112,57 @@ export class MatchRoom extends Room<{
       }
     });
 
+    this.onMessage(
+      MatchClientMessage.PING,
+      (client, data: { x: number; y: number; type: string }) => {
+        const playerId = this.sessionToPlayerId.get(client.sessionId);
+        if (!playerId) return;
+        const player = this.state.players.get(playerId);
+        if (!player) return;
+
+        if (!data || typeof data !== "object") {
+          return;
+        }
+
+        const { x, y, type } = data;
+        if (
+          !Number.isFinite(x) ||
+          !Number.isInteger(x) ||
+          !Number.isFinite(y) ||
+          !Number.isInteger(y) ||
+          typeof type !== "string"
+        ) {
+          return;
+        }
+
+        if (x < 0 || x >= this.state.width || y < 0 || y >= this.state.height) {
+          return;
+        }
+
+        const validTypes = ["attack", "defense", "rally"];
+        if (!validTypes.includes(type)) {
+          return;
+        }
+
+        // Broadcast to other players on the same team (including sender to confirm delivery)
+        this.clients.forEach((otherClient) => {
+          const otherPlayerId = this.sessionToPlayerId.get(
+            otherClient.sessionId,
+          );
+          if (!otherPlayerId) return;
+          const otherPlayer = this.state.players.get(otherPlayerId);
+          if (otherPlayer && otherPlayer.teamId === player.teamId) {
+            otherClient.send(MatchServerMessage.PING, {
+              playerId,
+              x,
+              y,
+              type,
+            });
+          }
+        });
+      },
+    );
+
     this.game.startGame();
     this.state.status = GameStatus.PLAYING;
 
