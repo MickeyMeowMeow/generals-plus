@@ -16,11 +16,11 @@ import type {
 import { PlayerStatus } from "#/domain/player/player-status";
 
 export class TurfWarGame extends BaseGame implements ITurfWarGame {
-  public readonly mode = GameMode.TURF_WAR;
+  readonly mode = GameMode.TURF_WAR;
   private readonly combatResolver = new RespawningCombatResolver();
   private readonly MAX_TICKS = 360; // 3 minutes at 2 ticks/sec
 
-  public startGame(): void {
+  startGame(): void {
     super.startGame();
     this.assignStartPositions();
 
@@ -79,7 +79,7 @@ export class TurfWarGame extends BaseGame implements ITurfWarGame {
     return success;
   }
 
-  public nextTick(): void {
+  nextTick(): void {
     if (this.status !== GameStatus.PLAYING) {
       return;
     }
@@ -135,7 +135,7 @@ export class TurfWarGame extends BaseGame implements ITurfWarGame {
     return null;
   }
 
-  public getScoreboard(): ITurfWarScoreboard {
+  getScoreboard(): ITurfWarScoreboard {
     const baseScores = this.calculateBaseScores();
     const players = Array.from(baseScores.entries()).map(
       ([playerId, score]) => ({

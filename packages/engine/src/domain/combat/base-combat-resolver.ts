@@ -14,7 +14,7 @@ import type { IPlayer } from "#/domain/player/interfaces";
  * - Leaves the general capture behavior to subclasses.
  */
 export abstract class BaseCombatResolver implements CombatResolver {
-  public execute(
+  execute(
     action: MoveAction,
     grid: IGrid,
     players: Map<string, IPlayer>,
