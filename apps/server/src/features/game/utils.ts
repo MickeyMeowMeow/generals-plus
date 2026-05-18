@@ -51,7 +51,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       return game;
     }
     case GameMode.TURF_WAR: {
-      const game = new TurfWarGame(grid);
+      const game = new TurfWarGame(options.gridOptions ?? {});
 
       const teamsCount = Math.ceil(
         options.playerIds.length / options.playerPerTeam,
