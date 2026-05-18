@@ -303,7 +303,7 @@ export function GamePage({ connection, source }: GamePageProps) {
   const winnerName = winnerId ? playerNames.get(winnerId) : null;
   const didWin = Boolean(
     gameResult?.winnerTeamId &&
-      currentPlayer?.teamId === gameResult.winnerTeamId,
+    currentPlayer?.teamId === gameResult.winnerTeamId,
   );
   const activeModal = disconnectMessage
     ? null
