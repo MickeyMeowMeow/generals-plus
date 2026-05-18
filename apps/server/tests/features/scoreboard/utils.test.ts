@@ -13,11 +13,11 @@ describe("createScoreboard", () => {
     expect(scoreboard.mode).toBe("");
   });
 
-  it("creates BaseScoreboard for unknown mode", () => {
+  it("falls back to ClassicScoreboard for unknown mode", () => {
     const scoreboard = createScoreboard("unknown" as GameMode);
 
     expect(scoreboard.mode).toBe("");
-    expect(scoreboard).not.toBeInstanceOf(ClassicScoreboard);
+    expect(scoreboard).toBeInstanceOf(ClassicScoreboard);
   });
 });
 
@@ -27,8 +27,8 @@ describe("syncScoreboard", () => {
     const source: IClassicScoreboard = {
       mode: GameMode.CLASSIC,
       players: [
-        { playerId: "p1", troops: 10, land: 5, isGeneralAlive: true },
-        { playerId: "p2", troops: 3, land: 1, isGeneralAlive: false },
+        { playerId: "p1", troops: 10, land: 5, isAlive: true },
+        { playerId: "p2", troops: 3, land: 1, isAlive: false },
       ],
     };
 
@@ -41,13 +41,13 @@ describe("syncScoreboard", () => {
       playerId: "p1",
       troops: 10,
       land: 5,
-      isGeneralAlive: true,
+      isAlive: true,
     });
     expect(classic.players.at(1)).toMatchObject({
       playerId: "p2",
       troops: 3,
       land: 1,
-      isGeneralAlive: false,
+      isAlive: false,
     });
   });
 
@@ -56,16 +56,16 @@ describe("syncScoreboard", () => {
 
     syncScoreboard(target, {
       mode: GameMode.CLASSIC,
-      players: [{ playerId: "p1", troops: 5, land: 2, isGeneralAlive: true }],
-    });
+      players: [{ playerId: "p1", troops: 5, land: 2, isAlive: true }],
+    } as IClassicScoreboard);
 
     syncScoreboard(target, {
       mode: GameMode.CLASSIC,
       players: [
-        { playerId: "p2", troops: 8, land: 3, isGeneralAlive: false },
-        { playerId: "p3", troops: 1, land: 1, isGeneralAlive: true },
+        { playerId: "p2", troops: 8, land: 3, isAlive: false },
+        { playerId: "p3", troops: 1, land: 1, isAlive: true },
       ],
-    });
+    } as IClassicScoreboard);
 
     const classic = target as ClassicScoreboard;
     expect(classic.players.length).toBe(2);
@@ -78,13 +78,13 @@ describe("syncScoreboard", () => {
 
     syncScoreboard(target, {
       mode: GameMode.CLASSIC,
-      players: [{ playerId: "p1", troops: 1, land: 1, isGeneralAlive: true }],
-    });
+      players: [{ playerId: "p1", troops: 1, land: 1, isAlive: true }],
+    } as IClassicScoreboard);
 
     syncScoreboard(target, {
       mode: GameMode.CLASSIC,
       players: [],
-    });
+    } as IClassicScoreboard);
 
     const classic = target as ClassicScoreboard;
     expect(classic.players.length).toBe(0);

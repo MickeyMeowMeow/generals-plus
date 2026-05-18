@@ -4,8 +4,8 @@ import type {
   IClassicScoreboard,
 } from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
+import type { BaseScoreboard } from "@generals-plus/shared-types";
 import {
-  BaseScoreboard,
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
 } from "@generals-plus/shared-types";
@@ -15,7 +15,7 @@ export function createScoreboard(mode: GameModeType): BaseScoreboard {
     case GameMode.CLASSIC:
       return new ClassicScoreboard();
     default:
-      return new BaseScoreboard();
+      return new ClassicScoreboard();
   }
 }
 
@@ -35,7 +35,7 @@ export function syncScoreboard(
         schema.playerId = entry.playerId;
         schema.troops = entry.troops;
         schema.land = entry.land;
-        schema.isGeneralAlive = entry.isGeneralAlive;
+        schema.isAlive = entry.isAlive;
         classicTarget.players.push(schema);
       }
       break;

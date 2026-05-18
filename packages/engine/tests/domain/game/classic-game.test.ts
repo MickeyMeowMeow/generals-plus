@@ -200,7 +200,7 @@ describe("ClassicGame", () => {
       playerId: "p1",
       troops: 10,
       land: 2,
-      isGeneralAlive: true,
+      isAlive: true,
     });
   });
 
@@ -267,13 +267,13 @@ describe("ClassicGame", () => {
         playerId: "p1",
         troops: 8,
         land: 2,
-        isGeneralAlive: true,
+        isAlive: true,
       });
       expect(scoreboard.players).toContainEqual({
         playerId: "p2",
         troops: 5,
         land: 2,
-        isGeneralAlive: true,
+        isAlive: true,
       });
     });
 
@@ -310,11 +310,11 @@ describe("ClassicGame", () => {
         playerId: "p2",
         troops: 0,
         land: 0,
-        isGeneralAlive: false,
+        isAlive: false,
       });
     });
 
-    it("reports isGeneralAlive as false when general is captured", () => {
+    it("reports isAlive as false when general is captured", () => {
       const grid = new Grid(3, 1, [
         [
           new Cell({
@@ -352,10 +352,10 @@ describe("ClassicGame", () => {
       const scoreboard = game.getScoreboard();
 
       const p1Entry = scoreboard.players.find((e) => e.playerId === "p1");
-      expect(p1Entry?.isGeneralAlive).toBe(false);
+      expect(p1Entry?.isAlive).toBe(false);
 
       const p2Entry = scoreboard.players.find((e) => e.playerId === "p2");
-      expect(p2Entry?.isGeneralAlive).toBe(true);
+      expect(p2Entry?.isAlive).toBe(true);
     });
 
     it("reflects live changes to cell ownership and troops", () => {
@@ -390,7 +390,7 @@ describe("ClassicGame", () => {
         playerId: "p1",
         troops: 8,
         land: 2,
-        isGeneralAlive: true,
+        isAlive: true,
       });
 
       c1.owner = null;
@@ -401,7 +401,7 @@ describe("ClassicGame", () => {
         playerId: "p1",
         troops: 10,
         land: 1,
-        isGeneralAlive: true,
+        isAlive: true,
       });
     });
   });
