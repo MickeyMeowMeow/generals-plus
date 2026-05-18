@@ -424,7 +424,7 @@ export function GamePage({ connection, source }: GamePageProps) {
         </Button>
       </div>
 
-      {gameResult ? (
+      {activeModal ? (
         <Dialog open={true}>
           <DialogContent
             className="max-w-sm"
