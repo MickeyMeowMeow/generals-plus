@@ -15,6 +15,15 @@ export interface ColyseusAuth<User = unknown> {
   token: string | null | undefined;
   onChange(callback: (response: ColyseusAuthData<User>) => void): () => void;
   getUserData<UserResolved = User>(): Promise<{ user: UserResolved }>;
+  signInWithEmailAndPassword(
+    email: string,
+    password: string,
+  ): Promise<ColyseusAuthData<User>>;
+  registerWithEmailAndPassword(
+    email: string,
+    password: string,
+    options?: Record<string, unknown>,
+  ): Promise<ColyseusAuthData<User>>;
   signInAnonymously(
     options?: Record<string, unknown>,
   ): Promise<ColyseusAuthData<User>>;
@@ -175,6 +184,28 @@ export class ColyseusConnectionGateway {
     return this.client.auth.signInAnonymously(options) as Promise<
       ColyseusAuthData<User>
     >;
+  }
+
+  async signInWithEmailAndPassword<User = unknown>(
+    email: string,
+    password: string,
+  ): Promise<ColyseusAuthData<User>> {
+    return this.client.auth.signInWithEmailAndPassword(
+      email,
+      password,
+    ) as Promise<ColyseusAuthData<User>>;
+  }
+
+  async registerWithEmailAndPassword<User = unknown>(
+    email: string,
+    password: string,
+    options: Record<string, unknown> = {},
+  ): Promise<ColyseusAuthData<User>> {
+    return this.client.auth.registerWithEmailAndPassword(
+      email,
+      password,
+      options,
+    ) as Promise<ColyseusAuthData<User>>;
   }
 
   async signOut(): Promise<void> {

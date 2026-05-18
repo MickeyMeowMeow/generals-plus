@@ -145,6 +145,22 @@ describe("MongoUserRepository and UserModel tests", () => {
           ratings: { classic: 1000 },
         });
       });
+
+      it("should throw a human-readable error when the email already exists", async () => {
+        vi.spyOn(UserModel.prototype, "save").mockRejectedValue({
+          code: 11000,
+        });
+
+        await expect(
+          repository.createWithEmailAndPassword(
+            "new@example.com",
+            "hashedpassword",
+            {
+              displayName: "New User",
+            },
+          ),
+        ).rejects.toThrow("An account with this email already exists.");
+      });
     });
 
     describe("createAnonymous", () => {

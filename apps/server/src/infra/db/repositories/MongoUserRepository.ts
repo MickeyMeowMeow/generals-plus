@@ -53,7 +53,20 @@ export class MongoUserRepository implements IUserRepository {
       anonymous: false,
       verified: false,
     });
-    const savedUser = await newUser.save();
+    let savedUser: IUserDocument;
+    try {
+      savedUser = await newUser.save();
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === 11000
+      ) {
+        throw new Error("An account with this email already exists.");
+      }
+      throw error;
+    }
     return this.mapToEntity(savedUser);
   }
 
