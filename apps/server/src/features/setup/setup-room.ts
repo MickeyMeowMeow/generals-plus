@@ -505,6 +505,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     }
   }
 
+  // Build grid options from current setup state, attaching mode-specific fields.
   private getGridOptions(): GridGeneratorOptions | DominationGridOptions {
     const base: GridGeneratorOptions = {
       width: this.state.mapWidth,
@@ -525,34 +526,53 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     return base;
   }
 
-  private async startGame() {
-    const isTimedMode =
-      this.state.gameMode === GameMode.TURF_WAR ||
-      this.state.gameMode === GameMode.DOMINATION;
-
-    const game = createGame({
-      mode: this.state.gameMode as GameMode,
+  private buildCreateGameOptions(): CreateGameOptions {
+    const base = {
       gridOptions: this.getGridOptions(),
       playerIds: this.state.players.map((p) => p.id),
       playerPerTeam: this.state.playersPerTeam,
-      finishTick: isTimedMode ? this.state.finishTick : undefined,
-      targetScore:
-        this.state.gameMode === GameMode.DOMINATION
-          ? this.state.targetScore
-          : undefined,
-    } as CreateGameOptions);
+    };
+
+    switch (this.state.gameMode) {
+      case GameMode.CLASSIC:
+        return { ...base, mode: GameMode.CLASSIC };
+      case GameMode.TURF_WAR:
+        return {
+          ...base,
+          mode: GameMode.TURF_WAR,
+          finishTick: this.state.finishTick,
+        };
+      case GameMode.DOMINATION:
+        return {
+          ...base,
+          mode: GameMode.DOMINATION,
+          finishTick: this.state.finishTick,
+          targetScore: this.state.targetScore,
+        };
+      default:
+        return { ...base, mode: this.state.gameMode };
+    }
+  }
+
+  private async startGame() {
+    const options = this.buildCreateGameOptions();
+    const game = createGame(options);
 
     const playerInit = createPlayerInit(this.state.players, game);
 
+    const isTimedMode =
+      options.mode === GameMode.TURF_WAR ||
+      options.mode === GameMode.DOMINATION;
+
     const metadata: RoomData = {
-      mode: this.state.gameMode,
+      mode: options.mode,
       game,
       playerInit,
       isPublic: false,
       tickInterval: this.state.tickInterval,
       finishTick: isTimedMode ? this.state.finishTick : undefined,
       targetScore:
-        this.state.gameMode === GameMode.DOMINATION
+        options.mode === GameMode.DOMINATION
           ? this.state.targetScore
           : undefined,
     };
