@@ -112,7 +112,7 @@ export class MatchRoom extends Room<{
     });
 
     this.onMessage(
-      "ping",
+      MatchClientMessage.PING,
       (client, data: { x: number; y: number; type: string }) => {
         const playerId = this.sessionToPlayerId.get(client.sessionId);
         if (!playerId) return;
@@ -151,7 +151,7 @@ export class MatchRoom extends Room<{
           if (!otherPlayerId) return;
           const otherPlayer = this.state.players.get(otherPlayerId);
           if (otherPlayer && otherPlayer.teamId === player.teamId) {
-            otherClient.send("ping", {
+            otherClient.send(MatchServerMessage.PING, {
               playerId,
               x,
               y,

@@ -1,5 +1,9 @@
 // @vitest-environment node
 
+import {
+  MatchClientMessage,
+  MatchServerMessage,
+} from "@generals-plus/shared-types";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { MatchRoom } from "#/features/match/match-room";
@@ -42,11 +46,15 @@ describe("MatchRoom Pings", () => {
       received2.push({ type, data });
     };
 
-    const msgPromise = room.waitForMessage("ping");
-    originalSend1.call(client1, "ping", { x: 5, y: 10, type: "attack" });
+    const msgPromise = room.waitForMessage(MatchServerMessage.PING);
+    originalSend1.call(client1, MatchClientMessage.PING, {
+      x: 5,
+      y: 10,
+      type: "attack",
+    });
     await msgPromise;
 
-    const pings = received2.filter((m) => m.type === "ping");
+    const pings = received2.filter((m) => m.type === MatchServerMessage.PING);
     expect(pings.length).toBe(1);
     expect(pings[0].data).toEqual({
       playerId: "p1",
@@ -84,11 +92,15 @@ describe("MatchRoom Pings", () => {
       received2.push({ type, data });
     };
 
-    const msgPromise = room.waitForMessage("ping");
-    originalSend1.call(client1, "ping", { x: 2, y: 3, type: "defense" });
+    const msgPromise = room.waitForMessage(MatchServerMessage.PING);
+    originalSend1.call(client1, MatchClientMessage.PING, {
+      x: 2,
+      y: 3,
+      type: "defense",
+    });
     await msgPromise;
 
-    const pings = received2.filter((m) => m.type === "ping");
+    const pings = received2.filter((m) => m.type === MatchServerMessage.PING);
     expect(pings.length).toBe(0);
   });
 
@@ -121,20 +133,36 @@ describe("MatchRoom Pings", () => {
     };
 
     // Send invalid type (should be ignored)
-    originalSend1.call(client1, "ping", { x: 2, y: 3, type: "cheat" });
+    originalSend1.call(client1, MatchClientMessage.PING, {
+      x: 2,
+      y: 3,
+      type: "cheat",
+    });
 
     // Send out of bounds X (should be ignored)
-    originalSend1.call(client1, "ping", { x: 999, y: 3, type: "rally" });
+    originalSend1.call(client1, MatchClientMessage.PING, {
+      x: 999,
+      y: 3,
+      type: "rally",
+    });
 
     // Send out of bounds Y (should be ignored)
-    originalSend1.call(client1, "ping", { x: 2, y: -5, type: "rally" });
+    originalSend1.call(client1, MatchClientMessage.PING, {
+      x: 2,
+      y: -5,
+      type: "rally",
+    });
 
     // Send invalid types
-    originalSend1.call(client1, "ping", { x: 2, y: 3, type: 42 });
+    originalSend1.call(client1, MatchClientMessage.PING, {
+      x: 2,
+      y: 3,
+      type: 42,
+    });
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const pings = received2.filter((m) => m.type === "ping");
+    const pings = received2.filter((m) => m.type === MatchServerMessage.PING);
     expect(pings.length).toBe(0);
   });
 });
