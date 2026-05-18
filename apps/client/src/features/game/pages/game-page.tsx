@@ -106,6 +106,9 @@ export function GamePage({ connection, source }: GamePageProps) {
   const [splitMoveSelection, setSplitMoveSelection] =
     useState<ICoordinate | null>(null);
   const [isViewingAsSpectator, setIsViewingAsSpectator] = useState(false);
+  const [spectatorSource, setSpectatorSource] = useState<
+    "eliminated" | "game-end" | null
+  >(null);
   const renderGridWidth = renderGrid?.width ?? 0;
   const renderGridHeight = renderGrid?.height ?? 0;
 
@@ -171,8 +174,11 @@ export function GamePage({ connection, source }: GamePageProps) {
   };
 
   useEffect(() => {
-    setIsViewingAsSpectator(false);
-  }, []);
+    if (gameResult && spectatorSource === "eliminated") {
+      setIsViewingAsSpectator(false);
+      setSpectatorSource(null);
+    }
+  }, [gameResult, spectatorSource]);
 
   if (error) {
     return (
@@ -222,13 +228,13 @@ export function GamePage({ connection, source }: GamePageProps) {
     gameResult?.winnerTeamId &&
       currentPlayer?.teamId === gameResult.winnerTeamId,
   );
-  const activeModal = !isViewingAsSpectator
-    ? gameResult
-      ? "game-end"
-      : isPlayerEliminated
-        ? "eliminated"
-        : null
-    : null;
+  const activeModal = gameResult
+    ? isViewingAsSpectator && spectatorSource === "game-end"
+      ? null
+      : "game-end"
+    : !isViewingAsSpectator && isPlayerEliminated
+      ? "eliminated"
+      : null;
   const returnLabel =
     source.type === "official" ? "Return to lobby" : "Return to setup room";
 
@@ -301,6 +307,9 @@ export function GamePage({ connection, source }: GamePageProps) {
                 variant="outline"
                 onClick={() => {
                   setIsViewingAsSpectator(true);
+                  setSpectatorSource(
+                    activeModal === "eliminated" ? "eliminated" : "game-end",
+                  );
                   setSelection(null);
                   setSplitMoveSelection(null);
                 }}
