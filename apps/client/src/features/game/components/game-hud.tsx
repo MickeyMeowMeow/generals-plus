@@ -6,9 +6,10 @@ import type {
 
 import { FloatingHud } from "#/components/layout";
 import { colorToHex } from "#/features/game/components/room-controls";
+import { TimerBar } from "#/features/game/components/timer-bar";
 import { cn } from "#/lib/utils";
 
-interface MatchHudPlayer {
+interface GameHudPlayer {
   id: string;
   displayName: string;
   teamId: string;
@@ -18,14 +19,21 @@ interface MatchHudPlayer {
   isCurrent: boolean;
 }
 
-interface MatchHudProps {
-  modeLabel: string | undefined;
-  connectionStatus: string;
+interface TimerProps {
+  currentTick: number;
+  targetTick: number;
+  tickInterval: number;
+}
+
+interface GameHudProps {
   scoreboard: BaseScoreboard;
   visiblePlayers: Iterable<Player>;
   playerColors: Map<string, number>;
   playerNames: Map<string, string>;
   currentSessionId: string | null | undefined;
+  totalSeconds?: number;
+  remainingSeconds?: number;
+  timer?: TimerProps;
 }
 
 function getScoreEntries(scoreboard: BaseScoreboard) {
@@ -49,13 +57,13 @@ function getHudPlayers({
   playerNames,
   currentSessionId,
 }: Pick<
-  MatchHudProps,
+  GameHudProps,
   | "scoreboard"
   | "visiblePlayers"
   | "playerColors"
   | "playerNames"
   | "currentSessionId"
->): MatchHudPlayer[] {
+>): GameHudPlayer[] {
   const scoreEntries = getScoreEntries(scoreboard);
   const scoreByPlayer = new Map(
     scoreEntries.map((entry) => [entry.playerId, entry]),
@@ -89,14 +97,14 @@ function getHudPlayers({
     );
 }
 
-function groupPlayers(players: MatchHudPlayer[]) {
+function groupPlayers(players: GameHudPlayer[]) {
   const playerGroups = new Map<
     string,
     {
       label: string;
       land: number;
       troops: number;
-      players: MatchHudPlayer[];
+      players: GameHudPlayer[];
     }
   >();
 
@@ -120,7 +128,7 @@ function groupPlayers(players: MatchHudPlayer[]) {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-function PlayerRow({ player }: { player: MatchHudPlayer }) {
+function PlayerRow({ player }: { player: GameHudPlayer }) {
   return (
     <li
       className={cn(
@@ -141,15 +149,14 @@ function PlayerRow({ player }: { player: MatchHudPlayer }) {
   );
 }
 
-export function MatchHud({
-  modeLabel,
-  connectionStatus,
+export function GameHud({
   scoreboard,
   visiblePlayers,
   playerColors,
   playerNames,
   currentSessionId,
-}: MatchHudProps) {
+  timer,
+}: GameHudProps) {
   const players = getHudPlayers({
     scoreboard,
     visiblePlayers,
@@ -165,18 +172,15 @@ export function MatchHud({
   return (
     <FloatingHud>
       <div className="space-y-2.5">
-        <div className="space-y-0.5 text-[11px]">
-          <div className="flex justify-between gap-2">
-            <span className="text-game-text-dim">Mode</span>
-            <span>{modeLabel}</span>
-          </div>
-          <div className="flex justify-between gap-2">
-            <span className="text-game-text-dim">Connection</span>
-            <span>{connectionStatus}</span>
-          </div>
-        </div>
-
         <div className="space-y-2">
+          {timer && (
+            <TimerBar
+              currentTick={timer.currentTick}
+              targetTick={timer.targetTick}
+              tickInterval={timer.tickInterval}
+            />
+          )}
+
           <div className="grid grid-cols-[1fr_2.5rem_3.25rem] gap-1.5 text-[9px] uppercase text-game-text-dim">
             <h2 className="text-xs font-semibold normal-case text-game-text">
               Players
