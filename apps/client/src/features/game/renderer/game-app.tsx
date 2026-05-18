@@ -85,7 +85,6 @@ export function GameApp({
         onArmSplitMove();
         return;
       }
-
       if (key === ClearMoveQueueKey) {
         e.preventDefault();
         onClearMoveQueue();

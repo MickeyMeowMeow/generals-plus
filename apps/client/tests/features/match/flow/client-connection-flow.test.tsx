@@ -3,6 +3,7 @@
 import { GameMode } from "@generals-plus/engine";
 import type { SetupSettings } from "@generals-plus/shared-types";
 import {
+  MatchClientMessage,
   MatchServerMessage,
   PLAYER_COLOR_PALETTE,
   QueueClientMessage,
@@ -44,7 +45,11 @@ vi.mock("#/infra/network/provider", () => ({
 }));
 
 vi.mock("#/features/game/renderer/game-app", () => ({
-  GameApp: () => <div data-testid="game-app" />,
+  GameApp: ({ onClearMoveQueue }: { onClearMoveQueue: () => void }) => (
+    <button data-testid="game-app" type="button" onClick={onClearMoveQueue}>
+      Game app
+    </button>
+  ),
 }));
 
 function auth() {
@@ -614,6 +619,46 @@ describe("client room flows", () => {
     });
 
     expect(matchRoom.leave).not.toHaveBeenCalled();
+  });
+
+  it("sends a clear-queue message from the match input surface", async () => {
+    const setupRoom = createRoom({
+      roomId: "setup-clear-queue",
+      state: createSetupState([
+        {
+          id: "player-1",
+          displayName: "Nova",
+          color: PLAYER_COLOR_PALETTE[0],
+          isHost: true,
+        },
+        {
+          id: "player-2",
+          displayName: "Rook",
+          color: PLAYER_COLOR_PALETTE[1],
+          isHost: false,
+        },
+      ]),
+    });
+    const matchRoom = createRoom({
+      roomId: "match-clear-queue",
+      state: createMatchState(),
+    });
+    const reservation = {
+      name: ROOM_NAMES.MATCH,
+      roomId: "match-clear-queue",
+      sessionId: "session-1",
+    };
+    networkMocks.joinById.mockResolvedValue(setupRoom);
+    networkMocks.consumeSeatReservation.mockResolvedValue(matchRoom);
+
+    renderRoute("/match/setup-clear-queue", auth());
+
+    await screen.findByText("You are host");
+    setupRoom.emitMessage(SetupServerMessage.SEAT_RESERVATION, reservation);
+
+    fireEvent.click(await screen.findByTestId("game-app"));
+
+    expect(matchRoom.send).toHaveBeenCalledWith(MatchClientMessage.CLEAR_QUEUE);
   });
 
   it("restores an official match after refreshing on the root route", async () => {
