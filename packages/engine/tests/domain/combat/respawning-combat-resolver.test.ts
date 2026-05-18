@@ -57,9 +57,9 @@ describe("RespawningCombatResolver", () => {
     const result = resolver.execute(createMoveAction(), grid, players);
 
     expect(result).toBe(true);
-    // Attacker gets the general cell and it turns into a city
+    // Attacker gets the general cell and it turns into a plain
     expect(general.owner).toBe(p1);
-    expect(general.terrain).toBe(Terrain.CITY);
+    expect(general.terrain).toBe(Terrain.PLAIN);
 
     // Defender keeps their other cell and it becomes their new general
     expect(resourceCell.owner).toBe(p2);
@@ -100,9 +100,9 @@ describe("RespawningCombatResolver", () => {
     const result = resolver.execute(createMoveAction(), grid, players);
 
     expect(result).toBe(true);
-    // Attacker gets the general cell and it turns into a city
+    // Attacker gets the general cell and it turns into a plain
     expect(general.owner).toBe(p1);
-    expect(general.terrain).toBe(Terrain.CITY);
+    expect(general.terrain).toBe(Terrain.PLAIN);
 
     // Defender has no tiles left and is eliminated
     expect(p2.status).toBe(PlayerStatus.ELIMINATED);

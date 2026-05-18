@@ -20,8 +20,8 @@ export class RespawningCombatResolver extends BaseCombatResolver {
     grid: IGrid,
     players: Map<string, IPlayer>,
   ): void {
-    // 1. The captured general tile turns into a city
-    target.terrain = Terrain.CITY;
+    // 1. The captured general tile turns into a plain
+    target.terrain = Terrain.PLAIN;
 
     // 2. Find the defeated player
     const defeatedPlayer = players.get(targetOwnerId);
@@ -39,9 +39,13 @@ export class RespawningCombatResolver extends BaseCombatResolver {
 
     // 4. Handle respawn or elimination
     if (ownedCells.length > 0) {
-      // Respawn general on a random owned tile
+      // Prioritize non-city tiles for respawning general to discourage city-camping and encourage land painting
+      const nonCityCells = ownedCells.filter(
+        (cell) => cell.terrain !== Terrain.CITY,
+      );
+      const candidates = nonCityCells.length > 0 ? nonCityCells : ownedCells;
       const randomCell =
-        ownedCells[Math.floor(Math.random() * ownedCells.length)];
+        candidates[Math.floor(Math.random() * candidates.length)];
       randomCell.terrain = Terrain.GENERAL;
     } else {
       // No tiles left, player is eliminated
