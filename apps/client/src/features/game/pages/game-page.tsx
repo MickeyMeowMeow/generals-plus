@@ -18,6 +18,7 @@ import {
   useGameRoom,
 } from "#/features/game/api/use-game-room";
 import { GameApp } from "#/features/game/renderer/game-app";
+import { isSameCoord } from "#/features/game/utils/coord";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 import { MatchHud } from "#/features/match/components/match-hud";
@@ -47,10 +48,6 @@ interface GamePageProps {
 
 function getModeLabel(mode: string | undefined) {
   return GAME_MODE_OPTIONS.find((option) => option.id === mode)?.label ?? mode;
-}
-
-function isSameCoord(a: ICoordinate | null, b: ICoordinate | null): boolean {
-  return !!a && !!b && a.x === b.x && a.y === b.y;
 }
 
 /**

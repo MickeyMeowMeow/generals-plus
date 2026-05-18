@@ -8,6 +8,7 @@ import type {
   RenderGrid,
   RenderGridCell,
 } from "#/features/game/renderer/render-grid";
+import { isSameCoord } from "#/features/game/utils/coord";
 
 extend({ Container, Text });
 
@@ -16,10 +17,6 @@ interface TroopLayerProps {
   stride: number;
   cellSize: number;
   splitMoveSelection: ICoordinate | null;
-}
-
-function isSameCoord(a: ICoordinate, b: ICoordinate | null): boolean {
-  return !!b && a.x === b.x && a.y === b.y;
 }
 
 export function TroopLayer({
