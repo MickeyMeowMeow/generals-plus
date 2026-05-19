@@ -311,6 +311,52 @@ describe("MatchQueueRoom", () => {
     });
   });
 
+  describe("mode defaults", () => {
+    async function triggerMatch(gameMode: GameMode) {
+      room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {
+        gameMode,
+        countdownCycles: 2,
+      });
+
+      const c1 = await connectClient(room, { id: "p1", email: "p1@t.com" });
+      c1.userData.rank = 1000;
+      const c2 = await connectClient(room, { id: "p2", email: "p2@t.com" });
+      c2.userData.rank = 1100;
+
+      for (let i = 0; i < 10; i++) {
+        room.reassignMatchGroups();
+      }
+
+      return mocks.createGame.mock.calls[
+        mocks.createGame.mock.calls.length - 1
+      ][0];
+    }
+
+    it("passes finishTick and targetScore for domination mode", async () => {
+      const options = await triggerMatch(GameMode.DOMINATION);
+
+      expect(options.mode).toBe(GameMode.DOMINATION);
+      expect(options.finishTick).toBe(600);
+      expect(options.targetScore).toBe(1000);
+    });
+
+    it("passes finishTick for turf_war mode", async () => {
+      const options = await triggerMatch(GameMode.TURF_WAR);
+
+      expect(options.mode).toBe(GameMode.TURF_WAR);
+      expect(options.finishTick).toBe(360);
+      expect(options.targetScore).toBeUndefined();
+    });
+
+    it("omits finishTick and targetScore for classic mode", async () => {
+      const options = await triggerMatch(GameMode.CLASSIC);
+
+      expect(options.mode).toBe(GameMode.CLASSIC);
+      expect(options.finishTick).toBeUndefined();
+      expect(options.targetScore).toBeUndefined();
+    });
+  });
+
   describe("duplicate connection handling", () => {
     it("kicks old session when same player reconnects", async () => {
       room = await createRoom<MatchQueueRoom>(ROOM_NAMES.QUEUE, {

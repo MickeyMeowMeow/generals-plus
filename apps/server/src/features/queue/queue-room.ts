@@ -19,7 +19,23 @@ import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository
 const DEFAULT_MAX_PLAYERS = 8;
 const DEFAULT_MIN_PLAYERS = 2;
 const DEFAULT_COUNTDOWN_CYCLES = 20;
+const BASE_TICK_INTERVAL = 500;
 const RATING_TOLERANCE = 200;
+
+interface ModeSettings {
+  duration?: number;
+  flagCount?: number;
+  targetScore?: number;
+}
+
+const MODE_SETTINGS = {
+  [GameMode.DOMINATION]: { duration: 300, flagCount: 3, targetScore: 1000 },
+  [GameMode.TURF_WAR]: { duration: 180 },
+} satisfies Partial<Record<GameMode, ModeSettings>>;
+
+function calculateFinishTick(duration: number, tickInterval: number): number {
+  return Math.round((duration * 1000) / tickInterval);
+}
 
 const userRepository = new MongoUserRepository();
 
@@ -69,28 +85,68 @@ export class MatchQueueRoom extends QueueRoom {
           groupPlayerIds.includes(p.id),
         );
 
+        const modeSettings = (
+          MODE_SETTINGS as Partial<Record<GameMode, ModeSettings>>
+        )[this.gameMode];
         const gridOptions =
           this.gameMode === GameMode.DOMINATION
             ? ({
                 generalCount: groupPlayers.length,
-                flagCount: 3,
+                flagCount: modeSettings?.flagCount ?? 3,
                 seed: generateSeed(),
               } as DominationGridOptions)
             : { generalCount: groupPlayers.length, seed: generateSeed() };
 
-        const game = createGame({
-          mode: this.gameMode,
+        const finishTick = modeSettings?.duration
+          ? calculateFinishTick(modeSettings.duration, BASE_TICK_INTERVAL)
+          : undefined;
+
+        const base = {
           gridOptions,
           playerIds: groupPlayers.map((p) => p.id),
           playerPerTeam: getDefaultPlayersPerTeam(this.gameMode),
-        });
+        };
+
+        const gameOptions = (() => {
+          switch (this.gameMode) {
+            case GameMode.CLASSIC:
+              return { ...base, mode: GameMode.CLASSIC };
+            case GameMode.TURF_WAR:
+              return {
+                ...base,
+                mode: GameMode.TURF_WAR,
+                finishTick,
+              };
+            case GameMode.DOMINATION:
+              return {
+                ...base,
+                mode: GameMode.DOMINATION,
+                finishTick,
+                targetScore: modeSettings?.targetScore,
+              };
+            default:
+              return { ...base, mode: this.gameMode };
+          }
+        })();
+
+        const game = createGame(gameOptions);
 
         const playerInit = createPlayerInit(groupPlayers, game);
+
+        const isTimedMode =
+          this.gameMode === GameMode.TURF_WAR ||
+          this.gameMode === GameMode.DOMINATION;
 
         const metadata: RoomData = {
           mode: this.gameMode,
           game,
           playerInit,
+          tickInterval: BASE_TICK_INTERVAL,
+          finishTick: isTimedMode ? finishTick : undefined,
+          targetScore:
+            this.gameMode === GameMode.DOMINATION
+              ? modeSettings?.targetScore
+              : undefined,
         };
 
         return matchMaker.createRoom(ROOM_NAMES.MATCH, { metadata });
