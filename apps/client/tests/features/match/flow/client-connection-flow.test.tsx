@@ -710,7 +710,7 @@ describe("client room flows", () => {
     expect(await screen.findByText("You are host")).toBeTruthy();
     expect(networkMocks.joinById).toHaveBeenCalledWith("setup-456");
     const user = userEvent.setup();
-    const modeSelect = screen.getByLabelText("Game mode");
+    const modeSelect = screen.getByLabelText("Game Mode");
     expect(modeSelect).toBeTruthy();
     fireEvent.keyDown(modeSelect, { key: "ArrowDown" });
     expect(screen.getByRole("option", { name: /Demolition/ })).toHaveAttribute(

@@ -131,7 +131,7 @@ export function GameSettings({
     <section aria-labelledby="game-settings-title" className="space-y-4">
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="game-settings-title" className="text-xl font-semibold">
-          Game settings
+          Game Settings
         </h2>
         {!isHost ? (
           <span className="text-xs uppercase tracking-wide text-game-text-dim">
@@ -143,7 +143,7 @@ export function GameSettings({
       <div className="grid gap-3 text-left sm:grid-cols-2 lg:grid-cols-3">
         <div className={fieldClassName}>
           <Label id="game-mode-label" className={labelClassName}>
-            Game mode
+            Game Mode
           </Label>
           <Select
             disabled={!isHost}
@@ -177,7 +177,7 @@ export function GameSettings({
 
         <div className={fieldClassName}>
           <Label id="game-speed-label" className={labelClassName}>
-            Game speed
+            Game Speed
           </Label>
           <Select
             disabled={!isHost}
