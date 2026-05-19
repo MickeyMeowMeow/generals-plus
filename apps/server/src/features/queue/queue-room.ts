@@ -22,17 +22,16 @@ const DEFAULT_COUNTDOWN_CYCLES = 20;
 const BASE_TICK_INTERVAL = 500;
 const RATING_TOLERANCE = 200;
 
-const MODE_SETTINGS: Record<
-  string,
-  { duration?: number; flagCount?: number; targetScore?: number }
-> = {
-  domination: { duration: 300, flagCount: 3, targetScore: 1000 },
-  turf_war: { duration: 180 },
-};
-
-function calculateTickInterval(speed: number): number {
-  return Math.max(100, Math.round(BASE_TICK_INTERVAL / speed));
+interface ModeSettings {
+  duration?: number;
+  flagCount?: number;
+  targetScore?: number;
 }
+
+const MODE_SETTINGS = {
+  [GameMode.DOMINATION]: { duration: 300, flagCount: 3, targetScore: 1000 },
+  [GameMode.TURF_WAR]: { duration: 180 },
+} satisfies Partial<Record<GameMode, ModeSettings>>;
 
 function calculateFinishTick(duration: number, tickInterval: number): number {
   return Math.round((duration * 1000) / tickInterval);
@@ -86,7 +85,9 @@ export class MatchQueueRoom extends QueueRoom {
           groupPlayerIds.includes(p.id),
         );
 
-        const modeSettings = MODE_SETTINGS[this.gameMode];
+        const modeSettings = (
+          MODE_SETTINGS as Partial<Record<GameMode, ModeSettings>>
+        )[this.gameMode];
         const gridOptions =
           this.gameMode === GameMode.DOMINATION
             ? ({
@@ -96,9 +97,8 @@ export class MatchQueueRoom extends QueueRoom {
               } as DominationGridOptions)
             : { generalCount: groupPlayers.length, seed: generateSeed() };
 
-        const tickInterval = calculateTickInterval(1);
         const finishTick = modeSettings?.duration
-          ? calculateFinishTick(modeSettings.duration, tickInterval)
+          ? calculateFinishTick(modeSettings.duration, BASE_TICK_INTERVAL)
           : undefined;
 
         const base = {
@@ -141,7 +141,7 @@ export class MatchQueueRoom extends QueueRoom {
           mode: this.gameMode,
           game,
           playerInit,
-          tickInterval,
+          tickInterval: BASE_TICK_INTERVAL,
           finishTick: isTimedMode ? finishTick : undefined,
           targetScore:
             this.gameMode === GameMode.DOMINATION
