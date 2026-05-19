@@ -49,7 +49,7 @@ const MODE_SETTINGS: Record<
 const DEFAULT_MAX_PLAYERS = 8;
 
 const SETTING_LABELS: Record<string, string> = {
-  gameMode: "Game mode",
+  gameMode: "Game Mode",
   isPublic: "Visibility",
   maxPlayers: "Max players",
   playersPerTeam: "Players per team",
