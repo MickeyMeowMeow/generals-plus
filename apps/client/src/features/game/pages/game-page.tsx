@@ -53,6 +53,34 @@ interface GamePageProps {
   source: GamePageSource;
 }
 
+interface PublicPlayerLike {
+  id: string;
+  teamId: string;
+  displayName?: string;
+}
+
+function formatTeamLabel(teamId: string): string {
+  if (teamId.startsWith("team_")) {
+    const num = Number.parseInt(teamId.substring("team_".length), 10);
+    if (!Number.isNaN(num)) {
+      return `Team ${num + 1}`;
+    }
+  }
+  return `Team ${teamId}`;
+}
+
+function getTeamMembers(
+  players: Iterable<PublicPlayerLike>,
+  teamId: string,
+  playerNames: Map<string, string>,
+) {
+  return Array.from(players)
+    .filter((player) => player.teamId === teamId)
+    .map(
+      (player) => playerNames.get(player.id) ?? player.displayName ?? player.id,
+    );
+}
+
 /**
  * Match view rendered after queue/setup hands the client a seat reservation.
  *
@@ -312,15 +340,19 @@ export function GamePage({ connection, source }: GamePageProps) {
     Boolean(gameResult) ||
     isPlayerEliminated ||
     Boolean(disconnectMessage);
-  const winnerId = gameResult?.winnerTeamId
-    ? Array.from(gameState.publicPlayers.values()).find(
-        (p) => p.teamId === gameResult.winnerTeamId,
-      )?.id
-    : null;
-  const winnerName = winnerId ? playerNames.get(winnerId) : null;
+  const winnerTeamId = gameResult?.winnerTeamId ?? null;
+  const winnerTeamMembers = winnerTeamId
+    ? getTeamMembers(
+        gameState.publicPlayers.values(),
+        winnerTeamId,
+        playerNames,
+      )
+    : [];
+  const isTeamResult = winnerTeamMembers.length > 1;
+  const winnerName = winnerTeamMembers[0] ?? null;
+  const winnerTeamLabel = winnerTeamId ? formatTeamLabel(winnerTeamId) : null;
   const didWin = Boolean(
-    gameResult?.winnerTeamId &&
-      currentPlayer?.teamId === gameResult.winnerTeamId,
+    winnerTeamId && currentPlayer?.teamId === winnerTeamId,
   );
   const activeModal = disconnectMessage
     ? null
@@ -495,20 +527,30 @@ export function GamePage({ connection, source }: GamePageProps) {
               <DialogTitle className="text-2xl">
                 {activeModal === "eliminated"
                   ? "You have been eliminated"
-                  : didWin
-                    ? "You won"
-                    : winnerId
-                      ? "You lost"
-                      : "Game over"}
+                  : didWin && isTeamResult
+                    ? "Your team won"
+                    : didWin
+                      ? "You won"
+                      : winnerTeamId && isTeamResult
+                        ? "Your team lost"
+                        : winnerTeamId
+                          ? "You lost"
+                          : "Game over"}
               </DialogTitle>
             </DialogHeader>
             <div className="mt-3 space-y-1 text-sm text-game-text-dim">
               {activeModal === "eliminated" ? null : (
                 <>
-                  {!didWin && winnerName ? <p>Winner: {winnerName}</p> : null}
-                  {!gameResult?.winnerTeamId ? (
-                    <p>No winner was reported.</p>
+                  {!didWin && isTeamResult && winnerTeamLabel ? (
+                    <p>
+                      Winners: {winnerTeamLabel},{" "}
+                      {winnerTeamMembers.join(" & ")}
+                    </p>
                   ) : null}
+                  {!didWin && !isTeamResult && winnerName ? (
+                    <p>Winner: {winnerName}</p>
+                  ) : null}
+                  {!winnerTeamId ? <p>No winner was reported.</p> : null}
                 </>
               )}
             </div>
