@@ -248,6 +248,104 @@ describe("GamePage", () => {
     expect(onReturn).toHaveBeenCalledTimes(1);
   });
 
+  it("shows winning team details for a lost team match", () => {
+    useGameRoomMock.mockReturnValue({
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
+      playerColors: new Map(),
+      playerNames: new Map([
+        ["player-2", "Rook"],
+        ["player-3", "Slate"],
+      ]),
+      currentPlayer: createPlayer({ teamId: "team_0" }),
+      renderGrid: createRenderGrid(2, 2),
+      moveQueue: [],
+      gameState: createGameState({ teamId: "team_0" }, [
+        {
+          id: "player-2",
+          teamId: "team_1",
+          displayName: "Rook",
+          color: 0xff6633,
+          status: PlayerStatus.ACTIVE,
+        },
+        {
+          id: "player-3",
+          teamId: "team_1",
+          displayName: "Slate",
+          color: 0x33cc99,
+          status: PlayerStatus.ACTIVE,
+        },
+      ]),
+      gameResult: {
+        mode: GameMode.CLASSIC,
+        winnerTeamId: "team_1",
+      },
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      error: null,
+      disconnectMessage: null,
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={createConnection()}
+        source={{ type: "official", onReturn: vi.fn() }}
+      />,
+    );
+
+    expect(screen.getByText("Your team lost")).toBeTruthy();
+    expect(screen.getByText("Winners: Team 2, Rook & Slate")).toBeTruthy();
+    expect(screen.queryByText("Winner: Rook")).toBeNull();
+  });
+
+  it("uses team victory wording when the current player's team wins", () => {
+    useGameRoomMock.mockReturnValue({
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
+      playerColors: new Map(),
+      playerNames: new Map([
+        ["player-1", "Nova"],
+        ["player-4", "Mica"],
+      ]),
+      currentPlayer: createPlayer({ teamId: "team_0" }),
+      renderGrid: createRenderGrid(2, 2),
+      moveQueue: [],
+      gameState: createGameState({ teamId: "team_0" }, [
+        {
+          id: "player-4",
+          teamId: "team_0",
+          displayName: "Mica",
+          color: 0x44aaee,
+          status: PlayerStatus.ACTIVE,
+        },
+      ]),
+      gameResult: {
+        mode: GameMode.CLASSIC,
+        winnerTeamId: "team_0",
+      },
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      error: null,
+      disconnectMessage: null,
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={createConnection()}
+        source={{ type: "official", onReturn: vi.fn() }}
+      />,
+    );
+
+    expect(screen.getByText("Your team won")).toBeTruthy();
+    expect(screen.queryByText("You won")).toBeNull();
+  });
+
   it("offers spectator view after the current player is eliminated", () => {
     const onReturn = vi.fn();
 
