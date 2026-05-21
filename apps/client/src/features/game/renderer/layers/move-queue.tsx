@@ -21,29 +21,34 @@ const DIRECTION_TRIGONOMETRY: Record<MoveDirection, ArrowTrigonometry> = {
   [MoveDirection.RIGHT]: { cos: 1, sin: 0 },
 };
 
-function getArrowPosition(move: MoveIntent, stride: number) {
-  let edgeX = move.from.x * stride;
-  let edgeY = move.from.y * stride;
+export function getArrowAnchor(move: MoveIntent, stride: number) {
+  const trigonometry = DIRECTION_TRIGONOMETRY[move.direction];
+  const halfLength = RenderConfig.arrowLength / 2;
+  const tipInset = RenderConfig.arrowEdgeInset + halfLength;
+  let anchorX = move.from.x * stride;
+  let anchorY = move.from.y * stride;
 
   switch (move.direction) {
     case MoveDirection.UP:
-      edgeX += stride / 2;
+      anchorX += stride / 2;
       break;
     case MoveDirection.DOWN:
-      edgeX += stride / 2;
-      edgeY += stride; // bottom edge
+      anchorX += stride / 2;
+      anchorY += stride;
       break;
     case MoveDirection.LEFT:
-      // edgeX remains left edge
-      edgeY += stride / 2;
+      anchorY += stride / 2;
       break;
     case MoveDirection.RIGHT:
-      edgeX += stride; // right edge
-      edgeY += stride / 2;
+      anchorX += stride;
+      anchorY += stride / 2;
       break;
   }
 
-  return { edgeX, edgeY };
+  return {
+    anchorX: anchorX - trigonometry.cos * tipInset,
+    anchorY: anchorY - trigonometry.sin * tipInset,
+  };
 }
 
 function createArrowPoints(thicknessRatio = 1): { x: number; y: number }[] {
@@ -66,8 +71,8 @@ function createArrowPoints(thicknessRatio = 1): { x: number; y: number }[] {
 
 function transformArrowPoints(
   points: { x: number; y: number }[],
-  edgeX: number,
-  edgeY: number,
+  anchorX: number,
+  anchorY: number,
   trigonometry: ArrowTrigonometry,
   offset = 0,
 ) {
@@ -76,22 +81,22 @@ function transformArrowPoints(
   return points.map(({ x, y }) => {
     const localY = y + offset;
     return {
-      x: x * cos - localY * sin + edgeX,
-      y: x * sin + localY * cos + edgeY,
+      x: x * cos - localY * sin + anchorX,
+      y: x * sin + localY * cos + anchorY,
     };
   });
 }
 
 function transformArrowPoint(
   point: { x: number; y: number },
-  edgeX: number,
-  edgeY: number,
+  anchorX: number,
+  anchorY: number,
   trigonometry: ArrowTrigonometry,
 ) {
   const { cos, sin } = trigonometry;
   return {
-    x: point.x * cos - point.y * sin + edgeX,
-    y: point.x * sin + point.y * cos + edgeY,
+    x: point.x * cos - point.y * sin + anchorX,
+    y: point.x * sin + point.y * cos + anchorY,
   };
 }
 
@@ -113,13 +118,13 @@ function drawArrow(
 function drawSplitArrow(
   g: Graphics,
   points: { x: number; y: number }[],
-  edgeX: number,
-  edgeY: number,
+  anchorX: number,
+  anchorY: number,
   trigonometry: ArrowTrigonometry,
 ) {
   drawArrow(
     g,
-    transformArrowPoints(points, edgeX, edgeY, trigonometry),
+    transformArrowPoints(points, anchorX, anchorY, trigonometry),
     RenderConfig.arrowStrokeWidth,
   );
 
@@ -131,14 +136,14 @@ function drawSplitArrow(
   const halfBarLength = RenderConfig.splitArrowBarLength / 2;
   const barStart = transformArrowPoint(
     { x: barCenterX, y: -halfBarLength },
-    edgeX,
-    edgeY,
+    anchorX,
+    anchorY,
     trigonometry,
   );
   const barEnd = transformArrowPoint(
     { x: barCenterX, y: halfBarLength },
-    edgeX,
-    edgeY,
+    anchorX,
+    anchorY,
     trigonometry,
   );
 
@@ -164,18 +169,18 @@ export function MoveQueueLayer({ stride, moveQueue }: MoveQueueLayerProps) {
 
       // Draw move queue arrows
       moveQueue.forEach((move) => {
-        // Find the center point of the edge between the "from" cell and the target
-        const { edgeX, edgeY } = getArrowPosition(move, stride);
+        // Keep the whole arrow inside the departure cell for stronger contrast.
+        const { anchorX, anchorY } = getArrowAnchor(move, stride);
         const trigonometry = DIRECTION_TRIGONOMETRY[move.direction];
 
         if (move.type === ActionType.SPLIT_MOVE) {
-          drawSplitArrow(g, points, edgeX, edgeY, trigonometry);
+          drawSplitArrow(g, points, anchorX, anchorY, trigonometry);
           return;
         }
 
         drawArrow(
           g,
-          transformArrowPoints(points, edgeX, edgeY, trigonometry),
+          transformArrowPoints(points, anchorX, anchorY, trigonometry),
           RenderConfig.arrowStrokeWidth,
         );
       });

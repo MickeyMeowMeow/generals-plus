@@ -39,9 +39,10 @@ export const RenderConfig = {
   arrowStrokeColor: 0x000000,
   arrowStrokeWidth: 0,
   splitArrowBarWidth: 3.5,
-  splitArrowBarLength: 12,
+  splitArrowBarLength: 10,
   splitArrowBarInset: 10,
-  arrowLength: 30,
+  arrowEdgeInset: 1,
+  arrowLength: 35,
   arrowThickness: 3,
   arrowHeadSize: 10,
 } as const;
