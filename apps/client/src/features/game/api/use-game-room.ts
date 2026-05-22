@@ -3,6 +3,7 @@ import type {
   ICoordinate,
   IGameResult,
   MoveActionType,
+  SurrenderAction,
 } from "@generals-plus/engine";
 import { ActionType } from "@generals-plus/engine";
 import type {
@@ -269,20 +270,31 @@ export function useGameRoom(connection: GameRoomConnection) {
       to: ICoordinate,
       type: MoveActionType = ActionType.MOVE,
     ) => {
+      if (!room || !currentPlayer) return;
+
       room?.send(MatchClientMessage.ACTION, {
-        playerId: room.sessionId,
+        playerId: currentPlayer.id,
         type,
         from,
         to,
       });
     },
-    [room],
+    [currentPlayer, room],
   );
 
   const clearMoveQueue = useCallback(() => {
     setMoveQueue([]);
     room?.send(MatchClientMessage.CLEAR_QUEUE);
   }, [room]);
+
+  const surrender = useCallback(() => {
+    if (!room || !currentPlayer) return;
+
+    room.send(MatchClientMessage.ACTION, {
+      playerId: currentPlayer.id,
+      type: ActionType.SURRENDER,
+    } satisfies SurrenderAction);
+  }, [currentPlayer, room]);
 
   return {
     room,
@@ -295,6 +307,7 @@ export function useGameRoom(connection: GameRoomConnection) {
     gameResult,
     sendMove,
     clearMoveQueue,
+    surrender,
     error,
     disconnectMessage,
     isConnecting,

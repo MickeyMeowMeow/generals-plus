@@ -110,6 +110,7 @@ export function GamePage({ connection, source }: GamePageProps) {
     gameResult,
     sendMove,
     clearMoveQueue,
+    surrender,
     error,
     disconnectMessage,
     isConnecting,
@@ -119,6 +120,7 @@ export function GamePage({ connection, source }: GamePageProps) {
   const [activeBrush, setActiveBrush] = useState<
     "attack" | "defense" | "rally" | null
   >(null);
+  const [isSurrenderDialogOpen, setIsSurrenderDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!room) return;
@@ -145,31 +147,6 @@ export function GamePage({ connection, source }: GamePageProps) {
       unsubscribe();
     };
   }, [room]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore shortcuts if the user is typing in a text field
-      if (
-        document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA" ||
-        document.activeElement?.hasAttribute("contenteditable")
-      ) {
-        return;
-      }
-
-      if (e.key === "Escape") {
-        setActiveBrush(null);
-      } else if (e.key === "1") {
-        setActiveBrush((prev) => (prev === "attack" ? null : "attack"));
-      } else if (e.key === "2") {
-        setActiveBrush((prev) => (prev === "defense" ? null : "defense"));
-      } else if (e.key === "3") {
-        setActiveBrush((prev) => (prev === "rally" ? null : "rally"));
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   const [selection, setSelection] = useState<ICoordinate | null>(null);
   const [splitMoveSelection, setSplitMoveSelection] =
@@ -285,12 +262,62 @@ export function GamePage({ connection, source }: GamePageProps) {
     source.onReturn();
   };
 
+  const isPlayerEliminated =
+    currentPlayer?.status === PlayerStatus.ELIMINATED && !gameResult;
+  const canOpenSurrenderDialog =
+    !isConnecting &&
+    Boolean(room) &&
+    Boolean(gameState) &&
+    Boolean(renderGrid) &&
+    !disconnectMessage &&
+    !gameResult &&
+    !isViewingAsSpectator &&
+    !isPlayerEliminated &&
+    currentPlayer?.status === PlayerStatus.ACTIVE;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore shortcuts if the user is typing in a text field
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        document.activeElement?.hasAttribute("contenteditable")
+      ) {
+        return;
+      }
+
+      if (e.key === "Escape") {
+        if (isSurrenderDialogOpen || !canOpenSurrenderDialog) {
+          return;
+        }
+        e.preventDefault();
+        setIsSurrenderDialogOpen(true);
+      } else if (e.key === "c" || e.key === "C") {
+        setActiveBrush(null);
+      } else if (e.key === "1") {
+        setActiveBrush((prev) => (prev === "attack" ? null : "attack"));
+      } else if (e.key === "2") {
+        setActiveBrush((prev) => (prev === "defense" ? null : "defense"));
+      } else if (e.key === "3") {
+        setActiveBrush((prev) => (prev === "rally" ? null : "rally"));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canOpenSurrenderDialog, isSurrenderDialogOpen]);
+
   useEffect(() => {
     if (gameResult && spectatorSource === "eliminated") {
       setIsViewingAsSpectator(false);
       setSpectatorSource(null);
     }
   }, [gameResult, spectatorSource]);
+
+  useEffect(() => {
+    if (isSurrenderDialogOpen && !canOpenSurrenderDialog) {
+      setIsSurrenderDialogOpen(false);
+    }
+  }, [canOpenSurrenderDialog, isSurrenderDialogOpen]);
 
   if (error) {
     return (
@@ -324,8 +351,6 @@ export function GamePage({ connection, source }: GamePageProps) {
       </StageCenter>
     );
 
-  const isPlayerEliminated =
-    currentPlayer?.status === PlayerStatus.ELIMINATED && !gameResult;
   const isReadOnly =
     isViewingAsSpectator ||
     Boolean(gameResult) ||
@@ -354,6 +379,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       : !isViewingAsSpectator && isPlayerEliminated
         ? "eliminated"
         : null;
+  const canSurrender = canOpenSurrenderDialog && !isReadOnly && !activeModal;
   const returnLabel =
     source.type === "official" ? "Return to lobby" : "Return to setup room";
 
@@ -499,6 +525,47 @@ export function GamePage({ connection, source }: GamePageProps) {
             <DialogFooter>
               <Button type="button" onClick={handleReturn}>
                 {returnLabel}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+
+      {canSurrender ? (
+        <Dialog
+          open={isSurrenderDialogOpen}
+          onOpenChange={setIsSurrenderDialogOpen}
+        >
+          <DialogContent
+            className="max-w-sm"
+            onEscapeKeyDown={(event) => event.preventDefault()}
+          >
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Surrender match?</DialogTitle>
+              <DialogDescription>
+                This will immediately eliminate you from the current match.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsSurrenderDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  setIsSurrenderDialogOpen(false);
+                  setActiveBrush(null);
+                  setSelection(null);
+                  setSplitMoveSelection(null);
+                  surrender();
+                }}
+              >
+                Surrender
               </Button>
             </DialogFooter>
           </DialogContent>
