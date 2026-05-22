@@ -270,14 +270,16 @@ export function useGameRoom(connection: GameRoomConnection) {
       to: ICoordinate,
       type: MoveActionType = ActionType.MOVE,
     ) => {
+      if (!room || !currentPlayer) return;
+
       room?.send(MatchClientMessage.ACTION, {
-        playerId: room.sessionId,
+        playerId: currentPlayer.id,
         type,
         from,
         to,
       });
     },
-    [room],
+    [currentPlayer, room],
   );
 
   const clearMoveQueue = useCallback(() => {
