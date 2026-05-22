@@ -152,8 +152,15 @@ describe("TurfWarGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    grid.get({ x: 0, y: 0 })!.owner = p1;
-    grid.get({ x: 1, y: 0 })!.owner = p2;
+    const leftCell = grid.get({ x: 0, y: 0 });
+    const rightCell = grid.get({ x: 1, y: 0 });
+    expect(leftCell).toBeDefined();
+    expect(rightCell).toBeDefined();
+    if (!leftCell || !rightCell) {
+      throw new Error("Expected turf war test cells to exist");
+    }
+    leftCell.owner = p1;
+    rightCell.owner = p2;
 
     game.startGame();
 

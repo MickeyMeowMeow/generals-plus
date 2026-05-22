@@ -101,6 +101,20 @@ export class MatchRoom extends Room<{
         return;
       }
 
+      if (action.type === ActionType.CLEAR_QUEUE) {
+        const entry = new ActionData();
+        entry.type = action.type;
+        queue.queue.push(entry);
+        return;
+      }
+
+      if (
+        action.type !== ActionType.MOVE &&
+        action.type !== ActionType.SPLIT_MOVE
+      ) {
+        return;
+      }
+
       if (!action.from || !action.to) return;
 
       const entry = new ActionData();
