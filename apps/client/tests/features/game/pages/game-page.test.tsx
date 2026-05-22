@@ -366,6 +366,44 @@ describe("GamePage", () => {
     expect(onReturn).toHaveBeenCalledTimes(1);
   });
 
+  it("does not open surrender confirmation during match loading", () => {
+    useGameRoomMock.mockReturnValue({
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
+      renderGrid: null,
+      moveQueue: [],
+      gameState: null,
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      surrender: surrenderMock,
+      playerColors: new Map(),
+      playerNames: new Map(),
+      currentPlayer: createPlayer(),
+      error: null,
+      disconnectMessage: null,
+      isConnecting: true,
+    });
+
+    render(
+      <GamePage
+        connection={createConnection()}
+        source={{ type: "official", onReturn: vi.fn() }}
+      />,
+    );
+
+    const event = new KeyboardEvent("keydown", {
+      key: "Escape",
+      cancelable: true,
+    });
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(screen.queryByText("Surrender match?")).toBeNull();
+  });
+
   it("opens a surrender confirmation dialog on Escape and surrenders on confirm", () => {
     useGameRoomMock.mockReturnValue({
       room: {

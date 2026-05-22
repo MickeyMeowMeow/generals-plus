@@ -129,37 +129,6 @@ export function GamePage({ connection, source }: GamePageProps) {
     };
   }, [room]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore shortcuts if the user is typing in a text field
-      if (
-        document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA" ||
-        document.activeElement?.hasAttribute("contenteditable")
-      ) {
-        return;
-      }
-
-      if (e.key === "Escape") {
-        if (isSurrenderDialogOpen) {
-          return;
-        }
-        e.preventDefault();
-        setIsSurrenderDialogOpen(true);
-      } else if (e.key === "c" || e.key === "C") {
-        setActiveBrush(null);
-      } else if (e.key === "1") {
-        setActiveBrush((prev) => (prev === "attack" ? null : "attack"));
-      } else if (e.key === "2") {
-        setActiveBrush((prev) => (prev === "defense" ? null : "defense"));
-      } else if (e.key === "3") {
-        setActiveBrush((prev) => (prev === "rally" ? null : "rally"));
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSurrenderDialogOpen]);
-
   const [selection, setSelection] = useState<ICoordinate | null>(null);
   const [splitMoveSelection, setSplitMoveSelection] =
     useState<ICoordinate | null>(null);
@@ -274,6 +243,50 @@ export function GamePage({ connection, source }: GamePageProps) {
     source.onReturn();
   };
 
+  const isPlayerEliminated =
+    currentPlayer?.status === PlayerStatus.ELIMINATED && !gameResult;
+  const canOpenSurrenderDialog =
+    !isConnecting &&
+    Boolean(room) &&
+    Boolean(gameState) &&
+    Boolean(renderGrid) &&
+    !disconnectMessage &&
+    !gameResult &&
+    !isViewingAsSpectator &&
+    !isPlayerEliminated &&
+    currentPlayer?.status === PlayerStatus.ACTIVE;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore shortcuts if the user is typing in a text field
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        document.activeElement?.hasAttribute("contenteditable")
+      ) {
+        return;
+      }
+
+      if (e.key === "Escape") {
+        if (isSurrenderDialogOpen || !canOpenSurrenderDialog) {
+          return;
+        }
+        e.preventDefault();
+        setIsSurrenderDialogOpen(true);
+      } else if (e.key === "c" || e.key === "C") {
+        setActiveBrush(null);
+      } else if (e.key === "1") {
+        setActiveBrush((prev) => (prev === "attack" ? null : "attack"));
+      } else if (e.key === "2") {
+        setActiveBrush((prev) => (prev === "defense" ? null : "defense"));
+      } else if (e.key === "3") {
+        setActiveBrush((prev) => (prev === "rally" ? null : "rally"));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canOpenSurrenderDialog, isSurrenderDialogOpen]);
+
   useEffect(() => {
     if (gameResult && spectatorSource === "eliminated") {
       setIsViewingAsSpectator(false);
@@ -282,22 +295,10 @@ export function GamePage({ connection, source }: GamePageProps) {
   }, [gameResult, spectatorSource]);
 
   useEffect(() => {
-    if (
-      isSurrenderDialogOpen &&
-      (disconnectMessage ||
-        gameResult ||
-        isViewingAsSpectator ||
-        currentPlayer?.status !== PlayerStatus.ACTIVE)
-    ) {
+    if (isSurrenderDialogOpen && !canOpenSurrenderDialog) {
       setIsSurrenderDialogOpen(false);
     }
-  }, [
-    currentPlayer?.status,
-    disconnectMessage,
-    gameResult,
-    isSurrenderDialogOpen,
-    isViewingAsSpectator,
-  ]);
+  }, [canOpenSurrenderDialog, isSurrenderDialogOpen]);
 
   if (error) {
     return (
@@ -331,8 +332,6 @@ export function GamePage({ connection, source }: GamePageProps) {
       </StageCenter>
     );
 
-  const isPlayerEliminated =
-    currentPlayer?.status === PlayerStatus.ELIMINATED && !gameResult;
   const isReadOnly =
     isViewingAsSpectator ||
     Boolean(gameResult) ||
@@ -357,11 +356,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       : !isViewingAsSpectator && isPlayerEliminated
         ? "eliminated"
         : null;
-  const canSurrender =
-    !isReadOnly &&
-    !activeModal &&
-    !disconnectMessage &&
-    currentPlayer?.status === PlayerStatus.ACTIVE;
+  const canSurrender = canOpenSurrenderDialog && !isReadOnly && !activeModal;
   const returnLabel =
     source.type === "official" ? "Return to lobby" : "Return to setup room";
 
