@@ -3,6 +3,7 @@ import type {
   ICoordinate,
   IGameResult,
   MoveActionType,
+  SurrenderAction,
 } from "@generals-plus/engine";
 import { ActionType } from "@generals-plus/engine";
 import type {
@@ -284,6 +285,15 @@ export function useGameRoom(connection: GameRoomConnection) {
     room?.send(MatchClientMessage.CLEAR_QUEUE);
   }, [room]);
 
+  const surrender = useCallback(() => {
+    if (!room || !currentPlayer) return;
+
+    room.send(MatchClientMessage.ACTION, {
+      playerId: currentPlayer.id,
+      type: ActionType.SURRENDER,
+    } satisfies SurrenderAction);
+  }, [currentPlayer, room]);
+
   return {
     room,
     playerColors,
@@ -295,6 +305,7 @@ export function useGameRoom(connection: GameRoomConnection) {
     gameResult,
     sendMove,
     clearMoveQueue,
+    surrender,
     error,
     disconnectMessage,
     isConnecting,

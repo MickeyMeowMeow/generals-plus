@@ -3,6 +3,7 @@ import type { Client } from "@colyseus/core";
 import { logger, Room } from "@colyseus/core";
 import { StateView } from "@colyseus/schema";
 import type {
+  Action,
   IBaseGame,
   IGameResult,
   MoveAction,
@@ -86,13 +87,19 @@ export class MatchRoom extends Room<{
 
     this.state = state;
 
-    this.onMessage(MatchClientMessage.ACTION, (client, action: MoveAction) => {
+    this.onMessage(MatchClientMessage.ACTION, (client, action: Action) => {
       logger.debug(`[MatchRoom] Received action: ${JSON.stringify(action)}`);
       const playerId = this.sessionToPlayerId.get(client.sessionId);
       if (!playerId) return;
 
       const queue = this.state.clientActionQueues.get(client.sessionId);
       if (!queue) return;
+
+      if (action.type === ActionType.SURRENDER) {
+        queue.queue.clear();
+        this.game?.handleAction({ playerId, type: ActionType.SURRENDER });
+        return;
+      }
 
       if (!action.from || !action.to) return;
 

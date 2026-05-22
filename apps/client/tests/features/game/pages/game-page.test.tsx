@@ -16,8 +16,9 @@ import type { RenderGridCell } from "#/features/game/renderer/render-grid";
 import { RenderGrid } from "#/features/game/renderer/render-grid";
 import { MoveDirection } from "#/features/game/utils/move";
 
-const { sendMoveMock, useGameRoomMock } = vi.hoisted(() => ({
+const { sendMoveMock, surrenderMock, useGameRoomMock } = vi.hoisted(() => ({
   sendMoveMock: vi.fn(),
+  surrenderMock: vi.fn(),
   useGameRoomMock: vi.fn(),
 }));
 
@@ -57,7 +58,13 @@ vi.mock("#/features/game/components/game-hud", () => ({
 }));
 
 vi.mock("#/components/ui/dialog", () => ({
-  Dialog: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  Dialog: ({
+    children,
+    open = true,
+  }: {
+    children: ReactNode;
+    open?: boolean;
+  }) => (open ? <div>{children}</div> : null),
   DialogContent: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
@@ -161,6 +168,7 @@ describe("GamePage", () => {
   beforeEach(() => {
     useGameRoomMock.mockReset();
     sendMoveMock.mockReset();
+    surrenderMock.mockReset();
   });
 
   it("does not queue a move that would leave the map", () => {
@@ -178,6 +186,7 @@ describe("GamePage", () => {
       gameResult: null,
       sendMove: sendMoveMock,
       clearMoveQueue: vi.fn(),
+      surrender: surrenderMock,
       error: null,
       disconnectMessage: null,
       isConnecting: false,
@@ -224,6 +233,7 @@ describe("GamePage", () => {
       },
       sendMove: sendMoveMock,
       clearMoveQueue: vi.fn(),
+      surrender: surrenderMock,
       error: null,
       disconnectMessage: null,
       isConnecting: false,
@@ -265,6 +275,7 @@ describe("GamePage", () => {
       gameResult: null,
       sendMove: sendMoveMock,
       clearMoveQueue: vi.fn(),
+      surrender: surrenderMock,
       error: null,
       disconnectMessage: null,
       isConnecting: false,
@@ -296,6 +307,7 @@ describe("GamePage", () => {
       gameResult: null,
       sendMove: sendMoveMock,
       clearMoveQueue: vi.fn(),
+      surrender: surrenderMock,
       playerColors: new Map(),
       playerNames: new Map(),
       error: "Failed to connect to match",
@@ -330,6 +342,7 @@ describe("GamePage", () => {
       gameResult: null,
       sendMove: sendMoveMock,
       clearMoveQueue: vi.fn(),
+      surrender: surrenderMock,
       playerColors: new Map(),
       playerNames: new Map(),
       error: null,
@@ -351,5 +364,80 @@ describe("GamePage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Return to lobby" }));
     expect(onReturn).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens a surrender confirmation dialog on Escape and surrenders on confirm", () => {
+    useGameRoomMock.mockReturnValue({
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
+      playerColors: new Map(),
+      playerNames: new Map(),
+      currentPlayer: createPlayer(),
+      renderGrid: createRenderGrid(2, 2),
+      moveQueue: [],
+      gameState: createGameState(),
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      surrender: surrenderMock,
+      error: null,
+      disconnectMessage: null,
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={createConnection()}
+        source={{ type: "official", onReturn: vi.fn() }}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(screen.getByText("Surrender match?")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Surrender" }));
+
+    expect(surrenderMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the active brush on C without opening surrender confirmation", () => {
+    const roomSendMock = vi.fn();
+
+    useGameRoomMock.mockReturnValue({
+      room: {
+        sessionId: "player-1",
+        send: roomSendMock,
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
+      playerColors: new Map(),
+      playerNames: new Map(),
+      currentPlayer: createPlayer(),
+      renderGrid: createRenderGrid(2, 2),
+      moveQueue: [],
+      gameState: createGameState(),
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      surrender: surrenderMock,
+      error: null,
+      disconnectMessage: null,
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={createConnection()}
+        source={{ type: "official", onReturn: vi.fn() }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTitle("Mark Attack (Swords) [1]"));
+    fireEvent.keyDown(window, { key: "c" });
+    fireEvent.click(screen.getByTestId("select-origin"));
+
+    expect(screen.queryByText("Surrender match?")).toBeNull();
+    expect(roomSendMock).not.toHaveBeenCalled();
   });
 });

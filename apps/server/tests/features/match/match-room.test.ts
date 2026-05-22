@@ -190,6 +190,32 @@ describe("MatchRoom", () => {
       expect(queue.queue.length).toBe(0);
     });
 
+    it("handles surrender action immediately", async () => {
+      const handleAction = vi.fn(() => true);
+      const metadata = createValidRoomData({
+        game: createMockGame({ handleAction }),
+      });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      const queue = room.state.clientActionQueues.get(client.sessionId);
+      if (!queue) throw new Error("queue not found");
+
+      const actionPromise = room.waitForMessage(MatchClientMessage.ACTION);
+      client.send("action", { type: ActionType.SURRENDER });
+      await actionPromise;
+
+      expect(handleAction).toHaveBeenCalledWith({
+        playerId: "p1",
+        type: ActionType.SURRENDER,
+      });
+      expect(queue.queue.length).toBe(0);
+    });
+
     it("clears queue on clear_queue message", async () => {
       const metadata = createValidRoomData();
       room = await createRoom<MatchRoom>("match", { metadata });
