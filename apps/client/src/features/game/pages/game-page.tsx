@@ -30,6 +30,7 @@ import type { Ping } from "#/features/game/renderer/layers/ping";
 import { isCoordInBounds, isSameCoord } from "#/features/game/utils/coord";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
+import { formatTeamLabel } from "#/features/match/utils/team-label";
 import { cn } from "#/lib/utils";
 
 export type GamePageSource =
@@ -57,16 +58,6 @@ interface PublicPlayerLike {
   id: string;
   teamId: string;
   displayName?: string;
-}
-
-function formatTeamLabel(teamId: string): string {
-  if (teamId.startsWith("team_")) {
-    const num = Number.parseInt(teamId.substring("team_".length), 10);
-    if (!Number.isNaN(num)) {
-      return `Team ${num + 1}`;
-    }
-  }
-  return `Team ${teamId}`;
 }
 
 function getTeamMembers(

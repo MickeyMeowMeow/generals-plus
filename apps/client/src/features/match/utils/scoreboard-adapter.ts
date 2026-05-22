@@ -1,6 +1,8 @@
 import { GameMode } from "@generals-plus/engine";
 import type { BaseScoreboard } from "@generals-plus/shared-types";
 
+import { formatTeamLabel } from "#/features/match/utils/team-label";
+
 /**
  * Column metadata used by the match HUD scoreboard table.
  */
@@ -216,20 +218,6 @@ function createPlayerRows(scoreboard: BaseScoreboard): GameHudRow[] {
         Number(b.values.troops) - Number(a.values.troops) ||
         a.label.localeCompare(b.label),
     );
-}
-
-/**
- * Prettifies raw team identifiers (e.g. "team_0" -> "Team 1").
- */
-function formatTeamLabel(teamId: string): string {
-  if (teamId.startsWith("team_")) {
-    const numPart = teamId.substring("team_".length);
-    const num = Number.parseInt(numPart, 10);
-    if (!Number.isNaN(num)) {
-      return `Team ${num + 1}`;
-    }
-  }
-  return `Team ${teamId}`;
 }
 
 /**
