@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getArrowAnchor } from "#/features/game/renderer/layers/move-queue";
+import { getArrowAnchor } from "#/features/game/renderer/layers/move-queue-geometry";
 import { RenderConfig } from "#/features/game/renderer/render-config";
 import { MoveDirection } from "#/features/game/utils/move";
 
