@@ -538,6 +538,9 @@ export function GamePage({ connection, source }: GamePageProps) {
                       {winnerTeamMembers.join(" & ")}
                     </p>
                   ) : null}
+                  {didWin && isTeamResult && winnerTeamLabel ? (
+                    <p>Team members: {winnerTeamMembers.join(" & ")}</p>
+                  ) : null}
                   {!didWin && !isTeamResult && winnerName ? (
                     <p>Winner: {winnerName}</p>
                   ) : null}
