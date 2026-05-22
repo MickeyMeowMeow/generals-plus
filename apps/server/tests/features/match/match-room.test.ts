@@ -216,6 +216,34 @@ describe("MatchRoom", () => {
       expect(queue.queue.length).toBe(0);
     });
 
+    it("clears queued moves immediately when clear_queue is sent via action", async () => {
+      const metadata = createValidRoomData();
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      const queue = room.state.clientActionQueues.get(client.sessionId);
+      if (!queue) throw new Error("queue not found");
+
+      const movePromise = room.waitForMessage(MatchClientMessage.ACTION);
+      client.send("action", {
+        type: "move",
+        from: { x: 1, y: 1 },
+        to: { x: 2, y: 1 },
+      });
+      await movePromise;
+      expect(queue.queue.length).toBe(1);
+
+      const clearPromise = room.waitForMessage(MatchClientMessage.ACTION);
+      client.send("action", { type: ActionType.CLEAR_QUEUE });
+      await clearPromise;
+
+      expect(queue.queue.length).toBe(0);
+    });
+
     it("clears queue on clear_queue message", async () => {
       const metadata = createValidRoomData();
       room = await createRoom<MatchRoom>("match", { metadata });
@@ -375,11 +403,11 @@ describe("MatchRoom", () => {
 
       const queue = room.state.clientActionQueues.get(client.sessionId);
       if (!queue) throw new Error("queue not found");
-      expect(queue.queue.length).toBe(3);
+      expect(queue.queue.length).toBe(1);
 
       await room.waitForNextSimulationTick();
 
-      // First move executed, then clear_queue hit → remaining cleared
+      // clear_queue removes earlier moves immediately, so only the last move remains.
       expect(handleAction).toHaveBeenCalledTimes(1);
     });
   });

@@ -102,9 +102,7 @@ export class MatchRoom extends Room<{
       }
 
       if (action.type === ActionType.CLEAR_QUEUE) {
-        const entry = new ActionData();
-        entry.type = action.type;
-        queue.queue.push(entry);
+        queue.queue.clear();
         return;
       }
 
