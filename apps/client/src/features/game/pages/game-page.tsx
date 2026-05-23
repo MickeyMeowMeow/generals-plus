@@ -239,6 +239,14 @@ export function GamePage({ connection, source }: GamePageProps) {
       if (!isCoordInBounds(to, renderGridWidth, renderGridHeight)) {
         return;
       }
+      const targetCell = renderGrid.get(to);
+      if (
+        !targetCell ||
+        targetCell.terrain === Terrain.MOUNTAIN ||
+        targetCell.terrain === Terrain.VOID
+      ) {
+        return;
+      }
       const moveType = isSameCoord(splitMoveSelection, from)
         ? ActionType.SPLIT_MOVE
         : ActionType.MOVE;

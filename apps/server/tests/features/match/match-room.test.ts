@@ -190,6 +190,50 @@ describe("MatchRoom", () => {
       expect(queue.queue.length).toBe(0);
     });
 
+    it("does not enqueue moves into impassable terrain", async () => {
+      const game = createMockGame({
+        grid: {
+          targetId: "mock-grid",
+          width: 16,
+          height: 16,
+          get: (coord) =>
+            coord.x === 2 && coord.y === 1
+              ? ({
+                  isPassable: false,
+                } as { isPassable: boolean })
+              : ({
+                  isPassable: true,
+                } as { isPassable: boolean }),
+          getNeighbors: () => [],
+          isValid: () => true,
+          forEach: () => {},
+          forEachTerrain: () => {},
+          effects: [],
+          attachEffect: () => {},
+          removeEffect: () => {},
+        },
+      });
+      const metadata = createValidRoomData({ game });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      const msgPromise = room.waitForMessage(MatchClientMessage.ACTION);
+      client.send("action", {
+        type: "move",
+        from: { x: 1, y: 1 },
+        to: { x: 2, y: 1 },
+      });
+      await msgPromise;
+
+      const queue = room.state.clientActionQueues.get(client.sessionId);
+      if (!queue) throw new Error("queue not found");
+      expect(queue.queue.length).toBe(0);
+    });
+
     it("handles surrender action immediately", async () => {
       const handleAction = vi.fn(() => true);
       const metadata = createValidRoomData({

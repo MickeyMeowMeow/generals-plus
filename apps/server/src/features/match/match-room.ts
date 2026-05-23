@@ -114,6 +114,8 @@ export class MatchRoom extends Room<{
       }
 
       if (!action.from || !action.to) return;
+      const targetCell = this.game?.grid.get(action.to);
+      if (targetCell && !targetCell.isPassable) return;
 
       const entry = new ActionData();
       entry.type = action.type;
