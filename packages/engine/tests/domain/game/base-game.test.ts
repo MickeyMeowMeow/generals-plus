@@ -8,28 +8,20 @@ import { BaseGame } from "#/domain/game/base-game";
 import { GameMode } from "#/domain/game/game-mode";
 import { GameStatus } from "#/domain/game/game-status";
 import { Grid } from "#/domain/grid/grid";
-import type { IPlayerStats } from "#/domain/player/interfaces";
 import { Player } from "#/domain/player/player";
 import { StandardTeam } from "#/domain/team/team";
 
 class TestGame extends BaseGame {
   readonly mode = GameMode.CLASSIC;
 
-  checkGameEnd() {
+  evaluateGameEnd() {
     return null;
   }
 
-  forceEnd() {
-    this.status = GameStatus.FINISHED;
-    return { mode: this.mode, winnerTeamId: null };
-  }
-
-  getPlayerStats(playerId: string): IPlayerStats | null {
-    const player = this.players.get(playerId);
-    if (!player) {
-      return null;
-    }
-    return { playerId, troops: 0, land: 0 };
+  getScoreboard() {
+    return {
+      mode: GameMode.CLASSIC,
+    };
   }
 }
 
@@ -42,7 +34,7 @@ function createGame(): TestGame {
       }),
     ],
   ]);
-  return new TestGame(grid);
+  return new TestGame({ grid });
 }
 
 describe("BaseGame", () => {

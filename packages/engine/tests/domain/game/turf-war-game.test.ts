@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ActionType } from "#/domain/action/action-type";
 import type { MoveAction } from "#/domain/action/interfaces";
 import { Cell } from "#/domain/cell/cell";
+import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { GameMode } from "#/domain/game/game-mode";
 import { GameStatus } from "#/domain/game/game-status";
@@ -31,7 +32,7 @@ function createMoveAction(playerId = "p1"): MoveAction {
   };
 }
 
-function getCell(grid: Grid, x: number, y: number): Cell {
+function getCell(grid: Grid, x: number, y: number): ICell {
   const cell = grid.get({ x, y });
   if (!cell) throw new Error(`Cell at ${x},${y} not found`);
   return cell;
@@ -50,7 +51,7 @@ function mustFind<T>(
 describe("TurfWarGame", () => {
   it("finishes game when one alive team remains", () => {
     const grid = createGridForTurfWar();
-    const game = new TurfWarGame(grid);
+    const game = new TurfWarGame({ grid });
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.players.set(p1.playerId, p1);
@@ -66,7 +67,7 @@ describe("TurfWarGame", () => {
 
   it("finishes game when max ticks reached and returns team with most land", () => {
     const grid = createGridForTurfWar();
-    const game = new TurfWarGame(grid);
+    const game = new TurfWarGame({ grid });
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
@@ -104,7 +105,7 @@ describe("TurfWarGame", () => {
           new Cell({ coordinate: { x: 3, y: 0 }, terrain: Terrain.GENERAL }),
         ],
       ]);
-      const game = new TurfWarGame(grid);
+      const game = new TurfWarGame({ grid });
       const t1 = new StandardTeam("t1");
       const t2 = new StandardTeam("t2");
       const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
@@ -144,7 +145,7 @@ describe("TurfWarGame", () => {
 
   it("uses custom finishTick from options", () => {
     const grid = createGridForTurfWar();
-    const game = new TurfWarGame(grid, { finishTick: 100 });
+    const game = new TurfWarGame({ grid }, { finishTick: 100 });
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
@@ -178,7 +179,7 @@ describe("TurfWarGame", () => {
 
   it("integrates with RespawningCombatResolver during action execution", () => {
     const grid = createGridForTurfWar();
-    const game = new TurfWarGame(grid);
+    const game = new TurfWarGame({ grid });
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
@@ -229,7 +230,7 @@ describe("TurfWarGame", () => {
         new Cell({ coordinate: { x: 3, y: 0 }, terrain: Terrain.PLAIN }),
       ],
     ]);
-    const game = new TurfWarGame(grid);
+    const game = new TurfWarGame({ grid });
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);

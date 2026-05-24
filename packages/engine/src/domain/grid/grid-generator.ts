@@ -118,7 +118,12 @@ export interface GridGenerator {
 /**
  * Union type representing either a pre-built grid or generation options.
  */
-export type GridInput = IGrid | GridGeneratorOptions | DominationGridOptions;
+export type GridInput =
+  | {
+      readonly grid: IGrid;
+    }
+  | GridGeneratorOptions
+  | DominationGridOptions;
 
 // ── Resolved config (all fields required) ────────────────────────────
 

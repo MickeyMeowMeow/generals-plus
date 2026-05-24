@@ -37,7 +37,3 @@ export class Grid extends SquareGrid<ICell> implements EffectTarget, IGrid {
     });
   }
 }
-
-export function isGrid(candidate: object): candidate is IGrid {
-  return candidate instanceof Grid;
-}
