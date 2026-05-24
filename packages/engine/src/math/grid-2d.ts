@@ -95,9 +95,9 @@ interface GenericGrid2D<T> {
 export interface SquareGrid2D<T> extends GenericGrid2D<T> {
   readonly gridType: typeof GridType.SQUARE;
   /** Number of columns. */
-  width: number;
+  readonly width: number;
   /** Number of rows. */
-  height: number;
+  readonly height: number;
   map<U>(callback: (element: T, coordinate: ICoordinate) => U): SquareGrid2D<U>;
 }
 
