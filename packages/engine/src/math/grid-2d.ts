@@ -5,7 +5,7 @@ import type { ICoordinate } from "#/math/coordinate";
  *
  * @template T The type of element stored in the grid.
  */
-export interface IGrid2D<T> {
+export interface Grid2D<T> {
   /**
    * Validates if a given coordinate exists within the grid boundaries.
    *
@@ -65,7 +65,7 @@ export interface IGrid2D<T> {
 /**
  * Base implementation of a square grid.
  */
-export abstract class Grid2D<T> implements IGrid2D<T> {
+export abstract class SquareGrid<T> implements Grid2D<T> {
   /** Number of columns. */
   readonly width: number;
   /** Number of rows. */

@@ -5,9 +5,9 @@ import type { Team } from "#/domain/team/interfaces";
 import { Visibility } from "#/domain/vision/visibility";
 import type { IVisionCell, IVisionGrid } from "#/domain/vision/vision-grid";
 import { MaskedTerrain } from "#/domain/vision/vision-grid";
-import { Grid2D } from "#/math/grid-2d";
+import { SquareGrid } from "#/math/grid-2d";
 
-class VisionGrid extends Grid2D<IVisionCell> implements IVisionGrid {}
+class VisionGrid extends SquareGrid<IVisionCell> implements IVisionGrid {}
 
 /**
  * Maps a real game cell to a perceived vision cell according to the provided visibility.

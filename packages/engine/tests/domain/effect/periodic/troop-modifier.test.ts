@@ -57,7 +57,7 @@ class MockGrid extends EffectTarget {
     });
   }
 
-  // Dummy implementations for IGrid2D
+  // Dummy implementations for Grid2D
   width = 0;
   height = 0;
   get = vi.fn();

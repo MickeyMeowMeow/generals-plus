@@ -1,10 +1,11 @@
 import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import type { EffectTarget } from "#/domain/effect/effect-target";
+import type { IGrid } from "#/domain/grid/interfaces";
 import type { ICoordinate } from "#/math/coordinate";
-import { Grid2D } from "#/math/grid-2d";
+import { SquareGrid } from "#/math/grid-2d";
 
-export class Grid extends Grid2D<ICell> implements EffectTarget {
+export class Grid extends SquareGrid<ICell> implements EffectTarget, IGrid {
   private readonly terrainMap: Map<Terrain, Set<ICell>> = new Map();
 
   constructor(width: number, height: number, cells: ICell[][]) {
