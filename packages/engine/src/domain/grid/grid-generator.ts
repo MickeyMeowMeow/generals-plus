@@ -120,25 +120,6 @@ export interface GridGenerator {
  */
 export type GridInput = IGrid | GridGeneratorOptions | DominationGridOptions;
 
-/**
- * Type guard to check if a GridInput is a pre-built IGrid.
- */
-export function isGrid(input: GridInput): input is IGrid {
-  if (typeof input !== "object" || input === null) {
-    return false;
-  }
-
-  const candidate = input as Partial<IGrid>;
-
-  return (
-    typeof candidate.width === "number" &&
-    typeof candidate.height === "number" &&
-    typeof candidate.get === "function" &&
-    typeof candidate.forEach === "function" &&
-    typeof candidate.forEachTerrain === "function"
-  );
-}
-
 // ── Resolved config (all fields required) ────────────────────────────
 
 interface ResolvedConfig {

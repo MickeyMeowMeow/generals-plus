@@ -1,1 +1,1 @@
-export abstract class EffectTarget extends Object {}
+export abstract class EffectTarget {}

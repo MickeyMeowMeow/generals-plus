@@ -5,9 +5,7 @@ import type { Team } from "#/domain/team/interfaces";
 import { Visibility } from "#/domain/vision/visibility";
 import type { IVisionCell, IVisionGrid } from "#/domain/vision/vision-grid";
 import { MaskedTerrain } from "#/domain/vision/vision-grid";
-import { SquareGrid } from "#/math/grid-2d";
-
-class VisionGrid extends SquareGrid<IVisionCell> implements IVisionGrid {}
+import type { Grid2D } from "#/math/grid-2d";
 
 /**
  * Maps a real game cell to a perceived vision cell according to the provided visibility.
@@ -68,16 +66,15 @@ export class VisibilityMap {
    * @returns An IVisionGrid representing the visibility of each cell.
    */
   evaluate(team: Team, all_visible = false): IVisionGrid {
-    const width = this.gameGrid.width;
-    const height = this.gameGrid.height;
     const teamPlayerIds = new Set(
       team.players.map((player) => player.playerId),
     );
 
-    // Step 1: Compute visibility first. Everything starts as shrouded.
-    const visibilityData: Visibility[][] = Array.from({ length: height }, () =>
-      Array(width).fill(all_visible ? Visibility.VISIBLE : Visibility.SHROUDED),
-    );
+    // Compute visibility for each cell based on ownership and terrain.
+    // Start with all cells as SHROUDED (or VISIBLE if all_visible is true), then mark visible areas based on owned cells and flags.
+    const visibilityData: Grid2D<Visibility> = all_visible
+      ? this.gameGrid.map(() => Visibility.VISIBLE)
+      : this.gameGrid.map(() => Visibility.SHROUDED);
 
     this.gameGrid.forEach((cell, coord) => {
       if (
@@ -89,41 +86,19 @@ export class VisibilityMap {
         // Mark all cells within Chebyshev distance <= radius as VISIBLE
         for (let dy = -radius; dy <= radius; dy++) {
           for (let dx = -radius; dx <= radius; dx++) {
-            // Using Chebyshev distance (square) instead of Manhattan
-            if (Math.max(Math.abs(dx), Math.abs(dy)) <= radius) {
-              const targetY = coord.y + dy;
-              const targetX = coord.x + dx;
-
-              if (
-                targetX >= 0 &&
-                targetX < width &&
-                targetY >= 0 &&
-                targetY < height
-              ) {
-                visibilityData[targetY][targetX] = Visibility.VISIBLE;
-              }
-            }
+            const current = { x: coord.x + dx, y: coord.y + dy };
+            visibilityData.set(current, Visibility.VISIBLE);
           }
         }
       }
     });
 
-    // Step 2: Compute perceived terrain and metadata based on visibility.
-    const gridData: IVisionCell[][] = Array.from({ length: height }, () =>
-      Array.from({ length: width }, () => ({
-        coordinate: { x: 0, y: 0 },
-        visibility: Visibility.SHROUDED,
-        terrain: null,
-        troopCount: null,
-        owner: null,
-      })),
-    );
-
-    this.gameGrid.forEach((cell, coord) => {
-      const visibility = visibilityData[coord.y][coord.x];
-      gridData[coord.y][coord.x] = createVisionCell(cell, visibility);
+    // Compute perceived terrain and metadata based on visibility.
+    const visionGrid = this.gameGrid.map((cell, coord) => {
+      const visibility = visibilityData.get(coord) ?? Visibility.SHROUDED;
+      return createVisionCell(cell, visibility);
     });
 
-    return new VisionGrid(width, height, gridData);
+    return visionGrid;
   }
 }

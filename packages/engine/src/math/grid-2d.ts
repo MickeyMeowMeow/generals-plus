@@ -1,11 +1,20 @@
 import type { ICoordinate } from "#/math/coordinate";
 
+export const GridType = {
+  SQUARE: "square",
+} as const;
+
+export type GridType = (typeof GridType)[keyof typeof GridType];
+
 /**
  * A purely mathematical 2D spatial container.
  *
  * @template T The type of element stored in the grid.
  */
-export interface Grid2D<T> {
+interface GenericGrid2D<T> {
+  /** The type of grid (e.g., square, hex). */
+  readonly gridType: GridType;
+
   /**
    * Validates if a given coordinate exists within the grid boundaries.
    *
@@ -21,6 +30,14 @@ export interface Grid2D<T> {
    * @returns The element, or null if the coordinate is out of bounds.
    */
   get(coordinate: ICoordinate): T | null;
+
+  /**
+   * Sets the element at the given coordinate.
+   *
+   * @param coordinate The coordinate of the element to set.
+   * @param value The value to set at the coordinate.
+   */
+  set(coordinate: ICoordinate, value: T): void;
 
   /**
    * Calculates the Manhattan distance between two coordinates.
@@ -59,16 +76,40 @@ export interface Grid2D<T> {
 
   [Symbol.iterator](): IterableIterator<T>;
 
+  /**
+   * @returns An iterator of [ICoordinate, T] pairs for each cell in the grid.
+   */
   entries(): IterableIterator<[ICoordinate, T]>;
+
+  /**
+   * Maps each element in the grid to a new value, returning a new Grid2D with the same dimensions.
+   *
+   * @param callback The function to apply to each element, receiving the element and its coordinate.
+   * @returns A new Grid2D containing the mapped values.
+   */
+  map<U>(
+    callback: (element: T, coordinate: ICoordinate) => U,
+  ): GenericGrid2D<U>;
 }
+
+export interface SquareGrid2D<T> extends GenericGrid2D<T> {
+  readonly gridType: typeof GridType.SQUARE;
+  /** Number of columns. */
+  width: number;
+  /** Number of rows. */
+  height: number;
+  map<U>(callback: (element: T, coordinate: ICoordinate) => U): SquareGrid2D<U>;
+}
+
+export type Grid2D<T> = SquareGrid2D<T>;
 
 /**
  * Base implementation of a square grid.
  */
-export abstract class SquareGrid<T> implements Grid2D<T> {
-  /** Number of columns. */
+export class SquareGrid<T> implements SquareGrid2D<T> {
+  readonly gridType = GridType.SQUARE;
+
   readonly width: number;
-  /** Number of rows. */
   readonly height: number;
 
   protected readonly gridData: T[][];
@@ -104,6 +145,12 @@ export abstract class SquareGrid<T> implements Grid2D<T> {
       return null;
     }
     return this.gridData[coordinate.y][coordinate.x];
+  }
+
+  set(coordinate: ICoordinate, value: T): void {
+    if (this.isValid(coordinate)) {
+      this.gridData[coordinate.y][coordinate.x] = value;
+    }
   }
 
   getDistance(coord1: ICoordinate, coord2: ICoordinate): number {
@@ -162,5 +209,12 @@ export abstract class SquareGrid<T> implements Grid2D<T> {
         yield [{ x, y }, this.gridData[y][x]];
       }
     }
+  }
+
+  map<U>(callback: (element: T, coordinate: ICoordinate) => U): SquareGrid<U> {
+    const newGridData: U[][] = this.gridData.map((row, y) =>
+      row.map((element, x) => callback(element, { x, y })),
+    );
+    return new SquareGrid<U>(this.width, this.height, newGridData);
   }
 }
