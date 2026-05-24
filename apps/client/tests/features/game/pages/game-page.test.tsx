@@ -49,6 +49,13 @@ vi.mock("#/features/game/renderer/game-app", () => ({
       >
         Move left
       </button>
+      <button
+        data-testid="move-right"
+        type="button"
+        onClick={() => onQueueMove(MoveDirection.RIGHT)}
+      >
+        Move right
+      </button>
     </div>
   ),
 }));
@@ -91,6 +98,22 @@ function createRenderGrid(width: number, height: number) {
     })),
   );
   return new RenderGrid(width, height, gridData);
+}
+
+function createRenderGridWithTerrain(
+  width: number,
+  height: number,
+  overrides: Array<{ x: number; y: number; terrain: Terrain }>,
+) {
+  const renderGrid = createRenderGrid(width, height);
+  for (const override of overrides) {
+    const cell = renderGrid.get({ x: override.x, y: override.y });
+    if (!cell) {
+      throw new Error("Expected render grid cell to exist");
+    }
+    cell.terrain = override.terrain;
+  }
+  return renderGrid;
 }
 
 function createPlayer(overrides: Partial<Player> = {}) {
@@ -201,6 +224,42 @@ describe("GamePage", () => {
 
     fireEvent.click(screen.getByTestId("select-origin"));
     fireEvent.click(screen.getByTestId("move-left"));
+
+    expect(sendMoveMock).not.toHaveBeenCalled();
+  });
+
+  it("does not queue a move into a known obstacle", () => {
+    useGameRoomMock.mockReturnValue({
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
+      playerColors: new Map(),
+      playerNames: new Map(),
+      currentPlayer: createPlayer(),
+      renderGrid: createRenderGridWithTerrain(2, 1, [
+        { x: 1, y: 0, terrain: Terrain.MOUNTAIN },
+      ]),
+      moveQueue: [],
+      gameState: createGameState(),
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      surrender: surrenderMock,
+      error: null,
+      disconnectMessage: null,
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={createConnection()}
+        source={{ type: "official", onReturn: vi.fn() }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("select-origin"));
+    fireEvent.click(screen.getByTestId("move-right"));
 
     expect(sendMoveMock).not.toHaveBeenCalled();
   });

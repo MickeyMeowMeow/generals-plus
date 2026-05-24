@@ -9,7 +9,12 @@ import type {
   MoveAction,
   MoveActionType,
 } from "@generals-plus/engine";
-import { ActionType, GameStatus, PlayerStatus } from "@generals-plus/engine";
+import {
+  ActionType,
+  GameStatus,
+  PlayerStatus,
+  Terrain,
+} from "@generals-plus/engine";
 import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
 import {
   ActionData,
@@ -114,6 +119,17 @@ export class MatchRoom extends Room<{
       }
 
       if (!action.from || !action.to) return;
+      const vision = this.state.clientVisions.get(client.sessionId);
+      if (vision) {
+        const targetIndex = action.to.y * this.state.width + action.to.x;
+        const perceivedTerrain = vision.terrain[targetIndex];
+        if (
+          perceivedTerrain === Terrain.MOUNTAIN ||
+          perceivedTerrain === Terrain.VOID
+        ) {
+          return;
+        }
+      }
 
       const entry = new ActionData();
       entry.type = action.type;
