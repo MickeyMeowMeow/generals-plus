@@ -10,7 +10,7 @@ const playerInitSchema = z.object({
 });
 
 const roomDataSchema = z.object({
-  mode: z.enum(Object.values(GameMode) as [GameMode, ...GameMode[]]),
+  mode: z.enum(GameMode),
   game: z
     .object({
       grid: z.object({
