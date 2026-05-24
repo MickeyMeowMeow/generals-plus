@@ -21,6 +21,7 @@ import {
   PlayerStatus,
   SquareGrid,
   Terrain,
+  Visibility,
 } from "@generals-plus/engine";
 import type { PlayerInit, RoomData } from "@generals-plus/shared-types";
 import { PLAYER_COLOR_PALETTE, ROOM_NAMES } from "@generals-plus/shared-types";
@@ -83,7 +84,18 @@ export function createMockGame(overrides?: Partial<IBaseGame>): IBaseGame {
       mode: GameModeEnum.CLASSIC,
       winnerTeamId: null,
     }),
-    getVisionGrid: () => new SquareGrid<IVisionCell>(0, 0, []),
+    getVisionGrid: () =>
+      new SquareGrid<IVisionCell>(1, 1, [
+        [
+          {
+            coordinate: { x: 1, y: 1 },
+            visibility: Visibility.VISIBLE,
+            terrain: Terrain.PLAIN,
+            troopCount: null,
+            owner: null,
+          },
+        ],
+      ]),
     getPlayerState: (): IPlayerState => ({
       playerId: "",
       teamId: "",
