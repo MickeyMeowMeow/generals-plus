@@ -26,7 +26,7 @@ import {
   MatchState,
   PublicPlayer,
 } from "@generals-plus/shared-types";
-import z from "zod";
+import * as z from "zod";
 
 import { createPlayer } from "#/features/player/utils";
 import { calculateNewRatings } from "#/features/rating/rating-service";

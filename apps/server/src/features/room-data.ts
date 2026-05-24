@@ -1,6 +1,6 @@
 import { GameMode, GridType } from "@generals-plus/engine";
 import type { RoomData } from "@generals-plus/shared-types";
-import { z } from "zod";
+import * as z from "zod";
 
 const playerInitSchema = z.object({
   id: z.string().min(1),
