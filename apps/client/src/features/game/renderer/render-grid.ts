@@ -9,4 +9,6 @@ export interface RenderGridCell {
   ownerIndex: string | null;
 }
 
-export class RenderGrid extends SquareGrid<RenderGridCell> {}
+export class SquareRenderGrid extends SquareGrid<RenderGridCell> {}
+
+export type RenderGrid = SquareRenderGrid;
