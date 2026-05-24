@@ -74,6 +74,17 @@ export abstract class Grid2D<T> implements IGrid2D<T> {
   protected readonly gridData: T[][];
 
   constructor(width: number, height: number, gridData: T[][]) {
+    if (width <= 0 || height <= 0) {
+      throw new Error("Grid dimensions must be positive.");
+    }
+
+    if (
+      gridData.length !== height ||
+      gridData.some((row) => row.length !== width)
+    ) {
+      throw new Error("Grid data does not match the specified dimensions.");
+    }
+
     this.width = width;
     this.height = height;
     this.gridData = gridData;
@@ -113,9 +124,9 @@ export abstract class Grid2D<T> implements IGrid2D<T> {
     const neighbors: T[] = [];
     const offsets = [
       { x: 0, y: -1 },
+      { x: 1, y: 0 },
       { x: 0, y: 1 },
       { x: -1, y: 0 },
-      { x: 1, y: 0 },
     ];
     for (const offset of offsets) {
       const neighbor = this.get({

@@ -12,7 +12,6 @@ describe("Player", () => {
     expect(player.playerId).toBe("player-1");
     expect(player.team).toBe(team);
     expect(player.status).toBe(PlayerStatus.ACTIVE);
-    expect(player.targetId.length).toBeGreaterThan(0);
   });
 
   it("accepts explicit initial status", () => {

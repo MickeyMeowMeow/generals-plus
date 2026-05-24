@@ -7,11 +7,7 @@ import { EffectTarget } from "#/domain/effect/effect-target";
 import { EffectType } from "#/domain/effect/effect-type";
 import { PeriodicEffect } from "#/domain/effect/periodic/periodic-effect";
 
-class MockTarget extends EffectTarget {
-  constructor() {
-    super("target-1");
-  }
-}
+class MockTarget extends EffectTarget {}
 
 class ExpirableDummyEffect extends Effect<MockTarget> {
   onAttach = vi.fn();
@@ -42,8 +38,9 @@ describe("EffectRegistry", () => {
     registry.register(10, effect);
 
     expect(registry.effects.has(effect)).toBe(true);
+    expect(registry.effectsByTarget.get(target)?.has(effect)).toBe(true);
     expect(effect.onAttach).toHaveBeenCalledWith(10);
-    expect(target.effects).toContain(effect);
+    // expect(target.effects).toContain(effect);
   });
 
   it("should expire effects exactly at their expireAt tick", () => {
@@ -65,7 +62,8 @@ describe("EffectRegistry", () => {
     registry.processTick(5);
     expect(effect.onExpire).toHaveBeenCalledWith(5);
     expect(registry.effects.has(effect)).toBe(false); // Removed from registry
-    expect(target.effects).not.toContain(effect); // Removed from target
+    expect(registry.effectsByTarget.get(target)?.has(effect)).toBe(false); // Removed from target mapping
+    // expect(target.effects).not.toContain(effect); // Removed from target
   });
 
   it("should call onTick for ticking effects", () => {

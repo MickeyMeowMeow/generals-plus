@@ -5,18 +5,21 @@ import type {
   ExpirableEffect,
   TickingEffect,
 } from "#/domain/effect/effect";
+import type { EffectTarget } from "#/domain/effect/effect-target";
 import { PeriodicEffect } from "#/domain/effect/periodic/periodic-effect";
 
 export class EffectRegistry {
   readonly effects = new Set<Effect>();
 
-  readonly expirationQueue = new MinHeap<ExpirableEffect>([], {
+  readonly effectsByTarget = new Map<EffectTarget, Set<Effect>>();
+
+  private readonly expirationQueue = new MinHeap<ExpirableEffect>([], {
     comparator: (a, b) => a.expireAt - b.expireAt,
   });
 
   readonly tickingEffects = new Set<TickingEffect>();
 
-  readonly triggerQueue = new MinHeap<PeriodicEffect>([], {
+  private readonly triggerQueue = new MinHeap<PeriodicEffect>([], {
     comparator: (a, b) => a.triggerAt - b.triggerAt,
   });
 
@@ -38,7 +41,11 @@ export class EffectRegistry {
       this.triggerQueue.add(effect);
     }
 
-    effect.target.attachEffect(currentTick, effect);
+    // effect.target.attachEffect(currentTick, effect);
+    if (!this.effectsByTarget.has(effect.target)) {
+      this.effectsByTarget.set(effect.target, new Set<Effect>());
+    }
+    this.effectsByTarget.get(effect.target)?.add(effect);
     effect.onAttach?.(currentTick);
   }
 
@@ -58,7 +65,8 @@ export class EffectRegistry {
       const effect = this.expirationQueue.pop();
       if (effect) {
         effect.onExpire?.(currentTick);
-        effect.target.removeEffect(effect.id);
+        // effect.target.removeEffect(effect.id);
+        this.effectsByTarget.get(effect.target)?.delete(effect);
         this.effects.delete(effect);
       }
     }
