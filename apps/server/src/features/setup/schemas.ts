@@ -1,5 +1,5 @@
 import { GameMode } from "@generals-plus/engine";
-import { z } from "zod";
+import * as z from "zod";
 
 const MIN_MAP_DIM = 5;
 const MAX_MAP_DIM = 100;

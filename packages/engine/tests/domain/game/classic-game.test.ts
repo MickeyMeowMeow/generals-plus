@@ -43,14 +43,14 @@ function createSurrenderAction(playerId = "p1"): Action {
 
 describe("ClassicGame", () => {
   it("rejects actions when game is not playing", () => {
-    const game = new ClassicGame(createGridForAction());
+    const game = new ClassicGame({ grid: createGridForAction() });
 
     expect(game.handleAction(createMoveAction())).toBe(false);
   });
 
   it("processes valid action while playing", () => {
     const grid = createGridForAction();
-    const game = new ClassicGame(grid);
+    const game = new ClassicGame({ grid });
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1");
@@ -78,7 +78,7 @@ describe("ClassicGame", () => {
 
   it("processes split move actions while playing", () => {
     const grid = createGridForAction();
-    const game = new ClassicGame(grid);
+    const game = new ClassicGame({ grid });
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1");
@@ -108,7 +108,7 @@ describe("ClassicGame", () => {
   });
 
   it("finishes game when one or zero alive teams remain", () => {
-    const game = new ClassicGame(createGridForAction());
+    const game = new ClassicGame({ grid: createGridForAction() });
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.players.set(p1.playerId, p1);
@@ -121,7 +121,7 @@ describe("ClassicGame", () => {
   });
 
   test("nextTick increments and can trigger end-check", () => {
-    const game = new ClassicGame(createGridForAction());
+    const game = new ClassicGame({ grid: createGridForAction() });
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.players.set(p1.playerId, p1);
@@ -153,7 +153,7 @@ describe("ClassicGame", () => {
         }),
       ],
     ]);
-    const game = new ClassicGame(grid);
+    const game = new ClassicGame({ grid });
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
@@ -209,7 +209,7 @@ describe("ClassicGame", () => {
         }),
       ],
     ]);
-    const game = new ClassicGame(grid);
+    const game = new ClassicGame({ grid });
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1");
     game.players.set(p1.playerId, p1);
@@ -240,7 +240,7 @@ describe("ClassicGame", () => {
   });
 
   test("forceEnd always sets finished with null winner", () => {
-    const game = new ClassicGame(createGridForAction());
+    const game = new ClassicGame({ grid: createGridForAction() });
 
     const result = game.forceEnd();
 
@@ -276,7 +276,7 @@ describe("ClassicGame", () => {
           }),
         ],
       ]);
-      const game = new ClassicGame(grid);
+      const game = new ClassicGame({ grid });
       const t1 = new StandardTeam("t1");
       const t2 = new StandardTeam("t2");
       const p1 = new Player(t1, "p1");
@@ -327,7 +327,7 @@ describe("ClassicGame", () => {
           }),
         ],
       ]);
-      const game = new ClassicGame(grid);
+      const game = new ClassicGame({ grid });
       const t1 = new StandardTeam("t1");
       const t2 = new StandardTeam("t2");
       const p1 = new Player(t1, "p1");
@@ -369,7 +369,7 @@ describe("ClassicGame", () => {
           }),
         ],
       ]);
-      const game = new ClassicGame(grid);
+      const game = new ClassicGame({ grid });
       const t1 = new StandardTeam("t1");
       const t2 = new StandardTeam("t2");
       const p1 = new Player(t1, "p1");
@@ -408,7 +408,7 @@ describe("ClassicGame", () => {
           }),
         ],
       ]);
-      const game = new ClassicGame(grid);
+      const game = new ClassicGame({ grid });
       const t1 = new StandardTeam("t1");
       const p1 = new Player(t1, "p1");
       game.players.set(p1.playerId, p1);
@@ -449,7 +449,7 @@ describe("ClassicGame", () => {
         new Cell({ coordinate: { x: 2, y: 0 }, terrain: Terrain.PLAIN }),
       ],
     ]);
-    const game = new ClassicGame(grid);
+    const game = new ClassicGame({ grid });
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
@@ -506,7 +506,7 @@ describe("ClassicGame", () => {
         }),
       ],
     ]);
-    const game = new ClassicGame(grid);
+    const game = new ClassicGame({ grid });
     const t1 = new StandardTeam("t1");
     const t2 = new StandardTeam("t2");
     const t3 = new StandardTeam("t3");

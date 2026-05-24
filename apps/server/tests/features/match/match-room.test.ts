@@ -21,7 +21,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { MatchRoom } from "#/features/match/match-room";
 import {
   connectClient,
+  createMockCell,
   createMockGame,
+  createMockGrid,
+  createMockGrid2D,
   createRoom,
   createValidRoomData,
 } from "#tests/helpers";
@@ -191,27 +194,15 @@ describe("MatchRoom", () => {
     });
 
     it("does not enqueue moves into known impassable terrain from client vision", async () => {
+      const cells = Array.from({ length: 16 }, (_, y) =>
+        Array.from({ length: 16 }, (_, x) =>
+          createMockCell({
+            isPassable: x !== 2 || y !== 1,
+          }),
+        ),
+      );
       const game = createMockGame({
-        grid: {
-          targetId: "mock-grid",
-          width: 16,
-          height: 16,
-          get: (coord) =>
-            coord.x === 2 && coord.y === 1
-              ? ({
-                  isPassable: false,
-                } as { isPassable: boolean })
-              : ({
-                  isPassable: true,
-                } as { isPassable: boolean }),
-          getNeighbors: () => [],
-          isValid: () => true,
-          forEach: () => {},
-          forEachTerrain: () => {},
-          effects: [],
-          attachEffect: () => {},
-          removeEffect: () => {},
-        },
+        grid: createMockGrid(16, 16, cells),
       });
       const metadata = createValidRoomData({ game });
       room = await createRoom<MatchRoom>("match", { metadata });
@@ -242,27 +233,15 @@ describe("MatchRoom", () => {
     });
 
     it("does not leak unseen impassable terrain through enqueue validation", async () => {
+      const cells = Array.from({ length: 16 }, (_, y) =>
+        Array.from({ length: 16 }, (_, x) =>
+          createMockCell({
+            isPassable: x !== 2 || y !== 1,
+          }),
+        ),
+      );
       const game = createMockGame({
-        grid: {
-          targetId: "mock-grid",
-          width: 16,
-          height: 16,
-          get: (coord) =>
-            coord.x === 2 && coord.y === 1
-              ? ({
-                  isPassable: false,
-                } as { isPassable: boolean })
-              : ({
-                  isPassable: true,
-                } as { isPassable: boolean }),
-          getNeighbors: () => [],
-          isValid: () => true,
-          forEach: () => {},
-          forEachTerrain: () => {},
-          effects: [],
-          attachEffect: () => {},
-          removeEffect: () => {},
-        },
+        grid: createMockGrid(16, 16, cells),
       });
       const metadata = createValidRoomData({ game });
       room = await createRoom<MatchRoom>("match", { metadata });
@@ -511,20 +490,21 @@ describe("MatchRoom", () => {
 
   describe("vision sync", () => {
     it("populates clientVisions with flat arrays from engine", async () => {
-      const getVisionGrid = vi.fn((playerId: string) => ({
-        width: 2,
-        height: 2,
-        get: ({ x, y }: { x: number; y: number }) => ({
-          coordinate: { x, y },
-          visibility: Visibility.VISIBLE,
-          terrain: Terrain.PLAIN,
-          troopCount: x * y + 1,
-          owner: { playerId, status: PlayerStatus.ACTIVE },
-        }),
-        getNeighbors: () => [],
-        isValid: () => true,
-        forEach: () => {},
-      }));
+      const getVisionGrid = vi.fn((playerId: string) =>
+        createMockGrid2D(
+          16,
+          16,
+          Array.from({ length: 16 }, (_, y) =>
+            Array.from({ length: 16 }, (_, x) => ({
+              coordinate: { x, y },
+              visibility: Visibility.VISIBLE,
+              terrain: Terrain.PLAIN,
+              troopCount: x * y + 1,
+              owner: { playerId, status: PlayerStatus.ACTIVE },
+            })),
+          ),
+        ),
+      );
 
       const metadata = createValidRoomData({
         game: createMockGame({ getVisionGrid }),
@@ -977,14 +957,21 @@ describe("MatchRoom", () => {
     });
 
     it("updateClientViews populates hidden cells when vision grid returns empty cells", async () => {
-      const getVisionGrid = vi.fn(() => ({
-        width: 2,
-        height: 2,
-        get: () => undefined,
-        getNeighbors: () => [],
-        isValid: () => true,
-        forEach: () => {},
-      }));
+      const getVisionGrid = vi.fn(() =>
+        createMockGrid2D(
+          16,
+          16,
+          Array.from({ length: 16 }, (_, y) =>
+            Array.from({ length: 16 }, (_, x) => ({
+              coordinate: { x, y },
+              visibility: Visibility.HIDDEN,
+              terrain: null,
+              troopCount: null,
+              owner: null,
+            })),
+          ),
+        ),
+      );
 
       const metadata = createValidRoomData({
         game: createMockGame({ getVisionGrid }),
@@ -1012,20 +999,21 @@ describe("MatchRoom", () => {
     });
 
     it("updateClientViews pushes empty ownerIndex when owner not ACTIVE", async () => {
-      const getVisionGrid = vi.fn((playerId: string) => ({
-        width: 2,
-        height: 2,
-        get: ({ x, y }: { x: number; y: number }) => ({
-          coordinate: { x, y },
-          visibility: Visibility.VISIBLE,
-          terrain: Terrain.PLAIN,
-          troopCount: 1,
-          owner: { playerId, status: PlayerStatus.ELIMINATED },
-        }),
-        getNeighbors: () => [],
-        isValid: () => true,
-        forEach: () => {},
-      }));
+      const getVisionGrid = vi.fn((playerId: string) =>
+        createMockGrid2D(
+          16,
+          16,
+          Array.from({ length: 16 }, (_, y) =>
+            Array.from({ length: 16 }, (_, x) => ({
+              coordinate: { x, y },
+              visibility: Visibility.VISIBLE,
+              terrain: Terrain.PLAIN,
+              troopCount: 1,
+              owner: { playerId, status: PlayerStatus.ELIMINATED },
+            })),
+          ),
+        ),
+      );
 
       const metadata = createValidRoomData({
         game: createMockGame({ getVisionGrid }),

@@ -2,7 +2,7 @@ import type { ICellOwner } from "#/domain/cell/interfaces";
 import type { Terrain } from "#/domain/cell/terrain";
 import type { Visibility } from "#/domain/vision/visibility";
 import type { ICoordinate } from "#/math/coordinate";
-import type { IGrid2D } from "#/math/grid-2d";
+import type { Grid2D } from "#/math/grid-2d";
 
 /**
  * Represents a terrain type that is partially obscured by the fog of war.
@@ -47,4 +47,4 @@ export interface IVisionCell {
 /**
  * Represents the entire grid as perceived through the fog of war.
  */
-export interface IVisionGrid extends IGrid2D<IVisionCell> {}
+export interface IVisionGrid extends Grid2D<IVisionCell> {}

@@ -13,7 +13,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GamePage } from "#/features/game/pages/game-page";
 import type { RenderGridCell } from "#/features/game/renderer/render-grid";
-import { RenderGrid } from "#/features/game/renderer/render-grid";
+import { SquareRenderGrid } from "#/features/game/renderer/render-grid";
 import { MoveDirection } from "#/features/game/utils/move";
 
 const { sendMoveMock, surrenderMock, useGameRoomMock } = vi.hoisted(() => ({
@@ -97,7 +97,7 @@ function createRenderGrid(width: number, height: number) {
       ownerIndex: null,
     })),
   );
-  return new RenderGrid(width, height, gridData);
+  return new SquareRenderGrid(width, height, gridData);
 }
 
 function createRenderGridWithTerrain(

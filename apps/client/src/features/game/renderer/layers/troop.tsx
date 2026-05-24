@@ -1,4 +1,5 @@
 import type { ICoordinate } from "@generals-plus/engine";
+import { isSameCoord } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Container, Text, TextStyle } from "pixi.js";
 import { useMemo } from "react";
@@ -8,10 +9,7 @@ import type {
   RenderGrid,
   RenderGridCell,
 } from "#/features/game/renderer/render-grid";
-import {
-  getCoordWorldPosition,
-  isSameCoord,
-} from "#/features/game/utils/coord";
+import { getCoordWorldPosition } from "#/features/game/utils/coord";
 
 extend({ Container, Text });
 
@@ -31,7 +29,8 @@ export function TroopLayer({
   const troopCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; text: string }> = [];
     grid.forEach((cell) => {
-      const isSplitMoveCell = isSameCoord(cell.coordinate, splitMoveSelection);
+      const isSplitMoveCell =
+        splitMoveSelection && isSameCoord(cell.coordinate, splitMoveSelection);
       if (cell.troopCount || isSplitMoveCell) {
         cells.push({
           cell,

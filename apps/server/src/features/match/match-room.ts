@@ -12,6 +12,7 @@ import type {
 import {
   ActionType,
   GameStatus,
+  GridType,
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
@@ -25,6 +26,7 @@ import {
   MatchState,
   PublicPlayer,
 } from "@generals-plus/shared-types";
+import * as z from "zod";
 
 import { createPlayer } from "#/features/player/utils";
 import { calculateNewRatings } from "#/features/rating/rating-service";
@@ -64,9 +66,12 @@ export class MatchRoom extends Room<{
     state.tickInterval = tickInterval;
     state.finishTick = metadata.finishTick ?? -1;
     state.targetScore = metadata.targetScore ?? -1;
-    state.width = this.game.grid.width;
-    state.height = this.game.grid.height;
     state.scoreboard = createScoreboard(metadata.mode);
+
+    if (this.game.grid.gridType === GridType.SQUARE) {
+      state.width = this.game.grid.width;
+      state.height = this.game.grid.height;
+    }
 
     for (const playerInit of metadata.playerInit) {
       const player = createPlayer(metadata.mode);
@@ -147,56 +152,44 @@ export class MatchRoom extends Room<{
       }
     });
 
-    this.onMessage(
-      MatchClientMessage.PING,
-      (client, data: { x: number; y: number; type: string }) => {
-        const playerId = this.sessionToPlayerId.get(client.sessionId);
-        if (!playerId) return;
-        const player = this.state.players.get(playerId);
-        if (!player) return;
+    this.onMessage(MatchClientMessage.PING, (client, data) => {
+      const playerId = this.sessionToPlayerId.get(client.sessionId);
+      if (!playerId) return;
+      const player = this.state.players.get(playerId);
+      if (!player) return;
 
-        if (!data || typeof data !== "object") {
-          return;
+      const schema = z.object({
+        x: z.number().int(),
+        y: z.number().int(),
+        type: z.enum(["attack", "defense", "rally"]),
+      });
+
+      const result = schema.safeParse(data);
+      if (!result.success) {
+        return;
+      }
+
+      const { x, y, type } = result.data;
+
+      if (!this.game?.grid.isValid({ x, y })) {
+        return;
+      }
+
+      // Broadcast to other players on the same team (including sender to confirm delivery)
+      this.clients.forEach((otherClient) => {
+        const otherPlayerId = this.sessionToPlayerId.get(otherClient.sessionId);
+        if (!otherPlayerId) return;
+        const otherPlayer = this.state.players.get(otherPlayerId);
+        if (otherPlayer && otherPlayer.teamId === player.teamId) {
+          otherClient.send(MatchServerMessage.PING, {
+            playerId,
+            x,
+            y,
+            type,
+          });
         }
-
-        const { x, y, type } = data;
-        if (
-          !Number.isFinite(x) ||
-          !Number.isInteger(x) ||
-          !Number.isFinite(y) ||
-          !Number.isInteger(y) ||
-          typeof type !== "string"
-        ) {
-          return;
-        }
-
-        if (x < 0 || x >= this.state.width || y < 0 || y >= this.state.height) {
-          return;
-        }
-
-        const validTypes = ["attack", "defense", "rally"];
-        if (!validTypes.includes(type)) {
-          return;
-        }
-
-        // Broadcast to other players on the same team (including sender to confirm delivery)
-        this.clients.forEach((otherClient) => {
-          const otherPlayerId = this.sessionToPlayerId.get(
-            otherClient.sessionId,
-          );
-          if (!otherPlayerId) return;
-          const otherPlayer = this.state.players.get(otherPlayerId);
-          if (otherPlayer && otherPlayer.teamId === player.teamId) {
-            otherClient.send(MatchServerMessage.PING, {
-              playerId,
-              x,
-              y,
-              type,
-            });
-          }
-        });
-      },
-    );
+      });
+    });
 
     this.game.startGame();
     this.state.status = GameStatus.PLAYING;
@@ -512,26 +505,13 @@ export class MatchRoom extends Room<{
       vision.troopCount.clear();
       vision.ownerIndex.clear();
 
-      const width = this.state.width;
-      const height = this.state.height;
-
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const vc = visionGrid.get({ x, y });
-          if (vc) {
-            vision.visibility.push(vc.visibility);
-            vision.terrain.push(vc.terrain ?? "");
-            vision.troopCount.push(vc.troopCount ?? -1);
-            vision.ownerIndex.push(
-              vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "",
-            );
-          } else {
-            vision.visibility.push("hidden");
-            vision.terrain.push("");
-            vision.troopCount.push(-1);
-            vision.ownerIndex.push("");
-          }
-        }
+      for (const vc of visionGrid) {
+        vision.visibility.push(vc.visibility);
+        vision.terrain.push(vc.terrain ?? "");
+        vision.troopCount.push(vc.troopCount ?? -1);
+        vision.ownerIndex.push(
+          vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "",
+        );
       }
     }
   }

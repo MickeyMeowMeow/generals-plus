@@ -42,7 +42,7 @@ export class Cell extends EffectTarget implements ICell {
    * Creates a cell and derives passability/troop defaults from the terrain.
    */
   constructor(options: CellOptions) {
-    super(`cell:${options.coordinate.x},${options.coordinate.y}`);
+    super();
 
     this.coordinate = options.coordinate;
     this.terrain_ = options.terrain;

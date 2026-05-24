@@ -2,6 +2,7 @@ import type { ICoordinate } from "@generals-plus/engine";
 import {
   ActionType,
   GameMode,
+  isSameCoord,
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
@@ -27,7 +28,6 @@ import { useGameRoom } from "#/features/game/api/use-game-room";
 import { GameHud } from "#/features/game/components/game-hud";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { Ping } from "#/features/game/renderer/layers/ping";
-import { isCoordInBounds, isSameCoord } from "#/features/game/utils/coord";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 import { formatTeamLabel } from "#/features/match/utils/team-label";
@@ -155,8 +155,6 @@ export function GamePage({ connection, source }: GamePageProps) {
   const [spectatorSource, setSpectatorSource] = useState<
     "eliminated" | "game-end" | null
   >(null);
-  const renderGridWidth = renderGrid?.width ?? 0;
-  const renderGridHeight = renderGrid?.height ?? 0;
 
   const initialCoord = useRef<ICoordinate>(null);
   const hasInitializedRef = useRef(false);
@@ -167,7 +165,7 @@ export function GamePage({ connection, source }: GamePageProps) {
     // Find the player's general or any owned spawn cell to start selection
     let startCoord: ICoordinate | null = null;
 
-    // 1. Try to find a General
+    // Try to find a general
     for (const cell of renderGrid) {
       if (
         cell.terrain === Terrain.GENERAL &&
@@ -178,17 +176,15 @@ export function GamePage({ connection, source }: GamePageProps) {
       }
     }
 
-    // 2. Fallback to any owned spawn cell (like the starting city in Domination)
     if (!startCoord) {
+      // Fallback to any owned cell if no general is found
       for (const cell of renderGrid) {
         if (cell.ownerIndex === currentPlayer.id) {
           startCoord = cell.coordinate;
           break;
         }
       }
-    }
-
-    if (startCoord) {
+    } else {
       initialCoord.current = startCoord;
       setSelection(startCoord);
       hasInitializedRef.current = true;
@@ -236,7 +232,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       if (!selection || !room || !renderGrid) return;
       const from = selection;
       const to = getTargetCoord({ from, direction });
-      if (!isCoordInBounds(to, renderGridWidth, renderGridHeight)) {
+      if (!renderGrid.isValid(to)) {
         return;
       }
       const targetCell = renderGrid.get(to);
@@ -247,23 +243,16 @@ export function GamePage({ connection, source }: GamePageProps) {
       ) {
         return;
       }
-      const moveType = isSameCoord(splitMoveSelection, from)
-        ? ActionType.SPLIT_MOVE
-        : ActionType.MOVE;
+      const moveType =
+        splitMoveSelection && isSameCoord(splitMoveSelection, from)
+          ? ActionType.SPLIT_MOVE
+          : ActionType.MOVE;
 
       setSelection(to);
       setSplitMoveSelection(null);
       sendMove(from, to, moveType);
     },
-    [
-      renderGrid,
-      renderGridHeight,
-      renderGridWidth,
-      selection,
-      room,
-      sendMove,
-      splitMoveSelection,
-    ],
+    [renderGrid, selection, room, sendMove, splitMoveSelection],
   );
 
   const handleReturn = () => {

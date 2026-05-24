@@ -5,3 +5,15 @@ export interface ICoordinate {
   readonly x: number;
   readonly y: number;
 }
+
+/**
+ * Checks whether two coordinates are the same (i.e., have the same x and y values).
+ *
+ * @param coord1 The first coordinate to compare.
+ * @param coord2 The second coordinate to compare.
+ *
+ * @returns True if the coordinates are the same, false otherwise.
+ */
+export function isSameCoord(coord1: ICoordinate, coord2: ICoordinate): boolean {
+  return coord1.x === coord2.x && coord1.y === coord2.y;
+}

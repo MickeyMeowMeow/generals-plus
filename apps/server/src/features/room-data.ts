@@ -1,6 +1,6 @@
-import { GameMode } from "@generals-plus/engine";
+import { GameMode, GridType } from "@generals-plus/engine";
 import type { RoomData } from "@generals-plus/shared-types";
-import { z } from "zod";
+import * as z from "zod";
 
 const playerInitSchema = z.object({
   id: z.string().min(1),
@@ -10,12 +10,11 @@ const playerInitSchema = z.object({
 });
 
 const roomDataSchema = z.object({
-  mode: z.enum(Object.values(GameMode) as [GameMode, ...GameMode[]]),
+  mode: z.enum(GameMode),
   game: z
     .object({
       grid: z.object({
-        width: z.number().int().positive(),
-        height: z.number().int().positive(),
+        gridType: z.enum(GridType),
       }),
       startGame: z.function(),
       nextTick: z.function(),

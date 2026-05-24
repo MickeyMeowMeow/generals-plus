@@ -22,7 +22,7 @@ function createGridWithFlag(): Grid {
 describe("DominationGame", () => {
   it("accumulates score for team holding a flag", () => {
     const grid = createGridWithFlag();
-    const game = new DominationGame(grid);
+    const game = new DominationGame({ grid });
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);
@@ -48,7 +48,7 @@ describe("DominationGame", () => {
 
   it("finishes game when target score is reached", () => {
     const grid = createGridWithFlag();
-    const game = new DominationGame(grid);
+    const game = new DominationGame({ grid });
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);
@@ -74,7 +74,7 @@ describe("DominationGame", () => {
 
   it("finishes game when max ticks reached and returns highest score team", () => {
     const grid = createGridWithFlag();
-    const game = new DominationGame(grid);
+    const game = new DominationGame({ grid });
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);
@@ -105,7 +105,7 @@ describe("DominationGame", () => {
 
   it("generates correct scoreboard including team scores", () => {
     const grid = createGridWithFlag();
-    const game = new DominationGame(grid);
+    const game = new DominationGame({ grid });
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);
@@ -132,7 +132,7 @@ describe("DominationGame", () => {
 
   it("uses default targetScore and finishTick when no options provided", () => {
     const grid = createGridWithFlag();
-    const game = new DominationGame(grid);
+    const game = new DominationGame({ grid });
 
     expect(game.targetScore).toBe(1000);
     // @ts-expect-error - bypassing private modifier
@@ -141,14 +141,14 @@ describe("DominationGame", () => {
 
   it("accepts custom targetScore via options", () => {
     const grid = createGridWithFlag();
-    const game = new DominationGame(grid, { targetScore: 100 });
+    const game = new DominationGame({ grid }, { targetScore: 100 });
 
     expect(game.targetScore).toBe(100);
   });
 
   it("accepts custom finishTick via options", () => {
     const grid = createGridWithFlag();
-    const game = new DominationGame(grid, { finishTick: 200 });
+    const game = new DominationGame({ grid }, { finishTick: 200 });
 
     // @ts-expect-error - bypassing private modifier
     expect(game.maxTicks).toBe(200);
@@ -156,7 +156,7 @@ describe("DominationGame", () => {
 
   it("finishes game when custom targetScore is reached", () => {
     const grid = createGridWithFlag();
-    const game = new DominationGame(grid, { targetScore: 5 });
+    const game = new DominationGame({ grid }, { targetScore: 5 });
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);
@@ -177,7 +177,7 @@ describe("DominationGame", () => {
 
   it("finishes game when custom finishTick is reached", () => {
     const grid = createGridWithFlag();
-    const game = new DominationGame(grid, { finishTick: 3 });
+    const game = new DominationGame({ grid }, { finishTick: 3 });
     const t1 = new StandardTeam("t1");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);

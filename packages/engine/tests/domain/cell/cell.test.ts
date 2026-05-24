@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
+import { PlayerStatus } from "#/domain/player/player-status";
 
 describe("Cell", () => {
   it("applies expected defaults for a passable cell", () => {
@@ -10,7 +11,6 @@ describe("Cell", () => {
       terrain: Terrain.PLAIN,
     });
 
-    expect(cell.targetId).toBe("cell:2,3");
     expect(cell.isPassable).toBe(true);
     expect(cell.owner).toBeNull();
     expect(cell.troopCount).toBeNull();
@@ -67,7 +67,7 @@ describe("Cell", () => {
       terrain: Terrain.PLAIN,
     });
     cell.troopCount = 10;
-    cell.owner = { playerId: "player1" };
+    cell.owner = { playerId: "player1", status: PlayerStatus.ACTIVE };
 
     // Change to impassable
     cell.terrain = Terrain.MOUNTAIN;

@@ -1,8 +1,11 @@
 import type { Terrain, Visibility } from "@generals-plus/engine";
 import type { ClientVision } from "@generals-plus/shared-types";
 
-import type { RenderGridCell } from "#/features/game/renderer/render-grid";
-import { RenderGrid } from "#/features/game/renderer/render-grid";
+import type {
+  RenderGrid,
+  RenderGridCell,
+} from "#/features/game/renderer/render-grid";
+import { SquareRenderGrid } from "#/features/game/renderer/render-grid";
 
 /**
  * Adapts the flat Colyseus ClientVision arrays into a structure
@@ -31,5 +34,5 @@ export function createRenderGrid(
     }
   }
 
-  return new RenderGrid(width, height, cellGrid);
+  return new SquareRenderGrid(width, height, cellGrid);
 }

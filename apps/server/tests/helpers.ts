@@ -4,17 +4,24 @@ import "@colyseus/testing";
 import { EventEmitter } from "node:events";
 
 import type {
+  Grid2D,
   IBaseGame,
+  ICell,
   IClassicScoreboard,
   IGameResult,
   IGrid,
   IPlayerState,
+  IVisionCell,
 } from "@generals-plus/engine";
 import {
   EffectRegistry,
   GameMode as GameModeEnum,
   GameStatus,
+  Grid,
   PlayerStatus,
+  SquareGrid,
+  Terrain,
+  Visibility,
 } from "@generals-plus/engine";
 import type { PlayerInit, RoomData } from "@generals-plus/shared-types";
 import { PLAYER_COLOR_PALETTE, ROOM_NAMES } from "@generals-plus/shared-types";
@@ -25,20 +32,38 @@ import { SetupRoom } from "#/features/setup/setup-room";
 
 // ── Mock game helpers ────────────────────────────────────────
 
-function createMockGrid(width = 16, height = 16): IGrid {
+export function createMockCell(overrides?: Partial<ICell>): ICell {
   return {
-    targetId: "mock-grid",
-    width,
-    height,
-    get: () => null,
-    getNeighbors: () => [],
-    isValid: () => true,
-    forEach: () => {},
-    forEachTerrain: () => {},
-    effects: [],
-    attachEffect: () => {},
-    removeEffect: () => {},
+    coordinate: overrides?.coordinate || { x: 0, y: 0 },
+    terrain: overrides?.terrain || Terrain.PLAIN,
+    isPassable: overrides?.isPassable ?? true,
+    troopCount: overrides?.troopCount || 0,
+    owner: overrides?.owner || null,
+    vision: overrides?.vision || { radius: 1 },
+    onTerrainChange: overrides?.onTerrainChange,
+    addTroops: overrides?.addTroops || (() => {}),
   };
+}
+
+export function createMockGrid2D<T>(
+  width = 16,
+  height = 16,
+  cells: T[][],
+): Grid2D<T> {
+  return new SquareGrid(width, height, cells);
+}
+
+export function createMockGrid(
+  width = 16,
+  height = 16,
+  cells?: ICell[][],
+): IGrid {
+  if (!cells) {
+    cells = Array.from({ length: height }, () =>
+      Array.from({ length: width }, () => createMockCell()),
+    );
+  }
+  return new Grid(width, height, cells);
 }
 
 export function createMockGame(overrides?: Partial<IBaseGame>): IBaseGame {
@@ -59,14 +84,18 @@ export function createMockGame(overrides?: Partial<IBaseGame>): IBaseGame {
       mode: GameModeEnum.CLASSIC,
       winnerTeamId: null,
     }),
-    getVisionGrid: () => ({
-      width: 16,
-      height: 16,
-      get: () => null,
-      getNeighbors: () => [],
-      isValid: () => true,
-      forEach: () => {},
-    }),
+    getVisionGrid: () =>
+      new SquareGrid<IVisionCell>(1, 1, [
+        [
+          {
+            coordinate: { x: 1, y: 1 },
+            visibility: Visibility.VISIBLE,
+            terrain: Terrain.PLAIN,
+            troopCount: null,
+            owner: null,
+          },
+        ],
+      ]),
     getPlayerState: (): IPlayerState => ({
       playerId: "",
       teamId: "",
