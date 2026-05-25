@@ -9,7 +9,11 @@ import type { SetupRoom } from "#/features/setup/setup-room";
 import { connectClient, createRoom, ROOM_NAMES } from "#tests/helpers";
 
 vi.mock("#/features/game/utils", async (importOriginal) => {
-  return importOriginal();
+  const mod = (await importOriginal()) as Record<string, unknown>;
+  return {
+    createGame: mod.createGame,
+    generateSeed: mod.generateSeed,
+  };
 });
 
 /** Wraps a client's send to capture error messages without breaking room routing. */
@@ -33,6 +37,7 @@ describe("SetupRoom", () => {
   let room: SetupRoom;
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     if (room) {
       room.disconnect();
     }
