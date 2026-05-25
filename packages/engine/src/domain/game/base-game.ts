@@ -7,9 +7,9 @@ import type { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import { GameStatus } from "#/domain/game/game-status";
 import type { IBaseGame, IBaseScoreboard } from "#/domain/game/interfaces";
+import type { Grid } from "#/domain/grid/grid";
 import type { GridInput } from "#/domain/grid/grid-generator";
 import { DefaultGridGenerator } from "#/domain/grid/grid-generator";
-import type { IGrid } from "#/domain/grid/interfaces";
 import type { IItem } from "#/domain/item/interfaces";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
@@ -27,7 +27,7 @@ export abstract class BaseGame implements IBaseGame {
   status: GameStatus = GameStatus.NOT_STARTED;
   tick: number = 0;
 
-  readonly grid: IGrid;
+  readonly grid: Grid;
   readonly players: Map<string, IPlayer> = new Map();
   readonly teams: Map<string, Team> = new Map();
   readonly items: IItem[] = [];

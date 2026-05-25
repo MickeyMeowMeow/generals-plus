@@ -5,7 +5,7 @@ import type { Team } from "#/domain/team/interfaces";
 import { Visibility } from "#/domain/vision/visibility";
 import type { IVisionCell, IVisionGrid } from "#/domain/vision/vision-grid";
 import { MaskedTerrain } from "#/domain/vision/vision-grid";
-import type { Grid2D } from "#/math/grid-2d";
+import type { GenericGrid2D } from "#/math/grid-2d";
 
 /**
  * Maps a real game cell to a perceived vision cell according to the provided visibility.
@@ -72,7 +72,7 @@ export class VisibilityMap {
 
     // Compute visibility for each cell based on ownership and terrain.
     // Start with all cells as SHROUDED (or VISIBLE if all_visible is true), then mark visible areas based on owned cells and flags.
-    const visibilityData: Grid2D<Visibility> = all_visible
+    const visibilityData: GenericGrid2D<Visibility> = all_visible
       ? this.gameGrid.map(() => Visibility.VISIBLE)
       : this.gameGrid.map(() => Visibility.SHROUDED);
 

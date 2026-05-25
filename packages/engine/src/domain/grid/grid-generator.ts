@@ -3,8 +3,8 @@
  */
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
-import { Grid } from "#/domain/grid/grid";
-import type { IGrid } from "#/domain/grid/interfaces";
+import type { Grid } from "#/domain/grid/grid";
+import { SquareGrid } from "#/domain/grid/grid";
 import type { ICoordinate } from "#/math/coordinate";
 
 // ── Named constants ──────────────────────────────────────────────────
@@ -112,7 +112,7 @@ export const DefaultGridGeneratorOptions: Required<GridGeneratorOptions> = {
  * Grid generator interface for creating new grid instances.
  */
 export interface GridGenerator {
-  generate(options?: GridGeneratorOptions | DominationGridOptions): IGrid;
+  generate(options?: GridGeneratorOptions | DominationGridOptions): Grid;
 }
 
 /**
@@ -120,7 +120,7 @@ export interface GridGenerator {
  */
 export type GridInput =
   | {
-      readonly grid: IGrid;
+      readonly grid: Grid;
     }
   | GridGeneratorOptions
   | DominationGridOptions;
@@ -150,7 +150,7 @@ interface ResolvedConfig {
  * On validation failure, derives a new seed and retries up to MAX_RETRY_COUNT.
  */
 export class DefaultGridGenerator implements GridGenerator {
-  generate(options: GridGeneratorOptions | DominationGridOptions = {}): IGrid {
+  generate(options: GridGeneratorOptions | DominationGridOptions = {}): Grid {
     const config = this.resolveOptions(options);
     const baseSeed = options.seed ?? DEFAULT_SEED;
     const baseRng = new SeededRandom(options.seed ?? DEFAULT_SEED);
@@ -173,7 +173,7 @@ export class DefaultGridGenerator implements GridGenerator {
 
   // ── Pipeline ─────────────────────────────────────────────────────
 
-  private tryGenerate(config: ResolvedConfig, rng: SeededRandom): IGrid | null {
+  private tryGenerate(config: ResolvedConfig, rng: SeededRandom): Grid | null {
     const { width, height } = config;
 
     const generals = this.placeGenerals(config, rng);
@@ -487,7 +487,7 @@ export class DefaultGridGenerator implements GridGenerator {
     width: number,
     height: number,
     options: GridGeneratorOptions | DominationGridOptions,
-  ): IGrid {
+  ): Grid {
     const cells = Array.from({ length: height }, (_, y) =>
       Array.from(
         { length: width },
@@ -499,7 +499,7 @@ export class DefaultGridGenerator implements GridGenerator {
           }),
       ),
     );
-    return new Grid(width, height, cells);
+    return new SquareGrid(width, height, cells);
   }
 
   // ── Helpers ──────────────────────────────────────────────────────

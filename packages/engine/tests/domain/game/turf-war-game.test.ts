@@ -8,13 +8,14 @@ import { Terrain } from "#/domain/cell/terrain";
 import { GameMode } from "#/domain/game/game-mode";
 import { GameStatus } from "#/domain/game/game-status";
 import { TurfWarGame } from "#/domain/game/turf-war-game";
-import { Grid } from "#/domain/grid/grid";
+import type { Grid } from "#/domain/grid/grid";
+import { SquareGrid } from "#/domain/grid/grid";
 import { Player } from "#/domain/player/player";
 import { PlayerStatus } from "#/domain/player/player-status";
 import { StandardTeam } from "#/domain/team/team";
 
 function createGridForTurfWar(): Grid {
-  return new Grid(3, 1, [
+  return new SquareGrid(3, 1, [
     [
       new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.GENERAL }),
       new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.GENERAL }),
@@ -97,7 +98,7 @@ describe("TurfWarGame", () => {
 
   describe("getScoreboard", () => {
     it("returns team landPercent and playerIds", () => {
-      const grid = new Grid(4, 1, [
+      const grid = new SquareGrid(4, 1, [
         [
           new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.GENERAL }),
           new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.PLAIN }),
@@ -222,7 +223,7 @@ describe("TurfWarGame", () => {
   });
 
   it("conquered generals become PLAIN and player respawn prioritizes non-city cells", () => {
-    const grid = new Grid(4, 1, [
+    const grid = new SquareGrid(4, 1, [
       [
         new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.GENERAL }),
         new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.GENERAL }),

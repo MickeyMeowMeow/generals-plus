@@ -5,13 +5,14 @@ import { Terrain } from "#/domain/cell/terrain";
 import { DominationGame } from "#/domain/game/domination-game";
 import { GameMode } from "#/domain/game/game-mode";
 import { GameStatus } from "#/domain/game/game-status";
-import { Grid } from "#/domain/grid/grid";
+import type { Grid } from "#/domain/grid/grid";
+import { SquareGrid } from "#/domain/grid/grid";
 import { Player } from "#/domain/player/player";
 import { PlayerStatus } from "#/domain/player/player-status";
 import { StandardTeam } from "#/domain/team/team";
 
 function createGridWithFlag(): Grid {
-  return new Grid(2, 1, [
+  return new SquareGrid(2, 1, [
     [
       new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.FLAG }),
       new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.PLAIN }),

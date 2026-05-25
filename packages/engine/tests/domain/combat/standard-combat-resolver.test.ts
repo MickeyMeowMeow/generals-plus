@@ -6,7 +6,8 @@ import type { MoveAction } from "#/domain/action/interfaces";
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
-import { Grid } from "#/domain/grid/grid";
+import type { Grid } from "#/domain/grid/grid";
+import { SquareGrid } from "#/domain/grid/grid";
 import { Player } from "#/domain/player/player";
 import { PlayerStatus } from "#/domain/player/player-status";
 import { StandardTeam } from "#/domain/team/team";
@@ -22,7 +23,7 @@ function createGrid(width = 2, height = 1): Grid {
         }),
     ),
   );
-  return new Grid(width, height, cells);
+  return new SquareGrid(width, height, cells);
 }
 
 function createMoveAction(type: MoveActionType = ActionType.MOVE): MoveAction {
@@ -192,7 +193,7 @@ describe("StandardCombatResolver", () => {
       ["p2", p2],
     ]);
 
-    const grid = new Grid(3, 1, [
+    const grid = new SquareGrid(3, 1, [
       [
         new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),
         new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.GENERAL }),

@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
-import { Grid } from "#/domain/grid/grid";
+import type { Grid } from "#/domain/grid/grid";
+import { SquareGrid } from "#/domain/grid/grid";
 
 function createCell(x: number, y: number): Cell {
   return new Cell({
@@ -15,15 +16,15 @@ function createGrid(width = 3, height = 2): Grid {
   const cells = Array.from({ length: height }, (_, y) =>
     Array.from({ length: width }, (_, x) => createCell(x, y)),
   );
-  return new Grid(width, height, cells);
+  return new SquareGrid(width, height, cells);
 }
 
 describe("Grid", () => {
   it("rejects non-positive dimensions", () => {
-    expect(() => new Grid(0, 1, [[createCell(0, 0)]])).toThrow(
+    expect(() => new SquareGrid(0, 1, [[createCell(0, 0)]])).toThrow(
       /dimensions must be positive/i,
     );
-    expect(() => new Grid(1, -1, [[createCell(0, 0)]])).toThrow(
+    expect(() => new SquareGrid(1, -1, [[createCell(0, 0)]])).toThrow(
       /dimensions must be positive/i,
     );
   });
@@ -31,7 +32,7 @@ describe("Grid", () => {
   it("rejects cell matrices that do not match dimensions", () => {
     const badRows = [[createCell(0, 0), createCell(1, 0)]];
 
-    expect(() => new Grid(2, 2, badRows)).toThrow(/does not match/i);
+    expect(() => new SquareGrid(2, 2, badRows)).toThrow(/does not match/i);
   });
 
   it("gets cells only when coordinate is in bounds", () => {

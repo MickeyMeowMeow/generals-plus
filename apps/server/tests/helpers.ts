@@ -4,12 +4,12 @@ import "@colyseus/testing";
 import { EventEmitter } from "node:events";
 
 import type {
-  Grid2D,
+  GenericGrid2D,
+  Grid,
   IBaseGame,
   ICell,
   IClassicScoreboard,
   IGameResult,
-  IGrid,
   IPlayerState,
   IVisionCell,
 } from "@generals-plus/engine";
@@ -17,9 +17,9 @@ import {
   EffectRegistry,
   GameMode as GameModeEnum,
   GameStatus,
-  Grid,
   PlayerStatus,
   SquareGrid,
+  SquareGrid2D,
   Terrain,
   Visibility,
 } from "@generals-plus/engine";
@@ -49,21 +49,21 @@ export function createMockGrid2D<T>(
   width = 16,
   height = 16,
   cells: T[][],
-): Grid2D<T> {
-  return new SquareGrid(width, height, cells);
+): GenericGrid2D<T> {
+  return new SquareGrid2D(width, height, cells);
 }
 
 export function createMockGrid(
   width = 16,
   height = 16,
   cells?: ICell[][],
-): IGrid {
+): Grid {
   if (!cells) {
     cells = Array.from({ length: height }, () =>
       Array.from({ length: width }, () => createMockCell()),
     );
   }
-  return new Grid(width, height, cells);
+  return new SquareGrid(width, height, cells);
 }
 
 export function createMockGame(overrides?: Partial<IBaseGame>): IBaseGame {
@@ -85,7 +85,7 @@ export function createMockGame(overrides?: Partial<IBaseGame>): IBaseGame {
       winnerTeamId: null,
     }),
     getVisionGrid: () =>
-      new SquareGrid<IVisionCell>(1, 1, [
+      new SquareGrid2D<IVisionCell>(1, 1, [
         [
           {
             coordinate: { x: 1, y: 1 },

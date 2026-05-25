@@ -6,14 +6,16 @@ import type { PeriodicEffectOptions } from "#/domain/effect/periodic/periodic-ef
 import { PeriodicEffect } from "#/domain/effect/periodic/periodic-effect";
 import { PlayerStatus } from "#/domain/player/player-status";
 import type { ICoordinate } from "#/math/coordinate";
-import type { Grid2D } from "#/math/grid-2d";
+import type { GenericGrid2D } from "#/math/grid-2d";
 
 interface TroopCarrierCell {
   owner: ICellOwner | null;
   addTroops(delta: number): void;
 }
 
-interface TroopModifierGrid extends EffectTarget, Grid2D<TroopCarrierCell> {
+interface TroopModifierGrid
+  extends EffectTarget,
+    GenericGrid2D<TroopCarrierCell> {
   forEachTerrain(
     terrain: Terrain,
     callback: (cell: TroopCarrierCell, coordinate: ICoordinate) => void,

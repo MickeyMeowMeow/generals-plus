@@ -3,7 +3,7 @@ import type { EffectRegistry } from "#/domain/effect/effect-registry";
 import type { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import type { GameStatus } from "#/domain/game/game-status";
-import type { IGrid } from "#/domain/grid/interfaces";
+import type { Grid } from "#/domain/grid/grid";
 import type { IItem } from "#/domain/item/interfaces";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
@@ -27,7 +27,7 @@ export interface IBaseGame {
   readonly effectRegistry: EffectRegistry;
 
   /** The 2D grid of cells. */
-  readonly grid: IGrid;
+  readonly grid: Grid;
 
   /** Map of all players (ID -> State). */
   readonly players: Map<string, IPlayer>;

@@ -11,7 +11,7 @@ export type GridType = (typeof GridType)[keyof typeof GridType];
  *
  * @template T The type of element stored in the grid.
  */
-interface GenericGrid2D<T> {
+export interface GenericGrid2D<T> {
   /** The type of grid (e.g., square, hex). */
   readonly gridType: GridType;
 
@@ -92,24 +92,15 @@ interface GenericGrid2D<T> {
   ): GenericGrid2D<U>;
 }
 
-export interface SquareGrid2D<T> extends GenericGrid2D<T> {
-  readonly gridType: typeof GridType.SQUARE;
-  /** Number of columns. */
-  readonly width: number;
-  /** Number of rows. */
-  readonly height: number;
-  map<U>(callback: (element: T, coordinate: ICoordinate) => U): SquareGrid2D<U>;
-}
-
-export type Grid2D<T> = SquareGrid2D<T>;
-
 /**
  * Base implementation of a square grid.
  */
-export class SquareGrid<T> implements SquareGrid2D<T> {
+export class SquareGrid2D<T> implements GenericGrid2D<T> {
   readonly gridType = GridType.SQUARE;
 
+  /** Number of columns. */
   readonly width: number;
+  /** Number of rows. */
   readonly height: number;
 
   protected readonly gridData: T[][];
@@ -211,10 +202,12 @@ export class SquareGrid<T> implements SquareGrid2D<T> {
     }
   }
 
-  map<U>(callback: (element: T, coordinate: ICoordinate) => U): SquareGrid<U> {
+  map<U>(
+    callback: (element: T, coordinate: ICoordinate) => U,
+  ): SquareGrid2D<U> {
     const newGridData: U[][] = this.gridData.map((row, y) =>
       row.map((element, x) => callback(element, { x, y })),
     );
-    return new SquareGrid<U>(this.width, this.height, newGridData);
+    return new SquareGrid2D<U>(this.width, this.height, newGridData);
   }
 }

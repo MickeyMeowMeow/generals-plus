@@ -7,7 +7,7 @@ import { Terrain } from "#/domain/cell/terrain";
 import { BaseGame } from "#/domain/game/base-game";
 import { GameMode } from "#/domain/game/game-mode";
 import { GameStatus } from "#/domain/game/game-status";
-import { Grid } from "#/domain/grid/grid";
+import { SquareGrid } from "#/domain/grid/grid";
 import { Player } from "#/domain/player/player";
 import { StandardTeam } from "#/domain/team/team";
 
@@ -26,7 +26,7 @@ class TestGame extends BaseGame {
 }
 
 function createGame(): TestGame {
-  const grid = new Grid(1, 1, [
+  const grid = new SquareGrid(1, 1, [
     [
       new Cell({
         coordinate: { x: 0, y: 0 },

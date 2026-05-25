@@ -8,13 +8,14 @@ import { Terrain } from "#/domain/cell/terrain";
 import { ClassicGame } from "#/domain/game/classic-game";
 import { GameMode } from "#/domain/game/game-mode";
 import { GameStatus } from "#/domain/game/game-status";
-import { Grid } from "#/domain/grid/grid";
+import type { Grid } from "#/domain/grid/grid";
+import { SquareGrid } from "#/domain/grid/grid";
 import { Player } from "#/domain/player/player";
 import { PlayerStatus } from "#/domain/player/player-status";
 import { StandardTeam } from "#/domain/team/team";
 
 function createGridForAction(): Grid {
-  return new Grid(2, 1, [
+  return new SquareGrid(2, 1, [
     [
       new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),
       new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.PLAIN }),
@@ -134,7 +135,7 @@ describe("ClassicGame", () => {
   });
 
   test("generates troops via effects during nextTick", () => {
-    const grid = new Grid(3, 1, [
+    const grid = new SquareGrid(3, 1, [
       [
         new Cell({
           coordinate: { x: 0, y: 0 },
@@ -195,7 +196,7 @@ describe("ClassicGame", () => {
   });
 
   it("computes player stats from owned cells", () => {
-    const grid = new Grid(2, 1, [
+    const grid = new SquareGrid(2, 1, [
       [
         new Cell({
           coordinate: { x: 0, y: 0 },
@@ -252,7 +253,7 @@ describe("ClassicGame", () => {
 
   describe("getScoreboard", () => {
     it("returns correct scoreboard for multiple players", () => {
-      const grid = new Grid(4, 1, [
+      const grid = new SquareGrid(4, 1, [
         [
           new Cell({
             coordinate: { x: 0, y: 0 },
@@ -313,7 +314,7 @@ describe("ClassicGame", () => {
     });
 
     it("returns zero stats for player with no cells", () => {
-      const grid = new Grid(2, 1, [
+      const grid = new SquareGrid(2, 1, [
         [
           new Cell({
             coordinate: { x: 0, y: 0 },
@@ -350,7 +351,7 @@ describe("ClassicGame", () => {
     });
 
     it("reports isAlive as false when general is captured", () => {
-      const grid = new Grid(3, 1, [
+      const grid = new SquareGrid(3, 1, [
         [
           new Cell({
             coordinate: { x: 0, y: 0 },
@@ -394,7 +395,7 @@ describe("ClassicGame", () => {
     });
 
     it("reflects live changes to cell ownership and troops", () => {
-      const grid = new Grid(2, 1, [
+      const grid = new SquareGrid(2, 1, [
         [
           new Cell({
             coordinate: { x: 0, y: 0 },
@@ -442,7 +443,7 @@ describe("ClassicGame", () => {
   });
 
   test("surrender neutralizes all owned troops and can end the game", () => {
-    const grid = new Grid(3, 1, [
+    const grid = new SquareGrid(3, 1, [
       [
         new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),
         new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.CITY }),
@@ -487,7 +488,7 @@ describe("ClassicGame", () => {
   test("surrender converts general to city so capturer does not gain a second general", () => {
     // Grid: [GENERAL(p1), PLAIN(p2), PLAIN(p3)]
     // p1 surrenders → GENERAL must become CITY. p3 keeps game alive so p2 can capture it.
-    const grid = new Grid(3, 1, [
+    const grid = new SquareGrid(3, 1, [
       [
         new Cell({
           coordinate: { x: 0, y: 0 },

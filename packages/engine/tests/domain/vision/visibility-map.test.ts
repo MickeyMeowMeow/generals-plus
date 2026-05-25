@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
-import { Grid } from "#/domain/grid/grid";
+import type { Grid } from "#/domain/grid/grid";
+import { SquareGrid } from "#/domain/grid/grid";
 import { Player } from "#/domain/player/player";
 import { StandardTeam } from "#/domain/team/team";
 import { Visibility } from "#/domain/vision/visibility";
@@ -28,7 +29,7 @@ function createVisionGrid(): Grid {
         }),
     ),
   );
-  return new Grid(3, 3, cells);
+  return new SquareGrid(3, 3, cells);
 }
 
 describe("VisibilityMap", () => {
