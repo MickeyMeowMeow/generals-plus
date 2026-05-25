@@ -3,7 +3,12 @@ import { Terrain } from "#/domain/cell/terrain";
 import type { EffectTarget } from "#/domain/effect/effect-target";
 import type { IGrid } from "#/domain/grid/interfaces";
 import type { ICoordinate } from "#/math/coordinate";
-import { HexGrid2D, SquareGrid2D } from "#/math/grid-2d";
+import {
+  generateHexGridData,
+  generateSquareGridData,
+  HexGrid2D,
+  SquareGrid2D,
+} from "#/math/grid-2d";
 
 export class SquareGrid
   extends SquareGrid2D<ICell>
@@ -23,6 +28,15 @@ export class SquareGrid
         this.terrainMap.get(newTerrain)?.add(cell);
       };
     }
+  }
+
+  static create(
+    width: number,
+    height: number,
+    generator: (coord: ICoordinate) => ICell,
+  ) {
+    const cells = generateSquareGridData(width, height, generator);
+    return new SquareGrid(width, height, cells);
   }
 
   forEachTerrain(
@@ -56,6 +70,23 @@ export class HexGrid extends HexGrid2D<ICell> implements EffectTarget, IGrid {
         this.terrainMap.get(newTerrain)?.add(cell);
       };
     }
+  }
+
+  static create(
+    left: number,
+    right: number,
+    leftSlant: number,
+    rightSlant: number,
+    generator: (coord: ICoordinate) => ICell,
+  ) {
+    const cells = generateHexGridData(
+      left,
+      right,
+      leftSlant,
+      rightSlant,
+      generator,
+    );
+    return new HexGrid(left, right, leftSlant, rightSlant, cells);
   }
 
   forEachTerrain(
