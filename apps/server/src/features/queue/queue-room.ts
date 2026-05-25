@@ -13,29 +13,18 @@ import {
 } from "@generals-plus/shared-types";
 
 import { createGame, generateSeed } from "#/features/game/utils";
+import {
+  BASE_TICK_INTERVAL,
+  calculateFinishTick,
+  MODE_SETTINGS,
+} from "#/features/match/utils";
 import { createPlayerInit } from "#/features/player/utils";
 import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
 const DEFAULT_MAX_PLAYERS = 8;
 const DEFAULT_MIN_PLAYERS = 2;
 const DEFAULT_COUNTDOWN_CYCLES = 20;
-const BASE_TICK_INTERVAL = 500;
 const RATING_TOLERANCE = 200;
-
-interface ModeSettings {
-  duration?: number;
-  flagCount?: number;
-  targetScore?: number;
-}
-
-const MODE_SETTINGS = {
-  [GameMode.DOMINATION]: { duration: 300, flagCount: 3, targetScore: 1000 },
-  [GameMode.TURF_WAR]: { duration: 180 },
-} satisfies Partial<Record<GameMode, ModeSettings>>;
-
-function calculateFinishTick(duration: number, tickInterval: number): number {
-  return Math.round((duration * 1000) / tickInterval);
-}
 
 const userRepository = new MongoUserRepository();
 
@@ -85,9 +74,7 @@ export class MatchQueueRoom extends QueueRoom {
           groupPlayerIds.includes(p.id),
         );
 
-        const modeSettings = (
-          MODE_SETTINGS as Partial<Record<GameMode, ModeSettings>>
-        )[this.gameMode];
+        const modeSettings = MODE_SETTINGS[this.gameMode];
         const gridOptions =
           this.gameMode === GameMode.DOMINATION
             ? ({
