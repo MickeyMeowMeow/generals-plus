@@ -8,6 +8,25 @@ export const GridType = {
 
 export type GridType = (typeof GridType)[keyof typeof GridType];
 
+export interface GridBounds extends Record<GridType, Record<string, number>> {
+  [GridType.SQUARE]: {
+    /** Number of columns. */
+    readonly width: number;
+    /** Number of rows. */
+    readonly height: number;
+  };
+  [GridType.HEX]: {
+    /** Number of columns to the left of the center column (inclusive), used to calculate the minimum x coordinate. */
+    readonly left: number;
+    /** Number of columns to the right of the center column (inclusive), used to calculate the maximum x coordinate. */
+    readonly right: number;
+    /** Number of slanting rows from the center top to the lowest point, used to calculate the maximum y coordinate. */
+    readonly leftSlant: number;
+    /** Number of slanting rows from the center top to the lowest point, used to calculate the minimum z coordinate. */
+    readonly rightSlant: number;
+  };
+}
+
 /**
  * A purely mathematical 2D spatial container.
  *
@@ -144,9 +163,7 @@ export interface GenericGrid2D<T> {
 export class SquareGrid2D<T> implements GenericGrid2D<T> {
   readonly gridType = GridType.SQUARE;
 
-  /** Number of columns. */
   readonly width: number;
-  /** Number of rows. */
   readonly height: number;
 
   readonly gridData: T[][];
@@ -330,13 +347,9 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
 export class HexGrid2D<T> implements GenericGrid2D<T> {
   readonly gridType = GridType.HEX;
 
-  /** Number of columns to the left of the center column (inclusive), used to calculate the minimum x coordinate. */
   readonly left: number;
-  /** Number of columns to the right of the center column (inclusive), used to calculate the maximum x coordinate. */
   readonly right: number;
-  /** Number of slanting rows from the center top to the lowest point, used to calculate the maximum y coordinate. */
   readonly leftSlant: number;
-  /** Number of slanting rows from the center top to the lowest point, used to calculate the minimum z coordinate. */
   readonly rightSlant: number;
 
   readonly gridData: T[][];

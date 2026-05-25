@@ -4,6 +4,7 @@ import { Terrain } from "#/domain/cell/terrain";
 import type { GridGeneratorOptions } from "#/domain/grid/grid-generator";
 import {
   DefaultGenOptions,
+  DefaultGridBounds,
   SquareGridGenerator,
 } from "#/domain/grid/grid-generator";
 import type { ICoordinate } from "#/math/coordinate";
@@ -16,6 +17,7 @@ import {
   MIN_FLAG_GENERAL_DISTANCE,
   MIN_FLAG_SPACING,
 } from "#/domain/grid/grid-generator";
+import { GridType } from "#/math/grid-2d";
 
 function collectByTerrain(
   grid: ReturnType<SquareGridGenerator["generate"]>,
@@ -83,8 +85,8 @@ describe("SquareGridGenerator", () => {
 
   it("uses default dimensions when options are not provided", () => {
     const grid = generator.generate();
-    expect(grid.width).toBe(DefaultGenOptions.gridBounds.width);
-    expect(grid.height).toBe(DefaultGenOptions.gridBounds.height);
+    expect(grid.width).toBe(DefaultGridBounds[GridType.SQUARE].width);
+    expect(grid.height).toBe(DefaultGridBounds[GridType.SQUARE].height);
     let mountainCount = 0;
     let cityCount = 0;
     let generalCount = 0;

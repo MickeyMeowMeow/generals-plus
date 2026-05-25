@@ -2,7 +2,6 @@ import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import type { Grid } from "#/domain/grid/grid";
 import type {
-  GridGenerator,
   GridGeneratorOptions,
   ResolvedConfig,
 } from "#/domain/grid/grid-generator/config";
@@ -16,13 +15,11 @@ import {
   MIN_CITY_SPACING,
   MIN_FLAG_GENERAL_DISTANCE,
   MIN_FLAG_SPACING,
-  MIN_HEIGHT,
   MIN_RATE,
-  MIN_WIDTH,
   MOUNTAIN_CLUSTER_MAX_SIZE,
 } from "#/domain/grid/grid-generator/config";
 import type { ICoordinate } from "#/math/coordinate";
-import type { GenericGrid2D } from "#/math/grid-2d";
+import type { GenericGrid2D, GridBounds, GridType } from "#/math/grid-2d";
 import { SeededRandom } from "#/math/random";
 
 /**
@@ -35,11 +32,11 @@ import { SeededRandom } from "#/math/random";
  * On validation failure, derives a new seed and retries up to MAX_ATTEMPT_COUNT.
  */
 export abstract class AbstractGridGenerator<
-  T extends GenericGrid2D<Terrain>,
+  T extends GridType,
+  TerrainGrid extends GenericGrid2D<Terrain>,
   G extends Grid,
-> implements GridGenerator
-{
-  generate(options: GridGeneratorOptions = {}): G {
+> {
+  generate(options: GridGeneratorOptions<T> = {}): G {
     const config = this.resolveOptions(options);
     const seed = options.seed ?? DefaultGenOptions.seed;
     let rng = new SeededRandom(seed);
@@ -61,8 +58,11 @@ export abstract class AbstractGridGenerator<
 
   // ── Pipeline ─────────────────────────────────────────────────────
 
-  protected tryGenerate(config: ResolvedConfig, rng: SeededRandom): G | null {
-    const terrainGrid: T = this.createEmptyTerrainGrid(config);
+  protected tryGenerate(
+    config: ResolvedConfig<T>,
+    rng: SeededRandom,
+  ): G | null {
+    const terrainGrid: TerrainGrid = this.createEmptyTerrainGrid(config);
 
     const generals = this.placeGenerals(config, rng, terrainGrid);
     if (!generals) {
@@ -86,11 +86,15 @@ export abstract class AbstractGridGenerator<
     return grid;
   }
 
-  protected abstract createEmptyTerrainGrid(config: ResolvedConfig): T;
+  protected abstract createEmptyTerrainGrid(
+    config: ResolvedConfig<T>,
+  ): TerrainGrid;
 
   // ── Step 0: resolve & validate ───────────────────────────────────
 
-  protected resolveOptions(options: GridGeneratorOptions): ResolvedConfig {
+  protected resolveOptions(
+    options: GridGeneratorOptions<T>,
+  ): ResolvedConfig<T> {
     const gridBounds = this.resolveGridBounds(options);
 
     const mountainRate = options.mountainRate ?? DefaultGenOptions.mountainRate;
@@ -134,31 +138,16 @@ export abstract class AbstractGridGenerator<
     };
   }
 
-  protected resolveGridBounds(options: GridGeneratorOptions): {
-    width: number;
-    height: number;
-  } {
-    const { width, height } =
-      options.gridBounds ?? DefaultGenOptions.gridBounds;
-
-    if (width < MIN_WIDTH || height < MIN_HEIGHT) {
-      throw new Error(
-        `Grid dimensions must be at least ${MIN_WIDTH}x${MIN_HEIGHT}, got ${width}x${height}.`,
-      );
-    }
-
-    return {
-      width,
-      height,
-    };
-  }
+  protected abstract resolveGridBounds(
+    options: GridGeneratorOptions<T>,
+  ): GridBounds[T];
 
   // ── Step 1: place generals ───────────────────────────────────────
 
   protected placeGenerals(
-    config: ResolvedConfig,
+    config: ResolvedConfig<T>,
     rng: SeededRandom,
-    terrainGrid: T,
+    terrainGrid: TerrainGrid,
   ): ICoordinate[] | null {
     const { generalCount } = config;
     const minDistance = this.calculateMinGeneralDistance(config);
@@ -188,18 +177,15 @@ export abstract class AbstractGridGenerator<
     return null;
   }
 
-  protected calculateMinGeneralDistance(config: ResolvedConfig): number {
-    return Math.floor(
-      Math.min(config.gridBounds.width, config.gridBounds.height) *
-        config.minGeneralDistanceFactor,
-    );
-  }
+  protected abstract calculateMinGeneralDistance(
+    config: ResolvedConfig<T>,
+  ): number;
 
   // ── Step 2: protected zones ──────────────────────────────────────
 
   protected buildProtectedZones(
     generals: ICoordinate[],
-    terrainGrid: T,
+    terrainGrid: TerrainGrid,
   ): Set<ICoordinate> {
     const zone = new Set<ICoordinate>();
 
@@ -215,9 +201,9 @@ export abstract class AbstractGridGenerator<
   // ── Step 3: paint mountains ──────────────────────────────────────
 
   protected paintMountains(
-    config: ResolvedConfig,
+    config: ResolvedConfig<T>,
     rng: SeededRandom,
-    terrainGrid: T,
+    terrainGrid: TerrainGrid,
     protectedZone: Set<ICoordinate>,
   ): void {
     const { mountainRate } = config;
@@ -263,9 +249,9 @@ export abstract class AbstractGridGenerator<
   // ── Step 4: place cities ─────────────────────────────────────────
 
   protected placeCities(
-    config: ResolvedConfig,
+    config: ResolvedConfig<T>,
     rng: SeededRandom,
-    terrainGrid: T,
+    terrainGrid: TerrainGrid,
     protectedZone: Set<ICoordinate>,
     generals: ICoordinate[],
   ): void {
@@ -297,9 +283,9 @@ export abstract class AbstractGridGenerator<
   // ── Step 5: place flags (center-weighted) ────────────────────────
 
   protected placeFlags(
-    config: ResolvedConfig,
+    config: ResolvedConfig<T>,
     rng: SeededRandom,
-    terrainGrid: T,
+    terrainGrid: TerrainGrid,
     protectedZone: Set<ICoordinate>,
     generals: ICoordinate[],
   ): void {
@@ -351,12 +337,12 @@ export abstract class AbstractGridGenerator<
   // ── Step 6: materialize ──────────────────────────────────────────
 
   protected abstract materializeCells(
-    terrainGrid: T,
-    options: GridGeneratorOptions,
+    terrainGrid: TerrainGrid,
+    options: GridGeneratorOptions<T>,
   ): G;
 
   protected createCell(
-    options: GridGeneratorOptions,
+    options: GridGeneratorOptions<T>,
     terrain: Terrain,
     coordinate: ICoordinate,
   ): Cell {
@@ -381,7 +367,7 @@ export abstract class AbstractGridGenerator<
   }
 
   protected checkGeneralConnectivity(
-    terrain: T,
+    terrain: TerrainGrid,
     generals: ICoordinate[],
   ): boolean {
     if (generals.length <= 1) return true;
@@ -412,7 +398,7 @@ export abstract class AbstractGridGenerator<
 
   protected findCandidates(
     protectedZone: Set<ICoordinate>,
-    terrainGrid: T,
+    terrainGrid: TerrainGrid,
     expectedTerrain: Terrain,
     farFrom: ICoordinate[],
     minDistance: number,

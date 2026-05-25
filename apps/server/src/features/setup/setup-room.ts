@@ -4,7 +4,9 @@ import { logger, matchMaker, Room } from "@colyseus/core";
 import type { GridGeneratorOptions } from "@generals-plus/engine";
 import {
   DefaultGenOptions,
+  DefaultGridBounds,
   GameMode,
+  GridType,
   getDefaultPlayersPerTeam,
 } from "@generals-plus/engine";
 import type {
@@ -94,8 +96,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     state.isPublic = isPublic;
     state.maxPlayers = maxPlayers;
     state.playersPerTeam = getDefaultPlayersPerTeam(gameMode);
-    state.mapWidth = DefaultGenOptions.gridBounds.width;
-    state.mapHeight = DefaultGenOptions.gridBounds.height;
+    state.mapWidth = DefaultGridBounds[GridType.SQUARE].width;
+    state.mapHeight = DefaultGridBounds[GridType.SQUARE].height;
     state.seed = generateSeed();
     state.mountainRate = DefaultGenOptions.mountainRate;
     state.cityRate = DefaultGenOptions.cityRate;

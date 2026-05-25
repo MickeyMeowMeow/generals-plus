@@ -1,4 +1,6 @@
 import type { Grid } from "#/domain/grid/grid";
+import type { GridBounds } from "#/math/grid-2d";
+import { GridType } from "#/math/grid-2d";
 
 // ── Named constants ──────────────────────────────────────────────────
 
@@ -21,8 +23,10 @@ export const MOUNTAIN_CLUSTER_MAX_SIZE = 1;
 /**
  * Options for grid generation.
  */
-export interface GridGeneratorOptions {
-  readonly gridBounds?: { width: number; height: number };
+export interface GridGeneratorOptions<
+  T extends GridType = typeof GridType.SQUARE,
+> {
+  readonly gridBounds?: GridBounds[T];
   readonly seed?: number;
 
   readonly generalCount?: number;
@@ -37,8 +41,10 @@ export interface GridGeneratorOptions {
 }
 
 /** Default options exposed for external reference. */
-export const DefaultGenOptions: Required<GridGeneratorOptions> = {
-  gridBounds: { width: 24, height: 16 },
+export const DefaultGenOptions: Omit<
+  Required<GridGeneratorOptions>,
+  "gridBounds"
+> = {
   seed: 20260428,
 
   generalCount: 4,
@@ -50,14 +56,22 @@ export const DefaultGenOptions: Required<GridGeneratorOptions> = {
   cityInitialTroops: 50,
 
   flagCount: 0,
-};
+} as const;
 
-/**
- * Grid generator interface for creating new grid instances.
- */
-export interface GridGenerator {
-  generate(options?: GridGeneratorOptions): Grid;
-}
+export const DefaultGridBounds: {
+  [K in GridType]: GridBounds[K];
+} = {
+  [GridType.SQUARE]: {
+    width: 24,
+    height: 16,
+  },
+  [GridType.HEX]: {
+    left: 10,
+    right: 10,
+    leftSlant: 19,
+    rightSlant: 19,
+  },
+} as const;
 
 /**
  * Union type representing either a pre-built grid or generation options.
@@ -70,4 +84,7 @@ export type GridInput =
 
 // ── Resolved config (all fields required) ────────────────────────────
 
-export type ResolvedConfig = Omit<Required<GridGeneratorOptions>, "seed">;
+export type ResolvedConfig<T extends GridType = typeof GridType.SQUARE> = Omit<
+  Required<GridGeneratorOptions<T>>,
+  "seed"
+>;
