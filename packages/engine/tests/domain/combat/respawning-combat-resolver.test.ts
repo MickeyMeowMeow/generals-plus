@@ -6,7 +6,7 @@ import type { MoveAction } from "#/domain/action/interfaces";
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import { RespawningCombatResolver } from "#/domain/combat/respawning-combat-resolver";
-import { Grid } from "#/domain/grid/grid";
+import { SquareGrid } from "#/domain/grid/grid";
 import { Player } from "#/domain/player/player";
 import { PlayerStatus } from "#/domain/player/player-status";
 import { StandardTeam } from "#/domain/team/team";
@@ -32,7 +32,7 @@ describe("RespawningCombatResolver", () => {
       ["p2", p2],
     ]);
 
-    const grid = new Grid(3, 1, [
+    const grid = new SquareGrid(3, 1, [
       [
         new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),
         new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.GENERAL }),
@@ -79,7 +79,7 @@ describe("RespawningCombatResolver", () => {
       ["p2", p2],
     ]);
 
-    const grid = new Grid(2, 1, [
+    const grid = new SquareGrid(2, 1, [
       [
         new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),
         new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.GENERAL }),

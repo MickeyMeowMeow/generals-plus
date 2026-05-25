@@ -1,5 +1,5 @@
 import type { ICoordinate, Terrain, Visibility } from "@generals-plus/engine";
-import { SquareGrid } from "@generals-plus/engine";
+import { SquareGrid2D } from "@generals-plus/engine";
 
 export interface RenderGridCell {
   coordinate: ICoordinate;
@@ -9,6 +9,6 @@ export interface RenderGridCell {
   ownerIndex: string | null;
 }
 
-export class SquareRenderGrid extends SquareGrid<RenderGridCell> {}
+export class SquareRenderGrid extends SquareGrid2D<RenderGridCell> {}
 
 export type RenderGrid = SquareRenderGrid;
