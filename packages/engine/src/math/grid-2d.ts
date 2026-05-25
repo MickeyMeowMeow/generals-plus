@@ -66,7 +66,15 @@ export interface GenericGrid2D<T> {
    * @param coordinate The center location.
    * @returns An array of adjacent, valid elements.
    */
-  getNeighbors(coordinate: ICoordinate): T[];
+  getNeighbors(coordinate: ICoordinate): [ICoordinate, T][];
+
+  /**
+   * Retrieves all valid coordinates within the grid, excluding a margin from the edges.
+   *
+   * @param margin The number of cells to exclude from the edges.
+   * @returns An array of valid coordinates within the grid, excluding the margin.
+   */
+  getInteriorCoordinates(margin: number): ICoordinate[];
 
   /**
    * Iterates over every element in the grid.
@@ -190,8 +198,8 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
     return this.getDistance(coord1, coord2) === 1;
   }
 
-  getNeighbors(coordinate: ICoordinate): T[] {
-    const neighbors: T[] = [];
+  getNeighbors(coordinate: ICoordinate): [ICoordinate, T][] {
+    const neighbors: [ICoordinate, T][] = [];
     const offsets = [
       { x: 0, y: -1 },
       { x: 1, y: 0 },
@@ -199,15 +207,23 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
       { x: -1, y: 0 },
     ];
     for (const offset of offsets) {
-      const neighbor = this.get({
-        x: coordinate.x + offset.x,
-        y: coordinate.y + offset.y,
-      });
+      const coord = { x: coordinate.x + offset.x, y: coordinate.y + offset.y };
+      const neighbor = this.get(coord);
       if (neighbor !== null) {
-        neighbors.push(neighbor);
+        neighbors.push([coord, neighbor]);
       }
     }
     return neighbors;
+  }
+
+  getInteriorCoordinates(margin: number): ICoordinate[] {
+    const coordinates: ICoordinate[] = [];
+    for (let y = margin; y < this.height - margin; y++) {
+      for (let x = margin; x < this.width - margin; x++) {
+        coordinates.push({ x, y });
+      }
+    }
+    return coordinates;
   }
 
   forEach(callback: (element: T, coordinate: ICoordinate) => void): void {
@@ -415,8 +431,8 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
     return this.getDistance(coord1, coord2) === 1;
   }
 
-  getNeighbors(coordinate: ICoordinate): T[] {
-    const neighbors: T[] = [];
+  getNeighbors(coordinate: ICoordinate): [ICoordinate, T][] {
+    const neighbors: [ICoordinate, T][] = [];
     const offsets = [
       { x: 0, y: -1 },
       { x: 1, y: -1 },
@@ -426,15 +442,25 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
       { x: -1, y: 0 },
     ];
     for (const offset of offsets) {
-      const neighbor = this.get({
-        x: coordinate.x + offset.x,
-        y: coordinate.y + offset.y,
-      });
+      const coord = { x: coordinate.x + offset.x, y: coordinate.y + offset.y };
+      const neighbor = this.get(coord);
       if (neighbor !== null) {
-        neighbors.push(neighbor);
+        neighbors.push([coord, neighbor]);
       }
     }
     return neighbors;
+  }
+
+  getInteriorCoordinates(margin: number): ICoordinate[] {
+    const coordinates: ICoordinate[] = [];
+    for (let y = margin; y < this.leftSlant - margin; y++) {
+      const minX = this.getMinX(y) + margin;
+      const maxX = this.getMaxX(y) - margin;
+      for (let x = minX; x <= maxX; x++) {
+        coordinates.push({ x, y });
+      }
+    }
+    return coordinates;
   }
 
   forEach(callback: (element: T, coordinate: ICoordinate) => void): void {

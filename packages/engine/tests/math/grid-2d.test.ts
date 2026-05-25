@@ -77,8 +77,18 @@ describe("SquareGrid2D", () => {
 
   it("returns correct neighbors bounded by the grid", () => {
     const grid = createSquareGrid();
-    const neighbors = grid.getNeighbors({ x: 0, y: 0 });
+    const neighbors = grid.getNeighbors({ x: 0, y: 0 }).map(([_, val]) => val);
     expect(neighbors).toEqual([2, 3]);
+  });
+
+  it("returns interior coordinates", () => {
+    const grid = new SquareGrid2D<number>(3, 3, [
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+    ]);
+    expect(grid.getInteriorCoordinates(1)).toEqual([{ x: 1, y: 1 }]);
+    expect(grid.getInteriorCoordinates(2)).toEqual([]);
   });
 
   it("iterates over grid elements within a specified radius", () => {
@@ -219,8 +229,18 @@ describe("HexGrid2D", () => {
 
   it("returns correct hex neighbors bounded by the grid", () => {
     const grid = createHexGrid();
-    expect(grid.getNeighbors({ x: 0, y: 1 })).toEqual([1, 2, 5, 7, 6, 3]); // All 6 neighbors exist
-    expect(grid.getNeighbors({ x: 1, y: 0 })).toEqual([5, 4, 1]); // Missing 3 neighbors
+    expect(grid.getNeighbors({ x: 0, y: 1 }).map(([_, val]) => val)).toEqual([
+      1, 2, 5, 7, 6, 3,
+    ]); // All 6 neighbors exist
+    expect(grid.getNeighbors({ x: 1, y: 0 }).map(([_, val]) => val)).toEqual([
+      5, 4, 1,
+    ]); // Missing 3 neighbors
+  });
+
+  it("returns interior coordinates", () => {
+    const grid = createHexGrid();
+    expect(grid.getInteriorCoordinates(1)).toEqual([{ x: 0, y: 1 }]);
+    expect(grid.getInteriorCoordinates(2)).toEqual([]);
   });
 
   it("iterates over hex grid elements within a specified radius", () => {

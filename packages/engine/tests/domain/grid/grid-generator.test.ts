@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { Terrain } from "#/domain/cell/terrain";
 import type { DominationGridOptions } from "#/domain/grid/grid-generator";
 import {
-  DefaultGridGenerator,
   DefaultGridGeneratorOptions,
+  SquareGridGenerator,
 } from "#/domain/grid/grid-generator";
 import type { ICoordinate } from "#/math/coordinate";
 
@@ -18,7 +18,7 @@ import {
 } from "#/domain/grid/grid-generator";
 
 function collectByTerrain(
-  grid: ReturnType<DefaultGridGenerator["generate"]>,
+  grid: ReturnType<SquareGridGenerator["generate"]>,
   terrain: string,
 ): ICoordinate[] {
   const result: ICoordinate[] = [];
@@ -31,7 +31,7 @@ function collectByTerrain(
 }
 
 function toTerrainMatrix(
-  grid: ReturnType<DefaultGridGenerator["generate"]>,
+  grid: ReturnType<SquareGridGenerator["generate"]>,
 ): string[][] {
   return Array.from({ length: grid.height }, (_, y) =>
     Array.from(
@@ -46,7 +46,7 @@ function manhattanDistance(a: ICoordinate, b: ICoordinate): number {
 }
 
 function bfsReachable(
-  grid: ReturnType<DefaultGridGenerator["generate"]>,
+  grid: ReturnType<SquareGridGenerator["generate"]>,
   start: ICoordinate,
 ): number {
   const visited = new Set<string>();
@@ -78,8 +78,8 @@ function bfsReachable(
 
 // ── Tests ────────────────────────────────────────────────────────────
 
-describe("DefaultGridGenerator", () => {
-  const generator = new DefaultGridGenerator();
+describe("SquareGridGenerator", () => {
+  const generator = new SquareGridGenerator();
 
   it("uses default dimensions when options are not provided", () => {
     const grid = generator.generate();

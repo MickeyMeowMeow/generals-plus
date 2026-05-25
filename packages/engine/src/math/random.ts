@@ -28,6 +28,16 @@ export class SeededRandom {
     return array;
   }
 
+  weightedIndex(weights: number[]): number {
+    const total = weights.reduce((sum, w) => sum + w, 0);
+    let roll = this.next() * total;
+    for (let i = 0; i < weights.length; i++) {
+      roll -= weights[i];
+      if (roll <= 0) return i;
+    }
+    throw new Error(`Invalid weights: ${weights}`); // Should never happen if weights are valid
+  }
+
   /** Derive a child PRNG for retry isolation. */
   derive(): SeededRandom {
     return new SeededRandom(this.state);

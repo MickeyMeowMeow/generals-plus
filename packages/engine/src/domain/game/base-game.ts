@@ -9,7 +9,7 @@ import { GameStatus } from "#/domain/game/game-status";
 import type { IBaseGame, IBaseScoreboard } from "#/domain/game/interfaces";
 import type { Grid } from "#/domain/grid/grid";
 import type { GridInput } from "#/domain/grid/grid-generator";
-import { DefaultGridGenerator } from "#/domain/grid/grid-generator";
+import { SquareGridGenerator } from "#/domain/grid/grid-generator";
 import type { IItem } from "#/domain/item/interfaces";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
@@ -36,7 +36,7 @@ export abstract class BaseGame implements IBaseGame {
 
   constructor(input: GridInput) {
     this.grid =
-      "grid" in input ? input.grid : new DefaultGridGenerator().generate(input);
+      "grid" in input ? input.grid : new SquareGridGenerator().generate(input);
     this.visibilityMap = new VisibilityMap(this.grid);
   }
 
