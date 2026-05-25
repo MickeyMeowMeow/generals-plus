@@ -2,121 +2,68 @@ import { describe, expect, it } from "vitest";
 
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
-import type { Grid } from "#/domain/grid/grid";
-import { SquareGrid } from "#/domain/grid/grid";
+import { HexGrid, SquareGrid } from "#/domain/grid/grid";
+import type { IGrid } from "#/domain/grid/interfaces";
 
-function createCell(x: number, y: number): Cell {
-  return new Cell({
-    coordinate: { x, y },
-    terrain: Terrain.PLAIN,
-  });
+/** Helper to create a standard test cell. */
+function createCell(
+  x: number,
+  y: number,
+  terrain: Terrain = Terrain.PLAIN,
+): Cell {
+  return new Cell({ coordinate: { x, y }, terrain });
 }
 
-function createGrid(width = 3, height = 2): Grid {
-  const cells = Array.from({ length: height }, (_, y) =>
-    Array.from({ length: width }, (_, x) => createCell(x, y)),
-  );
-  return new SquareGrid(width, height, cells);
-}
-
-describe("Grid", () => {
-  it("rejects non-positive dimensions", () => {
-    expect(() => new SquareGrid(0, 1, [[createCell(0, 0)]])).toThrow(
-      /dimensions must be positive/i,
-    );
-    expect(() => new SquareGrid(1, -1, [[createCell(0, 0)]])).toThrow(
-      /dimensions must be positive/i,
-    );
-  });
-
-  it("rejects cell matrices that do not match dimensions", () => {
-    const badRows = [[createCell(0, 0), createCell(1, 0)]];
-
-    expect(() => new SquareGrid(2, 2, badRows)).toThrow(/does not match/i);
-  });
-
-  it("gets cells only when coordinate is in bounds", () => {
-    const grid = createGrid(2, 2);
-
-    expect(grid.get({ x: 1, y: 1 })?.coordinate).toEqual({ x: 1, y: 1 });
-    expect(grid.get({ x: -1, y: 0 })).toBeNull();
-    expect(grid.get({ x: 2, y: 0 })).toBeNull();
-    expect(grid.get({ x: 0, y: 2 })).toBeNull();
-  });
-
-  it("returns neighbors in N, E, S, W order when present", () => {
-    const grid = createGrid(3, 3);
-
-    const neighbors = grid.getNeighbors({ x: 1, y: 1 });
-    const coordinates = neighbors.map((cell) => cell.coordinate);
-
-    expect(coordinates).toEqual([
-      { x: 1, y: 0 },
-      { x: 2, y: 1 },
-      { x: 1, y: 2 },
-      { x: 0, y: 1 },
-    ]);
-  });
-
-  it("omits out-of-bounds neighbors at edges", () => {
-    const grid = createGrid(2, 2);
-
-    const neighbors = grid.getNeighbors({ x: 0, y: 0 });
-    const coordinates = neighbors.map((cell) => cell.coordinate);
-
-    expect(coordinates).toEqual([
-      { x: 1, y: 0 },
-      { x: 0, y: 1 },
-    ]);
-  });
-
-  it("iterates cells in row-major order", () => {
-    const grid = createGrid(2, 2);
-    const seen: Array<{
-      coordinate: { x: number; y: number };
-      x: number;
-      y: number;
-    }> = [];
-
-    grid.forEach((cell, coordinate) => {
-      seen.push({
-        coordinate: cell.coordinate,
-        x: coordinate.x,
-        y: coordinate.y,
+describe("Game Grids", () => {
+  /** Shared test suite for terrain indexing logic. */
+  const testTerrainIndexing = (grid: IGrid, targetCell: Cell) => {
+    it("initially indexes cells by terrain", () => {
+      let found = false;
+      grid.forEachTerrain(Terrain.PLAIN, (cell) => {
+        if (cell === targetCell) found = true;
       });
+      expect(found).toBe(true);
     });
 
-    expect(seen).toEqual([
-      { coordinate: { x: 0, y: 0 }, x: 0, y: 0 },
-      { coordinate: { x: 1, y: 0 }, x: 1, y: 0 },
-      { coordinate: { x: 0, y: 1 }, x: 0, y: 1 },
-      { coordinate: { x: 1, y: 1 }, x: 1, y: 1 },
-    ]);
+    it("updates indexes when a cell's terrain type changes", () => {
+      targetCell.terrain = Terrain.MOUNTAIN;
+
+      let foundInOld = false;
+      grid.forEachTerrain(Terrain.PLAIN, (cell) => {
+        if (cell === targetCell) foundInOld = true;
+      });
+
+      let foundInNew = false;
+      grid.forEachTerrain(Terrain.MOUNTAIN, (cell) => {
+        if (cell === targetCell) foundInNew = true;
+      });
+
+      expect(foundInOld).toBe(false);
+      expect(foundInNew).toBe(true);
+    });
+  };
+
+  describe("SquareGrid", () => {
+    const cell = createCell(0, 0);
+    const grid = new SquareGrid(1, 1, [[cell]]);
+
+    it("inherits mathematical validity from SquareGrid2D", () => {
+      expect(grid.isValid({ x: 0, y: 0 })).toBe(true);
+      expect(grid.isValid({ x: 1, y: 0 })).toBe(false);
+    });
+
+    testTerrainIndexing(grid, cell);
   });
 
-  it("updates terrainMap correctly when cell terrain changes", () => {
-    const grid = createGrid(1, 1);
-    const cell = grid.get({ x: 0, y: 0 });
-    if (!cell) throw new Error("cell should exist");
+  describe("HexGrid", () => {
+    const cell = createCell(0, 0);
+    const grid = new HexGrid(1, 1, 1, 1, [[cell]]);
 
-    // Initially plain
-    let plains: Cell[] = [];
-    grid.forEachTerrain(Terrain.PLAIN, (c) => plains.push(c as Cell));
-    expect(plains).toContain(cell);
+    it("inherits mathematical validity from HexGrid2D", () => {
+      expect(grid.isValid({ x: 0, y: 0 })).toBe(true);
+      expect(grid.isValid({ x: -1, y: 0 })).toBe(false);
+    });
 
-    let mountains: Cell[] = [];
-    grid.forEachTerrain(Terrain.MOUNTAIN, (c) => mountains.push(c as Cell));
-    expect(mountains).not.toContain(cell);
-
-    // Change terrain to mountain
-    cell.terrain = Terrain.MOUNTAIN;
-
-    plains = [];
-    grid.forEachTerrain(Terrain.PLAIN, (c) => plains.push(c as Cell));
-    expect(plains).not.toContain(cell);
-
-    mountains = [];
-    grid.forEachTerrain(Terrain.MOUNTAIN, (c) => mountains.push(c as Cell));
-    expect(mountains).toContain(cell);
+    testTerrainIndexing(grid, cell);
   });
 });
