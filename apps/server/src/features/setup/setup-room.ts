@@ -28,23 +28,17 @@ import {
 
 import type { CreateGameOptions } from "#/features/game/utils";
 import { createGame, generateSeed } from "#/features/game/utils";
+import {
+  BASE_TICK_INTERVAL,
+  calculateFinishTick,
+  MODE_SETTINGS,
+} from "#/features/match/utils";
 import { createPlayerInit } from "#/features/player/utils";
 import {
   markCustomRoomMatchStarted,
   onSetupRoomDisposed,
 } from "./custom-room-registry";
 import { setupSettingsUpdateSchema } from "./schemas";
-
-const BASE_TICK_INTERVAL = 500;
-
-const MODE_SETTINGS: Record<
-  string,
-  { duration?: number; flagCount?: number; targetScore?: number }
-> = {
-  classic: {},
-  turf_war: { duration: 180 },
-  domination: { duration: 300, flagCount: 3, targetScore: 1000 },
-};
 
 const DEFAULT_MAX_PLAYERS = 8;
 
@@ -84,10 +78,6 @@ interface SetupRoomOptions {
 
 function calculateTickInterval(speed: number): number {
   return Math.max(100, Math.round(BASE_TICK_INTERVAL / speed));
-}
-
-function calculateFinishTick(duration: number, tickInterval: number): number {
-  return Math.round((duration * 1000) / tickInterval);
 }
 
 export class SetupRoom extends Room<{ state: SetupState }> {

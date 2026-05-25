@@ -8,6 +8,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SetupRoom } from "#/features/setup/setup-room";
 import { connectClient, createRoom, ROOM_NAMES } from "#tests/helpers";
 
+vi.mock("#/features/game/utils", async (importOriginal) => {
+  const mod = (await importOriginal()) as Record<string, unknown>;
+  return {
+    createGame: mod.createGame,
+    generateSeed: mod.generateSeed,
+  };
+});
+
 /** Wraps a client's send to capture error messages without breaking room routing. */
 function captureErrors(client: {
   send: (type: string, data?: unknown) => void;
@@ -29,6 +37,7 @@ describe("SetupRoom", () => {
   let room: SetupRoom;
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     if (room) {
       room.disconnect();
     }
@@ -384,6 +393,69 @@ describe("SetupRoom", () => {
         true,
       );
     });
+
+    it("allows cityRate + mountainRate summing to exactly 1.0", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        cityRate: 0.5,
+        mountainRate: 0.5,
+      });
+      await msgPromise;
+
+      expect(room.state.cityRate).toBe(0.5);
+      expect(room.state.mountainRate).toBe(0.5);
+    });
+
+    it("sends validation failed for too_big error", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+      const sendSpy = vi.spyOn(client, "send");
+
+      const messagePromise = room.waitForMessage(
+        SetupClientMessage.UPDATE_SETTINGS,
+      );
+      client.send(SetupClientMessage.UPDATE_SETTINGS, { mapWidth: 101 });
+      await messagePromise;
+
+      expect(sendSpy).toHaveBeenCalledWith(
+        SetupServerMessage.VALIDATION_FAILED,
+        {
+          severity: "warning",
+          field: "mapWidth",
+          message: "Map width must be at most 100.",
+        },
+      );
+      expect(room.state.mapWidth).not.toBe(101);
+    });
+
+    it("sends validation failed for unrecognized field", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+      const sendSpy = vi.spyOn(client, "send");
+
+      const messagePromise = room.waitForMessage(
+        SetupClientMessage.UPDATE_SETTINGS,
+      );
+      client.send(SetupClientMessage.UPDATE_SETTINGS, { unknownField: 42 });
+      await messagePromise;
+
+      expect(sendSpy).toHaveBeenCalledWith(
+        SetupServerMessage.VALIDATION_FAILED,
+        {
+          severity: "warning",
+          message: "Settings include an unsupported field.",
+        },
+      );
+    });
   });
 
   // ── pickColor ──────────────────────────────────────────────
@@ -458,6 +530,21 @@ describe("SetupRoom", () => {
 
       expect(sent).toContain("only the host can kick players");
     });
+
+    it("host cannot kick themselves", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      let kicked = false;
+      room.clients[0].leave = () => {
+        kicked = true;
+      };
+
+      room.clients[0].send("kick", { playerId: "p1" });
+
+      expect(kicked).toBe(false);
+    });
   });
 
   // ── start ──────────────────────────────────────────────────
@@ -503,6 +590,122 @@ describe("SetupRoom", () => {
       }
 
       // Trigger start through the message handler to cover the full path
+      room.clients[0].send(SetupClientMessage.START_GAME);
+
+      await vi.waitFor(
+        () => {
+          expect(seats).toHaveLength(2);
+        },
+        { timeout: 5000 },
+      );
+
+      room = null as unknown as SetupRoom;
+    });
+
+    it("rejects start when players per team results in fewer than 2 teams", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        playersPerTeam: 2,
+      });
+      await msgPromise;
+
+      const sent = captureErrors(room.clients[0]);
+      room.clients[0].send(SetupClientMessage.START_GAME);
+
+      expect(sent).toContain(
+        "Players per team is too high; the room needs at least two teams to start.",
+      );
+    });
+
+    it("sends validation failed when game creation throws", async () => {
+      const gameUtils = await import("#/features/game/utils");
+      const spy = vi.spyOn(gameUtils, "createGame");
+      spy.mockImplementationOnce(() => {
+        throw new Error("grid generation failed");
+      });
+
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      const sent = captureErrors(room.clients[0]);
+      room.clients[0].send(SetupClientMessage.START_GAME);
+
+      await vi.waitFor(
+        () => {
+          expect(sent.length).toBeGreaterThan(0);
+        },
+        { timeout: 3000 },
+      );
+
+      expect(sent).toContain(
+        "Those map settings cannot start a game. Try a larger map, fewer mountains, or a lower minimum general distance.",
+      );
+
+      spy.mockRestore();
+    });
+
+    it("starts game in turf_war mode with finishTick", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.TURF_WAR,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      expect(room.state.finishTick).toBeGreaterThan(0);
+
+      const seats: unknown[] = [];
+      for (const c of room.clients) {
+        const origSend = c.send.bind(c);
+        (
+          c as unknown as {
+            send: (type: string, data?: unknown) => void;
+          }
+        ).send = (type, data) => {
+          if (type === "seat") seats.push(data);
+          origSend(type, data);
+        };
+      }
+
+      room.clients[0].send(SetupClientMessage.START_GAME);
+
+      await vi.waitFor(
+        () => {
+          expect(seats).toHaveLength(2);
+        },
+        { timeout: 5000 },
+      );
+
+      room = null as unknown as SetupRoom;
+    });
+
+    it("starts game in domination mode with finishTick and targetScore", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DOMINATION,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      expect(room.state.finishTick).toBeGreaterThan(0);
+      expect(room.state.targetScore).toBe(1000);
+
+      const seats: unknown[] = [];
+      for (const c of room.clients) {
+        const origSend = c.send.bind(c);
+        (
+          c as unknown as {
+            send: (type: string, data?: unknown) => void;
+          }
+        ).send = (type, data) => {
+          if (type === "seat") seats.push(data);
+          origSend(type, data);
+        };
+      }
+
       room.clients[0].send(SetupClientMessage.START_GAME);
 
       await vi.waitFor(
