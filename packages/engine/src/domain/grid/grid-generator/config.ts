@@ -6,17 +6,22 @@ import { GridType } from "#/math/grid-2d";
 
 export const MIN_WIDTH = 5;
 export const MIN_HEIGHT = 5;
+
 export const MIN_RATE = 0;
 export const MAX_RATE = 1;
 
+export const MAX_ATTEMPT_COUNT = 100;
+
+export const EDGE_MARGIN = 1;
 export const GENERAL_SAFE_RADIUS = 0;
+
+export const MOUNTAIN_CLUSTER_MAX_SIZE = 1;
+
 export const MIN_CITY_GENERAL_DISTANCE = 3;
 export const MIN_CITY_SPACING = 2;
-export const MIN_FLAG_SPACING = 3;
+
 export const MIN_FLAG_GENERAL_DISTANCE = 3;
-export const EDGE_MARGIN = 1;
-export const MAX_ATTEMPT_COUNT = 100;
-export const MOUNTAIN_CLUSTER_MAX_SIZE = 1;
+export const MIN_FLAG_SPACING = 3;
 
 // ── Options ──────────────────────────────────────────────────────────
 

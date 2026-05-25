@@ -10,7 +10,7 @@ import {
   MIN_WIDTH,
 } from "#/domain/grid/grid-generator/config";
 import { AbstractGridGenerator } from "#/domain/grid/grid-generator/generator";
-import type { GenericGrid2D } from "#/math/grid-2d";
+import type { GenericGrid2D, GridBounds } from "#/math/grid-2d";
 import { GridType, SquareGrid2D } from "#/math/grid-2d";
 
 export class SquareGridGenerator extends AbstractGridGenerator<
@@ -19,7 +19,7 @@ export class SquareGridGenerator extends AbstractGridGenerator<
   SquareGrid
 > {
   protected createEmptyTerrainGrid(
-    config: ResolvedConfig,
+    config: ResolvedConfig<typeof GridType.SQUARE>,
   ): SquareGrid2D<Terrain> {
     return SquareGrid2D.generate(
       config.gridBounds.width,
@@ -30,10 +30,7 @@ export class SquareGridGenerator extends AbstractGridGenerator<
 
   protected resolveGridBounds(
     options: GridGeneratorOptions<typeof GridType.SQUARE>,
-  ): {
-    width: number;
-    height: number;
-  } {
+  ): GridBounds[typeof GridType.SQUARE] {
     const { width, height } =
       options.gridBounds ?? DefaultGridBounds[GridType.SQUARE];
 
@@ -60,7 +57,7 @@ export class SquareGridGenerator extends AbstractGridGenerator<
 
   protected materializeCells(
     terrainGrid: SquareGrid2D<Terrain>,
-    options: GridGeneratorOptions,
+    options: GridGeneratorOptions<typeof GridType.SQUARE>,
   ): SquareGrid {
     const cells = terrainGrid.map((terrain, coordinate) =>
       this.createCell(options, terrain, coordinate),
