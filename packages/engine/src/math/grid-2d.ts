@@ -75,6 +75,19 @@ export interface GenericGrid2D<T> {
    */
   forEach(callback: (element: T, coordinate: ICoordinate) => void): void;
 
+  /**
+   * Iterates over all elements within a specified radius from a center coordinate, including the center itself.
+   *
+   * @param center The center coordinate from which to measure distance.
+   * @param radius The radius within which to include elements, measured in Chebyshev distance.
+   * @param callback The function to execute for each element within the radius, receiving the element and its coordinate.
+   */
+  forEachInRadius(
+    center: ICoordinate,
+    radius: number,
+    callback: (element: T, coordinate: ICoordinate) => void,
+  ): void;
+
   [Symbol.iterator](): IterableIterator<T>;
 
   /**
@@ -104,7 +117,7 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
   /** Number of rows. */
   readonly height: number;
 
-  protected readonly gridData: T[][];
+  readonly gridData: T[][];
 
   constructor(width: number, height: number, gridData: T[][]) {
     if (width <= 0 || height <= 0) {
@@ -205,6 +218,22 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
     }
   }
 
+  forEachInRadius(
+    center: ICoordinate,
+    radius: number,
+    callback: (element: T, coordinate: ICoordinate) => void,
+  ): void {
+    const minX = Math.max(0, center.x - radius);
+    const maxX = Math.min(this.width - 1, center.x + radius);
+    const minY = Math.max(0, center.y - radius);
+    const maxY = Math.min(this.height - 1, center.y + radius);
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        callback(this.gridData[y][x], { x, y });
+      }
+    }
+  }
+
   *[Symbol.iterator](): IterableIterator<T> {
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
@@ -248,7 +277,7 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
   /** Number of slanting rows from the center top to the lowest point, used to calculate the minimum z coordinate. */
   readonly rightSlant: number;
 
-  protected readonly gridData: T[][];
+  readonly gridData: T[][];
 
   /**
    * Calculates the minimum x coordinate for a given y coordinate based on the left slant.
@@ -414,6 +443,22 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
       const maxX = this.getMaxX(y);
       for (let x = minX; x <= maxX; x++) {
         callback(this.gridData[y][x - minX], { x, y });
+      }
+    }
+  }
+
+  forEachInRadius(
+    center: ICoordinate,
+    radius: number,
+    callback: (element: T, coordinate: ICoordinate) => void,
+  ): void {
+    const minY = Math.max(0, center.y - radius);
+    const maxY = Math.min(this.leftSlant - 1, center.y + radius);
+    for (let y = minY; y <= maxY; y++) {
+      const minX = Math.max(this.getMinX(y), center.x - radius);
+      const maxX = Math.min(this.getMaxX(y), center.x + radius);
+      for (let x = minX; x <= maxX; x++) {
+        callback(this.gridData[y][x - this.getMinX(y)], { x, y });
       }
     }
   }

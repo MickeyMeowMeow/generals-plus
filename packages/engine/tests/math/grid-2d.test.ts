@@ -81,6 +81,32 @@ describe("SquareGrid2D", () => {
     expect(neighbors).toEqual([2, 3]);
   });
 
+  it("iterates over grid elements within a specified radius", () => {
+    const grid = new SquareGrid2D<number>(3, 3, [
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+    ]);
+
+    let visited: number[] = [];
+    grid.forEachInRadius({ x: 1, y: 1 }, 0, (val) => {
+      visited.push(val);
+    });
+    expect(visited).toEqual([5]);
+
+    visited = [];
+    grid.forEachInRadius({ x: 1, y: 1 }, 1, (val) => {
+      visited.push(val);
+    });
+    expect(visited).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    visited = [];
+    grid.forEachInRadius({ x: 2, y: 1 }, 1, (val) => {
+      visited.push(val);
+    });
+    expect(visited).toEqual([2, 3, 5, 6, 8, 9]);
+  });
+
   it("iterates and maps over grid elements", () => {
     const grid = createSquareGrid();
     const mapped = grid.map((val, _) => val * 10);
@@ -195,6 +221,28 @@ describe("HexGrid2D", () => {
     const grid = createHexGrid();
     expect(grid.getNeighbors({ x: 0, y: 1 })).toEqual([1, 2, 5, 7, 6, 3]); // All 6 neighbors exist
     expect(grid.getNeighbors({ x: 1, y: 0 })).toEqual([5, 4, 1]); // Missing 3 neighbors
+  });
+
+  it("iterates over hex grid elements within a specified radius", () => {
+    const grid = createHexGrid();
+
+    let visited: number[] = [];
+    grid.forEachInRadius({ x: 0, y: 1 }, 0, (val) => {
+      visited.push(val);
+    });
+    expect(visited).toEqual([4]);
+
+    visited = [];
+    grid.forEachInRadius({ x: 0, y: 1 }, 1, (val) => {
+      visited.push(val);
+    });
+    expect(visited).toEqual([1, 2, 3, 4, 5, 6, 7]);
+
+    visited = [];
+    grid.forEachInRadius({ x: 1, y: 0 }, 1, (val) => {
+      visited.push(val);
+    });
+    expect(visited).toEqual([1, 2, 4, 5]);
   });
 
   it("iterates and maps over hex grid elements", () => {
