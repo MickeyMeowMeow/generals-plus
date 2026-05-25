@@ -1,7 +1,6 @@
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import type { Grid } from "#/domain/grid/grid";
-import { SquareGrid } from "#/domain/grid/grid";
 import type {
   DominationGridOptions,
   GridGenerator,
@@ -12,15 +11,14 @@ import {
   CITY_INITIAL_TROOPS,
   DEFAULT_CITY_RATE,
   DEFAULT_GENERAL_COUNT,
-  DEFAULT_HEIGHT,
   DEFAULT_MOUNTAIN_RATE,
   DEFAULT_SEED,
-  DEFAULT_WIDTH,
+  DefaultGridGeneratorOptions,
   EDGE_MARGIN,
   GENERAL_INITIAL_TROOPS,
   GENERAL_SAFE_RADIUS,
+  MAX_ATTEMPT_COUNT,
   MAX_RATE,
-  MAX_RETRY_COUNT,
   MIN_CITY_GENERAL_DISTANCE,
   MIN_CITY_SPACING,
   MIN_FLAG_GENERAL_DISTANCE,
@@ -32,49 +30,47 @@ import {
   MOUNTAIN_CLUSTER_MAX_SIZE,
 } from "#/domain/grid/grid-generator/config";
 import type { ICoordinate } from "#/math/coordinate";
-import { SquareGrid2D } from "#/math/grid-2d";
+import type { GenericGrid2D } from "#/math/grid-2d";
 import { SeededRandom } from "#/math/random";
 
 /**
  * Pipeline-based grid generator with placement constraints and validation.
  *
  * Flow: resolveOptions → placeGenerals → buildProtectedZones
- *     → paintMountains → placeCities → materializeCells → validateGrid
+ *     → paintMountains → placeCities → placeFlags
+ *     → validateGrid → materializeCells
  *
- * On validation failure, derives a new seed and retries up to MAX_RETRY_COUNT.
+ * On validation failure, derives a new seed and retries up to MAX_ATTEMPT_COUNT.
  */
-export class SquareGridGenerator implements GridGenerator {
-  generate(options: GridGeneratorOptions | DominationGridOptions = {}): Grid {
+export abstract class AbstractGridGenerator<
+  T extends GenericGrid2D<Terrain>,
+  G extends Grid,
+> implements GridGenerator
+{
+  generate(options: GridGeneratorOptions | DominationGridOptions = {}): G {
     const config = this.resolveOptions(options);
-    const baseSeed = options.seed ?? DEFAULT_SEED;
-    const baseRng = new SeededRandom(options.seed ?? DEFAULT_SEED);
+    const seed = options.seed ?? DEFAULT_SEED;
+    let rng = new SeededRandom(seed);
 
-    for (let attempt = 0; attempt <= MAX_RETRY_COUNT; attempt++) {
-      const rng =
-        attempt === 0 ? baseRng : new SeededRandom(baseSeed + attempt);
+    for (let attempt = 0; attempt < MAX_ATTEMPT_COUNT; attempt++) {
       const result = this.tryGenerate(config, rng);
       if (result) {
         return result;
       }
+      rng = rng.derive();
     }
 
     throw new Error(
-      `Grid generation failed after ${MAX_RETRY_COUNT + 1} attempts ` +
-        `(${config.width}x${config.height}, ${config.generalCount} generals, ` +
+      `Grid generation failed after ${MAX_ATTEMPT_COUNT} attempts ` +
+        `(bounds=${config.gridBounds}, generalCount=${config.generalCount}, ` +
         `mountain=${config.mountainRate}, city=${config.cityRate}).`,
     );
   }
 
   // ── Pipeline ─────────────────────────────────────────────────────
 
-  private tryGenerate(config: ResolvedConfig, rng: SeededRandom): Grid | null {
-    const { width, height } = config;
-
-    const terrainGrid: SquareGrid2D<Terrain> = SquareGrid2D.generate(
-      width,
-      height,
-      () => Terrain.PLAIN,
-    );
+  protected tryGenerate(config: ResolvedConfig, rng: SeededRandom): G | null {
+    const terrainGrid: T = this.createEmptyTerrainGrid(config);
 
     const generals = this.placeGenerals(config, rng, terrainGrid);
     if (!generals) {
@@ -98,13 +94,15 @@ export class SquareGridGenerator implements GridGenerator {
     return grid;
   }
 
+  protected abstract createEmptyTerrainGrid(config: ResolvedConfig): T;
+
   // ── Step 0: resolve & validate ───────────────────────────────────
 
-  private resolveOptions(
+  protected resolveOptions(
     options: GridGeneratorOptions | DominationGridOptions,
   ): ResolvedConfig {
-    const width = options.width ?? DEFAULT_WIDTH;
-    const height = options.height ?? DEFAULT_HEIGHT;
+    const gridBounds = this.resolveGridBounds(options);
+
     const mountainRate = options.mountainRate ?? DEFAULT_MOUNTAIN_RATE;
     const cityRate = options.cityRate ?? DEFAULT_CITY_RATE;
     const flagCount = "flagCount" in options ? (options.flagCount ?? 0) : 0;
@@ -115,11 +113,6 @@ export class SquareGridGenerator implements GridGenerator {
       options.generalInitialTroops ?? GENERAL_INITIAL_TROOPS;
     const cityInitialTroops = options.cityInitialTroops ?? CITY_INITIAL_TROOPS;
 
-    if (width < MIN_WIDTH || height < MIN_HEIGHT) {
-      throw new Error(
-        `Grid dimensions must be at least ${MIN_WIDTH}x${MIN_HEIGHT}, got ${width}x${height}.`,
-      );
-    }
     if (
       mountainRate < MIN_RATE ||
       mountainRate > MAX_RATE ||
@@ -138,8 +131,7 @@ export class SquareGridGenerator implements GridGenerator {
     }
 
     return {
-      width,
-      height,
+      gridBounds,
       mountainRate,
       cityRate,
       flagCount,
@@ -150,17 +142,33 @@ export class SquareGridGenerator implements GridGenerator {
     };
   }
 
+  protected resolveGridBounds(
+    options: GridGeneratorOptions | DominationGridOptions,
+  ): { width: number; height: number } {
+    const { width, height } =
+      options.gridBounds ?? DefaultGridGeneratorOptions.gridBounds;
+
+    if (width < MIN_WIDTH || height < MIN_HEIGHT) {
+      throw new Error(
+        `Grid dimensions must be at least ${MIN_WIDTH}x${MIN_HEIGHT}, got ${width}x${height}.`,
+      );
+    }
+
+    return {
+      width,
+      height,
+    };
+  }
+
   // ── Step 1: place generals ───────────────────────────────────────
 
-  private placeGenerals(
+  protected placeGenerals(
     config: ResolvedConfig,
     rng: SeededRandom,
-    terrainGrid: SquareGrid2D<Terrain>,
+    terrainGrid: T,
   ): ICoordinate[] | null {
-    const { width, height, generalCount } = config;
-    const minDistance = Math.floor(
-      Math.min(width, height) * config.minGeneralDistanceFactor,
-    );
+    const { generalCount } = config;
+    const minDistance = this.calculateMinGeneralDistance(config);
 
     // Build shuffled candidate pool (interior cells only)
     const candidates: ICoordinate[] =
@@ -187,11 +195,18 @@ export class SquareGridGenerator implements GridGenerator {
     return null;
   }
 
+  protected calculateMinGeneralDistance(config: ResolvedConfig): number {
+    return Math.floor(
+      Math.min(config.gridBounds.width, config.gridBounds.height) *
+        config.minGeneralDistanceFactor,
+    );
+  }
+
   // ── Step 2: protected zones ──────────────────────────────────────
 
-  private buildProtectedZones(
+  protected buildProtectedZones(
     generals: ICoordinate[],
-    terrainGrid: SquareGrid2D<Terrain>,
+    terrainGrid: T,
   ): Set<ICoordinate> {
     const zone = new Set<ICoordinate>();
 
@@ -206,15 +221,14 @@ export class SquareGridGenerator implements GridGenerator {
 
   // ── Step 3: paint mountains ──────────────────────────────────────
 
-  private paintMountains(
+  protected paintMountains(
     config: ResolvedConfig,
     rng: SeededRandom,
-    terrainGrid: SquareGrid2D<Terrain>,
+    terrainGrid: T,
     protectedZone: Set<ICoordinate>,
   ): void {
-    const { width, height, mountainRate } = config;
-    const totalCells = width * height;
-    const targetCount = Math.round(totalCells * mountainRate);
+    const { mountainRate } = config;
+    const targetCount = Math.round(terrainGrid.totalCells * mountainRate);
 
     // Collect placeable cells (not protected and currently plain) into a pool
     const pool: ICoordinate[] = this.findCandidates(
@@ -255,16 +269,15 @@ export class SquareGridGenerator implements GridGenerator {
 
   // ── Step 4: place cities ─────────────────────────────────────────
 
-  private placeCities(
+  protected placeCities(
     config: ResolvedConfig,
     rng: SeededRandom,
-    terrainGrid: SquareGrid2D<Terrain>,
+    terrainGrid: T,
     protectedZone: Set<ICoordinate>,
     generals: ICoordinate[],
   ): void {
-    const { width, height, cityRate } = config;
-    const totalCells = width * height;
-    const targetCount = Math.round(totalCells * cityRate);
+    const { cityRate } = config;
+    const targetCount = Math.round(terrainGrid.totalCells * cityRate);
 
     const pool: ICoordinate[] = this.findCandidates(
       protectedZone,
@@ -290,19 +303,17 @@ export class SquareGridGenerator implements GridGenerator {
 
   // ── Step 5: place flags (center-weighted) ────────────────────────
 
-  private placeFlags(
+  protected placeFlags(
     config: ResolvedConfig,
     rng: SeededRandom,
-    terrainGrid: SquareGrid2D<Terrain>,
+    terrainGrid: T,
     protectedZone: Set<ICoordinate>,
     generals: ICoordinate[],
   ): void {
     const { flagCount } = config;
     if (flagCount === 0) return;
 
-    const cx = (terrainGrid.width - 1) / 2;
-    const cy = (terrainGrid.height - 1) / 2;
-    const maxDist = Math.sqrt(cx * cx + cy * cy);
+    const maxDist = terrainGrid.getDistanceToCenter({ x: 0, y: 0 });
 
     const candidates: { coord: ICoordinate; weight: number }[] =
       this.findCandidates(
@@ -312,7 +323,7 @@ export class SquareGridGenerator implements GridGenerator {
         generals,
         MIN_FLAG_GENERAL_DISTANCE,
       ).map((coord) => {
-        const dist = Math.sqrt((coord.x - cx) ** 2 + (coord.y - cy) ** 2);
+        const dist = terrainGrid.getDistanceToCenter(coord);
         const weight = 1 - dist / maxDist;
         return { coord, weight };
       });
@@ -346,18 +357,35 @@ export class SquareGridGenerator implements GridGenerator {
 
   // ── Step 6: materialize ──────────────────────────────────────────
 
-  private materializeCells(
-    terrainGrid: SquareGrid2D<Terrain>,
+  protected abstract materializeCells(
+    terrainGrid: T,
     options: GridGeneratorOptions | DominationGridOptions,
-  ): Grid {
-    const cells = terrainGrid.map((terrain, coordinate) =>
-      this.createCell(options, terrain, coordinate),
-    );
-    return new SquareGrid(cells.width, cells.height, cells.gridData);
+  ): G;
+
+  protected createCell(
+    options: GridGeneratorOptions | DominationGridOptions,
+    terrain: Terrain,
+    coordinate: ICoordinate,
+  ): Cell {
+    let troopCount: number | null;
+    switch (terrain) {
+      case Terrain.GENERAL: {
+        troopCount = options.generalInitialTroops ?? GENERAL_INITIAL_TROOPS;
+        break;
+      }
+      case Terrain.CITY: {
+        troopCount = options.cityInitialTroops ?? CITY_INITIAL_TROOPS;
+        break;
+      }
+      default: {
+        troopCount = null;
+      }
+    }
+    return new Cell({ coordinate, terrain, troopCount });
   }
 
-  private checkGeneralConnectivity(
-    terrain: SquareGrid2D<Terrain>,
+  protected checkGeneralConnectivity(
+    terrain: T,
     generals: ICoordinate[],
   ): boolean {
     if (generals.length <= 1) return true;
@@ -386,31 +414,9 @@ export class SquareGridGenerator implements GridGenerator {
     return generals.every((g) => visited.get(g));
   }
 
-  private createCell(
-    options: GridGeneratorOptions | DominationGridOptions,
-    terrain: Terrain,
-    coordinate: ICoordinate,
-  ): Cell {
-    let troopCount: number | null;
-    switch (terrain) {
-      case Terrain.GENERAL: {
-        troopCount = options.generalInitialTroops ?? GENERAL_INITIAL_TROOPS;
-        break;
-      }
-      case Terrain.CITY: {
-        troopCount = options.cityInitialTroops ?? CITY_INITIAL_TROOPS;
-        break;
-      }
-      default: {
-        troopCount = null;
-      }
-    }
-    return new Cell({ coordinate, terrain, troopCount });
-  }
-
-  private findCandidates(
+  protected findCandidates(
     protectedZone: Set<ICoordinate>,
-    terrainGrid: SquareGrid2D<Terrain>,
+    terrainGrid: T,
     expectedTerrain: Terrain,
     farFrom: ICoordinate[],
     minDistance: number,

@@ -23,7 +23,7 @@ export const MIN_FLAG_GENERAL_DISTANCE = 3;
 export const GENERAL_INITIAL_TROOPS = 50;
 export const CITY_INITIAL_TROOPS = 50;
 export const EDGE_MARGIN = 1;
-export const MAX_RETRY_COUNT = 100;
+export const MAX_ATTEMPT_COUNT = 100;
 export const MOUNTAIN_CLUSTER_MAX_SIZE = 1;
 
 // ── Options ──────────────────────────────────────────────────────────
@@ -32,8 +32,7 @@ export const MOUNTAIN_CLUSTER_MAX_SIZE = 1;
  * Base options for grid generation.
  */
 export interface GridGeneratorOptions {
-  readonly width?: number;
-  readonly height?: number;
+  readonly gridBounds?: { width: number; height: number };
   readonly seed?: number;
   readonly mountainRate?: number;
   readonly cityRate?: number;
@@ -53,8 +52,7 @@ export interface DominationGridOptions extends GridGeneratorOptions {
 
 /** Default options exposed for external reference. */
 export const DefaultGridGeneratorOptions: Required<GridGeneratorOptions> = {
-  width: DEFAULT_WIDTH,
-  height: DEFAULT_HEIGHT,
+  gridBounds: { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT },
   seed: DEFAULT_SEED,
   mountainRate: DEFAULT_MOUNTAIN_RATE,
   cityRate: DEFAULT_CITY_RATE,
@@ -85,8 +83,7 @@ export type GridInput =
 // ── Resolved config (all fields required) ────────────────────────────
 
 export interface ResolvedConfig {
-  readonly width: number;
-  readonly height: number;
+  readonly gridBounds: { width: number; height: number };
   readonly mountainRate: number;
   readonly cityRate: number;
   readonly flagCount: number;

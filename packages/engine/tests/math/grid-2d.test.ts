@@ -46,6 +46,18 @@ describe("SquareGrid2D", () => {
     );
   });
 
+  it("counts the total number of cells correctly", () => {
+    const grid = createSquareGrid();
+    expect(grid.totalCells).toBe(4);
+  });
+
+  it("calculates the Cartesian coordinates correctly", () => {
+    const grid = createSquareGrid();
+    expect(grid.cartesianCenter).toEqual({ x: 0.5, y: 0.5 });
+    expect(grid.toCartesian({ x: 0, y: 0 })).toEqual({ x: 0, y: 0 });
+    expect(grid.toCartesian({ x: 1, y: 1 })).toEqual({ x: 1, y: 1 });
+  });
+
   it("validates coordinates correctly", () => {
     const grid = createSquareGrid();
     expect(grid.isValid({ x: 0, y: 0 })).toBe(true);
@@ -67,6 +79,13 @@ describe("SquareGrid2D", () => {
     const grid = createSquareGrid();
     expect(grid.getDistance({ x: 0, y: 0 }, { x: 1, y: 1 })).toBe(2);
     expect(grid.getDistance({ x: 0, y: 0 }, { x: 9, y: 9 })).toBe(Infinity); // Invalid coord
+  });
+
+  it("calculates the squared Euclidean distance to center correctly", () => {
+    const grid = createSquareGrid();
+    expect(grid.getDistanceToCenter({ x: 0, y: 0 })).toBeCloseTo(0.5);
+    expect(grid.getDistanceToCenter({ x: 1, y: 1 })).toBeCloseTo(0.5);
+    expect(grid.getDistanceToCenter({ x: 5, y: 5 })).toBe(Infinity); // Invalid coord
   });
 
   it("identifies adjacent cells", () => {
@@ -181,6 +200,26 @@ describe("HexGrid2D", () => {
     );
   });
 
+  it("counts the total number of hexes correctly", () => {
+    const grid = createHexGrid();
+    expect(grid.totalCells).toBe(7);
+  });
+
+  it("calculates the Cartesian coordinates correctly", () => {
+    const grid = createHexGrid();
+    expect(grid.cartesianCenter).toEqual({ x: 0, y: 1 });
+    expect(grid.toCartesian({ x: 0, y: 0 })).toEqual({ x: 0, y: 0 });
+    expect(grid.toCartesian({ x: 0, y: 2 })).toEqual({ x: 0, y: 2 });
+    expect(grid.toCartesian({ x: 1, y: 0 })).toEqual({
+      x: Math.sqrt(3) / 2,
+      y: 0.5,
+    });
+    expect(grid.toCartesian({ x: -1, y: 2 })).toEqual({
+      x: -Math.sqrt(3) / 2,
+      y: 1.5,
+    });
+  });
+
   it("validates axial coordinates correctly", () => {
     const grid = createHexGrid();
     expect(grid.isValid({ x: 0, y: 0 })).toBe(true);
@@ -225,6 +264,14 @@ describe("HexGrid2D", () => {
     // Returns Infinity for invalid coordinates
     expect(grid.getDistance({ x: 0, y: 1 }, { x: 2, y: 0 })).toBe(Infinity);
     expect(grid.getDistance({ x: -1, y: 0 }, { x: 1, y: 2 })).toBe(Infinity);
+  });
+
+  it("calculates the squared Euclidean distance to center correctly", () => {
+    const grid = createHexGrid();
+    expect(grid.getDistanceToCenter({ x: 0, y: 1 })).toBeCloseTo(0);
+    expect(grid.getDistanceToCenter({ x: 1, y: 0 })).toBeCloseTo(1);
+    expect(grid.getDistanceToCenter({ x: -1, y: 2 })).toBeCloseTo(1);
+    expect(grid.getDistanceToCenter({ x: 1, y: 2 })).toBe(Infinity); // Invalid coordinate
   });
 
   it("returns correct hex neighbors bounded by the grid", () => {

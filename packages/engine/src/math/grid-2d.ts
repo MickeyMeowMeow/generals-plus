@@ -1,4 +1,5 @@
 import type { ICoordinate } from "#/math/coordinate";
+import { getSquaredDistance } from "#/math/coordinate";
 
 export const GridType = {
   SQUARE: "square",
@@ -16,6 +17,12 @@ export interface GenericGrid2D<T> {
   /** The type of grid (e.g., square, hex). */
   readonly gridType: GridType;
 
+  /** The total number of cells in the grid. */
+  get totalCells(): number;
+
+  /** The Cartesian coordinates of the center of the grid, used for distance calculations. */
+  get cartesianCenter(): ICoordinate;
+
   /**
    * Validates if a given coordinate exists within the grid boundaries.
    *
@@ -23,6 +30,14 @@ export interface GenericGrid2D<T> {
    * @returns True if the coordinate is valid, false otherwise.
    */
   isValid(coordinate: ICoordinate): boolean;
+
+  /**
+   * Converts a grid coordinate to Cartesian coordinates for rendering or other purposes.
+   *
+   * @param coordinate The grid coordinate to convert.
+   * @returns The Cartesian coordinates corresponding to the given grid coordinate.
+   */
+  toCartesian(coordinate: ICoordinate): ICoordinate;
 
   /**
    * Retrieves the element at the given coordinate.
@@ -49,6 +64,15 @@ export interface GenericGrid2D<T> {
    * @returns The Manhattan distance, or Infinity if either coordinate is invalid.
    */
   getDistance(coord1: ICoordinate, coord2: ICoordinate): number;
+
+  /**
+   * Calculates the squared Euclidean distance from the given coordinate to the center of the grid.
+   *
+   * @param coordinate The coordinate for which to calculate the distance to the center.
+   *
+   * @returns The distance to the center, or Infinity if the coordinate is invalid.
+   */
+  getDistanceToCenter(coordinate: ICoordinate): number;
 
   /**
    * Checks if two coordinates are adjacent in the grid.
@@ -162,6 +186,14 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
     return new SquareGrid2D(width, height, gridData);
   }
 
+  get totalCells(): number {
+    return this.width * this.height;
+  }
+
+  get cartesianCenter(): ICoordinate {
+    return { x: (this.width - 1) / 2, y: (this.height - 1) / 2 };
+  }
+
   isValid(coordinate: ICoordinate): boolean {
     return (
       coordinate.x >= 0 &&
@@ -169,6 +201,10 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
       coordinate.y >= 0 &&
       coordinate.y < this.height
     );
+  }
+
+  toCartesian(coordinate: ICoordinate): ICoordinate {
+    return { x: coordinate.x, y: coordinate.y };
   }
 
   get(coordinate: ICoordinate): T | null {
@@ -189,6 +225,16 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
       return Infinity;
     }
     return Math.abs(coord1.x - coord2.x) + Math.abs(coord1.y - coord2.y);
+  }
+
+  getDistanceToCenter(coordinate: ICoordinate): number {
+    if (!this.isValid(coordinate)) {
+      return Infinity;
+    }
+    return getSquaredDistance(
+      this.cartesianCenter,
+      this.toCartesian(coordinate),
+    );
   }
 
   isAdjacent(coord1: ICoordinate, coord2: ICoordinate): boolean {
@@ -390,6 +436,16 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
     this.gridData = gridData;
   }
 
+  get totalCells(): number {
+    return this.gridData.reduce((sum, row) => sum + row.length, 0);
+  }
+
+  get cartesianCenter(): ICoordinate {
+    const centerY = (this.leftSlant - 1) / 2;
+    const centerX = (this.getMinX(centerY) + this.getMaxX(centerY)) / 2;
+    return { x: centerX, y: centerY };
+  }
+
   isValid(coordinate: ICoordinate): boolean {
     if (coordinate.y < 0 || coordinate.y >= this.leftSlant) {
       return false;
@@ -398,6 +454,15 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
       coordinate.x >= this.getMinX(coordinate.y) &&
       coordinate.x <= this.getMaxX(coordinate.y)
     );
+  }
+
+  private static readonly SQRT3_OVER_2 = Math.sqrt(3) / 2;
+
+  toCartesian(coordinate: ICoordinate): { x: number; y: number } {
+    return {
+      x: coordinate.x * HexGrid2D.SQRT3_OVER_2,
+      y: coordinate.y + coordinate.x / 2,
+    };
   }
 
   get(coordinate: ICoordinate): T | null {
@@ -422,6 +487,16 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
     const dx = coord1.x - coord2.x;
     const dy = coord1.y - coord2.y;
     return (Math.abs(dx) + Math.abs(dy) + Math.abs(dx + dy)) / 2;
+  }
+
+  getDistanceToCenter(coordinate: ICoordinate): number {
+    if (!this.isValid(coordinate)) {
+      return Infinity;
+    }
+    return getSquaredDistance(
+      this.cartesianCenter,
+      this.toCartesian(coordinate),
+    );
   }
 
   isAdjacent(coord1: ICoordinate, coord2: ICoordinate): boolean {

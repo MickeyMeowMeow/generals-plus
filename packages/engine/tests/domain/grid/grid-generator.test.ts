@@ -83,8 +83,8 @@ describe("SquareGridGenerator", () => {
 
   it("uses default dimensions when options are not provided", () => {
     const grid = generator.generate();
-    expect(grid.width).toBe(DefaultGridGeneratorOptions.width);
-    expect(grid.height).toBe(DefaultGridGeneratorOptions.height);
+    expect(grid.width).toBe(DefaultGridGeneratorOptions.gridBounds.width);
+    expect(grid.height).toBe(DefaultGridGeneratorOptions.gridBounds.height);
     let mountainCount = 0;
     let cityCount = 0;
     let generalCount = 0;
@@ -120,7 +120,10 @@ describe("SquareGridGenerator", () => {
   });
 
   it("places the correct number of generals with initial troops", () => {
-    const grid = generator.generate({ width: 16, height: 12, seed: 100 });
+    const grid = generator.generate({
+      gridBounds: { width: 16, height: 12 },
+      seed: 100,
+    });
     const generals = collectByTerrain(grid, Terrain.GENERAL);
     expect(generals).toHaveLength(DefaultGridGeneratorOptions.generalCount);
     for (const g of generals) {
@@ -131,7 +134,10 @@ describe("SquareGridGenerator", () => {
   });
 
   it("keeps the general safe zone free of mountains and cities", () => {
-    const grid = generator.generate({ width: 20, height: 14, seed: 777 });
+    const grid = generator.generate({
+      gridBounds: { width: 20, height: 14 },
+      seed: 777,
+    });
     const generals = collectByTerrain(grid, Terrain.GENERAL);
 
     for (const g of generals) {
@@ -150,7 +156,10 @@ describe("SquareGridGenerator", () => {
   it("ensures all generals satisfy minimum pairwise distance", () => {
     const width = 20;
     const height = 14;
-    const grid = generator.generate({ width, height, seed: 555 });
+    const grid = generator.generate({
+      gridBounds: { width, height },
+      seed: 555,
+    });
     const generals = collectByTerrain(grid, Terrain.GENERAL);
     const minDist = Math.floor(
       Math.min(width, height) *
@@ -167,7 +176,10 @@ describe("SquareGridGenerator", () => {
   });
 
   it("ensures all generals are connected via non-mountain path", () => {
-    const grid = generator.generate({ width: 20, height: 14, seed: 321 });
+    const grid = generator.generate({
+      gridBounds: { width: 20, height: 14 },
+      seed: 321,
+    });
     const generals = collectByTerrain(grid, Terrain.GENERAL);
     const _reachableFromFirst = bfsReachable(grid, generals[0]);
 
@@ -205,7 +217,10 @@ describe("SquareGridGenerator", () => {
   });
 
   it("keeps cities away from generals", () => {
-    const grid = generator.generate({ width: 20, height: 14, seed: 456 });
+    const grid = generator.generate({
+      gridBounds: { width: 20, height: 14 },
+      seed: 456,
+    });
     const generals = collectByTerrain(grid, Terrain.GENERAL);
     const cities = collectByTerrain(grid, Terrain.CITY);
 
@@ -220,8 +235,7 @@ describe("SquareGridGenerator", () => {
 
   it("supports multi-player (4 generals) generation", () => {
     const grid = generator.generate({
-      width: 24,
-      height: 16,
+      gridBounds: { width: 24, height: 16 },
       seed: 2026,
       generalCount: 4,
     });
@@ -258,9 +272,9 @@ describe("SquareGridGenerator", () => {
   });
 
   it("throws on invalid dimensions", () => {
-    expect(() => generator.generate({ width: 3, height: 3 })).toThrow(
-      /dimensions/i,
-    );
+    expect(() =>
+      generator.generate({ gridBounds: { width: 3, height: 3 } }),
+    ).toThrow(/dimensions/i);
   });
 
   it("throws on invalid rates", () => {
@@ -273,8 +287,7 @@ describe("SquareGridGenerator", () => {
     // a valid map or throw a clear error.
     expect(() =>
       generator.generate({
-        width: 16,
-        height: 12,
+        gridBounds: { width: 16, height: 12 },
         seed: 42,
         mountainRate: 0.4,
         cityRate: 0.02,
@@ -284,8 +297,7 @@ describe("SquareGridGenerator", () => {
 
   describe("flag placement", () => {
     const flagOptions: DominationGridOptions = {
-      width: 20,
-      height: 14,
+      gridBounds: { width: 20, height: 14 },
       seed: 1234,
       flagCount: 3,
       generalCount: 4,
@@ -335,8 +347,7 @@ describe("SquareGridGenerator", () => {
       for (let seed = 0; seed < 50; seed++) {
         const grid = generator.generate({
           ...flagOptions,
-          width,
-          height,
+          gridBounds: { width, height },
           seed,
         });
         allFlags.push(...collectByTerrain(grid, Terrain.FLAG));
@@ -356,8 +367,7 @@ describe("SquareGridGenerator", () => {
 
     it("generates zero flags when flagCount is not provided", () => {
       const grid = generator.generate({
-        width: 20,
-        height: 14,
+        gridBounds: { width: 20, height: 14 },
         seed: 99,
         generalCount: 2,
       });
