@@ -1,7 +1,6 @@
 import { Terrain } from "#/domain/cell/terrain";
 import { SquareGrid } from "#/domain/grid/grid";
 import type {
-  DominationGridOptions,
   GridGeneratorOptions,
   ResolvedConfig,
 } from "#/domain/grid/grid-generator/config";
@@ -25,7 +24,7 @@ export class SquareGridGenerator extends AbstractGridGenerator<
 
   protected materializeCells(
     terrainGrid: SquareGrid2D<Terrain>,
-    options: GridGeneratorOptions | DominationGridOptions,
+    options: GridGeneratorOptions,
   ): SquareGrid {
     const cells = terrainGrid.map((terrain, coordinate) =>
       this.createCell(options, terrain, coordinate),

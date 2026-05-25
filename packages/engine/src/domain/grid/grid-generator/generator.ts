@@ -2,20 +2,13 @@ import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import type { Grid } from "#/domain/grid/grid";
 import type {
-  DominationGridOptions,
   GridGenerator,
   GridGeneratorOptions,
   ResolvedConfig,
 } from "#/domain/grid/grid-generator/config";
 import {
-  CITY_INITIAL_TROOPS,
-  DEFAULT_CITY_RATE,
-  DEFAULT_GENERAL_COUNT,
-  DEFAULT_MOUNTAIN_RATE,
-  DEFAULT_SEED,
-  DefaultGridGeneratorOptions,
+  DefaultGenOptions,
   EDGE_MARGIN,
-  GENERAL_INITIAL_TROOPS,
   GENERAL_SAFE_RADIUS,
   MAX_ATTEMPT_COUNT,
   MAX_RATE,
@@ -23,7 +16,6 @@ import {
   MIN_CITY_SPACING,
   MIN_FLAG_GENERAL_DISTANCE,
   MIN_FLAG_SPACING,
-  MIN_GENERAL_DISTANCE_FACTOR,
   MIN_HEIGHT,
   MIN_RATE,
   MIN_WIDTH,
@@ -47,9 +39,9 @@ export abstract class AbstractGridGenerator<
   G extends Grid,
 > implements GridGenerator
 {
-  generate(options: GridGeneratorOptions | DominationGridOptions = {}): G {
+  generate(options: GridGeneratorOptions = {}): G {
     const config = this.resolveOptions(options);
-    const seed = options.seed ?? DEFAULT_SEED;
+    const seed = options.seed ?? DefaultGenOptions.seed;
     let rng = new SeededRandom(seed);
 
     for (let attempt = 0; attempt < MAX_ATTEMPT_COUNT; attempt++) {
@@ -98,20 +90,20 @@ export abstract class AbstractGridGenerator<
 
   // ── Step 0: resolve & validate ───────────────────────────────────
 
-  protected resolveOptions(
-    options: GridGeneratorOptions | DominationGridOptions,
-  ): ResolvedConfig {
+  protected resolveOptions(options: GridGeneratorOptions): ResolvedConfig {
     const gridBounds = this.resolveGridBounds(options);
 
-    const mountainRate = options.mountainRate ?? DEFAULT_MOUNTAIN_RATE;
-    const cityRate = options.cityRate ?? DEFAULT_CITY_RATE;
+    const mountainRate = options.mountainRate ?? DefaultGenOptions.mountainRate;
+    const cityRate = options.cityRate ?? DefaultGenOptions.cityRate;
     const flagCount = "flagCount" in options ? (options.flagCount ?? 0) : 0;
-    const generalCount = options.generalCount ?? DEFAULT_GENERAL_COUNT;
+    const generalCount = options.generalCount ?? DefaultGenOptions.generalCount;
     const minGeneralDistanceFactor =
-      options.minGeneralDistanceFactor ?? MIN_GENERAL_DISTANCE_FACTOR;
+      options.minGeneralDistanceFactor ??
+      DefaultGenOptions.minGeneralDistanceFactor;
     const generalInitialTroops =
-      options.generalInitialTroops ?? GENERAL_INITIAL_TROOPS;
-    const cityInitialTroops = options.cityInitialTroops ?? CITY_INITIAL_TROOPS;
+      options.generalInitialTroops ?? DefaultGenOptions.generalInitialTroops;
+    const cityInitialTroops =
+      options.cityInitialTroops ?? DefaultGenOptions.cityInitialTroops;
 
     if (
       mountainRate < MIN_RATE ||
@@ -142,11 +134,12 @@ export abstract class AbstractGridGenerator<
     };
   }
 
-  protected resolveGridBounds(
-    options: GridGeneratorOptions | DominationGridOptions,
-  ): { width: number; height: number } {
+  protected resolveGridBounds(options: GridGeneratorOptions): {
+    width: number;
+    height: number;
+  } {
     const { width, height } =
-      options.gridBounds ?? DefaultGridGeneratorOptions.gridBounds;
+      options.gridBounds ?? DefaultGenOptions.gridBounds;
 
     if (width < MIN_WIDTH || height < MIN_HEIGHT) {
       throw new Error(
@@ -359,22 +352,25 @@ export abstract class AbstractGridGenerator<
 
   protected abstract materializeCells(
     terrainGrid: T,
-    options: GridGeneratorOptions | DominationGridOptions,
+    options: GridGeneratorOptions,
   ): G;
 
   protected createCell(
-    options: GridGeneratorOptions | DominationGridOptions,
+    options: GridGeneratorOptions,
     terrain: Terrain,
     coordinate: ICoordinate,
   ): Cell {
     let troopCount: number | null;
     switch (terrain) {
       case Terrain.GENERAL: {
-        troopCount = options.generalInitialTroops ?? GENERAL_INITIAL_TROOPS;
+        troopCount =
+          options.generalInitialTroops ??
+          DefaultGenOptions.generalInitialTroops;
         break;
       }
       case Terrain.CITY: {
-        troopCount = options.cityInitialTroops ?? CITY_INITIAL_TROOPS;
+        troopCount =
+          options.cityInitialTroops ?? DefaultGenOptions.cityInitialTroops;
         break;
       }
       default: {

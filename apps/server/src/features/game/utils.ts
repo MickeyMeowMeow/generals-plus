@@ -1,8 +1,4 @@
-import type {
-  DominationGridOptions,
-  GridInput,
-  IBaseGame,
-} from "@generals-plus/engine";
+import type { GridInput, IBaseGame } from "@generals-plus/engine";
 import {
   ClassicGame,
   DominationGame,
@@ -116,13 +112,10 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       return game;
     }
     case GameMode.DOMINATION: {
-      const game = new DominationGame(
-        (options.gridOptions ?? {}) as DominationGridOptions,
-        {
-          finishTick: options.finishTick,
-          targetScore: options.targetScore,
-        },
-      );
+      const game = new DominationGame(options.gridOptions ?? {}, {
+        finishTick: options.finishTick,
+        targetScore: options.targetScore,
+      });
 
       const teamsCount = Math.ceil(
         options.playerIds.length / options.playerPerTeam,

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { Terrain } from "#/domain/cell/terrain";
-import type { DominationGridOptions } from "#/domain/grid/grid-generator";
+import type { GridGeneratorOptions } from "#/domain/grid/grid-generator";
 import {
-  DefaultGridGeneratorOptions,
+  DefaultGenOptions,
   SquareGridGenerator,
 } from "#/domain/grid/grid-generator";
 import type { ICoordinate } from "#/math/coordinate";
@@ -83,8 +83,8 @@ describe("SquareGridGenerator", () => {
 
   it("uses default dimensions when options are not provided", () => {
     const grid = generator.generate();
-    expect(grid.width).toBe(DefaultGridGeneratorOptions.gridBounds.width);
-    expect(grid.height).toBe(DefaultGridGeneratorOptions.gridBounds.height);
+    expect(grid.width).toBe(DefaultGenOptions.gridBounds.width);
+    expect(grid.height).toBe(DefaultGenOptions.gridBounds.height);
     let mountainCount = 0;
     let cityCount = 0;
     let generalCount = 0;
@@ -95,14 +95,11 @@ describe("SquareGridGenerator", () => {
     });
     const totalCells = grid.width * grid.height;
     expect(mountainCount / totalCells).toBeCloseTo(
-      DefaultGridGeneratorOptions.mountainRate,
+      DefaultGenOptions.mountainRate,
       1,
     );
-    expect(cityCount / totalCells).toBeCloseTo(
-      DefaultGridGeneratorOptions.cityRate,
-      1,
-    );
-    expect(generalCount).toBe(DefaultGridGeneratorOptions.generalCount);
+    expect(cityCount / totalCells).toBeCloseTo(DefaultGenOptions.cityRate, 1);
+    expect(generalCount).toBe(DefaultGenOptions.generalCount);
   });
 
   it("produces deterministic terrain for the same seed and options", () => {
@@ -125,10 +122,10 @@ describe("SquareGridGenerator", () => {
       seed: 100,
     });
     const generals = collectByTerrain(grid, Terrain.GENERAL);
-    expect(generals).toHaveLength(DefaultGridGeneratorOptions.generalCount);
+    expect(generals).toHaveLength(DefaultGenOptions.generalCount);
     for (const g of generals) {
       expect(grid.get(g)?.troopCount).toBe(
-        DefaultGridGeneratorOptions.generalInitialTroops,
+        DefaultGenOptions.generalInitialTroops,
       );
     }
   });
@@ -162,8 +159,7 @@ describe("SquareGridGenerator", () => {
     });
     const generals = collectByTerrain(grid, Terrain.GENERAL);
     const minDist = Math.floor(
-      Math.min(width, height) *
-        DefaultGridGeneratorOptions.minGeneralDistanceFactor,
+      Math.min(width, height) * DefaultGenOptions.minGeneralDistanceFactor,
     );
 
     for (let i = 0; i < generals.length; i++) {
@@ -296,7 +292,7 @@ describe("SquareGridGenerator", () => {
   });
 
   describe("flag placement", () => {
-    const flagOptions: DominationGridOptions = {
+    const flagOptions: GridGeneratorOptions = {
       gridBounds: { width: 20, height: 14 },
       seed: 1234,
       flagCount: 3,
