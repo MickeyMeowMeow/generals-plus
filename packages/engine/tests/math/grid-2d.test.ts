@@ -30,6 +30,22 @@ describe("SquareGrid2D", () => {
     );
   });
 
+  it("generates a grid using an initializer function", () => {
+    const grid = SquareGrid2D.generate(2, 2, ({ x, y }) => `${x},${y}`);
+    expect(grid.get({ x: 0, y: 0 })).toBe("0,0");
+    expect(grid.get({ x: 1, y: 1 })).toBe("1,1");
+  });
+
+  it("creates a grid from a flat array", () => {
+    const grid = SquareGrid2D.fromArray(2, 2, [1, 2, 3, 4]);
+    expect(grid.get({ x: 0, y: 0 })).toBe(1);
+    expect(grid.get({ x: 1, y: 1 })).toBe(4);
+
+    expect(() => SquareGrid2D.fromArray(2, 2, [1, 2, 3])).toThrow(
+      "Array length does not match grid dimensions.",
+    );
+  });
+
   it("validates coordinates correctly", () => {
     const grid = createSquareGrid();
     expect(grid.isValid({ x: 0, y: 0 })).toBe(true);
@@ -109,6 +125,24 @@ describe("HexGrid2D", () => {
           [6, 7],
         ]),
     ).toThrow("Grid data does not match the specified dimensions.");
+  });
+
+  it("generates a hex grid using an initializer function", () => {
+    const grid = HexGrid2D.generate(2, 2, 3, 3, ({ x, y }) => `${x},${y}`);
+    expect(grid.get({ x: 0, y: 0 })).toBe("0,0");
+    expect(grid.get({ x: 1, y: 1 })).toBe("1,1");
+    expect(grid.get({ x: -1, y: 2 })).toBe("-1,2");
+  });
+
+  it("creates a hex grid from a flat array", () => {
+    const grid = HexGrid2D.fromArray(2, 2, 3, 3, [1, 2, 3, 4, 5, 6, 7]);
+    expect(grid.get({ x: 0, y: 0 })).toBe(1);
+    expect(grid.get({ x: 1, y: 1 })).toBe(5);
+    expect(grid.get({ x: -1, y: 2 })).toBe(6);
+
+    expect(() => HexGrid2D.fromArray(2, 2, 3, 3, [1, 2])).toThrow(
+      "Array length does not match grid dimensions.",
+    );
   });
 
   it("validates axial coordinates correctly", () => {

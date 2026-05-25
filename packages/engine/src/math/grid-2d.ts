@@ -123,6 +123,39 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
     this.gridData = gridData;
   }
 
+  static generate<T>(
+    width: number,
+    height: number,
+    generator: (coordinate: ICoordinate) => T,
+  ): SquareGrid2D<T> {
+    if (width <= 0 || height <= 0) {
+      throw new Error("Grid dimensions must be positive.");
+    }
+
+    const gridData: T[][] = Array.from({ length: height }, (_, y) =>
+      Array.from({ length: width }, (_, x) => generator({ x, y })),
+    );
+    return new SquareGrid2D(width, height, gridData);
+  }
+
+  static fromArray<T>(
+    width: number,
+    height: number,
+    array: T[],
+  ): SquareGrid2D<T> {
+    if (width <= 0 || height <= 0) {
+      throw new Error("Grid dimensions must be positive.");
+    }
+    if (array.length !== width * height) {
+      throw new Error("Array length does not match grid dimensions.");
+    }
+
+    const gridData: T[][] = Array.from({ length: height }, (_, y) =>
+      Array.from({ length: width }, (_, x) => array[y * width + x]),
+    );
+    return new SquareGrid2D(width, height, gridData);
+  }
+
   isValid(coordinate: ICoordinate): boolean {
     return (
       coordinate.x >= 0 &&
@@ -236,20 +269,81 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
    * Calculates the minimum x coordinate for a given y coordinate based on the left slant.
    *
    * @param y The y coordinate for which to calculate the minimum x coordinate.
+   * @param left The number of columns to the left of the center column.
+   *
    * @return The minimum x coordinate for the given y coordinate.
    */
-  private getMinX(y: number): number {
-    return Math.max(-this.left + 1, -y);
+  private static getMinX(y: number, left: number): number {
+    return Math.max(-left + 1, -y);
   }
 
   /**
    * Calculates the maximum x coordinate for a given y coordinate based on the right slant.
    *
    * @param y The y coordinate for which to calculate the maximum x coordinate.
+   * @param right The number of columns to the right of the center column.
+   * @param rightSlant The number of slanting rows from the center top to the lowest point on the right side.
+   *
    * @return The maximum x coordinate for the given y coordinate.
    */
+  private static getMaxX(y: number, right: number, rightSlant: number): number {
+    return Math.min(right - 1, rightSlant - y - 1);
+  }
+
+  static generate<T>(
+    left: number,
+    right: number,
+    leftSlant: number,
+    rightSlant: number,
+    generator: (coordinate: ICoordinate) => T,
+  ): HexGrid2D<T> {
+    if (left <= 0 || right <= 0 || leftSlant <= 0 || rightSlant <= 0) {
+      throw new Error("Grid dimensions must be positive.");
+    }
+
+    const gridData: T[][] = Array.from({ length: leftSlant }, (_, y) => {
+      const minX = HexGrid2D.getMinX(y, left);
+      const maxX = HexGrid2D.getMaxX(y, right, rightSlant);
+      return Array.from({ length: maxX - minX + 1 }, (_, x) =>
+        generator({ x: x + minX, y }),
+      );
+    });
+    return new HexGrid2D(left, right, leftSlant, rightSlant, gridData);
+  }
+
+  static fromArray<T>(
+    left: number,
+    right: number,
+    leftSlant: number,
+    rightSlant: number,
+    array: T[],
+  ): HexGrid2D<T> {
+    if (left <= 0 || right <= 0 || leftSlant <= 0 || rightSlant <= 0) {
+      throw new Error("Grid dimensions must be positive.");
+    }
+
+    const gridData: T[][] = [];
+    for (let y = 0, currentLength = 0; y < leftSlant; y++) {
+      const minX = HexGrid2D.getMinX(y, left);
+      const maxX = HexGrid2D.getMaxX(y, right, rightSlant);
+      if (array.length < currentLength + maxX - minX + 1) {
+        throw new Error("Array length does not match grid dimensions.");
+      }
+      gridData.push(
+        array.slice(currentLength, currentLength + maxX - minX + 1),
+      );
+      currentLength += maxX - minX + 1;
+    }
+
+    return new HexGrid2D(left, right, leftSlant, rightSlant, gridData);
+  }
+
+  private getMinX(y: number): number {
+    return HexGrid2D.getMinX(y, this.left);
+  }
+
   private getMaxX(y: number): number {
-    return Math.min(this.right - 1, this.rightSlant - y - 1);
+    return HexGrid2D.getMaxX(y, this.right, this.rightSlant);
   }
 
   constructor(
