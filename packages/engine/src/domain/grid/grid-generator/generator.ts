@@ -51,7 +51,7 @@ export abstract class AbstractGridGenerator<
 
     throw new Error(
       `Grid generation failed after ${MAX_ATTEMPT_COUNT} attempts ` +
-        `(bounds=${config.gridBounds}, generalCount=${config.generalCount}, ` +
+        `(bounds=${JSON.stringify(config.gridBounds)}, generalCount=${config.generalCount}, ` +
         `mountain=${config.mountainRate}, city=${config.cityRate}).`,
     );
   }
