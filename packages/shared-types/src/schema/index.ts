@@ -19,4 +19,4 @@ export {
   TurfWarScoreboardTeamEntry,
 } from "#/schema/scoreboard";
 export { SetupPlayer, SetupState } from "#/schema/setup-state";
-export { ClientVision } from "#/schema/vision-cell";
+export { ClientVision, VisionCellSchema } from "#/schema/vision-cell";

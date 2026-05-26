@@ -76,6 +76,15 @@ export const DefaultGridBounds: {
   },
 } as const;
 
+export interface GridGeneratorOptionsWithType<T extends GridType>
+  extends GridGeneratorOptions<T> {
+  gridType: T;
+}
+
+export type GridGeneratorInput =
+  | GridGeneratorOptionsWithType<typeof GridType.SQUARE>
+  | GridGeneratorOptionsWithType<typeof GridType.HEX>;
+
 /**
  * Union type representing either a pre-built grid or generation options.
  */
@@ -83,12 +92,7 @@ export type GridInput =
   | {
       readonly grid: Grid;
     }
-  | ({
-      gridType: typeof GridType.SQUARE;
-    } & GridGeneratorOptions<typeof GridType.SQUARE>)
-  | ({
-      gridType: typeof GridType.HEX;
-    } & GridGeneratorOptions<typeof GridType.HEX>);
+  | GridGeneratorInput;
 
 // ── Resolved config (all fields required) ────────────────────────────
 

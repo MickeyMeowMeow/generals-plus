@@ -51,6 +51,14 @@ export interface GenericGrid2D<T> {
   isValid(coordinate: ICoordinate): boolean;
 
   /**
+   * Transforms a grid coordinate to a zero-based array index.
+   *
+   * @param coordinate The grid coordinate to convert.
+   * @returns The corresponding array index, or -1 if the coordinate is invalid.
+   */
+  toArrayIndex(coordinate: ICoordinate): number;
+
+  /**
    * Converts a grid coordinate to Cartesian coordinates for rendering or other purposes.
    *
    * @param coordinate The grid coordinate to convert.
@@ -198,9 +206,31 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
     width: number,
     height: number,
     array: T[],
-  ): SquareGrid2D<T> {
-    const gridData = createSquareGridDataFromArray(width, height, array);
-    return new SquareGrid2D(width, height, gridData);
+  ): SquareGrid2D<T>;
+  static fromArray<T, G>(
+    width: number,
+    height: number,
+    array: T[],
+    callback: (element: T, coordinate: ICoordinate) => G,
+  ): SquareGrid2D<G>;
+  static fromArray<T, G>(
+    width: number,
+    height: number,
+    array: T[],
+    callback?: (element: T, coordinate: ICoordinate) => G,
+  ): SquareGrid2D<T> | SquareGrid2D<G> {
+    if (callback) {
+      const gridData = createSquareGridDataFromArray(
+        width,
+        height,
+        array,
+        callback,
+      );
+      return new SquareGrid2D(width, height, gridData);
+    } else {
+      const gridData = createSquareGridDataFromArray(width, height, array);
+      return new SquareGrid2D(width, height, gridData);
+    }
   }
 
   get totalCells(): number {
@@ -221,6 +251,14 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
       coordinate.y >= 0 &&
       coordinate.y < this.height
     );
+  }
+
+  toArrayIndex(coordinate: ICoordinate): number {
+    if (!this.isValid(coordinate)) {
+      return -1;
+    }
+
+    return coordinate.y * this.width + coordinate.x;
   }
 
   toCartesian(coordinate: ICoordinate): ICoordinate {
@@ -405,15 +443,43 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
     leftSlant: number,
     rightSlant: number,
     array: T[],
-  ): HexGrid2D<T> {
-    const gridData = createHexGridDataFromArray(
-      left,
-      right,
-      leftSlant,
-      rightSlant,
-      array,
-    );
-    return new HexGrid2D(left, right, leftSlant, rightSlant, gridData);
+  ): HexGrid2D<T>;
+  static fromArray<T, G>(
+    left: number,
+    right: number,
+    leftSlant: number,
+    rightSlant: number,
+    array: T[],
+    callback: (element: T, coordinate: ICoordinate) => G,
+  ): HexGrid2D<G>;
+  static fromArray<T, G>(
+    left: number,
+    right: number,
+    leftSlant: number,
+    rightSlant: number,
+    array: T[],
+    callback?: (element: T, coordinate: ICoordinate) => G,
+  ): HexGrid2D<T> | HexGrid2D<G> {
+    if (callback) {
+      const gridData = createHexGridDataFromArray(
+        left,
+        right,
+        leftSlant,
+        rightSlant,
+        array,
+        callback,
+      );
+      return new HexGrid2D(left, right, leftSlant, rightSlant, gridData);
+    } else {
+      const gridData = createHexGridDataFromArray(
+        left,
+        right,
+        leftSlant,
+        rightSlant,
+        array,
+      );
+      return new HexGrid2D(left, right, leftSlant, rightSlant, gridData);
+    }
   }
 
   private getMinX(y: number): number {
@@ -470,6 +536,25 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
       coordinate.x >= this.getMinX(coordinate.y) &&
       coordinate.x <= this.getMaxX(coordinate.y)
     );
+  }
+
+  toArrayIndex({ x, y }: ICoordinate): number {
+    if (!this.isValid({ x, y })) {
+      return -1;
+    }
+
+    const leftCells =
+      y <= this.left
+        ? ((y - 1) * y) / 2
+        : (this.left - 1) * (y - this.left / 2);
+    const rightCells =
+      y - 1 <= this.rightSlant - this.right
+        ? this.right * y
+        : this.right * y -
+          ((y - this.rightSlant + this.right) *
+            (y - this.rightSlant + this.right - 1)) /
+            2;
+    return leftCells + rightCells + x - this.getMinX(y);
   }
 
   private static readonly SQRT3_OVER_2 = Math.sqrt(3) / 2;
@@ -572,8 +657,14 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
     const minY = Math.max(0, center.y - radius);
     const maxY = Math.min(this.leftSlant - 1, center.y + radius);
     for (let y = minY; y <= maxY; y++) {
-      const minX = Math.max(this.getMinX(y), center.x - radius);
-      const maxX = Math.min(this.getMaxX(y), center.x + radius);
+      const minX = Math.max(
+        this.getMinX(y),
+        center.x - radius + Math.max(0, center.y - y),
+      );
+      const maxX = Math.min(
+        this.getMaxX(y),
+        center.x + radius - Math.max(0, y - center.y),
+      );
       for (let x = minX; x <= maxX; x++) {
         callback(this.gridData[y][x - this.getMinX(y)], { x, y });
       }
@@ -653,7 +744,19 @@ export function createSquareGridDataFromArray<T>(
   width: number,
   height: number,
   array: T[],
-): T[][] {
+): T[][];
+export function createSquareGridDataFromArray<T, G>(
+  width: number,
+  height: number,
+  array: T[],
+  callback: (element: T, coordinate: ICoordinate) => G,
+): G[][];
+export function createSquareGridDataFromArray<T, G>(
+  width: number,
+  height: number,
+  array: T[],
+  callback?: (element: T, coordinate: ICoordinate) => G,
+): (T | G)[][] {
   if (width <= 0 || height <= 0) {
     throw new Error("Grid dimensions must be positive.");
   }
@@ -663,7 +766,10 @@ export function createSquareGridDataFromArray<T>(
   }
 
   return Array.from({ length: height }, (_, y) =>
-    Array.from({ length: width }, (_, x) => array[y * width + x]),
+    Array.from({ length: width }, (_, x) => {
+      const element = array[y * width + x];
+      return callback ? callback(element, { x, y }) : element;
+    }),
   );
 }
 
@@ -673,12 +779,28 @@ export function createHexGridDataFromArray<T>(
   leftSlant: number,
   rightSlant: number,
   array: T[],
-): T[][] {
+): T[][];
+export function createHexGridDataFromArray<T, G>(
+  left: number,
+  right: number,
+  leftSlant: number,
+  rightSlant: number,
+  array: T[],
+  callback: (element: T, coordinate: ICoordinate) => G,
+): G[][];
+export function createHexGridDataFromArray<T, G>(
+  left: number,
+  right: number,
+  leftSlant: number,
+  rightSlant: number,
+  array: T[],
+  callback?: (element: T, coordinate: ICoordinate) => G,
+): (T | G)[][] {
   if (left <= 0 || right <= 0 || leftSlant <= 0 || rightSlant <= 0) {
     throw new Error("Grid dimensions must be positive.");
   }
 
-  const gridData: T[][] = [];
+  const gridData: (T | G)[][] = [];
   let currentLength = 0;
   for (let y = 0; y < leftSlant; y++) {
     const minX = HexGrid2D.getMinX(y, left);
@@ -686,7 +808,11 @@ export function createHexGridDataFromArray<T>(
     if (array.length < currentLength + maxX - minX + 1) {
       throw new Error("Array length does not match grid dimensions.");
     }
-    gridData.push(array.slice(currentLength, currentLength + maxX - minX + 1));
+    gridData[y] = [];
+    for (let x = minX; x <= maxX; x++) {
+      const element = array[currentLength + x - minX];
+      gridData[y].push(callback ? callback(element, { x, y }) : element);
+    }
     currentLength += maxX - minX + 1;
   }
 

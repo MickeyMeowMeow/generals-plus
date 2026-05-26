@@ -85,17 +85,13 @@ export function createMockGame(overrides?: Partial<IBaseGame>): IBaseGame {
       winnerTeamId: null,
     }),
     getVisionGrid: () =>
-      new SquareGrid2D<IVisionCell>(1, 1, [
-        [
-          {
-            coordinate: { x: 1, y: 1 },
-            visibility: Visibility.VISIBLE,
-            terrain: Terrain.PLAIN,
-            troopCount: null,
-            owner: null,
-          },
-        ],
-      ]),
+      (SquareGrid2D<IVisionCell>).generate(16, 16, (coordinate) => ({
+        coordinate,
+        visibility: Visibility.VISIBLE,
+        terrain: Terrain.PLAIN,
+        troopCount: null,
+        owner: null,
+      })),
     getPlayerState: (): IPlayerState => ({
       playerId: "",
       teamId: "",

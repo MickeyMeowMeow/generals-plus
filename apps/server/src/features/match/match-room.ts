@@ -25,6 +25,7 @@ import {
   MatchServerMessage,
   MatchState,
   PublicPlayer,
+  VisionCellSchema,
 } from "@generals-plus/shared-types";
 import * as z from "zod";
 
@@ -68,9 +69,16 @@ export class MatchRoom extends Room<{
     state.targetScore = metadata.targetScore ?? -1;
     state.scoreboard = createScoreboard(metadata.mode);
 
+    state.gridType = this.game.grid.gridType;
     if (this.game.grid.gridType === GridType.SQUARE) {
       state.width = this.game.grid.width;
       state.height = this.game.grid.height;
+    }
+    if (this.game.grid.gridType === GridType.HEX) {
+      state.left = this.game.grid.left;
+      state.right = this.game.grid.right;
+      state.leftSlant = this.game.grid.leftSlant;
+      state.rightSlant = this.game.grid.rightSlant;
     }
 
     for (const playerInit of metadata.playerInit) {
@@ -99,6 +107,11 @@ export class MatchRoom extends Room<{
 
     this.onMessage(MatchClientMessage.ACTION, (client, action: Action) => {
       logger.debug(`[MatchRoom] Received action: ${JSON.stringify(action)}`);
+
+      if (!this.game) {
+        throw new Error("Game instance not found");
+      }
+
       const playerId = this.sessionToPlayerId.get(client.sessionId);
       if (!playerId) return;
 
@@ -126,8 +139,11 @@ export class MatchRoom extends Room<{
       if (!action.from || !action.to) return;
       const vision = this.state.clientVisions.get(client.sessionId);
       if (vision) {
-        const targetIndex = action.to.y * this.state.width + action.to.x;
-        const perceivedTerrain = vision.terrain[targetIndex];
+        const targetIndex = this.game.grid.toArrayIndex(action.to);
+        if (targetIndex === -1) {
+          return;
+        }
+        const perceivedTerrain = vision.cells[targetIndex].terrain;
         if (
           perceivedTerrain === Terrain.MOUNTAIN ||
           perceivedTerrain === Terrain.VOID
@@ -251,6 +267,8 @@ export class MatchRoom extends Room<{
         this.state.clientActionQueues.set(client.sessionId, actionQueue);
         client.view.add(actionQueue);
 
+        this.updateClientView(client);
+
         logger.info(
           `[MatchRoom] Player ${userdata.displayName} joined (session ${client.sessionId})`,
         );
@@ -308,7 +326,10 @@ export class MatchRoom extends Room<{
 
     this.syncPlayerState();
     this.syncScoreboard();
-    this.updateClientViews();
+
+    for (const client of this.clients) {
+      this.updateClientView(client);
+    }
 
     const result = this.game.checkGameEnd();
     if (result) {
@@ -485,34 +506,32 @@ export class MatchRoom extends Room<{
     );
   }
 
-  private updateClientViews() {
+  private updateClientView(client: Client) {
     if (!this.game) {
       logger.error(
-        `[MatchRoom] Error: Game instance not found on updateClientViews`,
+        `[MatchRoom] Error: Game instance not found on updateClientView`,
       );
       throw new Error("Game instance not found");
     }
-    for (const client of this.clients) {
-      const playerId = this.sessionToPlayerId.get(client.sessionId);
-      if (!playerId || !client.view) continue;
 
-      const visionGrid = this.game.getVisionGrid(playerId);
-      const vision = this.state.clientVisions.get(client.sessionId);
-      if (!visionGrid || !vision) continue;
+    const playerId = this.sessionToPlayerId.get(client.sessionId);
+    if (!playerId || !client.view) return;
 
-      vision.visibility.clear();
-      vision.terrain.clear();
-      vision.troopCount.clear();
-      vision.ownerIndex.clear();
+    const visionGrid = this.game.getVisionGrid(playerId);
+    const vision = this.state.clientVisions.get(client.sessionId);
+    if (!visionGrid || !vision) return;
 
-      for (const vc of visionGrid) {
-        vision.visibility.push(vc.visibility);
-        vision.terrain.push(vc.terrain ?? "");
-        vision.troopCount.push(vc.troopCount ?? -1);
-        vision.ownerIndex.push(
+    vision.cells.clear();
+
+    for (const vc of visionGrid) {
+      const cell = new VisionCellSchema().assign({
+        visibility: vc.visibility,
+        terrain: vc.terrain,
+        troopCount: vc.troopCount ?? -1,
+        ownerIndex:
           vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "",
-        );
-      }
+      });
+      vision.cells.push(cell);
     }
   }
 }

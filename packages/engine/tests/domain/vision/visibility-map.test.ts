@@ -11,7 +11,7 @@ import {
   createVisionCell,
   VisibilityMap,
 } from "#/domain/vision/visibility-map";
-import { MaskedTerrain } from "#/domain/vision/vision-grid";
+import { HiddenTerrain, MaskedTerrain } from "#/domain/vision/vision-grid";
 
 function createVisionGrid(): Grid {
   const terrains = [
@@ -63,7 +63,7 @@ describe("VisibilityMap", () => {
 
     const hidden = createVisionCell(cell, Visibility.HIDDEN);
     expect(hidden.visibility).toBe(Visibility.HIDDEN);
-    expect(hidden.terrain).toBeNull();
+    expect(hidden.terrain).toBe(HiddenTerrain);
     expect(hidden.troopCount).toBeNull();
     expect(hidden.owner).toBeNull();
   });

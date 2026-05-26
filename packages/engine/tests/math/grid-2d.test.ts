@@ -37,9 +37,23 @@ describe("SquareGrid2D", () => {
   });
 
   it("creates a grid from a flat array", () => {
-    const grid = SquareGrid2D.fromArray(2, 2, [1, 2, 3, 4]);
-    expect(grid.get({ x: 0, y: 0 })).toBe(1);
-    expect(grid.get({ x: 1, y: 1 })).toBe(4);
+    const grid = SquareGrid2D.fromArray(
+      2,
+      2,
+      [1, 2, 3, 4],
+      (element, coordinate) => ({
+        element,
+        coordinate,
+      }),
+    );
+    expect(grid.get({ x: 0, y: 0 })).toEqual({
+      element: 1,
+      coordinate: { x: 0, y: 0 },
+    });
+    expect(grid.get({ x: 1, y: 1 })).toEqual({
+      element: 4,
+      coordinate: { x: 1, y: 1 },
+    });
 
     expect(() => SquareGrid2D.fromArray(2, 2, [1, 2, 3])).toThrow(
       "Array length does not match grid dimensions.",
@@ -67,6 +81,15 @@ describe("SquareGrid2D", () => {
     expect(grid.isValid({ x: 1, y: 1 })).toBe(true);
     expect(grid.isValid({ x: -1, y: 0 })).toBe(false);
     expect(grid.isValid({ x: 0, y: 2 })).toBe(false);
+  });
+
+  it("transforms coordinates to array indices correctly", () => {
+    const grid = createSquareGrid();
+    expect(grid.toArrayIndex({ x: 0, y: 0 })).toBe(0);
+    expect(grid.toArrayIndex({ x: 1, y: 0 })).toBe(1);
+    expect(grid.toArrayIndex({ x: 0, y: 1 })).toBe(2);
+    expect(grid.toArrayIndex({ x: 1, y: 1 })).toBe(3);
+    expect(grid.toArrayIndex({ x: -1, y: 0 })).toBe(-1); // Invalid coordinate
   });
 
   it("gets and sets values", () => {
@@ -193,10 +216,26 @@ describe("HexGrid2D", () => {
   });
 
   it("creates a hex grid from a flat array", () => {
-    const grid = HexGrid2D.fromArray(2, 2, 3, 3, [1, 2, 3, 4, 5, 6, 7]);
-    expect(grid.get({ x: 0, y: 0 })).toBe(1);
-    expect(grid.get({ x: 1, y: 1 })).toBe(5);
-    expect(grid.get({ x: -1, y: 2 })).toBe(6);
+    const grid = HexGrid2D.fromArray(
+      2,
+      2,
+      3,
+      3,
+      [1, 2, 3, 4, 5, 6, 7],
+      (element, coordinate) => ({ element, coordinate }),
+    );
+    expect(grid.get({ x: 1, y: 0 })).toEqual({
+      element: 2,
+      coordinate: { x: 1, y: 0 },
+    });
+    expect(grid.get({ x: 1, y: 1 })).toEqual({
+      element: 5,
+      coordinate: { x: 1, y: 1 },
+    });
+    expect(grid.get({ x: -1, y: 2 })).toEqual({
+      element: 6,
+      coordinate: { x: -1, y: 2 },
+    });
 
     expect(() => HexGrid2D.fromArray(2, 2, 3, 3, [1, 2])).toThrow(
       "Array length does not match grid dimensions.",
@@ -237,6 +276,18 @@ describe("HexGrid2D", () => {
     expect(grid.isValid({ x: -1, y: 2 })).toBe(true);
     expect(grid.isValid({ x: 0, y: 2 })).toBe(true);
     expect(grid.isValid({ x: 1, y: 2 })).toBe(false);
+  });
+
+  it("transforms axial coordinates to array indices correctly", () => {
+    const grid = createHexGrid();
+    expect(grid.toArrayIndex({ x: 0, y: 0 })).toBe(0);
+    expect(grid.toArrayIndex({ x: 1, y: 0 })).toBe(1);
+    expect(grid.toArrayIndex({ x: -1, y: 1 })).toBe(2);
+    expect(grid.toArrayIndex({ x: 0, y: 1 })).toBe(3);
+    expect(grid.toArrayIndex({ x: 1, y: 1 })).toBe(4);
+    expect(grid.toArrayIndex({ x: -1, y: 2 })).toBe(5);
+    expect(grid.toArrayIndex({ x: 0, y: 2 })).toBe(6);
+    expect(grid.toArrayIndex({ x: 1, y: 2 })).toBe(-1); // Invalid coordinate
   });
 
   it("gets and sets values using internal offset indexing", () => {
@@ -297,25 +348,44 @@ describe("HexGrid2D", () => {
   });
 
   it("iterates over hex grid elements within a specified radius", () => {
-    const grid = createHexGrid();
+    const grid1 = createHexGrid();
 
     let visited: number[] = [];
-    grid.forEachInRadius({ x: 0, y: 1 }, 0, (val) => {
+    grid1.forEachInRadius({ x: 0, y: 1 }, 0, (val) => {
       visited.push(val);
     });
     expect(visited).toEqual([4]);
 
     visited = [];
-    grid.forEachInRadius({ x: 0, y: 1 }, 1, (val) => {
+    grid1.forEachInRadius({ x: 0, y: 1 }, 1, (val) => {
       visited.push(val);
     });
     expect(visited).toEqual([1, 2, 3, 4, 5, 6, 7]);
 
     visited = [];
-    grid.forEachInRadius({ x: 1, y: 0 }, 1, (val) => {
+    grid1.forEachInRadius({ x: 1, y: 0 }, 1, (val) => {
       visited.push(val);
     });
     expect(visited).toEqual([1, 2, 4, 5]);
+
+    const grid2 = HexGrid2D.generate(3, 3, 5, 5, () => false);
+    grid2.forEachInRadius({ x: 0, y: 2 }, 1, (_, coord) => {
+      grid2.set(coord, true);
+    });
+
+    expect(grid2.get({ x: 0, y: 2 })).toBe(true);
+    expect(grid2.get({ x: -1, y: 2 })).toBe(true);
+    expect(grid2.get({ x: 1, y: 2 })).toBe(true);
+    expect(grid2.get({ x: 0, y: 1 })).toBe(true);
+    expect(grid2.get({ x: 1, y: 1 })).toBe(true);
+    expect(grid2.get({ x: -1, y: 3 })).toBe(true);
+    expect(grid2.get({ x: 0, y: 3 })).toBe(true);
+
+    expect(grid2.get({ x: -1, y: 1 })).toBe(false);
+    expect(grid2.get({ x: 1, y: 3 })).toBe(false);
+    expect(grid2.get({ x: 2, y: 2 })).toBe(false);
+    expect(grid2.get({ x: -2, y: 2 })).toBe(false);
+    expect(grid2.get({ x: 0, y: 0 })).toBe(false);
   });
 
   it("iterates and maps over hex grid elements", () => {

@@ -1,9 +1,13 @@
-import type { ICoordinate, Terrain, Visibility } from "@generals-plus/engine";
+import type {
+  ICoordinate,
+  Visibility,
+  VisionTerrain,
+} from "@generals-plus/engine";
 import { SquareGrid2D } from "@generals-plus/engine";
 
 export interface RenderGridCell {
   coordinate: ICoordinate;
-  terrain: Terrain;
+  terrain: VisionTerrain;
   troopCount: number | null;
   visibility: Visibility;
   ownerIndex: string | null;
