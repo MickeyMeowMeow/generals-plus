@@ -1,7 +1,11 @@
 import { JWT } from "@colyseus/auth";
 import type { Client, QueueOptions } from "@colyseus/core";
 import { logger, matchMaker, QueueRoom } from "@colyseus/core";
-import { GameMode, getDefaultPlayersPerTeam } from "@generals-plus/engine";
+import {
+  GameMode,
+  GridType,
+  getDefaultPlayersPerTeam,
+} from "@generals-plus/engine";
 import type { ClientAuth, RoomData } from "@generals-plus/shared-types";
 import {
   isPaletteColor,
@@ -88,7 +92,10 @@ export class MatchQueueRoom extends QueueRoom {
           : undefined;
 
         const base = {
-          gridOptions,
+          gridOptions: {
+            gridType: GridType.SQUARE,
+            ...gridOptions,
+          },
           playerIds: groupPlayers.map((p) => p.id),
           playerPerTeam: getDefaultPlayersPerTeam(this.gameMode),
         };

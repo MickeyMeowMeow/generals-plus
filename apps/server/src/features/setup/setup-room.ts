@@ -502,8 +502,13 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   // Build grid options from current setup state, attaching mode-specific fields.
-  private getGridOptions(): GridGeneratorOptions {
-    const base: GridGeneratorOptions = {
+  private getGridOptions(): {
+    gridType: typeof GridType.SQUARE;
+  } & GridGeneratorOptions<typeof GridType.SQUARE> {
+    const base: { gridType: typeof GridType.SQUARE } & GridGeneratorOptions<
+      typeof GridType.SQUARE
+    > = {
+      gridType: GridType.SQUARE,
       gridBounds: {
         width: this.state.mapWidth,
         height: this.state.mapHeight,
