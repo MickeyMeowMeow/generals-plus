@@ -36,8 +36,8 @@ import { createPlayerInit } from "#/features/player/utils";
 import {
   markCustomRoomMatchStarted,
   onSetupRoomDisposed,
-} from "./custom-room-registry";
-import { setupSettingsUpdateSchema } from "./schemas";
+} from "#/features/setup/custom-room-registry";
+import { setupSettingsUpdateSchema } from "#/features/setup/schemas";
 
 const DEFAULT_MAX_PLAYERS = 8;
 

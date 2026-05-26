@@ -1,8 +1,5 @@
-import { GameMode } from "@generals-plus/engine";
+import { GameMode, GridType } from "@generals-plus/engine";
 import * as z from "zod";
-
-const MIN_MAP_DIM = 5;
-const MAX_MAP_DIM = 100;
 
 /** Schema for validating individual setup setting fields. */
 export const setupSettingsUpdateSchema = z
@@ -11,8 +8,13 @@ export const setupSettingsUpdateSchema = z
     maxPlayers: z.number().int().min(2),
     isPublic: z.boolean(),
     playersPerTeam: z.number().int().min(1),
-    mapWidth: z.number().int().min(MIN_MAP_DIM).max(MAX_MAP_DIM),
-    mapHeight: z.number().int().min(MIN_MAP_DIM).max(MAX_MAP_DIM),
+    mapType: z.enum(GridType),
+    mapWidth: z.number().int().min(5).max(100),
+    mapHeight: z.number().int().min(5).max(100),
+    mapLeft: z.number().int().min(5).max(100),
+    mapRight: z.number().int().min(5).max(100),
+    mapLeftSlant: z.number().int().min(9).max(199),
+    mapRightSlant: z.number().int().min(9).max(199),
     seed: z.number().int(),
     mountainRate: z.number().min(0).max(1),
     cityRate: z.number().min(0).max(1),
