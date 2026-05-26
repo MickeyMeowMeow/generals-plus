@@ -208,7 +208,10 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
   }
 
   get cartesianCenter(): ICoordinate {
-    return { x: (this.width - 1) / 2, y: (this.height - 1) / 2 };
+    return this.toCartesian({
+      x: (this.width - 1) / 2,
+      y: (this.height - 1) / 2,
+    });
   }
 
   isValid(coordinate: ICoordinate): boolean {
@@ -456,7 +459,7 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
   get cartesianCenter(): ICoordinate {
     const centerY = (this.leftSlant - 1) / 2;
     const centerX = (this.getMinX(centerY) + this.getMaxX(centerY)) / 2;
-    return { x: centerX, y: centerY };
+    return this.toCartesian({ x: centerX, y: centerY });
   }
 
   isValid(coordinate: ICoordinate): boolean {
