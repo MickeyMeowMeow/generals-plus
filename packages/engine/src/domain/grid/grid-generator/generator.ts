@@ -292,20 +292,23 @@ export abstract class AbstractGridGenerator<
     const { flagCount } = config;
     if (flagCount === 0) return;
 
-    const maxDist = terrainGrid.getDistanceToCenter({ x: 0, y: 0 });
+    const coords: ICoordinate[] = this.findCandidates(
+      protectedZone,
+      terrainGrid,
+      Terrain.PLAIN,
+      generals,
+      MIN_FLAG_GENERAL_DISTANCE,
+    );
 
-    const candidates: { coord: ICoordinate; weight: number }[] =
-      this.findCandidates(
-        protectedZone,
-        terrainGrid,
-        Terrain.PLAIN,
-        generals,
-        MIN_FLAG_GENERAL_DISTANCE,
-      ).map((coord) => {
-        const dist = terrainGrid.getDistanceToCenter(coord);
-        const weight = 1 - dist / maxDist;
-        return { coord, weight };
-      });
+    const distances: number[] = coords.map((coord) =>
+      terrainGrid.getDistanceToCenter(coord),
+    );
+
+    const maxDist = Math.max(...distances);
+
+    const candidates: { coord: ICoordinate; weight: number }[] = coords.map(
+      (coord, idx) => ({ coord, weight: maxDist - distances[idx] }),
+    );
 
     let placed = 0;
     for (let i = 0; i < flagCount && candidates.length > 0; i++) {
