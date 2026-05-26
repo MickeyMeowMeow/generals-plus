@@ -657,8 +657,14 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
     const minY = Math.max(0, center.y - radius);
     const maxY = Math.min(this.leftSlant - 1, center.y + radius);
     for (let y = minY; y <= maxY; y++) {
-      const minX = Math.max(this.getMinX(y), center.x - radius);
-      const maxX = Math.min(this.getMaxX(y), center.x + radius);
+      const minX = Math.max(
+        this.getMinX(y),
+        center.x - radius + Math.max(0, center.y - y),
+      );
+      const maxX = Math.min(
+        this.getMaxX(y),
+        center.x + radius - Math.max(0, y - center.y),
+      );
       for (let x = minX; x <= maxX; x++) {
         callback(this.gridData[y][x - this.getMinX(y)], { x, y });
       }

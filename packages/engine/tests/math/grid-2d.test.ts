@@ -348,25 +348,44 @@ describe("HexGrid2D", () => {
   });
 
   it("iterates over hex grid elements within a specified radius", () => {
-    const grid = createHexGrid();
+    const grid1 = createHexGrid();
 
     let visited: number[] = [];
-    grid.forEachInRadius({ x: 0, y: 1 }, 0, (val) => {
+    grid1.forEachInRadius({ x: 0, y: 1 }, 0, (val) => {
       visited.push(val);
     });
     expect(visited).toEqual([4]);
 
     visited = [];
-    grid.forEachInRadius({ x: 0, y: 1 }, 1, (val) => {
+    grid1.forEachInRadius({ x: 0, y: 1 }, 1, (val) => {
       visited.push(val);
     });
     expect(visited).toEqual([1, 2, 3, 4, 5, 6, 7]);
 
     visited = [];
-    grid.forEachInRadius({ x: 1, y: 0 }, 1, (val) => {
+    grid1.forEachInRadius({ x: 1, y: 0 }, 1, (val) => {
       visited.push(val);
     });
     expect(visited).toEqual([1, 2, 4, 5]);
+
+    const grid2 = HexGrid2D.generate(3, 3, 5, 5, () => false);
+    grid2.forEachInRadius({ x: 0, y: 2 }, 1, (_, coord) => {
+      grid2.set(coord, true);
+    });
+
+    expect(grid2.get({ x: 0, y: 2 })).toBe(true);
+    expect(grid2.get({ x: -1, y: 2 })).toBe(true);
+    expect(grid2.get({ x: 1, y: 2 })).toBe(true);
+    expect(grid2.get({ x: 0, y: 1 })).toBe(true);
+    expect(grid2.get({ x: 1, y: 1 })).toBe(true);
+    expect(grid2.get({ x: -1, y: 3 })).toBe(true);
+    expect(grid2.get({ x: 0, y: 3 })).toBe(true);
+
+    expect(grid2.get({ x: -1, y: 1 })).toBe(false);
+    expect(grid2.get({ x: 1, y: 3 })).toBe(false);
+    expect(grid2.get({ x: 2, y: 2 })).toBe(false);
+    expect(grid2.get({ x: -2, y: 2 })).toBe(false);
+    expect(grid2.get({ x: 0, y: 0 })).toBe(false);
   });
 
   it("iterates and maps over hex grid elements", () => {
