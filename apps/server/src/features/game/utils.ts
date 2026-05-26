@@ -3,6 +3,7 @@ import {
   ClassicGame,
   DominationGame,
   GameMode,
+  GridType,
   Player,
   StandardTeam,
   TurfWarGame,
@@ -54,7 +55,10 @@ export type CreateGameOptions =
 export function createGame(options: CreateGameOptions): IBaseGame {
   switch (options.mode) {
     case GameMode.CLASSIC: {
-      const game = new ClassicGame(options.gridOptions ?? {});
+      const game = new ClassicGame({
+        gridType: GridType.SQUARE,
+        ...options.gridOptions,
+      });
 
       const teamsCount = Math.ceil(
         options.playerIds.length / options.playerPerTeam,
@@ -82,9 +86,15 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       return game;
     }
     case GameMode.TURF_WAR: {
-      const game = new TurfWarGame(options.gridOptions ?? {}, {
-        finishTick: options.finishTick,
-      });
+      const game = new TurfWarGame(
+        {
+          gridType: GridType.SQUARE,
+          ...options.gridOptions,
+        },
+        {
+          finishTick: options.finishTick,
+        },
+      );
 
       const teamsCount = Math.ceil(
         options.playerIds.length / options.playerPerTeam,
@@ -112,10 +122,16 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       return game;
     }
     case GameMode.DOMINATION: {
-      const game = new DominationGame(options.gridOptions ?? {}, {
-        finishTick: options.finishTick,
-        targetScore: options.targetScore,
-      });
+      const game = new DominationGame(
+        {
+          gridType: GridType.SQUARE,
+          ...options.gridOptions,
+        },
+        {
+          finishTick: options.finishTick,
+          targetScore: options.targetScore,
+        },
+      );
 
       const teamsCount = Math.ceil(
         options.playerIds.length / options.playerPerTeam,

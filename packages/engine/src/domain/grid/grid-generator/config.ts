@@ -28,9 +28,7 @@ export const MIN_FLAG_SPACING = 3;
 /**
  * Options for grid generation.
  */
-export interface GridGeneratorOptions<
-  T extends GridType = typeof GridType.SQUARE,
-> {
+export interface GridGeneratorOptions<T extends GridType> {
   readonly gridBounds?: GridBounds[T];
   readonly seed?: number;
 
@@ -47,7 +45,7 @@ export interface GridGeneratorOptions<
 
 /** Default options exposed for external reference. */
 export const DefaultGenOptions: Omit<
-  Required<GridGeneratorOptions>,
+  Required<GridGeneratorOptions<GridType>>,
   "gridBounds"
 > = {
   seed: 20260428,
@@ -85,7 +83,12 @@ export type GridInput =
   | {
       readonly grid: Grid;
     }
-  | GridGeneratorOptions;
+  | ({
+      gridType: typeof GridType.SQUARE;
+    } & GridGeneratorOptions<typeof GridType.SQUARE>)
+  | ({
+      gridType: typeof GridType.HEX;
+    } & GridGeneratorOptions<typeof GridType.HEX>);
 
 // ── Resolved config (all fields required) ────────────────────────────
 
