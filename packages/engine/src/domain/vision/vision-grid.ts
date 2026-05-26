@@ -14,8 +14,11 @@ export const MaskedTerrain = {
 } as const;
 export type MaskedTerrain = (typeof MaskedTerrain)[keyof typeof MaskedTerrain];
 
+export const HiddenTerrain = "hidden" as const;
+export type HiddenTerrain = typeof HiddenTerrain;
+
 /** Represents the perceived terrain of a cell based on its visibility state. */
-export type VisionTerrain = Terrain | MaskedTerrain | null;
+export type VisionTerrain = Terrain | MaskedTerrain | HiddenTerrain;
 
 /**
  * Represents a single cell as perceived through the fog of war.
@@ -27,7 +30,7 @@ export interface IVisionCell {
 
   /**
    * The perceived terrain type of the cell.
-   * Null if `HIDDEN`, masked if `SHROUDED`, and accurate if `VISIBLE`.
+   * Hidden if `HIDDEN`, masked if `SHROUDED`, and accurate if `VISIBLE`.
    */
   readonly terrain: VisionTerrain;
 

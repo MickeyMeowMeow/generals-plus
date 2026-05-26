@@ -1,10 +1,16 @@
 import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
-import type { IGameResult, IPlayerState } from "@generals-plus/engine";
+import type {
+  IGameResult,
+  IPlayerState,
+  IVisionCell,
+} from "@generals-plus/engine";
 import {
   ActionType,
   GameStatus,
+  isSameCoord,
   PlayerStatus,
+  SquareGrid2D,
   Terrain,
   Visibility,
 } from "@generals-plus/engine";
@@ -15,6 +21,7 @@ import type {
 import {
   MatchClientMessage,
   MatchServerMessage,
+  VisionCellSchema,
 } from "@generals-plus/shared-types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -214,10 +221,12 @@ describe("MatchRoom", () => {
       const vision = room.state.clientVisions.get(client.sessionId);
       if (!vision) throw new Error("vision not found");
       const targetIndex = 1 * room.state.width + 2;
-      while (vision.terrain.length <= targetIndex) {
-        vision.terrain.push(Terrain.PLAIN);
+      while (vision.cells.length <= targetIndex) {
+        vision.cells.push(
+          new VisionCellSchema().assign({ terrain: Terrain.PLAIN }),
+        );
       }
-      vision.terrain[targetIndex] = Terrain.MOUNTAIN;
+      vision.cells[targetIndex].terrain = Terrain.MOUNTAIN;
 
       const msgPromise = room.waitForMessage(MatchClientMessage.ACTION);
       client.send("action", {
@@ -233,15 +242,17 @@ describe("MatchRoom", () => {
     });
 
     it("does not leak unseen impassable terrain through enqueue validation", async () => {
-      const cells = Array.from({ length: 16 }, (_, y) =>
-        Array.from({ length: 16 }, (_, x) =>
-          createMockCell({
-            isPassable: x !== 2 || y !== 1,
-          }),
-        ),
-      );
       const game = createMockGame({
-        grid: createMockGrid(16, 16, cells),
+        getVisionGrid: () =>
+          (SquareGrid2D<IVisionCell>).generate(16, 16, (coordinate) => ({
+            coordinate,
+            visibility: isSameCoord(coordinate, { x: 2, y: 1 })
+              ? Visibility.SHROUDED
+              : Visibility.VISIBLE,
+            terrain: Terrain.PLAIN,
+            troopCount: null,
+            owner: null,
+          })),
       });
       const metadata = createValidRoomData({ game });
       room = await createRoom<MatchRoom>("match", { metadata });
@@ -522,9 +533,7 @@ describe("MatchRoom", () => {
 
       let visionFound = false;
       for (const [, vision] of room.state.clientVisions) {
-        if (vision.visibility.length === 256) {
-          expect(vision.terrain.length).toBe(256);
-          expect(vision.troopCount.length).toBe(256);
+        if (vision.cells.length === 256) {
           visionFound = true;
           break;
         }
@@ -901,13 +910,13 @@ describe("MatchRoom", () => {
       const metadata = createValidRoomData();
       room = await createRoom<MatchRoom>("match", { metadata });
 
-      // clear game instance to trigger branch
-      (room as unknown as { game: unknown }).game = undefined;
-
       const client = await connectClient(room, {
         id: "p1",
         email: "p1@test.com",
       });
+
+      // clear game instance to trigger branch
+      (room as unknown as { game: unknown }).game = undefined;
 
       expect(() =>
         (
@@ -990,11 +999,11 @@ describe("MatchRoom", () => {
       expect(vision).toBeDefined();
       if (vision) {
         // 16x16 map => 256 entries (default test map size)
-        expect(vision.visibility.length).toBe(
-          room.state.width * room.state.height,
-        );
+        expect(vision.cells.length).toBe(room.state.width * room.state.height);
         // All should be "hidden"
-        expect(vision.visibility.every((v) => v === "hidden")).toBe(true);
+        expect(
+          vision.cells.every((cell) => cell.visibility === Visibility.HIDDEN),
+        ).toBe(true);
       }
     });
 
@@ -1031,7 +1040,7 @@ describe("MatchRoom", () => {
       expect(vision).toBeDefined();
       if (vision) {
         // ownerIndex entries should be empty strings when owner not ACTIVE
-        expect(vision.ownerIndex.every((v) => v === "")).toBe(true);
+        expect(vision.cells.every((cell) => cell.ownerIndex === "")).toBe(true);
       }
     });
 

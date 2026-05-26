@@ -4,7 +4,7 @@ import type { IGrid } from "#/domain/grid/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import { Visibility } from "#/domain/vision/visibility";
 import type { IVisionCell, IVisionGrid } from "#/domain/vision/vision-grid";
-import { MaskedTerrain } from "#/domain/vision/vision-grid";
+import { HiddenTerrain, MaskedTerrain } from "#/domain/vision/vision-grid";
 import type { GenericGrid2D } from "#/math/grid-2d";
 
 /**
@@ -46,7 +46,7 @@ export function createVisionCell(
       return {
         coordinate: cell.coordinate,
         visibility,
-        terrain: null,
+        terrain: HiddenTerrain,
         troopCount: null,
         owner: null,
       };

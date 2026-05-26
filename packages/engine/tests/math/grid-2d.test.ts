@@ -37,9 +37,23 @@ describe("SquareGrid2D", () => {
   });
 
   it("creates a grid from a flat array", () => {
-    const grid = SquareGrid2D.fromArray(2, 2, [1, 2, 3, 4]);
-    expect(grid.get({ x: 0, y: 0 })).toBe(1);
-    expect(grid.get({ x: 1, y: 1 })).toBe(4);
+    const grid = SquareGrid2D.fromArray(
+      2,
+      2,
+      [1, 2, 3, 4],
+      (element, coordinate) => ({
+        element,
+        coordinate,
+      }),
+    );
+    expect(grid.get({ x: 0, y: 0 })).toEqual({
+      element: 1,
+      coordinate: { x: 0, y: 0 },
+    });
+    expect(grid.get({ x: 1, y: 1 })).toEqual({
+      element: 4,
+      coordinate: { x: 1, y: 1 },
+    });
 
     expect(() => SquareGrid2D.fromArray(2, 2, [1, 2, 3])).toThrow(
       "Array length does not match grid dimensions.",
@@ -193,10 +207,26 @@ describe("HexGrid2D", () => {
   });
 
   it("creates a hex grid from a flat array", () => {
-    const grid = HexGrid2D.fromArray(2, 2, 3, 3, [1, 2, 3, 4, 5, 6, 7]);
-    expect(grid.get({ x: 0, y: 0 })).toBe(1);
-    expect(grid.get({ x: 1, y: 1 })).toBe(5);
-    expect(grid.get({ x: -1, y: 2 })).toBe(6);
+    const grid = HexGrid2D.fromArray(
+      2,
+      2,
+      3,
+      3,
+      [1, 2, 3, 4, 5, 6, 7],
+      (element, coordinate) => ({ element, coordinate }),
+    );
+    expect(grid.get({ x: 1, y: 0 })).toEqual({
+      element: 2,
+      coordinate: { x: 1, y: 0 },
+    });
+    expect(grid.get({ x: 1, y: 1 })).toEqual({
+      element: 5,
+      coordinate: { x: 1, y: 1 },
+    });
+    expect(grid.get({ x: -1, y: 2 })).toEqual({
+      element: 6,
+      coordinate: { x: -1, y: 2 },
+    });
 
     expect(() => HexGrid2D.fromArray(2, 2, 3, 3, [1, 2])).toThrow(
       "Array length does not match grid dimensions.",

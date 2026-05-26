@@ -151,10 +151,14 @@ function createMatchState() {
       [
         "session-1",
         {
-          terrain: ["plain"],
-          troopCount: [5],
-          visibility: ["visible"],
-          ownerIndex: ["player-1"],
+          cells: [
+            {
+              terrain: "plain",
+              troopCount: 5,
+              visibility: "visible",
+              ownerIndex: "player-1",
+            },
+          ],
         },
       ],
     ]),
