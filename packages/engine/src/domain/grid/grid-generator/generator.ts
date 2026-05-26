@@ -22,6 +22,10 @@ import type { ICoordinate } from "#/math/coordinate";
 import type { GenericGrid2D, GridBounds, GridType } from "#/math/grid-2d";
 import { SeededRandom } from "#/math/random";
 
+function coordToString(coord: ICoordinate): string {
+  return `${coord.x},${coord.y}`;
+}
+
 /**
  * Pipeline-based grid generator with placement constraints and validation.
  *
@@ -186,12 +190,12 @@ export abstract class AbstractGridGenerator<
   protected buildProtectedZones(
     generals: ICoordinate[],
     terrainGrid: TerrainGrid,
-  ): Set<ICoordinate> {
-    const zone = new Set<ICoordinate>();
+  ): Set<string> {
+    const zone = new Set<string>();
 
     for (const g of generals) {
       terrainGrid.forEachInRadius(g, GENERAL_SAFE_RADIUS, (_, coord) => {
-        zone.add(coord);
+        zone.add(coordToString(coord));
       });
     }
 
@@ -204,7 +208,7 @@ export abstract class AbstractGridGenerator<
     config: ResolvedConfig<T>,
     rng: SeededRandom,
     terrainGrid: TerrainGrid,
-    protectedZone: Set<ICoordinate>,
+    protectedZone: Set<string>,
   ): void {
     const { mountainRate } = config;
     const targetCount = Math.round(terrainGrid.totalCells * mountainRate);
@@ -235,7 +239,10 @@ export abstract class AbstractGridGenerator<
       );
       const plainNeighbors = terrainGrid
         .getNeighbors(seed)
-        .filter(([c, t]) => t === Terrain.PLAIN && !protectedZone.has(c));
+        .filter(
+          ([c, t]) =>
+            t === Terrain.PLAIN && !protectedZone.has(coordToString(c)),
+        );
       const shuffledNeighbors = rng
         .shuffle(plainNeighbors)
         .slice(0, clusterSize);
@@ -252,7 +259,7 @@ export abstract class AbstractGridGenerator<
     config: ResolvedConfig<T>,
     rng: SeededRandom,
     terrainGrid: TerrainGrid,
-    protectedZone: Set<ICoordinate>,
+    protectedZone: Set<string>,
     generals: ICoordinate[],
   ): void {
     const { cityRate } = config;
@@ -286,7 +293,7 @@ export abstract class AbstractGridGenerator<
     config: ResolvedConfig<T>,
     rng: SeededRandom,
     terrainGrid: TerrainGrid,
-    protectedZone: Set<ICoordinate>,
+    protectedZone: Set<string>,
     generals: ICoordinate[],
   ): void {
     const { flagCount } = config;
@@ -400,7 +407,7 @@ export abstract class AbstractGridGenerator<
   }
 
   protected findCandidates(
-    protectedZone: Set<ICoordinate>,
+    protectedZone: Set<string>,
     terrainGrid: TerrainGrid,
     expectedTerrain: Terrain,
     farFrom: ICoordinate[],
@@ -408,7 +415,10 @@ export abstract class AbstractGridGenerator<
   ) {
     const candidates: ICoordinate[] = [];
     for (const [coord, terrain] of terrainGrid.entries()) {
-      if (protectedZone.has(coord) || terrain !== expectedTerrain) {
+      if (
+        protectedZone.has(coordToString(coord)) ||
+        terrain !== expectedTerrain
+      ) {
         continue;
       }
       const notTooCloseToFar = farFrom.every(
