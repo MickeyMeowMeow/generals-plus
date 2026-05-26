@@ -83,6 +83,15 @@ describe("SquareGrid2D", () => {
     expect(grid.isValid({ x: 0, y: 2 })).toBe(false);
   });
 
+  it("transforms coordinates to array indices correctly", () => {
+    const grid = createSquareGrid();
+    expect(grid.toArrayIndex({ x: 0, y: 0 })).toBe(0);
+    expect(grid.toArrayIndex({ x: 1, y: 0 })).toBe(1);
+    expect(grid.toArrayIndex({ x: 0, y: 1 })).toBe(2);
+    expect(grid.toArrayIndex({ x: 1, y: 1 })).toBe(3);
+    expect(grid.toArrayIndex({ x: -1, y: 0 })).toBe(-1); // Invalid coordinate
+  });
+
   it("gets and sets values", () => {
     const grid = createSquareGrid();
     expect(grid.get({ x: 1, y: 0 })).toBe(2);
@@ -267,6 +276,18 @@ describe("HexGrid2D", () => {
     expect(grid.isValid({ x: -1, y: 2 })).toBe(true);
     expect(grid.isValid({ x: 0, y: 2 })).toBe(true);
     expect(grid.isValid({ x: 1, y: 2 })).toBe(false);
+  });
+
+  it("transforms axial coordinates to array indices correctly", () => {
+    const grid = createHexGrid();
+    expect(grid.toArrayIndex({ x: 0, y: 0 })).toBe(0);
+    expect(grid.toArrayIndex({ x: 1, y: 0 })).toBe(1);
+    expect(grid.toArrayIndex({ x: -1, y: 1 })).toBe(2);
+    expect(grid.toArrayIndex({ x: 0, y: 1 })).toBe(3);
+    expect(grid.toArrayIndex({ x: 1, y: 1 })).toBe(4);
+    expect(grid.toArrayIndex({ x: -1, y: 2 })).toBe(5);
+    expect(grid.toArrayIndex({ x: 0, y: 2 })).toBe(6);
+    expect(grid.toArrayIndex({ x: 1, y: 2 })).toBe(-1); // Invalid coordinate
   });
 
   it("gets and sets values using internal offset indexing", () => {

@@ -107,6 +107,11 @@ export class MatchRoom extends Room<{
 
     this.onMessage(MatchClientMessage.ACTION, (client, action: Action) => {
       logger.debug(`[MatchRoom] Received action: ${JSON.stringify(action)}`);
+
+      if (!this.game) {
+        throw new Error("Game instance not found");
+      }
+
       const playerId = this.sessionToPlayerId.get(client.sessionId);
       if (!playerId) return;
 
@@ -134,8 +139,8 @@ export class MatchRoom extends Room<{
       if (!action.from || !action.to) return;
       const vision = this.state.clientVisions.get(client.sessionId);
       if (vision) {
-        const targetIndex = action.to.y * this.state.width + action.to.x;
-        if (vision.cells.length <= targetIndex) {
+        const targetIndex = this.game.grid.toArrayIndex(action.to);
+        if (targetIndex === -1) {
           return;
         }
         const perceivedTerrain = vision.cells[targetIndex].terrain;

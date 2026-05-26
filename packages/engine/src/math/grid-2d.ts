@@ -51,6 +51,14 @@ export interface GenericGrid2D<T> {
   isValid(coordinate: ICoordinate): boolean;
 
   /**
+   * Transforms a grid coordinate to a zero-based array index.
+   *
+   * @param coordinate The grid coordinate to convert.
+   * @returns The corresponding array index, or -1 if the coordinate is invalid.
+   */
+  toArrayIndex(coordinate: ICoordinate): number;
+
+  /**
    * Converts a grid coordinate to Cartesian coordinates for rendering or other purposes.
    *
    * @param coordinate The grid coordinate to convert.
@@ -243,6 +251,14 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
       coordinate.y >= 0 &&
       coordinate.y < this.height
     );
+  }
+
+  toArrayIndex(coordinate: ICoordinate): number {
+    if (!this.isValid(coordinate)) {
+      return -1;
+    }
+
+    return coordinate.y * this.width + coordinate.x;
   }
 
   toCartesian(coordinate: ICoordinate): ICoordinate {
@@ -520,6 +536,25 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
       coordinate.x >= this.getMinX(coordinate.y) &&
       coordinate.x <= this.getMaxX(coordinate.y)
     );
+  }
+
+  toArrayIndex({ x, y }: ICoordinate): number {
+    if (!this.isValid({ x, y })) {
+      return -1;
+    }
+
+    const leftCells =
+      y <= this.left
+        ? ((y - 1) * y) / 2
+        : (this.left - 1) * (y - this.left / 2);
+    const rightCells =
+      y - 1 <= this.rightSlant - this.right
+        ? this.right * y
+        : this.right * y -
+          ((y - this.rightSlant + this.right) *
+            (y - this.rightSlant + this.right - 1)) /
+            2;
+    return leftCells + rightCells + x - this.getMinX(y);
   }
 
   private static readonly SQRT3_OVER_2 = Math.sqrt(3) / 2;
