@@ -1,5 +1,5 @@
 import { MapSchema, Schema, type, view } from "@colyseus/schema";
-import { GameMode, GameStatus } from "@generals-plus/engine";
+import { GameMode, GameStatus, GridType } from "@generals-plus/engine";
 
 import { ClientActionQueue } from "#/schema/action-data";
 import { Player } from "#/schema/player";
@@ -15,8 +15,17 @@ export class MatchState extends Schema {
   @type("number") finishTick: number = -1;
   @type("number") targetScore: number = -1;
 
+  @type("string") gridType: GridType = GridType.SQUARE;
+
+  // Grid bounds for square grids.
   @type("number") width: number = 0;
   @type("number") height: number = 0;
+
+  // Grid bounds for hex grids.
+  @type("number") left: number = 0;
+  @type("number") right: number = 0;
+  @type("number") leftSlant: number = 0;
+  @type("number") rightSlant: number = 0;
 
   // Shared metadata that every client can see without exposing the full
   // per-player server state kept in `players`.

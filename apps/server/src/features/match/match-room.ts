@@ -68,9 +68,16 @@ export class MatchRoom extends Room<{
     state.targetScore = metadata.targetScore ?? -1;
     state.scoreboard = createScoreboard(metadata.mode);
 
+    state.gridType = this.game.grid.gridType;
     if (this.game.grid.gridType === GridType.SQUARE) {
       state.width = this.game.grid.width;
       state.height = this.game.grid.height;
+    }
+    if (this.game.grid.gridType === GridType.HEX) {
+      state.left = this.game.grid.left;
+      state.right = this.game.grid.right;
+      state.leftSlant = this.game.grid.leftSlant;
+      state.rightSlant = this.game.grid.rightSlant;
     }
 
     for (const playerInit of metadata.playerInit) {

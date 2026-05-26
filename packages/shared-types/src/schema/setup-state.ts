@@ -16,8 +16,16 @@ export class SetupState extends Schema {
   @type("number") maxPlayers: number = 8;
   @type("number") playersPerTeam: number = 2;
 
+  // Map dimensions for square maps
   @type("number") mapWidth: number = 24;
   @type("number") mapHeight: number = 16;
+
+  // Map dimensions for hex maps
+  @type("number") mapLeft: number = 10;
+  @type("number") mapRight: number = 10;
+  @type("number") mapLeftSlant: number = 19;
+  @type("number") mapRightSlant: number = 19;
+
   @type("number") seed: number = 0;
   @type("number") mountainRate: number = 0.12;
   @type("number") cityRate: number = 0.06;
