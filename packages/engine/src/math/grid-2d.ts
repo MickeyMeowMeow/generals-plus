@@ -679,7 +679,8 @@ export function createHexGridDataFromArray<T>(
   }
 
   const gridData: T[][] = [];
-  for (let y = 0, currentLength = 0; y < leftSlant; y++) {
+  let currentLength = 0;
+  for (let y = 0; y < leftSlant; y++) {
     const minX = HexGrid2D.getMinX(y, left);
     const maxX = HexGrid2D.getMaxX(y, right, rightSlant);
     if (array.length < currentLength + maxX - minX + 1) {
@@ -687,6 +688,10 @@ export function createHexGridDataFromArray<T>(
     }
     gridData.push(array.slice(currentLength, currentLength + maxX - minX + 1));
     currentLength += maxX - minX + 1;
+  }
+
+  if (array.length !== currentLength) {
+    throw new Error("Array length does not match grid dimensions.");
   }
 
   return gridData;
