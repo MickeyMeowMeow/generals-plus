@@ -1,7 +1,7 @@
 import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, matchMaker, Room } from "@colyseus/core";
-import type { GridGeneratorOptions } from "@generals-plus/engine";
+import type { GridGeneratorInput } from "@generals-plus/engine";
 import {
   DefaultGenOptions,
   DefaultGridBounds,
@@ -46,8 +46,13 @@ const SETTING_LABELS: Record<string, string> = {
   isPublic: "Visibility",
   maxPlayers: "Max players",
   playersPerTeam: "Players per team",
+  mapType: "Grid type",
   mapWidth: "Map width",
   mapHeight: "Map height",
+  mapLeft: "Map left width",
+  mapRight: "Map right width",
+  mapLeftSlant: "Map left slant",
+  mapRightSlant: "Map right slant",
   seed: "Map seed",
   mountainRate: "Mountain rate",
   cityRate: "City rate",
@@ -96,8 +101,13 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     state.isPublic = isPublic;
     state.maxPlayers = maxPlayers;
     state.playersPerTeam = getDefaultPlayersPerTeam(gameMode);
+    state.mapType = GridType.SQUARE;
     state.mapWidth = DefaultGridBounds[GridType.SQUARE].width;
     state.mapHeight = DefaultGridBounds[GridType.SQUARE].height;
+    state.mapLeft = DefaultGridBounds[GridType.HEX].left;
+    state.mapRight = DefaultGridBounds[GridType.HEX].right;
+    state.mapLeftSlant = DefaultGridBounds[GridType.HEX].leftSlant;
+    state.mapRightSlant = DefaultGridBounds[GridType.HEX].rightSlant;
     state.seed = generateSeed();
     state.mountainRate = DefaultGenOptions.mountainRate;
     state.cityRate = DefaultGenOptions.cityRate;
@@ -502,17 +512,28 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   // Build grid options from current setup state, attaching mode-specific fields.
-  private getGridOptions(): {
-    gridType: typeof GridType.SQUARE;
-  } & GridGeneratorOptions<typeof GridType.SQUARE> {
-    const base: { gridType: typeof GridType.SQUARE } & GridGeneratorOptions<
-      typeof GridType.SQUARE
-    > = {
-      gridType: GridType.SQUARE,
-      gridBounds: {
-        width: this.state.mapWidth,
-        height: this.state.mapHeight,
-      },
+  private getGridOptions(): GridGeneratorInput {
+    const gridShape =
+      this.state.mapType === GridType.SQUARE
+        ? {
+            gridType: this.state.mapType,
+            gridBounds: {
+              width: this.state.mapWidth,
+              height: this.state.mapHeight,
+            },
+          }
+        : {
+            gridType: this.state.mapType,
+            gridBounds: {
+              left: this.state.mapLeft,
+              right: this.state.mapRight,
+              leftSlant: this.state.mapLeftSlant,
+              rightSlant: this.state.mapRightSlant,
+            },
+          };
+
+    const base: GridGeneratorInput = {
+      ...gridShape,
       seed: this.state.seed,
       mountainRate: this.state.mountainRate,
       cityRate: this.state.cityRate,

@@ -1,5 +1,6 @@
 import { ArraySchema, Schema, type } from "@colyseus/schema";
 import type { GameMode } from "@generals-plus/engine";
+import { GridType } from "@generals-plus/engine";
 
 export class SetupPlayer extends Schema {
   @type("string") id: string = "";
@@ -15,6 +16,8 @@ export class SetupState extends Schema {
   @type([SetupPlayer]) players = new ArraySchema<SetupPlayer>();
   @type("number") maxPlayers: number = 8;
   @type("number") playersPerTeam: number = 2;
+
+  @type("string") mapType: GridType = GridType.SQUARE;
 
   // Map dimensions for square maps
   @type("number") mapWidth: number = 24;
