@@ -17,3 +17,20 @@ export interface ICoordinate {
 export function isSameCoord(coord1: ICoordinate, coord2: ICoordinate): boolean {
   return coord1.x === coord2.x && coord1.y === coord2.y;
 }
+
+/**
+ * Calculates the squared distance between two coordinates.
+ *
+ * @param coord1 The first coordinate.
+ * @param coord2 The second coordinate.
+ *
+ * @returns The squared distance between the two coordinates.
+ */
+export function getSquaredDistance(
+  coord1: ICoordinate,
+  coord2: ICoordinate,
+): number {
+  const dx = Math.abs(coord1.x - coord2.x);
+  const dy = Math.abs(coord1.y - coord2.y);
+  return dx * dx + dy * dy;
+}

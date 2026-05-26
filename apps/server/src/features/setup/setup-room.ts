@@ -1,13 +1,12 @@
 import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, matchMaker, Room } from "@colyseus/core";
-import type {
-  DominationGridOptions,
-  GridGeneratorOptions,
-} from "@generals-plus/engine";
+import type { GridGeneratorOptions } from "@generals-plus/engine";
 import {
-  DefaultGridGeneratorOptions,
+  DefaultGenOptions,
+  DefaultGridBounds,
   GameMode,
+  GridType,
   getDefaultPlayersPerTeam,
 } from "@generals-plus/engine";
 import type {
@@ -97,11 +96,11 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     state.isPublic = isPublic;
     state.maxPlayers = maxPlayers;
     state.playersPerTeam = getDefaultPlayersPerTeam(gameMode);
-    state.mapWidth = DefaultGridGeneratorOptions.width;
-    state.mapHeight = DefaultGridGeneratorOptions.height;
+    state.mapWidth = DefaultGridBounds[GridType.SQUARE].width;
+    state.mapHeight = DefaultGridBounds[GridType.SQUARE].height;
     state.seed = generateSeed();
-    state.mountainRate = DefaultGridGeneratorOptions.mountainRate;
-    state.cityRate = DefaultGridGeneratorOptions.cityRate;
+    state.mountainRate = DefaultGenOptions.mountainRate;
+    state.cityRate = DefaultGenOptions.cityRate;
     state.tickInterval = calculateTickInterval(state.speed);
 
     // Initialize mode-specific defaults so startGame sees the right values
@@ -503,10 +502,17 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   // Build grid options from current setup state, attaching mode-specific fields.
-  private getGridOptions(): GridGeneratorOptions | DominationGridOptions {
-    const base: GridGeneratorOptions = {
-      width: this.state.mapWidth,
-      height: this.state.mapHeight,
+  private getGridOptions(): {
+    gridType: typeof GridType.SQUARE;
+  } & GridGeneratorOptions<typeof GridType.SQUARE> {
+    const base: { gridType: typeof GridType.SQUARE } & GridGeneratorOptions<
+      typeof GridType.SQUARE
+    > = {
+      gridType: GridType.SQUARE,
+      gridBounds: {
+        width: this.state.mapWidth,
+        height: this.state.mapHeight,
+      },
       seed: this.state.seed,
       mountainRate: this.state.mountainRate,
       cityRate: this.state.cityRate,

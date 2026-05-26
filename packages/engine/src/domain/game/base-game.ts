@@ -9,13 +9,15 @@ import { GameStatus } from "#/domain/game/game-status";
 import type { IBaseGame, IBaseScoreboard } from "#/domain/game/interfaces";
 import type { Grid } from "#/domain/grid/grid";
 import type { GridInput } from "#/domain/grid/grid-generator";
-import { DefaultGridGenerator } from "#/domain/grid/grid-generator";
+import { SquareGridGenerator } from "#/domain/grid/grid-generator";
+import { HexGridGenerator } from "#/domain/grid/grid-generator/hex";
 import type { IItem } from "#/domain/item/interfaces";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
 import type { Team } from "#/domain/team/interfaces";
 import { VisibilityMap } from "#/domain/vision/visibility-map";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
+import { GridType } from "#/math/grid-2d";
 
 /**
  * Abstract base implementation for the Game Engine.
@@ -35,8 +37,15 @@ export abstract class BaseGame implements IBaseGame {
   protected readonly visibilityMap: VisibilityMap;
 
   constructor(input: GridInput) {
-    this.grid =
-      "grid" in input ? input.grid : new DefaultGridGenerator().generate(input);
+    if ("grid" in input) {
+      this.grid = input.grid;
+    } else if (input.gridType === GridType.SQUARE) {
+      this.grid = new SquareGridGenerator().generate(input);
+    } else if (input.gridType === GridType.HEX) {
+      this.grid = new HexGridGenerator().generate(input);
+    } else {
+      throw new Error("Invalid grid input");
+    }
     this.visibilityMap = new VisibilityMap(this.grid);
   }
 
