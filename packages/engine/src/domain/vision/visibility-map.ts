@@ -84,12 +84,9 @@ export class VisibilityMap {
         const radius = cell.vision?.radius ?? 1; // 1 means 3x3 square, 2 means 5x5 square
 
         // Mark all cells within Chebyshev distance <= radius as VISIBLE
-        for (let dy = -radius; dy <= radius; dy++) {
-          for (let dx = -radius; dx <= radius; dx++) {
-            const current = { x: coord.x + dx, y: coord.y + dy };
-            visibilityData.set(current, Visibility.VISIBLE);
-          }
-        }
+        visibilityData.forEachInRadius(coord, radius, (_, currentCoord) => {
+          visibilityData.set(currentCoord, Visibility.VISIBLE);
+        });
       }
     });
 

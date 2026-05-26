@@ -140,15 +140,10 @@ describe("SquareGridGenerator", () => {
     const generals = collectByTerrain(grid, Terrain.GENERAL);
 
     for (const g of generals) {
-      for (let dy = -GENERAL_SAFE_RADIUS; dy <= GENERAL_SAFE_RADIUS; dy++) {
-        for (let dx = -GENERAL_SAFE_RADIUS; dx <= GENERAL_SAFE_RADIUS; dx++) {
-          const cell = grid.get({ x: g.x + dx, y: g.y + dy });
-          if (cell) {
-            expect(cell.terrain).not.toBe(Terrain.MOUNTAIN);
-            expect(cell.terrain).not.toBe(Terrain.CITY);
-          }
-        }
-      }
+      grid.forEachInRadius(g, GENERAL_SAFE_RADIUS, (cell) => {
+        expect(cell.terrain).not.toBe(Terrain.MOUNTAIN);
+        expect(cell.terrain).not.toBe(Terrain.CITY);
+      });
     }
   });
 
@@ -294,7 +289,7 @@ describe("SquareGridGenerator", () => {
   });
 
   describe("flag placement", () => {
-    const flagOptions: GridGeneratorOptions = {
+    const flagOptions: GridGeneratorOptions<typeof GridType.SQUARE> = {
       gridBounds: { width: 20, height: 14 },
       seed: 1234,
       flagCount: 3,
