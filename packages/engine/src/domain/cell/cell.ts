@@ -1,9 +1,9 @@
 import type { ICell, ICellOwner } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { EffectTarget } from "#/domain/effect/effect-target";
+import type { IItem } from "#/domain/item/interfaces";
 import type { IVisionModifier } from "#/domain/vision/interfaces";
 import type { ICoordinate } from "#/math/coordinate";
-import type { IItem } from "#/domain/item/interfaces";
 
 /**
  * Construction data for a cell.
@@ -87,4 +87,3 @@ export class Cell extends EffectTarget implements ICell {
     this.troopCount = Math.max(0, (this.troopCount ?? 0) + delta);
   }
 }
-

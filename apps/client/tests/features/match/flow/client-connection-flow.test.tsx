@@ -717,10 +717,9 @@ describe("client room flows", () => {
     const modeSelect = screen.getByLabelText("Game Mode");
     expect(modeSelect).toBeTruthy();
     fireEvent.keyDown(modeSelect, { key: "ArrowDown" });
-    expect(screen.getByRole("option", { name: /Demolition/ })).not.toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    expect(
+      screen.getByRole("option", { name: /Demolition/ }),
+    ).not.toHaveAttribute("aria-disabled", "true");
     fireEvent.keyDown(modeSelect, { key: "Escape" });
     expect(
       screen.getByRole("button", { name: "Force start game" }),

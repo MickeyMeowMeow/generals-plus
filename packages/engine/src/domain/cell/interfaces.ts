@@ -1,9 +1,9 @@
 import type { Terrain } from "#/domain/cell/terrain";
 import type { EffectTarget } from "#/domain/effect/effect-target";
+import type { IItem } from "#/domain/item/interfaces";
 import type { PlayerStatus } from "#/domain/player/player-status";
 import type { IVisionModifier } from "#/domain/vision/interfaces";
 import type { ICoordinate } from "#/math/coordinate";
-import type { IItem } from "#/domain/item/interfaces";
 
 export interface ICellOwner {
   readonly playerId: string;
@@ -55,4 +55,3 @@ export interface ICell extends EffectTarget {
    */
   addTroops(delta: number): void;
 }
-

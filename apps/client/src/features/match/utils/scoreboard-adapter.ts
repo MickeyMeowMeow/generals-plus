@@ -1,5 +1,8 @@
 import { GameMode } from "@generals-plus/engine";
-import type { BaseScoreboard } from "@generals-plus/shared-types";
+import type {
+  BaseScoreboard,
+  DemolitionScoreboard,
+} from "@generals-plus/shared-types";
 
 import { formatTeamLabel } from "#/features/match/utils/team-label";
 
@@ -366,8 +369,8 @@ function createDemolitionModel(
 ): GameHudScoreboardModel {
   const rows = createPlayerRows(scoreboard);
   const groups = createTeamGroups(rows);
-  const title = (scoreboard as any).plantedAtSite
-    ? `BOMB PLANTED AT SITE ${(scoreboard as any).plantedAtSite}`
+  const title = (scoreboard as DemolitionScoreboard).plantedAtSite
+    ? `BOMB PLANTED AT SITE ${(scoreboard as DemolitionScoreboard).plantedAtSite}`
     : "Demolition";
 
   return {

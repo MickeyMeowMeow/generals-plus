@@ -20,4 +20,3 @@ export const Terrain = {
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];
-

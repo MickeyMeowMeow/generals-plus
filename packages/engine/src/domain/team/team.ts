@@ -1,11 +1,11 @@
 import { EffectTarget } from "#/domain/effect/effect-target";
 import type { IPlayer } from "#/domain/player/interfaces";
 import type {
+  IAttackerTeam,
   IBaseTeam,
+  IDefenderTeam,
   IScoringTeam,
   IStandardTeam,
-  IAttackerTeam,
-  IDefenderTeam,
 } from "#/domain/team/interfaces";
 import { TeamType } from "#/domain/team/team-type";
 
@@ -58,4 +58,3 @@ export class AttackerTeam extends BaseTeam implements IAttackerTeam {
 export class DefenderTeam extends BaseTeam implements IDefenderTeam {
   readonly type = TeamType.DEFENDER;
 }
-

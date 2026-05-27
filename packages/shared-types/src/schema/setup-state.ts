@@ -48,4 +48,3 @@ export class SetupState extends Schema {
   @type("number") tickInterval: number = 500;
   @type("number") finishTick: number = 360;
 }
-

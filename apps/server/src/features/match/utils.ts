@@ -24,7 +24,6 @@ export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
   },
 };
 
-
 export function calculateFinishTick(
   duration: number,
   tickInterval: number,

@@ -109,7 +109,8 @@ export abstract class AbstractGridGenerator<
     const mountainRate = options.mountainRate ?? DefaultGenOptions.mountainRate;
     const cityRate = options.cityRate ?? DefaultGenOptions.cityRate;
     const flagCount = "flagCount" in options ? (options.flagCount ?? 0) : 0;
-    const bombSiteCount = "bombSiteCount" in options ? (options.bombSiteCount ?? 0) : 0;
+    const bombSiteCount =
+      "bombSiteCount" in options ? (options.bombSiteCount ?? 0) : 0;
     const generalCount = options.generalCount ?? DefaultGenOptions.generalCount;
     const minGeneralDistanceFactor =
       options.minGeneralDistanceFactor ??
@@ -136,7 +137,9 @@ export abstract class AbstractGridGenerator<
       throw new Error(`Flag count must be at least 0, got ${flagCount}.`);
     }
     if (bombSiteCount < 0) {
-      throw new Error(`Bomb site count must be at least 0, got ${bombSiteCount}.`);
+      throw new Error(
+        `Bomb site count must be at least 0, got ${bombSiteCount}.`,
+      );
     }
 
     return {
@@ -396,9 +399,7 @@ export abstract class AbstractGridGenerator<
 
       // Remove candidates too close to the placed bomb site
       for (let j = candidates.length - 1; j >= 0; j--) {
-        if (
-          terrainGrid.getDistance(candidates[j].coord, coord) < 3
-        ) {
+        if (terrainGrid.getDistance(candidates[j].coord, coord) < 3) {
           candidates.splice(j, 1);
         }
       }

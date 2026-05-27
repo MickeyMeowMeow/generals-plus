@@ -6,6 +6,7 @@ import {
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
+import type { DemolitionScoreboard } from "@generals-plus/shared-types";
 import {
   MatchClientMessage,
   MatchServerMessage,
@@ -412,7 +413,11 @@ export function GamePage({ connection, source }: GamePageProps) {
         onClearMoveQueue={isReadOnly ? () => {} : clearMoveQueue}
         playerColors={playerColors}
         pings={pings}
-        isPlanted={gameState.mode === GameMode.DEMOLITION ? !!(gameState.scoreboard as any).isPlanted : false}
+        isPlanted={
+          gameState.mode === GameMode.DEMOLITION
+            ? !!(gameState.scoreboard as DemolitionScoreboard).isPlanted
+            : false
+        }
       />
 
       {(() => {
@@ -434,7 +439,7 @@ export function GamePage({ connection, source }: GamePageProps) {
         };
 
         if (gameState.mode === GameMode.DEMOLITION) {
-          const demoScoreboard = gameState.scoreboard as any;
+          const demoScoreboard = gameState.scoreboard as DemolitionScoreboard;
           const tickInterval = gameState.tickInterval || 500;
 
           if (demoScoreboard.plantProgressTicks > 0) {

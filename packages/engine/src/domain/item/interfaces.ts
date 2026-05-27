@@ -12,4 +12,3 @@ export interface IItem {
   /** Current coordinate of the item on the grid. */
   coordinate: ICoordinate;
 }
-

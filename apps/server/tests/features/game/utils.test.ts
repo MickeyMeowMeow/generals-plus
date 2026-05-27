@@ -1,4 +1,9 @@
-import { DominationGame, GameMode, TurfWarGame, DemolitionGame } from "@generals-plus/engine";
+import {
+  DemolitionGame,
+  DominationGame,
+  GameMode,
+  TurfWarGame,
+} from "@generals-plus/engine";
 import { describe, expect, it } from "vitest";
 
 import { createGame, generateSeed } from "#/features/game/utils";

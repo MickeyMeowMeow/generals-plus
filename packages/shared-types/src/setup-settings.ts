@@ -57,4 +57,3 @@ export type SetupSettings =
   | DominationSetupSettings
   | DemolitionSetupSettings
   | OtherSettings;
-

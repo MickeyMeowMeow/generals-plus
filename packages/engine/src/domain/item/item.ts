@@ -1,6 +1,6 @@
-import type { ICoordinate } from "#/math/coordinate";
 import type { IItem } from "#/domain/item/interfaces";
 import type { ItemType } from "#/domain/item/item-type";
+import type { ICoordinate } from "#/math/coordinate";
 
 export class GameItem implements IItem {
   readonly type: ItemType;

@@ -70,7 +70,7 @@ export function GameApp({
       const icons = Object.values(TerrainTheme)
         .map((theme) => theme.icon)
         .filter((icon): icon is string => icon !== undefined);
-      
+
       // Also preload bomb and ping icons
       icons.push(
         bombNormalIcon,
@@ -84,7 +84,6 @@ export function GameApp({
     };
     preloadAssets().then(() => setIsReady(true));
   }, []);
-
 
   useEffect(() => {
     const container = containerRef.current;

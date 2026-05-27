@@ -1,11 +1,8 @@
 import { extend } from "@pixi/react";
 import { Container, Sprite, Texture } from "pixi.js";
-import { useMemo, useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import {
-  bombNormalIcon,
-  bombPlantedIcon,
-} from "#/features/game/assets";
+import { bombNormalIcon, bombPlantedIcon } from "#/features/game/assets";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type {
   RenderGrid,
@@ -30,7 +27,10 @@ export function BombLayer({ grid, stride, isPlanted }: BombLayerProps) {
 
   // Filter cells carrying a C4 bomb (item type 0)
   const bombCells = useMemo(() => {
-    const cells: Array<{ cell: RenderGridCell; item: any }> = [];
+    const cells: Array<{
+      cell: RenderGridCell;
+      item: NonNullable<RenderGridCell["items"]>[number];
+    }> = [];
     grid.forEach((cell) => {
       if (cell.items && cell.items.length > 0) {
         const bomb = cell.items.find((item) => item.type === 0);
@@ -68,7 +68,9 @@ export function BombLayer({ grid, stride, isPlanted }: BombLayerProps) {
         const y = cell.coordinate.y * stride + cellSize * 0.78;
 
         const icon = isPlanted
-          ? (flash ? bombIcons.planted : bombIcons.normal)
+          ? flash
+            ? bombIcons.planted
+            : bombIcons.normal
           : bombIcons.normal;
         const texture = Texture.from(icon);
         const finalSize = isPlanted && flash ? size * 1.15 : size;
@@ -90,5 +92,3 @@ export function BombLayer({ grid, stride, isPlanted }: BombLayerProps) {
     </pixiContainer>
   );
 }
-
-

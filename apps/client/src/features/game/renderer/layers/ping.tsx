@@ -55,4 +55,3 @@ export function PingLayer({ pings, stride }: PingLayerProps) {
     </pixiContainer>
   );
 }
-

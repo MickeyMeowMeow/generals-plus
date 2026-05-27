@@ -14,19 +14,19 @@ import type {
   IDemolitionScoreboard,
 } from "#/domain/game/interfaces";
 import type { GridInput } from "#/domain/grid/grid-generator";
+import { GameItem } from "#/domain/item/item";
+import { ItemType } from "#/domain/item/item-type";
+import type { IPlayer } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
 import { TeamType } from "#/domain/team/team-type";
-import { ItemType } from "#/domain/item/item-type";
-import { GameItem } from "#/domain/item/item";
 import { SeededRandom } from "#/math/random";
-import type { IPlayer } from "#/domain/player/interfaces";
 
 export interface DemolitionGameOptions {
   plantDurationTicks?: number;
   defuseDurationTicks?: number;
   detonateDurationTicks?: number;
   bombSiteCount?: number;
-  finishTick?: number;          // max ticks
+  finishTick?: number; // max ticks
   seed?: number;
 }
 
@@ -66,7 +66,9 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
     // Derived properties in seconds for backwards compatibility with scoreboard / UI representation
     this.plantDuration = Math.round((this.plantDurationTicks * 500) / 1000);
     this.defuseDuration = Math.round((this.defuseDurationTicks * 500) / 1000);
-    this.detonateDuration = Math.round((this.detonateDurationTicks * 500) / 1000);
+    this.detonateDuration = Math.round(
+      (this.detonateDurationTicks * 500) / 1000,
+    );
 
     // Configure combat resolver to block defenders from carrying, and prevent moving the bomb if already planted!
     this.combatResolver.canMoveItem = (item, player: IPlayer) => {
@@ -137,7 +139,11 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
       });
 
       if (generalCell) {
-        const bomb = new GameItem(ItemType.BOMB, "bomb_1", (generalCell as ICell).coordinate);
+        const bomb = new GameItem(
+          ItemType.BOMB,
+          "bomb_1",
+          (generalCell as ICell).coordinate,
+        );
         this.items.push(bomb);
         (generalCell as ICell).items.push(bomb);
       }

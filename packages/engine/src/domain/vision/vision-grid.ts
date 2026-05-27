@@ -1,9 +1,9 @@
 import type { ICellOwner } from "#/domain/cell/interfaces";
 import type { Terrain } from "#/domain/cell/terrain";
+import type { IItem } from "#/domain/item/interfaces";
 import type { Visibility } from "#/domain/vision/visibility";
 import type { ICoordinate } from "#/math/coordinate";
 import type { GenericGrid2D } from "#/math/grid-2d";
-import type { IItem } from "#/domain/item/interfaces";
 
 /**
  * Represents a terrain type that is partially obscured by the fog of war.
@@ -59,4 +59,3 @@ export interface IVisionCell {
  * Represents the entire grid as perceived through the fog of war.
  */
 export interface IVisionGrid extends GenericGrid2D<IVisionCell> {}
-

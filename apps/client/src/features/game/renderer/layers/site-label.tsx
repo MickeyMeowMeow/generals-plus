@@ -1,7 +1,7 @@
+import { Terrain } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Container, Text, TextStyle } from "pixi.js";
 import { useMemo } from "react";
-import { Terrain } from "@generals-plus/engine";
 
 import type {
   RenderGrid,
@@ -25,7 +25,12 @@ export function SiteLabelLayer({
   const siteCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; label: string }> = [];
     grid.forEach((cell) => {
-      if (cell.terrain === Terrain.BOMB_SITE && cell.siteIndex !== null && cell.siteIndex !== undefined && cell.siteIndex >= 0) {
+      if (
+        cell.terrain === Terrain.BOMB_SITE &&
+        cell.siteIndex !== null &&
+        cell.siteIndex !== undefined &&
+        cell.siteIndex >= 0
+      ) {
         cells.push({
           cell,
           label: String.fromCharCode(65 + cell.siteIndex),

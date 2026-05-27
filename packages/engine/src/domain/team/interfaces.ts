@@ -45,4 +45,3 @@ export interface IDefenderTeam extends IBaseTeam {
  * Combined type representing any possible state a team can be in.
  */
 export type Team = IStandardTeam | IScoringTeam | IAttackerTeam | IDefenderTeam;
-

@@ -26,9 +26,8 @@ export * from "#/domain/grid/grid";
 export * from "#/domain/grid/grid-generator";
 export * from "#/domain/grid/interfaces";
 export * from "#/domain/item/interfaces";
-export * from "#/domain/item/item-type";
 export * from "#/domain/item/item";
-
+export * from "#/domain/item/item-type";
 export * from "#/domain/player/interfaces";
 export * from "#/domain/player/player";
 export * from "#/domain/player/player-status";

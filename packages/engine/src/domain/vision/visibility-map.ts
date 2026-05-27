@@ -1,9 +1,9 @@
 import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import type { IGrid } from "#/domain/grid/interfaces";
+import { ItemType } from "#/domain/item/item-type";
 import type { Team } from "#/domain/team/interfaces";
 import { TeamType } from "#/domain/team/team-type";
-import { ItemType } from "#/domain/item/item-type";
 import { Visibility } from "#/domain/vision/visibility";
 import type { IVisionCell, IVisionGrid } from "#/domain/vision/vision-grid";
 import { HiddenTerrain, MaskedTerrain } from "#/domain/vision/vision-grid";
@@ -122,4 +122,3 @@ export class VisibilityMap {
     return visionGrid;
   }
 }
-

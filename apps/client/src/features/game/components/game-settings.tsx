@@ -1,11 +1,11 @@
 import { GameMode } from "@generals-plus/engine";
 import type {
   ClassicSetupSettings,
+  DemolitionSetupSettings,
   DominationSetupSettings,
   SetupSettings,
   SetupState,
   TurfWarSetupSettings,
-  DemolitionSetupSettings,
 } from "@generals-plus/shared-types";
 import { useState } from "react";
 

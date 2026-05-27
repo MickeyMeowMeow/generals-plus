@@ -127,4 +127,3 @@ export class DemolitionScoreboard extends BaseScoreboard {
   @type("number") defuseDuration: number = 5;
   @type("number") detonateDuration: number = 45;
 }
-

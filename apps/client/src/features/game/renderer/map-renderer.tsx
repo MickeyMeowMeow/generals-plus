@@ -4,15 +4,15 @@ import type { FederatedPointerEvent } from "pixi.js";
 import { Container, Rectangle } from "pixi.js";
 import { useCallback, useMemo, useRef } from "react";
 
+import { BombLayer } from "#/features/game/renderer/layers/bomb";
 import { GridLayer } from "#/features/game/renderer/layers/grid";
 import { HighlightLayer } from "#/features/game/renderer/layers/highlight";
 import { IconLayer } from "#/features/game/renderer/layers/icon";
 import { MoveQueueLayer } from "#/features/game/renderer/layers/move-queue";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { PingLayer } from "#/features/game/renderer/layers/ping";
-import { TroopLayer } from "#/features/game/renderer/layers/troop";
 import { SiteLabelLayer } from "#/features/game/renderer/layers/site-label";
-import { BombLayer } from "#/features/game/renderer/layers/bomb";
+import { TroopLayer } from "#/features/game/renderer/layers/troop";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";

@@ -2,9 +2,9 @@ import type {
   GameMode as GameModeType,
   IBaseScoreboard,
   IClassicScoreboard,
+  IDemolitionScoreboard,
   IDominationScoreboard,
   ITurfWarScoreboard,
-  IDemolitionScoreboard,
 } from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
 import type {
@@ -15,17 +15,16 @@ import type {
 import {
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
+  DemolitionScoreboard,
+  DemolitionScoreboardPlayerEntry,
+  DemolitionScoreboardTeamEntry,
   DominationScoreboard,
   DominationScoreboardPlayerEntry,
   DominationScoreboardTeamEntry,
   TurfWarScoreboard,
   TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
-  DemolitionScoreboard,
-  DemolitionScoreboardPlayerEntry,
-  DemolitionScoreboardTeamEntry,
 } from "@generals-plus/shared-types";
-
 
 /**
  * Allocates the Colyseus scoreboard schema that matches the engine mode.

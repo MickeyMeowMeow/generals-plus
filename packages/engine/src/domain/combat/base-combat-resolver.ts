@@ -4,8 +4,8 @@ import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import type { CombatResolver } from "#/domain/combat/interfaces";
 import type { IGrid } from "#/domain/grid/interfaces";
-import type { IPlayer } from "#/domain/player/interfaces";
 import type { IItem } from "#/domain/item/interfaces";
+import type { IPlayer } from "#/domain/player/interfaces";
 
 /**
  * Base combat logic:
@@ -134,7 +134,6 @@ export abstract class BaseCombatResolver implements CombatResolver {
 
     return true;
   }
-
 
   /**
    * Hook for subclasses to define what happens when a player's GENERAL is successfully conquered.

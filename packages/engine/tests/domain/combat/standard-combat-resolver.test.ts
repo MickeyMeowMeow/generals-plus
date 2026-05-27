@@ -8,11 +8,11 @@ import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
 import type { Grid } from "#/domain/grid/grid";
 import { SquareGrid } from "#/domain/grid/grid";
+import { GameItem } from "#/domain/item/item";
+import { ItemType } from "#/domain/item/item-type";
 import { Player } from "#/domain/player/player";
 import { PlayerStatus } from "#/domain/player/player-status";
 import { StandardTeam } from "#/domain/team/team";
-import { GameItem } from "#/domain/item/item";
-import { ItemType } from "#/domain/item/item-type";
 
 function createGrid(width = 2, height = 1): Grid {
   const cells = Array.from({ length: height }, (_, y) =>
@@ -240,13 +240,14 @@ describe("StandardCombatResolver", () => {
 
     // 1. Success attack -> items transfer
     const grid1 = createGrid();
-    const s1 = grid1.get({ x: 0, y: 0 })!;
-    const d1 = grid1.get({ x: 1, y: 0 })!;
+    const s1 = grid1.get({ x: 0, y: 0 });
+    const d1 = grid1.get({ x: 1, y: 0 });
+    if (!s1 || !d1) throw new Error("cells should exist");
     s1.owner = p1;
     s1.troopCount = 10;
     d1.owner = p2;
     d1.troopCount = 5;
-    
+
     const bomb1 = new GameItem(ItemType.BOMB, "bomb-1", { x: 0, y: 0 });
     s1.items.push(bomb1);
 
@@ -260,8 +261,9 @@ describe("StandardCombatResolver", () => {
 
     // 2. Failed attack -> items do NOT transfer
     const grid2 = createGrid();
-    const s2 = grid2.get({ x: 0, y: 0 })!;
-    const d2 = grid2.get({ x: 1, y: 0 })!;
+    const s2 = grid2.get({ x: 0, y: 0 });
+    const d2 = grid2.get({ x: 1, y: 0 });
+    if (!s2 || !d2) throw new Error("cells should exist");
     s2.owner = p1;
     s2.troopCount = 5;
     d2.owner = p2;
@@ -280,8 +282,9 @@ describe("StandardCombatResolver", () => {
 
     // 3. Reinforcement -> items transfer
     const grid3 = createGrid();
-    const s3 = grid3.get({ x: 0, y: 0 })!;
-    const d3 = grid3.get({ x: 1, y: 0 })!;
+    const s3 = grid3.get({ x: 0, y: 0 });
+    const d3 = grid3.get({ x: 1, y: 0 });
+    if (!s3 || !d3) throw new Error("cells should exist");
     s3.owner = p1;
     s3.troopCount = 10;
     d3.owner = p1;

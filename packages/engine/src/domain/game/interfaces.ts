@@ -9,7 +9,6 @@ import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
 
-
 /**
  * The root state of the Game Engine.
  */
@@ -198,10 +197,9 @@ export interface IDemolitionScoreboard extends IBaseScoreboard {
  */
 export interface IDemolitionGame extends IBaseGame {
   readonly mode: typeof GameMode.DEMOLITION;
-  
+
   getScoreboard(): IDemolitionScoreboard;
 }
-
 
 /**
  * Payload Mode.

@@ -1,15 +1,15 @@
 import type { GridInput, IBaseGame } from "@generals-plus/engine";
 import {
+  AttackerTeam,
   ClassicGame,
+  DefenderTeam,
+  DemolitionGame,
   DominationGame,
   GameMode,
   GridType,
   Player,
   StandardTeam,
   TurfWarGame,
-  DemolitionGame,
-  AttackerTeam,
-  DefenderTeam,
 } from "@generals-plus/engine";
 
 /** Generate a random 32-bit seed from current time and Math.random(). */
@@ -205,7 +205,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
     }
     default:
       throw new Error(
-        `[createGame] Game mode "${(options as any).mode}" is not implemented yet.`,
+        `[createGame] Game mode "${options.mode}" is not implemented yet.`,
       );
   }
 }
