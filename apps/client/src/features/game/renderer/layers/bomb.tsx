@@ -84,7 +84,7 @@ export function BombLayer({
 
         return (
           <pixiSprite
-            key={"bomb"}
+            key={`bomb-${cell.coordinate.x},${cell.coordinate.y}`}
             texture={texture}
             anchor={0.5}
             x={x}

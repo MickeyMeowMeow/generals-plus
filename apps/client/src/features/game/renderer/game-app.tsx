@@ -149,7 +149,7 @@ export function GameApp({
       const { x, y } = grid.toCartesian(initialCoord);
       return { x: x * RenderConfig.cellStride, y: y * RenderConfig.cellStride };
     }
-  }, [initialCoord, grid.toCartesian]);
+  }, [grid, initialCoord]);
 
   return (
     <div ref={containerRef} className={"h-full w-full"}>

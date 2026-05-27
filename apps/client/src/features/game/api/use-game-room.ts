@@ -222,12 +222,12 @@ export function useGameRoom(connection: GameRoomConnection) {
           }
 
           const myQueue = state.clientActionQueues.get(myId);
-          if (renderGrid?.gridType && myQueue) {
+          if (state.gridType && myQueue) {
             setMoveQueue(
               myQueue.queue.map((action: ActionData) => ({
                 from: { x: action.fromX, y: action.fromY },
                 direction: getDirection(
-                  renderGrid.gridType,
+                  state.gridType,
                   { x: action.fromX, y: action.fromY },
                   { x: action.toX, y: action.toY },
                 ),
@@ -283,7 +283,7 @@ export function useGameRoom(connection: GameRoomConnection) {
       }
       releaseGameRoom(connection);
     };
-  }, [connection, renderGrid?.gridType]);
+  }, [connection]);
 
   const sendMove = useCallback(
     (

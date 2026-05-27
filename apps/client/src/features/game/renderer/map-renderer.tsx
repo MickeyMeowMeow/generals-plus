@@ -102,7 +102,7 @@ export function MapRenderer({
         lastPrimaryClickRef.current = { coord, time: now };
       }
     },
-    [grid.fromCartesian, onCellClick, onSplitMoveCell],
+    [grid, onCellClick, onSplitMoveCell],
   );
 
   return (
