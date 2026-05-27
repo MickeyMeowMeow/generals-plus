@@ -5,7 +5,7 @@ import type {
   MoveActionType,
   SurrenderAction,
 } from "@generals-plus/engine";
-import { ActionType } from "@generals-plus/engine";
+import { ActionType, GridType } from "@generals-plus/engine";
 import type {
   ActionData,
   MatchClientMessagePayload,
@@ -117,11 +117,32 @@ function releaseGameRoom(connection: GameRoomConnection) {
   entry.refs = Math.max(0, entry.refs - 1);
 }
 
-function getDirection(from: ICoordinate, to: ICoordinate): MoveDirection {
-  if (to.y < from.y) return MoveDirection.UP;
-  if (to.y > from.y) return MoveDirection.DOWN;
-  if (to.x < from.x) return MoveDirection.LEFT;
-  return MoveDirection.RIGHT;
+function getDirection(
+  gridType: GridType,
+  from: ICoordinate,
+  to: ICoordinate,
+): MoveDirection {
+  switch (gridType) {
+    case GridType.SQUARE: {
+      if (to.y < from.y) return MoveDirection.UP;
+      if (to.y > from.y) return MoveDirection.DOWN;
+      if (to.x < from.x) return MoveDirection.LEFT;
+      return MoveDirection.RIGHT;
+    }
+    case GridType.HEX: {
+      if (to.x < from.x) {
+        return to.y === from.y
+          ? MoveDirection.TOP_LEFT
+          : MoveDirection.BOTTOM_LEFT;
+      }
+      if (to.x > from.x) {
+        return to.y < from.y
+          ? MoveDirection.TOP_RIGHT
+          : MoveDirection.BOTTOM_RIGHT;
+      }
+      return to.y < from.y ? MoveDirection.TOP : MoveDirection.BOTTOM;
+    }
+  }
 }
 
 function isReadyMatchState(state: MatchState) {
@@ -194,19 +215,19 @@ export function useGameRoom(connection: GameRoomConnection) {
           setCurrentPlayer(currentPlayer);
 
           const myId = currentRoom.sessionId;
+
           const myVision = state.clientVisions.get(myId);
-          if (myVision && state.width > 0) {
-            setRenderGrid(
-              createRenderGrid(myVision, state.width, state.height),
-            );
+          if (myVision) {
+            setRenderGrid(createRenderGrid(myVision, state));
           }
 
           const myQueue = state.clientActionQueues.get(myId);
-          if (myQueue) {
+          if (state.gridType && myQueue) {
             setMoveQueue(
               myQueue.queue.map((action: ActionData) => ({
                 from: { x: action.fromX, y: action.fromY },
                 direction: getDirection(
+                  state.gridType,
                   { x: action.fromX, y: action.fromY },
                   { x: action.toX, y: action.toY },
                 ),

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { GameMode } from "@generals-plus/engine";
+import { GameMode, GridType } from "@generals-plus/engine";
 import type { SetupSettings } from "@generals-plus/shared-types";
 import {
   CUSTOM_ROOM_KEY_MAX_LENGTH,
@@ -104,6 +104,7 @@ function createSetupState(
     isPublic: false,
     maxPlayers: 8,
     playersPerTeam: 1,
+    mapType: GridType.SQUARE,
     mapWidth: 24,
     mapHeight: 16,
     seed: 0,
@@ -125,6 +126,7 @@ function createSetupState(
 function createMatchState() {
   return {
     mode: GameMode.CLASSIC,
+    gridType: GridType.SQUARE,
     width: 1,
     height: 1,
     publicPlayers: new Map([

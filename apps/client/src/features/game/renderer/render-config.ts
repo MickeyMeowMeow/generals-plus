@@ -15,8 +15,12 @@ export const RenderConfig = {
   initialMarginRatioY: 0.15,
 
   // Grid
-  cellGap: 2,
   cellStride: 100,
+  cellStroke: 4,
+
+  // Selection highlight
+  selectionStroke: 4,
+  selectionColor: 0xffffff,
 
   // Terrain icons
   terrainIconScale: 0.78,

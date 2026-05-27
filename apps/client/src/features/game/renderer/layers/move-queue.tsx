@@ -9,6 +9,7 @@ import {
   getArrowAnchor,
 } from "#/features/game/renderer/layers/move-queue-geometry";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
 
 extend({ Graphics });
@@ -117,11 +118,11 @@ function drawSplitArrow(
 }
 
 interface MoveQueueLayerProps {
-  stride: number;
+  grid: RenderGrid;
   moveQueue: MoveIntent[];
 }
 
-export function MoveQueueLayer({ stride, moveQueue }: MoveQueueLayerProps) {
+export function MoveQueueLayer({ grid, moveQueue }: MoveQueueLayerProps) {
   const drawMoveQueue = useCallback(
     (g: Graphics) => {
       g.clear();
@@ -132,7 +133,7 @@ export function MoveQueueLayer({ stride, moveQueue }: MoveQueueLayerProps) {
       // Draw move queue arrows
       moveQueue.forEach((move) => {
         // Keep the whole arrow inside the departure cell for stronger contrast.
-        const { anchorX, anchorY } = getArrowAnchor(move, stride);
+        const { anchorX, anchorY } = getArrowAnchor(grid, move);
         const trigonometry = DIRECTION_TRIGONOMETRY[move.direction];
 
         if (move.type === ActionType.SPLIT_MOVE) {
@@ -147,7 +148,7 @@ export function MoveQueueLayer({ stride, moveQueue }: MoveQueueLayerProps) {
         );
       });
     },
-    [moveQueue, stride],
+    [grid, moveQueue],
   );
 
   return <pixiGraphics draw={drawMoveQueue} />;

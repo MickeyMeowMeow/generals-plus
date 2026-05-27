@@ -6,7 +6,8 @@ import {
   pingDefenseIcon,
   pingRallyIcon,
 } from "#/features/game/assets";
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import { RenderConfig } from "#/features/game/renderer/render-config";
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
 
 extend({ Container, Sprite });
 
@@ -18,8 +19,8 @@ export interface Ping {
 }
 
 interface PingLayerProps {
+  readonly grid: RenderGrid;
   readonly pings: Ping[];
-  readonly stride: number;
 }
 
 const pingIcons: Record<string, string> = {
@@ -28,15 +29,16 @@ const pingIcons: Record<string, string> = {
   rally: pingRallyIcon,
 };
 
-export function PingLayer({ pings, stride }: PingLayerProps) {
-  const cellSize = stride - RenderConfig.cellGap;
-
+export function PingLayer({ grid, pings }: PingLayerProps) {
   return (
     <pixiContainer>
       {pings.map((ping) => {
-        const size = cellSize * 0.38;
-        const x = ping.x * stride + cellSize * 0.78;
-        const y = ping.y * stride + cellSize * 0.22;
+        const size = RenderConfig.cellStride * 0.38;
+
+        const cellCoord = grid.toCartesian(ping);
+        const x = (cellCoord.x + 0.28) * RenderConfig.cellStride;
+        const y = (cellCoord.y - 0.28) * RenderConfig.cellStride;
+
         const icon = pingIcons[ping.type] || pingIcons.rally;
         const texture = Texture.from(icon);
 

@@ -9,23 +9,33 @@ import type {
   RenderGrid,
   RenderGridCell,
 } from "#/features/game/renderer/render-grid";
-import { getCoordWorldPosition } from "#/features/game/utils/coord";
 
 extend({ Container, Text });
 
 interface TroopLayerProps {
   grid: RenderGrid;
-  stride: number;
-  cellSize: number;
   splitMoveSelection: ICoordinate | null;
 }
 
-export function TroopLayer({
-  grid,
-  stride,
-  cellSize,
-  splitMoveSelection,
-}: TroopLayerProps) {
+const TROOP_TEXT_STYLE = new TextStyle({
+  fontFamily: RenderConfig.troopTextFontFamily,
+  fontSize: RenderConfig.cellStride * RenderConfig.troopTextFontSizeRatio,
+  fontWeight: RenderConfig.troopTextFontWeight,
+  fill: RenderConfig.troopTextColor,
+  stroke: {
+    color: RenderConfig.troopTextStrokeColor,
+    width: RenderConfig.troopTextStrokeWidth,
+  },
+  dropShadow: {
+    color: RenderConfig.troopTextShadowColor,
+    alpha: RenderConfig.troopTextShadowAlpha,
+    blur: RenderConfig.troopTextShadowBlur,
+    distance: RenderConfig.troopTextShadowDistance,
+    angle: RenderConfig.troopTextShadowAngle,
+  },
+});
+
+export function TroopLayer({ grid, splitMoveSelection }: TroopLayerProps) {
   const troopCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; text: string }> = [];
     grid.forEach((cell) => {
@@ -41,43 +51,19 @@ export function TroopLayer({
     return cells;
   }, [grid, splitMoveSelection]);
 
-  const troopTextStyle = useMemo(() => {
-    return new TextStyle({
-      fontFamily: RenderConfig.troopTextFontFamily,
-      fontSize: cellSize * RenderConfig.troopTextFontSizeRatio,
-      fontWeight: RenderConfig.troopTextFontWeight,
-      fill: RenderConfig.troopTextColor,
-      stroke: {
-        color: RenderConfig.troopTextStrokeColor,
-        width: RenderConfig.troopTextStrokeWidth,
-      },
-      dropShadow: {
-        color: RenderConfig.troopTextShadowColor,
-        alpha: RenderConfig.troopTextShadowAlpha,
-        blur: RenderConfig.troopTextShadowBlur,
-        distance: RenderConfig.troopTextShadowDistance,
-        angle: RenderConfig.troopTextShadowAngle,
-      },
-    });
-  }, [cellSize]);
-
   return (
     <pixiContainer>
       {troopCells.map(({ cell, text }) => {
-        const { x, y } = getCoordWorldPosition(
-          cell.coordinate,
-          stride,
-          cellSize,
-        );
+        const { x, y } = grid.toCartesian(cell.coordinate);
 
         return (
           <pixiText
             key={`troop-${cell.coordinate.x},${cell.coordinate.y}`}
             text={text}
             anchor={0.5}
-            x={x}
-            y={y}
-            style={troopTextStyle}
+            x={x * RenderConfig.cellStride}
+            y={y * RenderConfig.cellStride}
+            style={TROOP_TEXT_STYLE}
           />
         );
       })}

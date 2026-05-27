@@ -71,8 +71,17 @@ describe("SquareGrid2D", () => {
   it("calculates the Cartesian coordinates correctly", () => {
     const grid = createSquareGrid();
     expect(grid.cartesianCenter).toEqual({ x: 0.5, y: 0.5 });
+
     expect(grid.toCartesian({ x: 0, y: 0 })).toEqual({ x: 0, y: 0 });
     expect(grid.toCartesian({ x: 1, y: 1 })).toEqual({ x: 1, y: 1 });
+
+    expect(grid.fromCartesian({ x: 0, y: 0 })).toEqual({ x: 0, y: 0 });
+    expect(grid.fromCartesian({ x: 0, y: 1.1 })).toEqual({ x: 0, y: 1 });
+    expect(grid.fromCartesian({ x: 0.6, y: 0.9 })).toEqual({ x: 1, y: 1 });
+    expect(grid.fromCartesian({ x: 1.4, y: 1.4 })).toEqual({ x: 1, y: 1 });
+    expect(grid.fromCartesian({ x: -0.6, y: 0 })).toBeNull();
+    expect(grid.fromCartesian({ x: 0, y: 1.5 })).toBeNull();
+    expect(grid.fromCartesian({ x: 2, y: 0 })).toBeNull();
   });
 
   it("validates coordinates correctly", () => {
@@ -252,17 +261,57 @@ describe("HexGrid2D", () => {
 
   it("calculates the Cartesian coordinates correctly", () => {
     const grid = createHexGrid();
-    expect(grid.cartesianCenter).toEqual({ x: 0, y: 1 });
+    expect(grid.cartesianCenter).toEqual({ x: 0, y: (Math.sqrt(3) * 2) / 3 });
+
     expect(grid.toCartesian({ x: 0, y: 0 })).toEqual({ x: 0, y: 0 });
-    expect(grid.toCartesian({ x: 0, y: 2 })).toEqual({ x: 0, y: 2 });
+    expect(grid.toCartesian({ x: 0, y: 2 })).toEqual({
+      x: 0,
+      y: (4 * Math.sqrt(3)) / 3,
+    });
     expect(grid.toCartesian({ x: 1, y: 0 })).toEqual({
-      x: Math.sqrt(3) / 2,
-      y: 0.5,
+      x: 1,
+      y: Math.sqrt(3) / 3,
     });
     expect(grid.toCartesian({ x: -1, y: 2 })).toEqual({
-      x: -Math.sqrt(3) / 2,
-      y: 1.5,
+      x: -1,
+      y: Math.sqrt(3),
     });
+
+    expect(grid.fromCartesian({ x: 0, y: Math.sqrt(3) / 3 - 0.01 })).toEqual({
+      x: 0,
+      y: 0,
+    });
+    expect(grid.fromCartesian({ x: 0, y: Math.sqrt(3) / 3 + 0.01 })).toEqual({
+      x: 0,
+      y: 1,
+    });
+    expect(grid.fromCartesian({ x: 0.5, y: (Math.sqrt(3) * 2.5) / 3 })).toEqual(
+      {
+        x: 1,
+        y: 1,
+      },
+    );
+    expect(grid.fromCartesian({ x: 0.5, y: (Math.sqrt(3) * 2.4) / 3 })).toEqual(
+      {
+        x: 0,
+        y: 1,
+      },
+    );
+    expect(
+      grid.fromCartesian({ x: 0.49, y: (Math.sqrt(3) * 2.5) / 3 }),
+    ).toEqual({
+      x: 0,
+      y: 1,
+    });
+    expect(grid.fromCartesian({ x: -1, y: (Math.sqrt(3) * 2.5) / 3 })).toEqual({
+      x: -1,
+      y: 2,
+    });
+
+    expect(grid.fromCartesian({ x: -1 / 3, y: -Math.sqrt(3) / 3 })).toBeNull();
+    expect(grid.fromCartesian({ x: 0.51, y: -Math.sqrt(3) / 6 })).toBeNull();
+    expect(grid.fromCartesian({ x: 1.3, y: 0 })).toBeNull();
+    expect(grid.fromCartesian({ x: 1.3, y: Math.sqrt(3) * 3 })).toBeNull();
   });
 
   it("validates axial coordinates correctly", () => {
@@ -326,8 +375,8 @@ describe("HexGrid2D", () => {
   it("calculates the squared Euclidean distance to center correctly", () => {
     const grid = createHexGrid();
     expect(grid.getDistanceToCenter({ x: 0, y: 1 })).toBeCloseTo(0);
-    expect(grid.getDistanceToCenter({ x: 1, y: 0 })).toBeCloseTo(1);
-    expect(grid.getDistanceToCenter({ x: -1, y: 2 })).toBeCloseTo(1);
+    expect(grid.getDistanceToCenter({ x: 1, y: 0 })).toBeCloseTo(4 / 3);
+    expect(grid.getDistanceToCenter({ x: -1, y: 2 })).toBeCloseTo(4 / 3);
     expect(grid.getDistanceToCenter({ x: 1, y: 2 })).toBe(Infinity); // Invalid coordinate
   });
 

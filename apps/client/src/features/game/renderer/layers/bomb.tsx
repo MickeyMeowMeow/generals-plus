@@ -14,7 +14,6 @@ extend({ Container, Sprite });
 
 interface BombLayerProps {
   grid: RenderGrid;
-  stride: number;
   isPlanted: boolean;
   /** Ticks remaining until detonation. -1 if unknown or not applicable. */
   ticksRemaining?: number;
@@ -35,12 +34,9 @@ function computeFlashInterval(ticksRemaining: number | undefined): number {
 
 export function BombLayer({
   grid,
-  stride,
   isPlanted,
   ticksRemaining = -1,
 }: BombLayerProps) {
-  const cellSize = stride - RenderConfig.cellGap;
-
   const bombCells = useMemo(() => {
     const cells: RenderGridCell[] = [];
     grid.forEach((cell) => {
@@ -71,9 +67,11 @@ export function BombLayer({
   return (
     <pixiContainer>
       {bombCells.map((cell) => {
-        const size = cellSize * 0.38;
-        const x = cell.coordinate.x * stride + cellSize * 0.78;
-        const y = cell.coordinate.y * stride + cellSize * 0.78;
+        const size = RenderConfig.cellStride * 0.38;
+
+        const cellCoord = grid.toCartesian(cell.coordinate);
+        const x = (cellCoord.x + 0.28) * RenderConfig.cellStride;
+        const y = (cellCoord.y + 0.28) * RenderConfig.cellStride;
 
         const icon = isPlanted
           ? flash

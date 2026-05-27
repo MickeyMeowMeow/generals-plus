@@ -1,12 +1,17 @@
-import type { GameMode } from "@generals-plus/engine";
+import type { GameMode, GridType } from "@generals-plus/engine";
 
 interface BaseSetupSettings {
   gameMode: GameMode;
   isPublic: boolean;
   maxPlayers: number;
   playersPerTeam: number;
+  mapType: GridType;
   mapWidth: number;
   mapHeight: number;
+  mapLeft: number;
+  mapRight: number;
+  mapLeftSlant: number;
+  mapRightSlant: number;
   seed: number;
   mountainRate: number;
   cityRate: number;

@@ -1,4 +1,5 @@
 import type { ICoordinate } from "@generals-plus/engine";
+import { isSameCoord } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import type { FederatedPointerEvent } from "pixi.js";
 import { Container, Rectangle } from "pixi.js";
@@ -13,15 +14,20 @@ import type { Ping } from "#/features/game/renderer/layers/ping";
 import { PingLayer } from "#/features/game/renderer/layers/ping";
 import { SiteLabelLayer } from "#/features/game/renderer/layers/site-label";
 import { TroopLayer } from "#/features/game/renderer/layers/troop";
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
 
 extend({ Container });
 
 interface MapRendererProps {
+  worldBounds: {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+  };
   grid: RenderGrid;
-  stride: number;
   selection: ICoordinate | null;
   splitMoveSelection: ICoordinate | null;
   moveQueue: MoveIntent[];
@@ -34,8 +40,8 @@ interface MapRendererProps {
 }
 
 export function MapRenderer({
+  worldBounds,
   grid,
-  stride,
   selection,
   splitMoveSelection,
   moveQueue,
@@ -46,57 +52,57 @@ export function MapRenderer({
   isPlanted = false,
   ticksRemaining = -1,
 }: MapRendererProps) {
-  const cellSize = stride - RenderConfig.cellGap;
   const lastPrimaryClickRef = useRef<{
     coord: ICoordinate;
     time: number;
   } | null>(null);
+
   const hitArea = useMemo(
     () =>
       new Rectangle(
-        0,
-        0,
-        grid.width * stride - RenderConfig.cellGap,
-        grid.height * stride - RenderConfig.cellGap,
+        worldBounds.left,
+        worldBounds.top,
+        worldBounds.right - worldBounds.left,
+        worldBounds.bottom - worldBounds.top,
       ),
-    [grid.width, grid.height, stride],
+    [worldBounds],
   );
 
   const onPointerDown = useCallback(
     (e: FederatedPointerEvent) => {
       const localPos = e.currentTarget.toLocal(e.global);
-      const x = Math.floor(localPos.x / stride);
-      const y = Math.floor(localPos.y / stride);
-      if (x >= 0 && x < grid.width && y >= 0 && y < grid.height) {
-        const coord = { x, y };
-        if (e.button === 2) {
-          onSplitMoveCell(coord);
-          lastPrimaryClickRef.current = null;
-          return;
-        }
+      const coord = grid.fromCartesian({
+        x: localPos.x / RenderConfig.cellStride,
+        y: localPos.y / RenderConfig.cellStride,
+      });
+      if (!coord) return;
 
-        const now = performance.now();
-        const lastPrimaryClick = lastPrimaryClickRef.current;
-        const isDoubleClick =
-          e.button === 0 &&
-          lastPrimaryClick !== null &&
-          lastPrimaryClick.coord.x === x &&
-          lastPrimaryClick.coord.y === y &&
-          now - lastPrimaryClick.time <= 300;
+      if (e.button === 2) {
+        onSplitMoveCell(coord);
+        lastPrimaryClickRef.current = null;
+        return;
+      }
 
-        if (isDoubleClick) {
-          onSplitMoveCell(coord);
-          lastPrimaryClickRef.current = null;
-          return;
-        }
+      const now = performance.now();
+      const lastPrimaryClick = lastPrimaryClickRef.current;
+      const isDoubleClick =
+        e.button === 0 &&
+        lastPrimaryClick !== null &&
+        isSameCoord(lastPrimaryClick.coord, coord) &&
+        now - lastPrimaryClick.time <= 300;
 
-        onCellClick(coord);
-        if (e.button === 0) {
-          lastPrimaryClickRef.current = { coord, time: now };
-        }
+      if (isDoubleClick) {
+        onSplitMoveCell(coord);
+        lastPrimaryClickRef.current = null;
+        return;
+      }
+
+      onCellClick(coord);
+      if (e.button === 0) {
+        lastPrimaryClickRef.current = { coord, time: now };
       }
     },
-    [grid.width, grid.height, stride, onCellClick, onSplitMoveCell],
+    [grid, onCellClick, onSplitMoveCell],
   );
 
   return (
@@ -105,33 +111,18 @@ export function MapRenderer({
       hitArea={hitArea}
       onPointerDown={onPointerDown}
     >
-      <GridLayer
-        grid={grid}
-        stride={stride}
-        cellSize={cellSize}
-        playerColors={playerColors}
-      />
-      <IconLayer grid={grid} stride={stride} />
-      <SiteLabelLayer grid={grid} stride={stride} cellSize={cellSize} />
-      <MoveQueueLayer stride={stride} moveQueue={moveQueue} />
-      <TroopLayer
-        grid={grid}
-        stride={stride}
-        cellSize={cellSize}
-        splitMoveSelection={splitMoveSelection}
-      />
+      <GridLayer grid={grid} playerColors={playerColors} />
+      <IconLayer grid={grid} />
+      <SiteLabelLayer grid={grid} />
+      <MoveQueueLayer grid={grid} moveQueue={moveQueue} />
+      <TroopLayer grid={grid} splitMoveSelection={splitMoveSelection} />
       <BombLayer
         grid={grid}
-        stride={stride}
         isPlanted={isPlanted}
         ticksRemaining={ticksRemaining}
       />
-      <HighlightLayer
-        stride={stride}
-        cellSize={cellSize}
-        selection={selection}
-      />
-      <PingLayer pings={pings} stride={stride} />
+      <HighlightLayer grid={grid} selection={selection} />
+      <PingLayer grid={grid} pings={pings} />
     </pixiContainer>
   );
 }

@@ -20,9 +20,7 @@ interface CellTheme {
 /**
  * Theme configuration for each terrain type, combining both color and icon information.
  */
-export const TerrainTheme: Partial<
-  Record<NonNullable<VisionTerrain>, CellTheme>
-> = {
+export const TerrainTheme: Partial<Record<VisionTerrain, CellTheme>> = {
   [Terrain.PLAIN]: {
     color: 0xd8dde3,
   },
@@ -60,6 +58,6 @@ export const TerrainTheme: Partial<
     color: 0xd8dde3,
     icon: obstacleIcon,
   },
-};
+} as const;
 
 export const TextStyleConfig: Record<string, Partial<TextStyle>> = {};

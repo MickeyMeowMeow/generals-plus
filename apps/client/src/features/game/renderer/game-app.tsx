@@ -1,4 +1,5 @@
 import type { ICoordinate } from "@generals-plus/engine";
+import { GridType } from "@generals-plus/engine";
 import { Application } from "@pixi/react";
 import { Assets } from "pixi.js";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -16,7 +17,6 @@ import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 import { Viewport } from "#/features/game/renderer/viewport";
-import { getCoordWorldPosition } from "#/features/game/utils/coord";
 import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
 import { ClearMoveQueueKey, KeyToDirection } from "#/features/game/utils/move";
 
@@ -61,10 +61,30 @@ export function GameApp({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
 
-  const worldWidth =
-    grid.width * RenderConfig.cellStride - RenderConfig.cellGap;
-  const worldHeight =
-    grid.height * RenderConfig.cellStride - RenderConfig.cellGap;
+  const worldBounds = useMemo(() => {
+    switch (grid.gridType) {
+      case GridType.SQUARE: {
+        return {
+          left: -0.5 * RenderConfig.cellStride,
+          right: (grid.bounds.width - 0.5) * RenderConfig.cellStride,
+          top: -0.5 * RenderConfig.cellStride,
+          bottom: (grid.bounds.height - 0.5) * RenderConfig.cellStride,
+        };
+      }
+      case GridType.HEX: {
+        return {
+          left: -(grid.bounds.left - 1 / 3) * RenderConfig.cellStride,
+          right: (grid.bounds.right - 1 / 3) * RenderConfig.cellStride,
+          top: (-Math.sqrt(3) * RenderConfig.cellStride) / 3,
+          bottom:
+            (Math.max(grid.bounds.leftSlant, grid.bounds.rightSlant) / 1.5 -
+              1 / 3) *
+            Math.sqrt(3) *
+            RenderConfig.cellStride,
+        };
+      }
+    }
+  }, [grid.gridType, grid.bounds]);
 
   useEffect(() => {
     // Preload terrain icon assets.
@@ -114,26 +134,22 @@ export function GameApp({
         onClearMoveQueue();
         return;
       }
-      if (KeyToDirection[key]) {
+      if (KeyToDirection[grid.gridType][key]) {
         e.preventDefault();
-        onQueueMove(KeyToDirection[key]);
+        onQueueMove(KeyToDirection[grid.gridType][key]);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onArmSplitMove, onClearMoveQueue, onQueueMove]);
+  }, [grid.gridType, onArmSplitMove, onClearMoveQueue, onQueueMove]);
 
-  const initialTarget = useMemo(
-    () =>
-      initialCoord &&
-      getCoordWorldPosition(
-        initialCoord,
-        RenderConfig.cellStride,
-        RenderConfig.cellStride - RenderConfig.cellGap,
-      ),
-    [initialCoord],
-  );
+  const initialTarget = useMemo(() => {
+    if (initialCoord) {
+      const { x, y } = grid.toCartesian(initialCoord);
+      return { x: x * RenderConfig.cellStride, y: y * RenderConfig.cellStride };
+    }
+  }, [grid, initialCoord]);
 
   return (
     <div ref={containerRef} className={"h-full w-full"}>
@@ -150,14 +166,10 @@ export function GameApp({
           autoDensity={true}
           resolution={window.devicePixelRatio}
         >
-          <Viewport
-            worldWidth={worldWidth}
-            worldHeight={worldHeight}
-            initialTarget={initialTarget}
-          >
+          <Viewport worldBounds={worldBounds} initialTarget={initialTarget}>
             <MapRenderer
+              worldBounds={worldBounds}
               grid={grid}
-              stride={RenderConfig.cellStride}
               selection={selection}
               splitMoveSelection={splitMoveSelection}
               moveQueue={moveQueue}

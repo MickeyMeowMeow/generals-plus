@@ -1,4 +1,4 @@
-import { GameMode } from "@generals-plus/engine";
+import { GameMode, GridType } from "@generals-plus/engine";
 import type {
   ClassicSetupSettings,
   DemolitionSetupSettings,
@@ -42,20 +42,32 @@ type NumberKeys =
   | ExtractNumberKeys<DominationSetupSettings>
   | ExtractNumberKeys<DemolitionSetupSettings>;
 
-const NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
+const PLAYER_NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "maxPlayers", label: "Max Players" },
   { key: "playersPerTeam", label: "Players Per Team" },
+];
+
+const SQUARE_NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "mapWidth", label: "Map Width" },
   { key: "mapHeight", label: "Map Height" },
+];
+
+const HEX_NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
+  { key: "mapLeft", label: "Map Left Width" },
+  { key: "mapRight", label: "Map Right Width" },
+  { key: "mapLeftSlant", label: "Map Left Slant" },
+  { key: "mapRightSlant", label: "Map Right Slant" },
+];
+
+const MAP_DETAIL_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "seed", label: "Map Seed" },
   { key: "mountainRate", label: "Mountain Rate" },
   { key: "cityRate", label: "City Rate" },
-  { key: "minGeneralDistanceFactor", label: "Min General Distance" },
+  { key: "minGeneralDistanceFactor", label: "Minimum General Distance" },
   { key: "generalInitialTroops", label: "General Troops" },
   { key: "cityInitialTroops", label: "City Troops" },
 ];
 
-/** Mode-specific numeric fields configuration. */
 const MODE_SPECIFIC_FIELDS: Partial<
   Record<GameMode, Array<{ key: NumberKeys; label: string }>>
 > = {
@@ -75,6 +87,11 @@ const MODE_SPECIFIC_FIELDS: Partial<
 };
 
 const GAME_SPEED_OPTIONS = [0.5, 1, 2, 4];
+
+const MAP_TYPE_OPTIONS = [
+  { id: GridType.SQUARE, label: "Square" },
+  { id: GridType.HEX, label: "Hexagon" },
+];
 
 /** Rounds a value to a consistent precision to avoid floating-point nonsense. */
 const round = (v: number | string) => Math.round(Number(v) * 100000) / 100000;
@@ -130,11 +147,35 @@ export function GameSettings({
   const inputClassName =
     "border-game-border bg-game-bg text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
-  // Combine global number fields with those specific to the active game mode
-  const activeNumberFields = [
-    ...NUMBER_FIELDS,
-    ...(MODE_SPECIFIC_FIELDS[currentSettings.gameMode] ?? []),
-  ];
+  // Reusable block for mapping numeric field arrays to Input components
+  const renderNumberField = ({
+    key,
+    label,
+  }: {
+    key: NumberKeys;
+    label: string;
+  }) => (
+    <div key={key} className={fieldClassName}>
+      <Label htmlFor={key} className={labelClassName}>
+        {label}
+      </Label>
+      <Input
+        id={key}
+        type="number"
+        disabled={!isHost}
+        value={
+          editing?.key === key ? editing.value : round(currentSettings[key])
+        }
+        onFocus={() => handleFocus(key, currentSettings[key])}
+        onBlur={handleSubmit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSubmit();
+        }}
+        onChange={(e) => handleNumberChange(e.target.value)}
+        className={inputClassName}
+      />
+    </div>
+  );
 
   return (
     <section aria-labelledby="game-settings-title" className="space-y-4">
@@ -186,7 +227,7 @@ export function GameSettings({
 
         <div className={fieldClassName}>
           <Label id="game-speed-label" className={labelClassName}>
-            Game Speed
+            Speed
           </Label>
           <Select
             disabled={!isHost}
@@ -238,33 +279,48 @@ export function GameSettings({
           </div>
         </div>
 
-        {activeNumberFields.map(({ key, label }) => (
-          <div key={key} className={fieldClassName}>
-            <Label htmlFor={key} className={labelClassName}>
-              {label}
-            </Label>
-            <Input
-              id={key}
-              type="number"
-              disabled={!isHost}
-              // Display local draft value if focused, otherwise display rounded server value
-              value={
-                editing?.key === key
-                  ? editing.value
-                  : round(currentSettings[key])
-              }
-              onFocus={() => handleFocus(key, currentSettings[key])}
-              onBlur={handleSubmit}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSubmit();
-                }
-              }}
-              onChange={(e) => handleNumberChange(e.target.value)}
-              className={inputClassName}
-            />
-          </div>
-        ))}
+        {PLAYER_NUMBER_FIELDS.map(renderNumberField)}
+
+        <div className={fieldClassName}>
+          <Label id="grid-type-label" className={labelClassName}>
+            Map Type
+          </Label>
+          <Select
+            disabled={!isHost}
+            value={currentSettings.mapType ?? GridType.SQUARE}
+            onValueChange={(val) => {
+              const type = MAP_TYPE_OPTIONS.find((o) => o.id === val)?.id;
+              if (type) onChangeSettings({ mapType: type });
+            }}
+          >
+            <SelectTrigger
+              aria-labelledby="grid-type-label"
+              size="sm"
+              className="h-7 w-full border-game-border bg-game-bg px-3 text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border border-game-border bg-game-surface text-game-text">
+              {MAP_TYPE_OPTIONS.map((type) => (
+                <SelectItem key={type.id} value={type.id}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {(currentSettings.mapType === GridType.HEX
+          ? HEX_NUMBER_FIELDS
+          : SQUARE_NUMBER_FIELDS
+        ).map(renderNumberField)}
+
+        {MAP_DETAIL_FIELDS.map(renderNumberField)}
+
+        {/* --- MODE SPECIFIC SETTINGS --- */}
+        {(MODE_SPECIFIC_FIELDS[currentSettings.gameMode] ?? []).map(
+          renderNumberField,
+        )}
       </div>
     </section>
   );

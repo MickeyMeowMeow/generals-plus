@@ -215,8 +215,12 @@ export class MatchRoom extends Room<{
       tickInterval,
     );
 
+    const mapBounds =
+      this.state.gridType === GridType.SQUARE
+        ? `square map: ${state.width}x${state.height}`
+        : `hex map: ${state.left}x${state.right}x${state.leftSlant}x${state.rightSlant}`;
     logger.info(
-      `[MatchRoom] Room created: ${this.roomId}, mode: ${state.mode}, map: ${state.width}x${state.height}, players: ${metadata.playerInit.length}`,
+      `[MatchRoom] Room created: ${this.roomId}, mode: ${state.mode}, ${mapBounds}, players: ${metadata.playerInit.length}`,
     );
   }
 

@@ -3,35 +3,32 @@ import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import { useCallback } from "react";
 
+import { RenderConfig } from "#/features/game/renderer/render-config";
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
+import { drawCell } from "#/features/game/utils/renderer";
+
 extend({ Graphics });
 
 interface HighlightLayerProps {
-  stride: number;
-  cellSize: number;
+  grid: RenderGrid;
   selection: ICoordinate | null;
 }
 
-export function HighlightLayer({
-  stride,
-  cellSize,
-  selection,
-}: HighlightLayerProps) {
+export function HighlightLayer({ grid, selection }: HighlightLayerProps) {
   const drawHighlight = useCallback(
     (g: Graphics) => {
       g.clear();
 
       // Draw selection highlight
       if (selection) {
-        g.setStrokeStyle({ width: 4, color: 0xffffff, alignment: 0 });
-        g.rect(
-          selection.x * stride,
-          selection.y * stride,
-          cellSize,
-          cellSize,
-        ).stroke();
+        drawCell(g, grid, selection);
+        g.stroke({
+          width: RenderConfig.selectionStroke,
+          color: RenderConfig.selectionColor,
+        });
       }
     },
-    [stride, cellSize, selection],
+    [grid, selection],
   );
 
   return <pixiGraphics draw={drawHighlight} />;

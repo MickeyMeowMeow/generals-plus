@@ -34,8 +34,12 @@ declare module "@pixi/react" {
 }
 
 interface ViewportProps {
-  worldWidth: number;
-  worldHeight: number;
+  worldBounds: {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+  };
   initialTarget?: { x: number; y: number };
 }
 
@@ -64,15 +68,17 @@ function calculateZoomScale(
  */
 export function Viewport({
   children,
-  worldWidth,
-  worldHeight,
+  worldBounds,
   initialTarget,
 }: PropsWithChildren<ViewportProps>) {
   const { app } = useApplication();
   const viewportRef = useRef<ViewportWrapper>(null);
 
   const isZoomInitialized = useRef(false);
-  const cameraInitializedWith = useRef<typeof initialTarget>(null);
+  const isCameraInitialized = useRef(false);
+
+  const worldWidth = worldBounds.right - worldBounds.left;
+  const worldHeight = worldBounds.bottom - worldBounds.top;
 
   const defaultZoom = calculateZoomScale(
     app.screen.width,
@@ -103,15 +109,16 @@ export function Viewport({
     const marginY =
       (app.screen.height * RenderConfig.clampMarginRatioY) / defaultZoom;
     viewport.clamp({
-      left: -marginX,
-      top: -marginY,
-      right: worldWidth + marginX,
-      bottom: worldHeight + marginY,
+      left: worldBounds.left - marginX,
+      top: worldBounds.top - marginY,
+      right: worldBounds.right + marginX,
+      bottom: worldBounds.bottom + marginY,
       underflow: "none",
     });
   }, [
     app.screen.width,
     app.screen.height,
+    worldBounds,
     worldWidth,
     worldHeight,
     defaultZoom,
@@ -135,34 +142,41 @@ export function Viewport({
     // Initial camera centering should only run after zoom initialized
     if (!isZoomInitialized.current) return;
 
-    // Initial camera centering should only run when the initial target changes
-    if (cameraInitializedWith.current !== initialTarget) {
-      // Determine initial target coordinates, defaulting to world center
-      const { x, y } = initialTarget ?? {
-        x: worldWidth / 2,
-        y: worldHeight / 2,
-      };
+    // Initial camera centering should only run when initialTarget first becomes available
+    if (isCameraInitialized.current || !initialTarget) return;
+    isCameraInitialized.current = true;
 
-      const marginX = Math.min(
-        (app.screen.width * (0.5 - RenderConfig.initialMarginRatioX)) /
-          defaultZoom,
-        worldWidth / 2,
-      );
-      const marginY = Math.min(
-        (app.screen.height * (0.5 - RenderConfig.initialMarginRatioY)) /
-          defaultZoom,
-        worldHeight / 2,
-      );
+    // Determine initial target coordinates, defaulting to world center
+    const { x, y } = initialTarget ?? {
+      x: worldBounds.left + worldWidth / 2,
+      y: worldBounds.top + worldHeight / 2,
+    };
 
-      const clampedX = Math.max(marginX, Math.min(x, worldWidth - marginX));
-      const clampedY = Math.max(marginY, Math.min(y, worldHeight - marginY));
+    const marginX = Math.min(
+      (app.screen.width * (0.5 - RenderConfig.initialMarginRatioX)) /
+        defaultZoom,
+      worldWidth / 2,
+    );
+    const marginY = Math.min(
+      (app.screen.height * (0.5 - RenderConfig.initialMarginRatioY)) /
+        defaultZoom,
+      worldHeight / 2,
+    );
 
-      viewport.moveCenter(clampedX, clampedY);
-      cameraInitializedWith.current = initialTarget;
-    }
+    const clampedX = Math.max(
+      worldBounds.left + marginX,
+      Math.min(x, worldBounds.right - marginX),
+    );
+    const clampedY = Math.max(
+      worldBounds.top + marginY,
+      Math.min(y, worldBounds.bottom - marginY),
+    );
+
+    viewport.moveCenter(clampedX, clampedY);
   }, [
     app.screen.width,
     app.screen.height,
+    worldBounds,
     worldWidth,
     worldHeight,
     initialTarget,
