@@ -186,7 +186,6 @@ body {
   inset: 0;
   pointer-events: none;
   background: rgb(255 255 255 / 0.04);
-  opacity: 1;
   content: "";
 }
 
