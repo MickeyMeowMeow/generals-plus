@@ -636,15 +636,15 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           finishTick: this.state.finishTick,
           plantDurationTicks: calculateFinishTick(
             this.state.plantDuration,
-            BASE_TICK_INTERVAL,
+            this.state.tickInterval,
           ),
           defuseDurationTicks: calculateFinishTick(
             this.state.defuseDuration,
-            BASE_TICK_INTERVAL,
+            this.state.tickInterval,
           ),
           detonateDurationTicks: calculateFinishTick(
             this.state.detonateDuration,
-            BASE_TICK_INTERVAL,
+            this.state.tickInterval,
           ),
           bombSiteCount: this.state.bombSiteCount,
           seed: this.state.seed,

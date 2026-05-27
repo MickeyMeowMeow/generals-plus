@@ -248,9 +248,9 @@ describe("createGame", () => {
 
       const demo = game as DemolitionGame;
       expect(demo.maxTicks).toBe(240);
-      expect(demo.plantDuration).toBe(4);
-      expect(demo.defuseDuration).toBe(6);
-      expect(demo.detonateDuration).toBe(30);
+      expect(demo.plantDurationTicks).toBe(8);
+      expect(demo.defuseDurationTicks).toBe(12);
+      expect(demo.detonateDurationTicks).toBe(60);
       expect(demo.bombSiteCount).toBe(3);
       expect(demo.seed).toBe(12345);
     });

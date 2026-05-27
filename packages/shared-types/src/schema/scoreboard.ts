@@ -123,7 +123,7 @@ export class DemolitionScoreboard extends BaseScoreboard {
   @type("string") defuserId: string = ""; // player defusing, or ""
   @type("boolean") isPlanted: boolean = false;
   @type("boolean") isDefused: boolean = false;
-  @type("number") plantDuration: number = 3;
-  @type("number") defuseDuration: number = 5;
-  @type("number") detonateDuration: number = 45;
+  @type("number") plantDurationTicks: number = 6;
+  @type("number") defuseDurationTicks: number = 10;
+  @type("number") detonateDurationTicks: number = 90;
 }

@@ -192,9 +192,9 @@ export function syncScoreboard(
       demoTarget.defuserId = demoSource.defuserId ?? "";
       demoTarget.isPlanted = demoSource.isPlanted;
       demoTarget.isDefused = demoSource.isDefused;
-      demoTarget.plantDuration = demoSource.plantDuration;
-      demoTarget.defuseDuration = demoSource.defuseDuration;
-      demoTarget.detonateDuration = demoSource.detonateDuration;
+      demoTarget.plantDurationTicks = demoSource.plantDurationTicks;
+      demoTarget.defuseDurationTicks = demoSource.defuseDurationTicks;
+      demoTarget.detonateDurationTicks = demoSource.detonateDurationTicks;
       break;
     }
     default:

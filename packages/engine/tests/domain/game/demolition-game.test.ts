@@ -75,7 +75,7 @@ describe("DemolitionGame", () => {
     const grid = createPlainGrid5x5();
     const game = new DemolitionGame(
       { grid },
-      { bombSiteCount: 1, plantDuration: 3 },
+      { bombSiteCount: 1, plantDurationTicks: 6 },
     );
 
     const attackers = new AttackerTeam("attackers");
@@ -117,7 +117,7 @@ describe("DemolitionGame", () => {
     siteCell.owner = p1;
     siteCell.troopCount = 10;
 
-    // Plant duration is 3 seconds -> 6 ticks at 500ms
+    // Plant duration is 6 ticks
     for (let i = 1; i <= 5; i++) {
       game.nextTick();
       expect(game.plantProgressTicks).toBe(i);
@@ -134,7 +134,7 @@ describe("DemolitionGame", () => {
     const grid = createPlainGrid5x5();
     const game = new DemolitionGame(
       { grid },
-      { bombSiteCount: 1, defuseDuration: 5 },
+      { bombSiteCount: 1, defuseDurationTicks: 10 },
     );
 
     const attackers = new AttackerTeam("attackers");
@@ -178,7 +178,7 @@ describe("DemolitionGame", () => {
     siteCell.owner = p2;
     siteCell.troopCount = 5;
 
-    // Defuse duration is 5 seconds -> 10 ticks
+    // Defuse duration is 10 ticks
     for (let i = 1; i <= 9; i++) {
       game.nextTick();
       expect(game.defuseProgressTicks).toBe(i);

@@ -449,52 +449,42 @@ export function GamePage({ connection, source }: GamePageProps) {
 
         if (gameState.mode === GameMode.DEMOLITION) {
           const demoScoreboard = gameState.scoreboard as DemolitionScoreboard;
-          const tickInterval = gameState.tickInterval || 500;
 
           if (demoScoreboard.plantProgressTicks > 0) {
-            const plantDurationTicks = Math.round(
-              (demoScoreboard.plantDuration * 1000) / tickInterval,
-            );
             timerProps = {
               currentTick: demoScoreboard.plantProgressTicks,
-              targetTick: plantDurationTicks,
-              tickInterval,
+              targetTick: demoScoreboard.plantDurationTicks,
+              tickInterval: gameState.tickInterval,
               label: "Planting C4...",
             };
           } else if (demoScoreboard.defuseProgressTicks > 0) {
-            const defuseDurationTicks = Math.round(
-              (demoScoreboard.defuseDuration * 1000) / tickInterval,
-            );
             timerProps = {
               currentTick: demoScoreboard.defuseProgressTicks,
-              targetTick: defuseDurationTicks,
-              tickInterval,
+              targetTick: demoScoreboard.defuseDurationTicks,
+              tickInterval: gameState.tickInterval,
               label: "Defusing C4...",
             };
           } else if (demoScoreboard.plantedAtSite) {
-            const detonateDurationTicks = Math.round(
-              (demoScoreboard.detonateDuration * 1000) / tickInterval,
-            );
             const remainingTicks = Math.max(
               0,
               demoScoreboard.detonationTick - gameState.tick,
             );
             const elapsedTicks = Math.max(
               0,
-              detonateDurationTicks - remainingTicks,
+              demoScoreboard.detonateDurationTicks - remainingTicks,
             );
 
             timerProps = {
               currentTick: elapsedTicks,
-              targetTick: detonateDurationTicks,
-              tickInterval,
+              targetTick: demoScoreboard.detonateDurationTicks,
+              tickInterval: gameState.tickInterval,
               label: `Bomb Planted (Site ${demoScoreboard.plantedAtSite})`,
             };
           } else {
             timerProps = {
               currentTick: gameState.tick,
               targetTick: gameState.finishTick > 0 ? gameState.finishTick : 0,
-              tickInterval,
+              tickInterval: gameState.tickInterval,
               label: "Time remaining",
             };
           }

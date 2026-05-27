@@ -34,9 +34,9 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
   readonly mode = GameMode.DEMOLITION;
   private readonly combatResolver = new StandardCombatResolver();
 
-  readonly plantDuration: number;
-  readonly defuseDuration: number;
-  readonly detonateDuration: number;
+  readonly plantDurationTicks: number;
+  readonly defuseDurationTicks: number;
+  readonly detonateDurationTicks: number;
   readonly bombSiteCount: number;
   readonly maxTicks: number;
   readonly seed: number;
@@ -49,10 +49,6 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
   isPlanted: boolean = false;
   isDefused: boolean = false;
 
-  private readonly plantDurationTicks: number;
-  private readonly defuseDurationTicks: number;
-  private readonly detonateDurationTicks: number;
-
   constructor(input: GridInput, options?: DemolitionGameOptions) {
     super(input);
     this.bombSiteCount = options?.bombSiteCount ?? 2;
@@ -62,13 +58,6 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
     this.plantDurationTicks = options?.plantDurationTicks ?? 6;
     this.defuseDurationTicks = options?.defuseDurationTicks ?? 10;
     this.detonateDurationTicks = options?.detonateDurationTicks ?? 90;
-
-    // Derived properties in seconds for backwards compatibility with scoreboard / UI representation
-    this.plantDuration = Math.round((this.plantDurationTicks * 500) / 1000);
-    this.defuseDuration = Math.round((this.defuseDurationTicks * 500) / 1000);
-    this.detonateDuration = Math.round(
-      (this.detonateDurationTicks * 500) / 1000,
-    );
 
     // Configure combat resolver to block defenders from carrying, and prevent moving the bomb if already planted!
     this.combatResolver.canMoveItem = (item, player: IPlayer) => {
@@ -370,9 +359,9 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
       defuserId: this.defuserId,
       isPlanted: this.isPlanted,
       isDefused: this.isDefused,
-      plantDuration: this.plantDuration,
-      defuseDuration: this.defuseDuration,
-      detonateDuration: this.detonateDuration,
+      plantDurationTicks: this.plantDurationTicks,
+      defuseDurationTicks: this.defuseDurationTicks,
+      detonateDurationTicks: this.detonateDurationTicks,
     };
   }
 }

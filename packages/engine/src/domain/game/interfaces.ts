@@ -186,9 +186,9 @@ export interface IDemolitionScoreboard extends IBaseScoreboard {
   readonly defuserId: string | null;
   readonly isPlanted: boolean;
   readonly isDefused: boolean;
-  readonly plantDuration: number;
-  readonly defuseDuration: number;
-  readonly detonateDuration: number;
+  readonly plantDurationTicks: number;
+  readonly defuseDurationTicks: number;
+  readonly detonateDurationTicks: number;
 }
 
 /**
