@@ -1,4 +1,4 @@
-import type { GridBounds, ICoordinate } from "@generals-plus/engine";
+import type { GridShape, ICoordinate } from "@generals-plus/engine";
 import { GridType } from "@generals-plus/engine";
 import type {
   ClientVision,
@@ -18,9 +18,9 @@ import {
  * Adapts the flat Colyseus ClientVision arrays into a structure
  * the GridLayer can iterate over.
  */
-export function createRenderGrid<T extends GridType>(
+export function createRenderGrid(
   vision: ClientVision,
-  shape: { gridType: T } & GridBounds[T],
+  shape: GridShape,
 ): RenderGrid {
   const createCell = (
     cellVision: VisionCellSchema,

@@ -27,6 +27,10 @@ export interface GridBounds extends Record<GridType, Record<string, number>> {
   };
 }
 
+export type GridShape =
+  | ({ gridType: typeof GridType.SQUARE } & GridBounds[typeof GridType.SQUARE])
+  | ({ gridType: typeof GridType.HEX } & GridBounds[typeof GridType.HEX]);
+
 /**
  * A purely mathematical 2D spatial container.
  *
