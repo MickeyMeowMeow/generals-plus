@@ -1,5 +1,5 @@
 import type { ICoordinate } from "@generals-plus/engine";
-import { GridType, isSameCoord } from "@generals-plus/engine";
+import { isSameCoord } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import type { FederatedPointerEvent } from "pixi.js";
 import { Container, Rectangle } from "pixi.js";
@@ -19,6 +19,12 @@ import type { MoveIntent } from "#/features/game/utils/move";
 extend({ Container });
 
 interface MapRendererProps {
+  worldBounds: {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+  };
   grid: RenderGrid;
   selection: ICoordinate | null;
   splitMoveSelection: ICoordinate | null;
@@ -30,6 +36,7 @@ interface MapRendererProps {
 }
 
 export function MapRenderer({
+  worldBounds,
   grid,
   selection,
   splitMoveSelection,
@@ -44,21 +51,16 @@ export function MapRenderer({
     time: number;
   } | null>(null);
 
-  const hitArea = useMemo(() => {
-    switch (grid.gridType) {
-      case GridType.SQUARE: {
-        return new Rectangle(
-          -RenderConfig.cellStride / 2,
-          -RenderConfig.cellStride / 2,
-          grid.bounds.width * RenderConfig.cellStride,
-          grid.bounds.height * RenderConfig.cellStride,
-        );
-      }
-      case GridType.HEX: {
-        return new Rectangle();
-      }
-    }
-  }, [grid.gridType, grid.bounds]);
+  const hitArea = useMemo(
+    () =>
+      new Rectangle(
+        worldBounds.left,
+        worldBounds.top,
+        worldBounds.right - worldBounds.left,
+        worldBounds.bottom - worldBounds.top,
+      ),
+    [worldBounds],
+  );
 
   const onPointerDown = useCallback(
     (e: FederatedPointerEvent) => {

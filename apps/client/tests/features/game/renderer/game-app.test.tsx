@@ -55,13 +55,13 @@ describe("GameApp keyboard input", () => {
     cleanup();
   });
 
-  it("clears the move queue when q is pressed", () => {
+  it("clears the move queue when space is pressed", () => {
     const onQueueMove = vi.fn();
     const onClearMoveQueue = vi.fn();
 
     renderGameApp({ onQueueMove, onClearMoveQueue });
 
-    fireEvent.keyDown(window, { key: "q" });
+    fireEvent.keyDown(window, { key: " " });
 
     expect(onClearMoveQueue).toHaveBeenCalledTimes(1);
     expect(onQueueMove).not.toHaveBeenCalled();

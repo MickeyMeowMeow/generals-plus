@@ -27,9 +27,7 @@ export abstract class BaseCombatResolver implements CombatResolver {
       return false;
     }
 
-    const dx = Math.abs(action.from.x - action.to.x);
-    const dy = Math.abs(action.from.y - action.to.y);
-    if (dx + dy !== 1) {
+    if (!grid.isAdjacent(action.from, action.to)) {
       return false; // Can only move to adjacent cells
     }
 

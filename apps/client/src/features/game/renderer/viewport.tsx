@@ -34,8 +34,12 @@ declare module "@pixi/react" {
 }
 
 interface ViewportProps {
-  worldWidth: number;
-  worldHeight: number;
+  worldBounds: {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+  };
   initialTarget?: { x: number; y: number };
 }
 
@@ -64,8 +68,7 @@ function calculateZoomScale(
  */
 export function Viewport({
   children,
-  worldWidth,
-  worldHeight,
+  worldBounds,
   initialTarget,
 }: PropsWithChildren<ViewportProps>) {
   const { app } = useApplication();
@@ -73,6 +76,9 @@ export function Viewport({
 
   const isZoomInitialized = useRef(false);
   const cameraInitializedWith = useRef<typeof initialTarget>(null);
+
+  const worldWidth = worldBounds.right - worldBounds.left;
+  const worldHeight = worldBounds.bottom - worldBounds.top;
 
   const defaultZoom = calculateZoomScale(
     app.screen.width,
@@ -103,15 +109,16 @@ export function Viewport({
     const marginY =
       (app.screen.height * RenderConfig.clampMarginRatioY) / defaultZoom;
     viewport.clamp({
-      left: -marginX,
-      top: -marginY,
-      right: worldWidth + marginX,
-      bottom: worldHeight + marginY,
+      left: worldBounds.left - marginX,
+      top: worldBounds.top - marginY,
+      right: worldBounds.right + marginX,
+      bottom: worldBounds.bottom + marginY,
       underflow: "none",
     });
   }, [
     app.screen.width,
     app.screen.height,
+    worldBounds,
     worldWidth,
     worldHeight,
     defaultZoom,
@@ -139,8 +146,8 @@ export function Viewport({
     if (cameraInitializedWith.current !== initialTarget) {
       // Determine initial target coordinates, defaulting to world center
       const { x, y } = initialTarget ?? {
-        x: worldWidth / 2,
-        y: worldHeight / 2,
+        x: worldBounds.left + worldWidth / 2,
+        y: worldBounds.top + worldHeight / 2,
       };
 
       const marginX = Math.min(
@@ -154,8 +161,14 @@ export function Viewport({
         worldHeight / 2,
       );
 
-      const clampedX = Math.max(marginX, Math.min(x, worldWidth - marginX));
-      const clampedY = Math.max(marginY, Math.min(y, worldHeight - marginY));
+      const clampedX = Math.max(
+        worldBounds.left + marginX,
+        Math.min(x, worldBounds.right - marginX),
+      );
+      const clampedY = Math.max(
+        worldBounds.top + marginY,
+        Math.min(y, worldBounds.bottom - marginY),
+      );
 
       viewport.moveCenter(clampedX, clampedY);
       cameraInitializedWith.current = initialTarget;
@@ -163,6 +176,7 @@ export function Viewport({
   }, [
     app.screen.width,
     app.screen.height,
+    worldBounds,
     worldWidth,
     worldHeight,
     initialTarget,

@@ -32,7 +32,7 @@ export interface GridBounds extends Record<GridType, Record<string, number>> {
  *
  * @template T The type of element stored in the grid.
  */
-export interface GenericGrid2D<T, S extends GridType> {
+export interface GenericGrid2D<T, S extends GridType = GridType> {
   /** The type of grid (e.g., square, hex). */
   readonly gridType: S;
 
