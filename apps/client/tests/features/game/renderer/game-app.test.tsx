@@ -36,6 +36,8 @@ function renderGameApp(overrides: Partial<Parameters<typeof GameApp>[0]> = {}) {
         terrain: Terrain.PLAIN,
         troopCount: null,
         ownerIndex: null,
+        siteIndex: null,
+        item: null,
       }))}
       selection={null}
       splitMoveSelection={null}

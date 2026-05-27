@@ -28,6 +28,8 @@ describe("MoveQueueLayer", () => {
     terrain: Terrain.PLAIN,
     troopCount: null,
     ownerIndex: null,
+    siteIndex: null,
+    item: null,
   }));
 
   it("places right move arrows fully inside the departure cell", () => {
