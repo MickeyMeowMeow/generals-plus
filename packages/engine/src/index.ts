@@ -15,6 +15,7 @@ export * from "#/domain/effect/periodic/periodic-effect";
 export * from "#/domain/effect/periodic/troop-modifier";
 export * from "#/domain/game/base-game";
 export * from "#/domain/game/classic-game";
+export * from "#/domain/game/demolition-game";
 export * from "#/domain/game/domination-game";
 export * from "#/domain/game/game-mode";
 export * from "#/domain/game/game-result";
@@ -26,6 +27,8 @@ export * from "#/domain/grid/grid-generator";
 export * from "#/domain/grid/interfaces";
 export * from "#/domain/item/interfaces";
 export * from "#/domain/item/item-type";
+export * from "#/domain/item/item";
+
 export * from "#/domain/player/interfaces";
 export * from "#/domain/player/player";
 export * from "#/domain/player/player-status";

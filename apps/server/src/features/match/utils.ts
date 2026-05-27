@@ -6,12 +6,24 @@ export interface ModeSettings {
   duration?: number;
   flagCount?: number;
   targetScore?: number;
+  bombSiteCount?: number;
+  plantDuration?: number;
+  defuseDuration?: number;
+  detonateDuration?: number;
 }
 
 export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
   [GameMode.DOMINATION]: { duration: 300, flagCount: 3, targetScore: 1000 },
   [GameMode.TURF_WAR]: { duration: 180 },
+  [GameMode.DEMOLITION]: {
+    duration: 180,
+    bombSiteCount: 2,
+    plantDuration: 3,
+    defuseDuration: 5,
+    detonateDuration: 45,
+  },
 };
+
 
 export function calculateFinishTick(
   duration: number,

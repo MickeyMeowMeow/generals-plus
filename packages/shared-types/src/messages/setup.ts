@@ -8,7 +8,11 @@ export type SetupValidationField =
   | "color"
   | "players"
   | "flagCount"
-  | "targetScore";
+  | "targetScore"
+  | "bombSiteCount"
+  | "plantDuration"
+  | "defuseDuration"
+  | "detonateDuration";
 
 export interface SetupValidationFailedMessage extends ToastMessage {
   field?: SetupValidationField;

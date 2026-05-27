@@ -15,6 +15,9 @@ export const Terrain = {
   VOID: "void",
   /** The flag tile in Domination Mode. Generates score for the holding team. */
   FLAG: "flag",
+  /** The bomb site tile in Demolition Mode. Where the bomb is planted. */
+  BOMB_SITE: "bomb_site",
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];
+

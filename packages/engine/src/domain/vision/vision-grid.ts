@@ -3,6 +3,7 @@ import type { Terrain } from "#/domain/cell/terrain";
 import type { Visibility } from "#/domain/vision/visibility";
 import type { ICoordinate } from "#/math/coordinate";
 import type { GenericGrid2D } from "#/math/grid-2d";
+import type { IItem } from "#/domain/item/interfaces";
 
 /**
  * Represents a terrain type that is partially obscured by the fog of war.
@@ -45,9 +46,17 @@ export interface IVisionCell {
    * Null if unoccupied or if visibility is strictly less than `VISIBLE`.
    */
   readonly owner: ICellOwner | null;
+
+  /**
+   * The perceived items in the cell.
+   * Empty if visibility is strictly less than `VISIBLE`.
+   */
+  readonly items: IItem[];
+  readonly siteIndex: number | null;
 }
 
 /**
  * Represents the entire grid as perceived through the fog of war.
  */
 export interface IVisionGrid extends GenericGrid2D<IVisionCell> {}
+

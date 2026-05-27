@@ -11,6 +11,8 @@ export interface RenderGridCell {
   troopCount: number | null;
   visibility: Visibility;
   ownerIndex: string | null;
+  siteIndex: number | null;
+  items: Array<{ id: string; type: number; x: number; y: number }> | null;
 }
 
 export class SquareRenderGrid extends SquareGrid2D<RenderGridCell> {}

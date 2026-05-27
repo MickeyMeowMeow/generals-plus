@@ -3,6 +3,7 @@ import type { EffectTarget } from "#/domain/effect/effect-target";
 import type { PlayerStatus } from "#/domain/player/player-status";
 import type { IVisionModifier } from "#/domain/vision/interfaces";
 import type { ICoordinate } from "#/math/coordinate";
+import type { IItem } from "#/domain/item/interfaces";
 
 export interface ICellOwner {
   readonly playerId: string;
@@ -34,6 +35,12 @@ export interface ICell extends EffectTarget {
   /** Vision modifier applied to this cell, affecting the sight radius of its owner. */
   vision: IVisionModifier;
 
+  /** Index of the bomb site if this cell is a BOMB_SITE, null otherwise. */
+  siteIndex: number | null;
+
+  /** List of items currently residing in this cell. */
+  readonly items: IItem[];
+
   /** Triggered when the terrain changes, allowing external systems to react to this change. */
   onTerrainChange?: (
     cell: ICell,
@@ -48,3 +55,4 @@ export interface ICell extends EffectTarget {
    */
   addTroops(delta: number): void;
 }
+

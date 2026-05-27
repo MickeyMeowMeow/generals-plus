@@ -26,6 +26,7 @@ import {
   MatchState,
   PublicPlayer,
   VisionCellSchema,
+  ItemSchema,
 } from "@generals-plus/shared-types";
 import * as z from "zod";
 
@@ -522,6 +523,7 @@ export class MatchRoom extends Room<{
     if (!visionGrid || !vision) return;
 
     vision.cells.clear();
+    vision.items.clear();
 
     for (const vc of visionGrid) {
       const cell = new VisionCellSchema().assign({
@@ -530,8 +532,22 @@ export class MatchRoom extends Room<{
         troopCount: vc.troopCount ?? -1,
         ownerIndex:
           vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "",
+        siteIndex: vc.siteIndex ?? -1,
       });
+
       vision.cells.push(cell);
+
+      if (vc.items && vc.items.length > 0) {
+        for (const item of vc.items) {
+          const itemSchema = new ItemSchema().assign({
+            id: item.id,
+            type: item.type,
+            x: item.coordinate.x,
+            y: item.coordinate.y,
+          });
+          vision.items.push(itemSchema);
+        }
+      }
     }
   }
 }

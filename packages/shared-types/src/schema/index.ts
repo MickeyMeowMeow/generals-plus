@@ -17,6 +17,10 @@ export {
   TurfWarScoreboard,
   TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
+  DemolitionScoreboard,
+  DemolitionScoreboardPlayerEntry,
+  DemolitionScoreboardTeamEntry,
 } from "#/schema/scoreboard";
 export { SetupPlayer, SetupState } from "#/schema/setup-state";
-export { ClientVision, VisionCellSchema } from "#/schema/vision-cell";
+export { ClientVision, VisionCellSchema, ItemSchema } from "#/schema/vision-cell";
+

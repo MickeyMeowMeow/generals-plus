@@ -11,6 +11,7 @@ const SUPPORTED_GAME_MODES: ReadonlySet<GameMode> = new Set([
   DEFAULT_GAME_MODE,
   GameMode.TURF_WAR,
   GameMode.DOMINATION,
+  GameMode.DEMOLITION,
 ]);
 
 /** Formats serialized game-mode ids for compact UI labels. */

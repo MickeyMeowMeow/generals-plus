@@ -11,6 +11,8 @@ import { MoveQueueLayer } from "#/features/game/renderer/layers/move-queue";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { PingLayer } from "#/features/game/renderer/layers/ping";
 import { TroopLayer } from "#/features/game/renderer/layers/troop";
+import { SiteLabelLayer } from "#/features/game/renderer/layers/site-label";
+import { BombLayer } from "#/features/game/renderer/layers/bomb";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
@@ -27,6 +29,7 @@ interface MapRendererProps {
   onSplitMoveCell: (coordinate: ICoordinate) => void;
   playerColors: Map<string, number>;
   pings: Ping[];
+  isPlanted?: boolean;
 }
 
 export function MapRenderer({
@@ -39,6 +42,7 @@ export function MapRenderer({
   onSplitMoveCell,
   playerColors,
   pings,
+  isPlanted = false,
 }: MapRendererProps) {
   const cellSize = stride - RenderConfig.cellGap;
   const lastPrimaryClickRef = useRef<{
@@ -106,6 +110,7 @@ export function MapRenderer({
         playerColors={playerColors}
       />
       <IconLayer grid={grid} stride={stride} />
+      <SiteLabelLayer grid={grid} stride={stride} cellSize={cellSize} />
       <MoveQueueLayer stride={stride} moveQueue={moveQueue} />
       <TroopLayer
         grid={grid}
@@ -113,6 +118,7 @@ export function MapRenderer({
         cellSize={cellSize}
         splitMoveSelection={splitMoveSelection}
       />
+      <BombLayer grid={grid} stride={stride} isPlanted={isPlanted} />
       <HighlightLayer
         stride={stride}
         cellSize={cellSize}

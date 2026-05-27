@@ -40,7 +40,12 @@ export class SetupState extends Schema {
   @type("number") duration: number = 1;
   @type("number") flagCount: number = 3;
   @type("number") targetScore: number = 1000;
+  @type("number") bombSiteCount: number = 2;
+  @type("number") plantDuration: number = 3;
+  @type("number") defuseDuration: number = 5;
+  @type("number") detonateDuration: number = 45;
 
   @type("number") tickInterval: number = 500;
   @type("number") finishTick: number = 360;
 }
+

@@ -11,6 +11,8 @@ import { SquareGrid } from "#/domain/grid/grid";
 import { Player } from "#/domain/player/player";
 import { PlayerStatus } from "#/domain/player/player-status";
 import { StandardTeam } from "#/domain/team/team";
+import { GameItem } from "#/domain/item/item";
+import { ItemType } from "#/domain/item/item-type";
 
 function createGrid(width = 2, height = 1): Grid {
   const cells = Array.from({ length: height }, (_, y) =>
@@ -223,5 +225,77 @@ describe("StandardCombatResolver", () => {
     expect(resourceCell.owner).toBe(p1);
     expect(resourceCell.troopCount).toBe(8);
     expect(p2.status).toBe(PlayerStatus.ELIMINATED);
+  });
+
+  it("carries items only on successful occupation (conquest or reinforcement)", () => {
+    const resolver = new StandardCombatResolver();
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1");
+    const p2 = new Player(t2, "p2");
+    const players = new Map([
+      ["p1", p1],
+      ["p2", p2],
+    ]);
+
+    // 1. Success attack -> items transfer
+    const grid1 = createGrid();
+    const s1 = grid1.get({ x: 0, y: 0 })!;
+    const d1 = grid1.get({ x: 1, y: 0 })!;
+    s1.owner = p1;
+    s1.troopCount = 10;
+    d1.owner = p2;
+    d1.troopCount = 5;
+    
+    const bomb1 = new GameItem(ItemType.BOMB, "bomb-1", { x: 0, y: 0 });
+    s1.items.push(bomb1);
+
+    expect(resolver.execute(createMoveAction(), grid1, players)).toBe(true);
+    expect(d1.owner).toBe(p1);
+    // Successful occupation transfers the bomb
+    expect(s1.items.length).toBe(0);
+    expect(d1.items.length).toBe(1);
+    expect(d1.items[0]).toBe(bomb1);
+    expect(bomb1.coordinate).toEqual({ x: 1, y: 0 });
+
+    // 2. Failed attack -> items do NOT transfer
+    const grid2 = createGrid();
+    const s2 = grid2.get({ x: 0, y: 0 })!;
+    const d2 = grid2.get({ x: 1, y: 0 })!;
+    s2.owner = p1;
+    s2.troopCount = 5;
+    d2.owner = p2;
+    d2.troopCount = 10;
+
+    const bomb2 = new GameItem(ItemType.BOMB, "bomb-2", { x: 0, y: 0 });
+    s2.items.push(bomb2);
+
+    expect(resolver.execute(createMoveAction(), grid2, players)).toBe(true);
+    expect(d2.owner).toBe(p2);
+    // Failed attack does NOT transfer the bomb
+    expect(s2.items.length).toBe(1);
+    expect(s2.items[0]).toBe(bomb2);
+    expect(d2.items.length).toBe(0);
+    expect(bomb2.coordinate).toEqual({ x: 0, y: 0 });
+
+    // 3. Reinforcement -> items transfer
+    const grid3 = createGrid();
+    const s3 = grid3.get({ x: 0, y: 0 })!;
+    const d3 = grid3.get({ x: 1, y: 0 })!;
+    s3.owner = p1;
+    s3.troopCount = 10;
+    d3.owner = p1;
+    d3.troopCount = 2;
+
+    const bomb3 = new GameItem(ItemType.BOMB, "bomb-3", { x: 0, y: 0 });
+    s3.items.push(bomb3);
+
+    expect(resolver.execute(createMoveAction(), grid3, players)).toBe(true);
+    expect(d3.owner).toBe(p1);
+    // Reinforcement transfers the bomb
+    expect(s3.items.length).toBe(0);
+    expect(d3.items.length).toBe(1);
+    expect(d3.items[0]).toBe(bomb3);
+    expect(bomb3.coordinate).toEqual({ x: 1, y: 0 });
   });
 });

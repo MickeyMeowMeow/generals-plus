@@ -4,6 +4,7 @@ import type {
   IClassicScoreboard,
   IDominationScoreboard,
   ITurfWarScoreboard,
+  IDemolitionScoreboard,
 } from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
 import type {
@@ -20,7 +21,11 @@ import {
   TurfWarScoreboard,
   TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
+  DemolitionScoreboard,
+  DemolitionScoreboardPlayerEntry,
+  DemolitionScoreboardTeamEntry,
 } from "@generals-plus/shared-types";
+
 
 /**
  * Allocates the Colyseus scoreboard schema that matches the engine mode.
@@ -37,6 +42,9 @@ export function createScoreboard(mode: GameModeType): BaseScoreboard {
       break;
     case GameMode.DOMINATION:
       scoreboard = new DominationScoreboard();
+      break;
+    case GameMode.DEMOLITION:
+      scoreboard = new DemolitionScoreboard();
       break;
     default:
       scoreboard = new ClassicScoreboard();
@@ -140,6 +148,54 @@ export function syncScoreboard(
         }
         domTarget.teams.push(schema);
       }
+      break;
+    }
+    case GameMode.DEMOLITION: {
+      const demoTarget = target as DemolitionScoreboard;
+      const demoSource = source as IDemolitionScoreboard;
+      syncPlayers(
+        demoTarget,
+        demoSource.players,
+        metadataByPlayer,
+        () => new DemolitionScoreboardPlayerEntry(),
+        (schema, entry) => {
+          schema.troops = entry.troops;
+          schema.land = entry.land;
+          schema.isAlive = entry.isAlive;
+        },
+      );
+      demoTarget.teams.clear();
+      const teamPlayers = new Map<string, string[]>();
+      for (const entry of demoSource.players) {
+        const meta = metadataByPlayer.get(entry.playerId);
+        const teamId = meta?.teamId ?? "";
+        let ids = teamPlayers.get(teamId);
+        if (!ids) {
+          ids = [];
+          teamPlayers.set(teamId, ids);
+        }
+        ids.push(entry.playerId);
+      }
+      for (const teamId of teamPlayers.keys()) {
+        const schema = new DemolitionScoreboardTeamEntry();
+        schema.teamId = teamId;
+        const ids = teamPlayers.get(teamId);
+        if (ids) {
+          schema.playerIds.push(...ids);
+        }
+        demoTarget.teams.push(schema);
+      }
+      demoTarget.bombSiteCount = demoSource.bombSiteCount;
+      demoTarget.plantedAtSite = demoSource.plantedAtSite ?? "";
+      demoTarget.detonationTick = demoSource.detonationTick ?? -1;
+      demoTarget.plantProgressTicks = demoSource.plantProgressTicks;
+      demoTarget.defuseProgressTicks = demoSource.defuseProgressTicks;
+      demoTarget.defuserId = demoSource.defuserId ?? "";
+      demoTarget.isPlanted = demoSource.isPlanted;
+      demoTarget.isDefused = demoSource.isDefused;
+      demoTarget.plantDuration = demoSource.plantDuration;
+      demoTarget.defuseDuration = demoSource.defuseDuration;
+      demoTarget.detonateDuration = demoSource.detonateDuration;
       break;
     }
     default:

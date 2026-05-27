@@ -8,7 +8,7 @@ import type { IItem } from "#/domain/item/interfaces";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
-import type { ICoordinate } from "#/math/coordinate";
+
 
 /**
  * The root state of the Game Engine.
@@ -171,18 +171,37 @@ export interface ITurfWarGame extends IBaseGame {
   getScoreboard(): ITurfWarScoreboard;
 }
 
+export interface IDemolitionScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.DEMOLITION;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+    readonly isAlive: boolean;
+  }>;
+  readonly bombSiteCount: number;
+  readonly plantedAtSite: string | null;
+  readonly detonationTick: number | null;
+  readonly plantProgressTicks: number;
+  readonly defuseProgressTicks: number;
+  readonly defuserId: string | null;
+  readonly isPlanted: boolean;
+  readonly isDefused: boolean;
+  readonly plantDuration: number;
+  readonly defuseDuration: number;
+  readonly detonateDuration: number;
+}
+
 /**
  * Demolition Mode.
  * Tracks the bomb status and detonation sequence.
  */
 export interface IDemolitionGame extends IBaseGame {
   readonly mode: typeof GameMode.DEMOLITION;
-  bombStatus: {
-    readonly sites: Record<string, ICoordinate>;
-    plantedAtSite: string | null;
-    detonationTick: number | null; // The tick when the bomb will explode
-  };
+  
+  getScoreboard(): IDemolitionScoreboard;
 }
+
 
 /**
  * Payload Mode.

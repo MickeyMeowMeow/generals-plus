@@ -5,7 +5,9 @@ import { Terrain } from "#/domain/cell/terrain";
 import type { Grid } from "#/domain/grid/grid";
 import { SquareGrid } from "#/domain/grid/grid";
 import { Player } from "#/domain/player/player";
-import { StandardTeam } from "#/domain/team/team";
+import { StandardTeam, AttackerTeam, DefenderTeam } from "#/domain/team/team";
+import { GameItem } from "#/domain/item/item";
+import { ItemType } from "#/domain/item/item-type";
 import { Visibility } from "#/domain/vision/visibility";
 import {
   createVisionCell,
@@ -159,5 +161,59 @@ describe("VisibilityMap", () => {
         cell.visibility,
       );
     });
+  });
+
+  it("asymmetric fog of war: attackers see the bomb in shrouded cells, defenders do not", () => {
+    const grid = createVisionGrid();
+    
+    // Create teams
+    const attackers = new AttackerTeam("attackers");
+    const defenders = new DefenderTeam("defenders");
+    
+    const p1 = new Player(attackers, "p1");
+    attackers.addPlayer(p1);
+    
+    const p2 = new Player(defenders, "p2");
+    defenders.addPlayer(p2);
+
+    // Place a bomb at (2, 2) which is shrouded/not owned by anyone
+    const targetCell = grid.get({ x: 2, y: 2 });
+    if (!targetCell) throw new Error("target cell should exist");
+    
+    const bomb = new GameItem(ItemType.BOMB, "bomb-1", { x: 2, y: 2 });
+    targetCell.items.push(bomb);
+
+    // 1. Evaluate for Attackers (who control no cells, so everything is shrouded)
+    const attackerVision = new VisibilityMap(grid).evaluate(attackers);
+    const attackerPerceivedCell = attackerVision.get({ x: 2, y: 2 });
+    
+    expect(attackerPerceivedCell?.visibility).toBe(Visibility.SHROUDED);
+    expect(attackerPerceivedCell?.troopCount).toBeNull();
+    expect(attackerPerceivedCell?.owner).toBeNull();
+    // But they see the bomb item!
+    expect(attackerPerceivedCell?.items.length).toBe(1);
+    expect(attackerPerceivedCell?.items[0].type).toBe(ItemType.BOMB);
+
+    // 2. Evaluate for Defenders (who also control no cells)
+    const defenderVision = new VisibilityMap(grid).evaluate(defenders);
+    const defenderPerceivedCell = defenderVision.get({ x: 2, y: 2 });
+    
+    expect(defenderPerceivedCell?.visibility).toBe(Visibility.SHROUDED);
+    // They do NOT see the bomb item!
+    expect(defenderPerceivedCell?.items.length).toBe(0);
+
+    // 3. Give defender player vision on (2, 2) by owning adjacent (2, 1) with vision
+    const adjCell = grid.get({ x: 2, y: 1 });
+    if (!adjCell) throw new Error("adj cell should exist");
+    adjCell.owner = p2;
+    adjCell.vision = { radius: 1 };
+
+    const defenderVisionWithSight = new VisibilityMap(grid).evaluate(defenders);
+    const defenderPerceivedCellWithSight = defenderVisionWithSight.get({ x: 2, y: 2 });
+    
+    expect(defenderPerceivedCellWithSight?.visibility).toBe(Visibility.VISIBLE);
+    // Now they see the bomb item because they have vision!
+    expect(defenderPerceivedCellWithSight?.items.length).toBe(1);
+    expect(defenderPerceivedCellWithSight?.items[0].type).toBe(ItemType.BOMB);
   });
 });

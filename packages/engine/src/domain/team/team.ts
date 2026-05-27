@@ -4,6 +4,8 @@ import type {
   IBaseTeam,
   IScoringTeam,
   IStandardTeam,
+  IAttackerTeam,
+  IDefenderTeam,
 } from "#/domain/team/interfaces";
 import { TeamType } from "#/domain/team/team-type";
 
@@ -48,3 +50,12 @@ export class ScoringTeam extends BaseTeam implements IScoringTeam {
     this.type = type;
   }
 }
+
+export class AttackerTeam extends BaseTeam implements IAttackerTeam {
+  readonly type = TeamType.ATTACKER;
+}
+
+export class DefenderTeam extends BaseTeam implements IDefenderTeam {
+  readonly type = TeamType.DEFENDER;
+}
+

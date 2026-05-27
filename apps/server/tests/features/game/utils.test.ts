@@ -1,4 +1,4 @@
-import { DominationGame, GameMode, TurfWarGame } from "@generals-plus/engine";
+import { DominationGame, GameMode, TurfWarGame, DemolitionGame } from "@generals-plus/engine";
 import { describe, expect, it } from "vitest";
 
 import { createGame, generateSeed } from "#/features/game/utils";
@@ -137,11 +137,11 @@ describe("createGame", () => {
   it("throws for unsupported game mode", () => {
     expect(() =>
       createGame({
-        mode: "demolition" as GameMode,
+        mode: "unsupported_mode" as GameMode,
         playerIds: ["p1", "p2"],
         playerPerTeam: 1,
       }),
-    ).toThrow('Game mode "demolition" is not implemented yet.');
+    ).toThrow('Game mode "unsupported_mode" is not implemented yet.');
   });
 
   describe("domination mode", () => {
@@ -212,6 +212,42 @@ describe("createGame", () => {
       } finally {
         Map.prototype.set = originalSet;
       }
+    });
+  });
+
+  describe("demolition mode", () => {
+    it("creates a DemolitionGame with attackers and defenders teams", () => {
+      const game = createGame({
+        mode: GameMode.DEMOLITION,
+        playerIds: ["p1", "p2", "p3", "p4"],
+        playerPerTeam: 2,
+        finishTick: 240,
+        plantDurationTicks: 8,
+        defuseDurationTicks: 12,
+        detonateDurationTicks: 60,
+        bombSiteCount: 3,
+        seed: 12345,
+      });
+
+      expect(game).toBeInstanceOf(DemolitionGame);
+      expect(game.mode).toBe(GameMode.DEMOLITION);
+      expect(game.players.size).toBe(4);
+      expect(game.teams.size).toBe(2);
+      expect(game.teams.has("attackers")).toBe(true);
+      expect(game.teams.has("defenders")).toBe(true);
+
+      const attackers = game.teams.get("attackers");
+      const defenders = game.teams.get("defenders");
+      expect(attackers?.players.length).toBe(2);
+      expect(defenders?.players.length).toBe(2);
+
+      const demo = game as DemolitionGame;
+      expect(demo.maxTicks).toBe(240);
+      expect(demo.plantDuration).toBe(4);
+      expect(demo.defuseDuration).toBe(6);
+      expect(demo.detonateDuration).toBe(30);
+      expect(demo.bombSiteCount).toBe(3);
+      expect(demo.seed).toBe(12345);
     });
   });
 });

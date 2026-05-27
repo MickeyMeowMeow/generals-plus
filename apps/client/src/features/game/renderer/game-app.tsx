@@ -3,6 +3,13 @@ import { Application } from "@pixi/react";
 import { Assets } from "pixi.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  bombNormalIcon,
+  bombPlantedIcon,
+  pingAttackIcon,
+  pingDefenseIcon,
+  pingRallyIcon,
+} from "#/features/game/assets";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { MapRenderer } from "#/features/game/renderer/map-renderer";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
@@ -26,6 +33,7 @@ interface GameAppProps {
   readonly onClearMoveQueue: () => void;
   readonly playerColors: Map<string, number>;
   readonly pings?: Ping[];
+  readonly isPlanted?: boolean;
 }
 
 /**
@@ -46,6 +54,7 @@ export function GameApp({
   onClearMoveQueue,
   playerColors,
   pings = [],
+  isPlanted = false,
 }: GameAppProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
@@ -61,10 +70,21 @@ export function GameApp({
       const icons = Object.values(TerrainTheme)
         .map((theme) => theme.icon)
         .filter((icon): icon is string => icon !== undefined);
+      
+      // Also preload bomb and ping icons
+      icons.push(
+        bombNormalIcon,
+        bombPlantedIcon,
+        pingAttackIcon,
+        pingDefenseIcon,
+        pingRallyIcon,
+      );
+
       await Assets.load(icons);
     };
     preloadAssets().then(() => setIsReady(true));
   }, []);
+
 
   useEffect(() => {
     const container = containerRef.current;
@@ -144,6 +164,7 @@ export function GameApp({
               onSplitMoveCell={onArmSplitMove}
               playerColors={playerColors}
               pings={pings}
+              isPlanted={isPlanted}
             />
           </Viewport>
         </Application>
