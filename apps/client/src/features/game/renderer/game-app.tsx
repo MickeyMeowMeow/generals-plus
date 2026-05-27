@@ -49,10 +49,8 @@ export function GameApp({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
 
-  const worldWidth =
-    grid.bounds.width * RenderConfig.cellStride - RenderConfig.cellGap;
-  const worldHeight =
-    grid.bounds.height * RenderConfig.cellStride - RenderConfig.cellGap;
+  const worldWidth = grid.bounds.width * RenderConfig.cellStride;
+  const worldHeight = grid.bounds.height * RenderConfig.cellStride;
 
   useEffect(() => {
     // Preload terrain icon assets.

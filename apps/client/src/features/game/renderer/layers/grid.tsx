@@ -3,6 +3,7 @@ import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import { useCallback } from "react";
 
+import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 import { drawCell } from "#/features/game/utils/renderer";
@@ -12,7 +13,6 @@ extend({ Graphics });
 interface GridLayerProps {
   grid: RenderGrid;
   stride: number;
-  cellSize: number;
   playerColors: Map<string, number>;
 }
 
@@ -23,17 +23,16 @@ function tintColor(color: number, alpha: number): number {
   return (r << 16) | (g << 8) | b;
 }
 
-export function GridLayer({
-  grid,
-  stride,
-  cellSize,
-  playerColors,
-}: GridLayerProps) {
+export function GridLayer({ grid, stride, playerColors }: GridLayerProps) {
   const drawGrid = useCallback(
     (g: Graphics) => {
       g.clear();
       grid.forEach((cell) => {
-        drawCell(g, grid, cell.coordinate, stride, cellSize);
+        drawCell(g, grid, cell.coordinate, stride);
+        g.stroke({
+          width: RenderConfig.cellStroke,
+          color: RenderConfig.background,
+        });
 
         let color = cell.ownerIndex
           ? (playerColors.get(cell.ownerIndex) ?? 0x333333)
@@ -50,7 +49,7 @@ export function GridLayer({
         g.fill(color);
       });
     },
-    [grid, stride, cellSize, playerColors],
+    [grid, stride, playerColors],
   );
 
   return <pixiGraphics draw={drawGrid} />;

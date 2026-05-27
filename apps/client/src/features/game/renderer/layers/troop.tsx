@@ -15,14 +15,30 @@ extend({ Container, Text });
 interface TroopLayerProps {
   grid: RenderGrid;
   stride: number;
-  cellSize: number;
   splitMoveSelection: ICoordinate | null;
 }
+
+const troopTextStyle = new TextStyle({
+  fontFamily: RenderConfig.troopTextFontFamily,
+  fontSize: RenderConfig.cellStride * RenderConfig.troopTextFontSizeRatio,
+  fontWeight: RenderConfig.troopTextFontWeight,
+  fill: RenderConfig.troopTextColor,
+  stroke: {
+    color: RenderConfig.troopTextStrokeColor,
+    width: RenderConfig.troopTextStrokeWidth,
+  },
+  dropShadow: {
+    color: RenderConfig.troopTextShadowColor,
+    alpha: RenderConfig.troopTextShadowAlpha,
+    blur: RenderConfig.troopTextShadowBlur,
+    distance: RenderConfig.troopTextShadowDistance,
+    angle: RenderConfig.troopTextShadowAngle,
+  },
+});
 
 export function TroopLayer({
   grid,
   stride,
-  cellSize,
   splitMoveSelection,
 }: TroopLayerProps) {
   const troopCells = useMemo(() => {
@@ -39,26 +55,6 @@ export function TroopLayer({
     });
     return cells;
   }, [grid, splitMoveSelection]);
-
-  const troopTextStyle = useMemo(() => {
-    return new TextStyle({
-      fontFamily: RenderConfig.troopTextFontFamily,
-      fontSize: cellSize * RenderConfig.troopTextFontSizeRatio,
-      fontWeight: RenderConfig.troopTextFontWeight,
-      fill: RenderConfig.troopTextColor,
-      stroke: {
-        color: RenderConfig.troopTextStrokeColor,
-        width: RenderConfig.troopTextStrokeWidth,
-      },
-      dropShadow: {
-        color: RenderConfig.troopTextShadowColor,
-        alpha: RenderConfig.troopTextShadowAlpha,
-        blur: RenderConfig.troopTextShadowBlur,
-        distance: RenderConfig.troopTextShadowDistance,
-        angle: RenderConfig.troopTextShadowAngle,
-      },
-    });
-  }, [cellSize]);
 
   return (
     <pixiContainer>

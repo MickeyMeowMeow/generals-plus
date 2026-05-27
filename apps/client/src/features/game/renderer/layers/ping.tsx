@@ -1,7 +1,6 @@
 import { extend } from "@pixi/react";
 import { Container, Sprite, Texture } from "pixi.js";
 
-import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 
 extend({ Container, Sprite });
@@ -61,16 +60,14 @@ const textures: Record<string, Texture> = {
 };
 
 export function PingLayer({ grid, pings, stride }: PingLayerProps) {
-  const cellSize = stride - RenderConfig.cellGap;
-
   return (
     <pixiContainer>
       {pings.map((ping) => {
-        const size = cellSize * 0.38;
+        const size = stride * 0.38;
 
         const cellCoord = grid.toCartesian(ping);
-        const x = cellCoord.x * stride + cellSize * 0.28;
-        const y = cellCoord.y * stride - cellSize * 0.28;
+        const x = (cellCoord.x + 0.28) * stride;
+        const y = (cellCoord.y - 0.28) * stride;
 
         const texture = textures[ping.type] || textures.rally;
 

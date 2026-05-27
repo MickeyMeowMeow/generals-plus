@@ -12,7 +12,6 @@ import { MoveQueueLayer } from "#/features/game/renderer/layers/move-queue";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { PingLayer } from "#/features/game/renderer/layers/ping";
 import { TroopLayer } from "#/features/game/renderer/layers/troop";
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
 
@@ -41,7 +40,6 @@ export function MapRenderer({
   playerColors,
   pings,
 }: MapRendererProps) {
-  const cellSize = stride - RenderConfig.cellGap;
   const lastPrimaryClickRef = useRef<{
     coord: ICoordinate;
     time: number;
@@ -51,17 +49,17 @@ export function MapRenderer({
     switch (grid.gridType) {
       case GridType.SQUARE: {
         return new Rectangle(
-          -cellSize / 2,
-          -cellSize / 2,
-          grid.bounds.width * stride - RenderConfig.cellGap,
-          grid.bounds.height * stride - RenderConfig.cellGap,
+          -stride / 2,
+          -stride / 2,
+          grid.bounds.width * stride,
+          grid.bounds.height * stride,
         );
       }
       case GridType.HEX: {
         return new Rectangle();
       }
     }
-  }, [grid.gridType, grid.bounds, stride, cellSize]);
+  }, [grid.gridType, grid.bounds, stride]);
 
   const onPointerDown = useCallback(
     (e: FederatedPointerEvent) => {
@@ -106,26 +104,15 @@ export function MapRenderer({
       hitArea={hitArea}
       onPointerDown={onPointerDown}
     >
-      <GridLayer
-        grid={grid}
-        stride={stride}
-        cellSize={cellSize}
-        playerColors={playerColors}
-      />
+      <GridLayer grid={grid} stride={stride} playerColors={playerColors} />
       <IconLayer grid={grid} stride={stride} />
       <MoveQueueLayer grid={grid} stride={stride} moveQueue={moveQueue} />
       <TroopLayer
         grid={grid}
         stride={stride}
-        cellSize={cellSize}
         splitMoveSelection={splitMoveSelection}
       />
-      <HighlightLayer
-        grid={grid}
-        stride={stride}
-        cellSize={cellSize}
-        selection={selection}
-      />
+      <HighlightLayer grid={grid} stride={stride} selection={selection} />
       <PingLayer grid={grid} pings={pings} stride={stride} />
     </pixiContainer>
   );

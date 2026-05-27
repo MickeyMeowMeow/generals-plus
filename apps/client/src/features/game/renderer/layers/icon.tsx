@@ -17,8 +17,6 @@ interface IconLayerProps {
 }
 
 export function IconLayer({ grid, stride }: IconLayerProps) {
-  const cellSize = stride - RenderConfig.cellGap;
-
   const iconCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; icon: string }> = [];
     grid.forEach((cell) => {
@@ -33,7 +31,7 @@ export function IconLayer({ grid, stride }: IconLayerProps) {
     <pixiContainer>
       {iconCells.map(({ cell, icon }) => {
         const { x, y } = grid.toCartesian(cell.coordinate);
-        const iconSize = Math.max(1, cellSize * RenderConfig.terrainIconScale);
+        const iconSize = Math.max(1, stride * RenderConfig.terrainIconScale);
 
         return (
           <pixiSprite
