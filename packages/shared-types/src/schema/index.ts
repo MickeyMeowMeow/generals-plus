@@ -24,6 +24,5 @@ export {
 export { SetupPlayer, SetupState } from "#/schema/setup-state";
 export {
   ClientVision,
-  ItemSchema,
   VisionCellSchema,
 } from "#/schema/vision-cell";

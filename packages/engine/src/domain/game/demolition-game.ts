@@ -14,6 +14,7 @@ import type {
   IDemolitionScoreboard,
 } from "#/domain/game/interfaces";
 import type { GridInput } from "#/domain/grid/grid-generator";
+import type { IItem } from "#/domain/item/interfaces";
 import { GameItem } from "#/domain/item/item";
 import { ItemType } from "#/domain/item/item-type";
 import type { IPlayer } from "#/domain/player/interfaces";
@@ -121,15 +122,16 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
     );
     if (attackers.length > 0) {
       const carrier = attackers[rng.nextInt(attackers.length)];
-      let generalCell: ICell | null = null;
+      const generalCells: ICell[] = [];
       this.grid.forEach((cell) => {
         if (
           cell.terrain === Terrain.GENERAL &&
           cell.owner?.playerId === carrier.playerId
         ) {
-          generalCell = cell;
+          generalCells.push(cell);
         }
       });
+      const generalCell = generalCells[0];
 
       if (generalCell) {
         const bomb = new GameItem(

@@ -21,7 +21,6 @@ import {
   ActionData,
   ClientActionQueue,
   ClientVision,
-  ItemSchema,
   MatchClientMessage,
   MatchServerMessage,
   MatchState,
@@ -525,20 +524,20 @@ export class MatchRoom extends Room<{
     vision.cells.clear();
 
     for (const vc of visionGrid) {
-      const cell = new VisionCellSchema().assign({
-        visibility: vc.visibility,
-        terrain: vc.terrain,
-        troopCount: vc.troopCount ?? -1,
-        ownerIndex:
-          vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "",
-        siteIndex: vc.siteIndex ?? -1,
-      });
+      const cell = new VisionCellSchema();
+      cell.visibility = vc.visibility;
+      cell.terrain = vc.terrain;
+      cell.troopCount = vc.troopCount ?? -1;
+      cell.ownerIndex =
+        vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "";
+      cell.siteIndex = vc.siteIndex ?? -1;
 
       if (vc.item) {
-        cell.item = new ItemSchema().assign({
-          id: vc.item.id,
-          type: vc.item.type,
-        });
+        cell.item_id = vc.item.id;
+        cell.item_type = vc.item.type;
+      } else {
+        cell.item_id = "";
+        cell.item_type = -1;
       }
 
       vision.cells.push(cell);
