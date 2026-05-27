@@ -15,6 +15,8 @@ interface BombLayerProps {
   grid: RenderGrid;
   stride: number;
   isPlanted: boolean;
+  /** Ticks remaining until detonation. -1 if unknown or not applicable. */
+  ticksRemaining?: number;
 }
 
 const bombIcons = {
@@ -22,10 +24,22 @@ const bombIcons = {
   planted: bombPlantedIcon,
 };
 
-export function BombLayer({ grid, stride, isPlanted }: BombLayerProps) {
+function computeFlashInterval(ticksRemaining: number | undefined): number {
+  if (ticksRemaining === undefined || ticksRemaining < 0) return 500;
+  if (ticksRemaining <= 20) return 100;
+  if (ticksRemaining <= 40) return 200;
+  if (ticksRemaining <= 60) return 300;
+  return 500;
+}
+
+export function BombLayer({
+  grid,
+  stride,
+  isPlanted,
+  ticksRemaining = -1,
+}: BombLayerProps) {
   const cellSize = stride - RenderConfig.cellGap;
 
-  // Filter cells carrying a C4 bomb (item type 0)
   const bombCells = useMemo(() => {
     const cells: Array<{
       cell: RenderGridCell;
@@ -42,8 +56,9 @@ export function BombLayer({ grid, stride, isPlanted }: BombLayerProps) {
     return cells;
   }, [grid]);
 
-  // Pulse & flash loop for planted status
   const [flash, setFlash] = useState(false);
+
+  const ms = isPlanted ? computeFlashInterval(ticksRemaining) : 0;
 
   useEffect(() => {
     if (!isPlanted) {
@@ -51,19 +66,17 @@ export function BombLayer({ grid, stride, isPlanted }: BombLayerProps) {
       return;
     }
 
-    const interval = setInterval(() => {
+    const id = setInterval(() => {
       setFlash((f) => !f);
-    }, 500);
+    }, ms);
 
-    return () => clearInterval(interval);
-  }, [isPlanted]);
+    return () => clearInterval(id);
+  }, [isPlanted, ms]);
 
   return (
     <pixiContainer>
       {bombCells.map(({ cell }) => {
-        // Size: 38% of cell size
         const size = cellSize * 0.38;
-        // Positioned symmetrically in the bottom-right corner of the cell
         const x = cell.coordinate.x * stride + cellSize * 0.78;
         const y = cell.coordinate.y * stride + cellSize * 0.78;
 

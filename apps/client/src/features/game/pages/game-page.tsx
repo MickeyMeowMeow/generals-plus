@@ -418,6 +418,15 @@ export function GamePage({ connection, source }: GamePageProps) {
             ? !!(gameState.scoreboard as DemolitionScoreboard).isPlanted
             : false
         }
+        ticksRemaining={
+          gameState.mode === GameMode.DEMOLITION
+            ? Math.max(
+                0,
+                (gameState.scoreboard as DemolitionScoreboard).detonationTick -
+                  gameState.tick,
+              )
+            : -1
+        }
       />
 
       {(() => {

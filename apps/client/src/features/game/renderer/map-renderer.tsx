@@ -30,6 +30,7 @@ interface MapRendererProps {
   playerColors: Map<string, number>;
   pings: Ping[];
   isPlanted?: boolean;
+  ticksRemaining?: number;
 }
 
 export function MapRenderer({
@@ -43,6 +44,7 @@ export function MapRenderer({
   playerColors,
   pings,
   isPlanted = false,
+  ticksRemaining = -1,
 }: MapRendererProps) {
   const cellSize = stride - RenderConfig.cellGap;
   const lastPrimaryClickRef = useRef<{
@@ -118,7 +120,12 @@ export function MapRenderer({
         cellSize={cellSize}
         splitMoveSelection={splitMoveSelection}
       />
-      <BombLayer grid={grid} stride={stride} isPlanted={isPlanted} />
+      <BombLayer
+        grid={grid}
+        stride={stride}
+        isPlanted={isPlanted}
+        ticksRemaining={ticksRemaining}
+      />
       <HighlightLayer
         stride={stride}
         cellSize={cellSize}

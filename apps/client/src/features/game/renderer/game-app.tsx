@@ -34,6 +34,7 @@ interface GameAppProps {
   readonly playerColors: Map<string, number>;
   readonly pings?: Ping[];
   readonly isPlanted?: boolean;
+  readonly ticksRemaining?: number;
 }
 
 /**
@@ -55,6 +56,7 @@ export function GameApp({
   playerColors,
   pings = [],
   isPlanted = false,
+  ticksRemaining = -1,
 }: GameAppProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
@@ -164,6 +166,7 @@ export function GameApp({
               playerColors={playerColors}
               pings={pings}
               isPlanted={isPlanted}
+              ticksRemaining={ticksRemaining}
             />
           </Viewport>
         </Application>
