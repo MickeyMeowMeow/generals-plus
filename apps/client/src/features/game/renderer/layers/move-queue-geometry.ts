@@ -1,4 +1,5 @@
 import { RenderConfig } from "#/features/game/renderer/render-config";
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
 import { MoveDirection } from "#/features/game/utils/move";
 
@@ -15,27 +16,31 @@ export const DIRECTION_TRIGONOMETRY: Record<MoveDirection, ArrowTrigonometry> =
     [MoveDirection.RIGHT]: { cos: 1, sin: 0 },
   };
 
-export function getArrowAnchor(move: MoveIntent, stride: number) {
+export function getArrowAnchor(
+  grid: RenderGrid,
+  move: MoveIntent,
+  stride: number,
+) {
   const trigonometry = DIRECTION_TRIGONOMETRY[move.direction];
   const halfLength = RenderConfig.arrowLength / 2;
   const tipInset = RenderConfig.arrowEdgeInset + halfLength;
-  let anchorX = move.from.x * stride;
-  let anchorY = move.from.y * stride;
+
+  const { x, y } = grid.toCartesian(move.from);
+  let anchorX = x * stride;
+  let anchorY = y * stride;
 
   switch (move.direction) {
     case MoveDirection.UP:
-      anchorX += stride / 2;
+      anchorY -= stride / 2;
       break;
     case MoveDirection.DOWN:
-      anchorX += stride / 2;
-      anchorY += stride;
+      anchorY += stride / 2;
       break;
     case MoveDirection.LEFT:
-      anchorY += stride / 2;
+      anchorX -= stride / 2;
       break;
     case MoveDirection.RIGHT:
-      anchorX += stride;
-      anchorY += stride / 2;
+      anchorX += stride / 2;
       break;
   }
 

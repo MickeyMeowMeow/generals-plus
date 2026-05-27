@@ -1,7 +1,8 @@
 import { extend } from "@pixi/react";
 import { Container, Sprite, Texture } from "pixi.js";
 
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import { RenderConfig } from "#/features/game/renderer/render-config";
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
 
 extend({ Container, Sprite });
 
@@ -13,6 +14,7 @@ export interface Ping {
 }
 
 interface PingLayerProps {
+  readonly grid: RenderGrid;
   readonly pings: Ping[];
   readonly stride: number;
 }
@@ -58,15 +60,18 @@ const textures: Record<string, Texture> = {
   rally: createSvgTexture(flagSvg),
 };
 
-export function PingLayer({ pings, stride }: PingLayerProps) {
+export function PingLayer({ grid, pings, stride }: PingLayerProps) {
   const cellSize = stride - RenderConfig.cellGap;
 
   return (
     <pixiContainer>
       {pings.map((ping) => {
         const size = cellSize * 0.38;
-        const x = ping.x * stride + cellSize * 0.78;
-        const y = ping.y * stride + cellSize * 0.22;
+
+        const cellCoord = grid.toCartesian(ping);
+        const x = cellCoord.x * stride + cellSize * 0.28;
+        const y = cellCoord.y * stride - cellSize * 0.28;
+
         const texture = textures[ping.type] || textures.rally;
 
         return (

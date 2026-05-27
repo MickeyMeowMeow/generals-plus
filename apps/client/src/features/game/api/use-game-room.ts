@@ -194,11 +194,10 @@ export function useGameRoom(connection: GameRoomConnection) {
           setCurrentPlayer(currentPlayer);
 
           const myId = currentRoom.sessionId;
+
           const myVision = state.clientVisions.get(myId);
-          if (myVision && state.width > 0) {
-            setRenderGrid(
-              createRenderGrid(myVision, state.width, state.height),
-            );
+          if (myVision) {
+            setRenderGrid(createRenderGrid(myVision, state));
           }
 
           const myQueue = state.clientActionQueues.get(myId);

@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 
+import { SquareGrid2D, Terrain, Visibility } from "@generals-plus/engine";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { GameApp } from "#/features/game/renderer/game-app";
-import type { RenderGrid } from "#/features/game/renderer/render-grid";
 
 vi.mock("@pixi/react", () => ({
   Application: ({ children }: { children: ReactNode }) => (
@@ -30,7 +30,13 @@ vi.mock("#/features/game/renderer/viewport", () => ({
 function renderGameApp(overrides: Partial<Parameters<typeof GameApp>[0]> = {}) {
   return render(
     <GameApp
-      grid={{ width: 2, height: 2 } as RenderGrid}
+      grid={SquareGrid2D.generate(10, 10, () => ({
+        coordinate: { x: 0, y: 0 },
+        visibility: Visibility.VISIBLE,
+        terrain: Terrain.PLAIN,
+        troopCount: null,
+        ownerIndex: null,
+      }))}
       selection={null}
       splitMoveSelection={null}
       moveQueue={[]}

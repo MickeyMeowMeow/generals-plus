@@ -32,8 +32,7 @@ export function IconLayer({ grid, stride }: IconLayerProps) {
   return (
     <pixiContainer>
       {iconCells.map(({ cell, icon }) => {
-        const x = cell.coordinate.x * stride + cellSize / 2;
-        const y = cell.coordinate.y * stride + cellSize / 2;
+        const { x, y } = grid.toCartesian(cell.coordinate);
         const iconSize = Math.max(1, cellSize * RenderConfig.terrainIconScale);
 
         return (
@@ -43,8 +42,8 @@ export function IconLayer({ grid, stride }: IconLayerProps) {
             anchor={0.5}
             width={iconSize}
             height={iconSize}
-            x={x}
-            y={y}
+            x={x * stride}
+            y={y * stride}
           />
         );
       })}

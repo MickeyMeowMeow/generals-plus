@@ -1,7 +1,9 @@
+import { SquareGrid2D, Terrain, Visibility } from "@generals-plus/engine";
 import { describe, expect, it } from "vitest";
 
 import { getArrowAnchor } from "#/features/game/renderer/layers/move-queue-geometry";
 import { RenderConfig } from "#/features/game/renderer/render-config";
+import type { SquareRenderGrid } from "#/features/game/renderer/render-grid";
 import { MoveDirection } from "#/features/game/utils/move";
 
 const stride = 100;
@@ -12,38 +14,47 @@ function expectedTipInset() {
 }
 
 describe("MoveQueueLayer", () => {
+  const grid: SquareRenderGrid = SquareGrid2D.generate(10, 10, () => ({
+    coordinate: { x: 0, y: 0 },
+    visibility: Visibility.VISIBLE,
+    terrain: Terrain.PLAIN,
+    troopCount: null,
+    ownerIndex: null,
+  }));
+
   it("places right move arrows fully inside the departure cell", () => {
     const anchor = getArrowAnchor(
+      grid,
       { from, direction: MoveDirection.RIGHT },
       stride,
     );
 
     expect(anchor).toEqual({
-      anchorX: (from.x + 1) * stride - expectedTipInset(),
-      anchorY: from.y * stride + stride / 2,
+      anchorX: (from.x + 0.5) * stride - expectedTipInset(),
+      anchorY: from.y * stride,
     });
   });
 
   it("places directional arrow anchors away from the target cell edge", () => {
     expect(
-      getArrowAnchor({ from, direction: MoveDirection.LEFT }, stride),
+      getArrowAnchor(grid, { from, direction: MoveDirection.LEFT }, stride),
     ).toEqual({
-      anchorX: from.x * stride + expectedTipInset(),
-      anchorY: from.y * stride + stride / 2,
+      anchorX: (from.x - 0.5) * stride + expectedTipInset(),
+      anchorY: from.y * stride,
     });
 
     expect(
-      getArrowAnchor({ from, direction: MoveDirection.UP }, stride),
+      getArrowAnchor(grid, { from, direction: MoveDirection.UP }, stride),
     ).toEqual({
-      anchorX: from.x * stride + stride / 2,
-      anchorY: from.y * stride + expectedTipInset(),
+      anchorX: from.x * stride,
+      anchorY: (from.y - 0.5) * stride + expectedTipInset(),
     });
 
     expect(
-      getArrowAnchor({ from, direction: MoveDirection.DOWN }, stride),
+      getArrowAnchor(grid, { from, direction: MoveDirection.DOWN }, stride),
     ).toEqual({
-      anchorX: from.x * stride + stride / 2,
-      anchorY: (from.y + 1) * stride - expectedTipInset(),
+      anchorX: from.x * stride,
+      anchorY: (from.y + 0.5) * stride - expectedTipInset(),
     });
   });
 });

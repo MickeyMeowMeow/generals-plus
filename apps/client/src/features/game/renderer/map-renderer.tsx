@@ -1,4 +1,5 @@
 import type { ICoordinate } from "@generals-plus/engine";
+import { GridType, isSameCoord } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import type { FederatedPointerEvent } from "pixi.js";
 import { Container, Rectangle } from "pixi.js";
@@ -45,52 +46,58 @@ export function MapRenderer({
     coord: ICoordinate;
     time: number;
   } | null>(null);
-  const hitArea = useMemo(
-    () =>
-      new Rectangle(
-        0,
-        0,
-        grid.width * stride - RenderConfig.cellGap,
-        grid.height * stride - RenderConfig.cellGap,
-      ),
-    [grid.width, grid.height, stride],
-  );
+
+  const hitArea = useMemo(() => {
+    switch (grid.gridType) {
+      case GridType.SQUARE: {
+        return new Rectangle(
+          -cellSize / 2,
+          -cellSize / 2,
+          grid.bounds.width * stride - RenderConfig.cellGap,
+          grid.bounds.height * stride - RenderConfig.cellGap,
+        );
+      }
+      case GridType.HEX: {
+        return new Rectangle();
+      }
+    }
+  }, [grid.gridType, grid.bounds, stride, cellSize]);
 
   const onPointerDown = useCallback(
     (e: FederatedPointerEvent) => {
       const localPos = e.currentTarget.toLocal(e.global);
-      const x = Math.floor(localPos.x / stride);
-      const y = Math.floor(localPos.y / stride);
-      if (x >= 0 && x < grid.width && y >= 0 && y < grid.height) {
-        const coord = { x, y };
-        if (e.button === 2) {
-          onSplitMoveCell(coord);
-          lastPrimaryClickRef.current = null;
-          return;
-        }
+      const coord = grid.fromCartesian({
+        x: localPos.x / stride,
+        y: localPos.y / stride,
+      });
+      if (!coord) return;
 
-        const now = performance.now();
-        const lastPrimaryClick = lastPrimaryClickRef.current;
-        const isDoubleClick =
-          e.button === 0 &&
-          lastPrimaryClick !== null &&
-          lastPrimaryClick.coord.x === x &&
-          lastPrimaryClick.coord.y === y &&
-          now - lastPrimaryClick.time <= 300;
+      if (e.button === 2) {
+        onSplitMoveCell(coord);
+        lastPrimaryClickRef.current = null;
+        return;
+      }
 
-        if (isDoubleClick) {
-          onSplitMoveCell(coord);
-          lastPrimaryClickRef.current = null;
-          return;
-        }
+      const now = performance.now();
+      const lastPrimaryClick = lastPrimaryClickRef.current;
+      const isDoubleClick =
+        e.button === 0 &&
+        lastPrimaryClick !== null &&
+        isSameCoord(lastPrimaryClick.coord, coord) &&
+        now - lastPrimaryClick.time <= 300;
 
-        onCellClick(coord);
-        if (e.button === 0) {
-          lastPrimaryClickRef.current = { coord, time: now };
-        }
+      if (isDoubleClick) {
+        onSplitMoveCell(coord);
+        lastPrimaryClickRef.current = null;
+        return;
+      }
+
+      onCellClick(coord);
+      if (e.button === 0) {
+        lastPrimaryClickRef.current = { coord, time: now };
       }
     },
-    [grid.width, grid.height, stride, onCellClick, onSplitMoveCell],
+    [grid.fromCartesian, stride, onCellClick, onSplitMoveCell],
   );
 
   return (
@@ -106,7 +113,7 @@ export function MapRenderer({
         playerColors={playerColors}
       />
       <IconLayer grid={grid} stride={stride} />
-      <MoveQueueLayer stride={stride} moveQueue={moveQueue} />
+      <MoveQueueLayer grid={grid} stride={stride} moveQueue={moveQueue} />
       <TroopLayer
         grid={grid}
         stride={stride}
@@ -114,11 +121,12 @@ export function MapRenderer({
         splitMoveSelection={splitMoveSelection}
       />
       <HighlightLayer
+        grid={grid}
         stride={stride}
         cellSize={cellSize}
         selection={selection}
       />
-      <PingLayer pings={pings} stride={stride} />
+      <PingLayer grid={grid} pings={pings} stride={stride} />
     </pixiContainer>
   );
 }

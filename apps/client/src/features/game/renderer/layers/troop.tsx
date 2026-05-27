@@ -9,7 +9,6 @@ import type {
   RenderGrid,
   RenderGridCell,
 } from "#/features/game/renderer/render-grid";
-import { getCoordWorldPosition } from "#/features/game/utils/coord";
 
 extend({ Container, Text });
 
@@ -64,19 +63,15 @@ export function TroopLayer({
   return (
     <pixiContainer>
       {troopCells.map(({ cell, text }) => {
-        const { x, y } = getCoordWorldPosition(
-          cell.coordinate,
-          stride,
-          cellSize,
-        );
+        const { x, y } = grid.toCartesian(cell.coordinate);
 
         return (
           <pixiText
             key={`troop-${cell.coordinate.x},${cell.coordinate.y}`}
             text={text}
             anchor={0.5}
-            x={x}
-            y={y}
+            x={x * stride}
+            y={y * stride}
             style={troopTextStyle}
           />
         );

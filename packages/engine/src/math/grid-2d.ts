@@ -32,9 +32,12 @@ export interface GridBounds extends Record<GridType, Record<string, number>> {
  *
  * @template T The type of element stored in the grid.
  */
-export interface GenericGrid2D<T> {
+export interface GenericGrid2D<T, S extends GridType> {
   /** The type of grid (e.g., square, hex). */
-  readonly gridType: GridType;
+  readonly gridType: S;
+
+  /** The dimensions of the grid, which vary based on the grid type. */
+  readonly bounds: GridBounds[S];
 
   /** The total number of cells in the grid. */
   get totalCells(): number;
@@ -65,6 +68,14 @@ export interface GenericGrid2D<T> {
    * @returns The Cartesian coordinates corresponding to the given grid coordinate.
    */
   toCartesian(coordinate: ICoordinate): ICoordinate;
+
+  /**
+   * Converts Cartesian coordinates back to grid coordinates.
+   *
+   * @param coordinate The Cartesian coordinate to convert.
+   * @returns The grid coordinates corresponding to the given Cartesian coordinate, or null if the Cartesian coordinate does not correspond to a valid grid cell.
+   */
+  fromCartesian(coordinate: ICoordinate): ICoordinate | null;
 
   /**
    * Retrieves the element at the given coordinate.
@@ -162,18 +173,17 @@ export interface GenericGrid2D<T> {
    */
   map<U>(
     callback: (element: T, coordinate: ICoordinate) => U,
-  ): GenericGrid2D<U>;
+  ): GenericGrid2D<U, S>;
 }
 
 /**
  * Base implementation of a square grid.
  */
-export class SquareGrid2D<T> implements GenericGrid2D<T> {
+export class SquareGrid2D<T>
+  implements GenericGrid2D<T, typeof GridType.SQUARE>
+{
   readonly gridType = GridType.SQUARE;
-
-  readonly width: number;
-  readonly height: number;
-
+  readonly bounds: GridBounds[typeof GridType.SQUARE];
   readonly gridData: T[][];
 
   constructor(width: number, height: number, gridData: T[][]) {
@@ -188,8 +198,7 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
       throw new Error("Grid data does not match the specified dimensions.");
     }
 
-    this.width = width;
-    this.height = height;
+    this.bounds = { width, height };
     this.gridData = gridData;
   }
 
@@ -233,6 +242,14 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
     }
   }
 
+  get width(): number {
+    return this.bounds.width;
+  }
+
+  get height(): number {
+    return this.bounds.height;
+  }
+
   get totalCells(): number {
     return this.width * this.height;
   }
@@ -263,6 +280,12 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
 
   toCartesian(coordinate: ICoordinate): ICoordinate {
     return { x: coordinate.x, y: coordinate.y };
+  }
+
+  fromCartesian(coordinate: ICoordinate): ICoordinate | null {
+    const x = Math.round(coordinate.x);
+    const y = Math.round(coordinate.y);
+    return this.isValid({ x, y }) ? { x, y } : null;
   }
 
   get(coordinate: ICoordinate): T | null {
@@ -385,14 +408,9 @@ export class SquareGrid2D<T> implements GenericGrid2D<T> {
  * The axial coordinate system is used, where the top cell is (0, 0), x increases to the right, and y increases along the left slant downwards.
  * The grid is defined by the number of columns to the left and right of the center column, and the number of slanting rows from the center top to the lowest point on each side.
  */
-export class HexGrid2D<T> implements GenericGrid2D<T> {
+export class HexGrid2D<T> implements GenericGrid2D<T, typeof GridType.HEX> {
   readonly gridType = GridType.HEX;
-
-  readonly left: number;
-  readonly right: number;
-  readonly leftSlant: number;
-  readonly rightSlant: number;
-
+  readonly bounds: GridBounds[typeof GridType.HEX];
   readonly gridData: T[][];
 
   /**
@@ -482,6 +500,22 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
     }
   }
 
+  get left(): number {
+    return this.bounds.left;
+  }
+
+  get right(): number {
+    return this.bounds.right;
+  }
+
+  get leftSlant(): number {
+    return this.bounds.leftSlant;
+  }
+
+  get rightSlant(): number {
+    return this.bounds.rightSlant;
+  }
+
   private getMinX(y: number): number {
     return HexGrid2D.getMinX(y, this.left);
   }
@@ -501,10 +535,7 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
       throw new Error("Grid dimensions must be positive.");
     }
 
-    this.left = left;
-    this.right = right;
-    this.leftSlant = leftSlant;
-    this.rightSlant = rightSlant;
+    this.bounds = { left, right, leftSlant, rightSlant };
 
     if (
       gridData.length !== leftSlant ||
@@ -557,13 +588,38 @@ export class HexGrid2D<T> implements GenericGrid2D<T> {
     return leftCells + rightCells + x - this.getMinX(y);
   }
 
-  private static readonly SQRT3_OVER_2 = Math.sqrt(3) / 2;
+  private static readonly SQRT3 = Math.sqrt(3);
 
   toCartesian(coordinate: ICoordinate): { x: number; y: number } {
     return {
-      x: coordinate.x * HexGrid2D.SQRT3_OVER_2,
-      y: coordinate.y + coordinate.x / 2,
+      x: coordinate.x * 1.5,
+      y: (coordinate.y + coordinate.x / 2) * HexGrid2D.SQRT3,
     };
+  }
+
+  fromCartesian(coordinate: ICoordinate): ICoordinate | null {
+    const fx = coordinate.x * (2 / 3);
+    const fy = coordinate.y / HexGrid2D.SQRT3 - fx / 2;
+    const fz = -fx - fy;
+
+    let rx = Math.round(fx);
+    let ry = Math.round(fy);
+    const rz = Math.round(fz);
+
+    // Calculate differences to determine which axis had the most rounding error
+    const dx = Math.abs(rx - fx);
+    const dy = Math.abs(ry - fy);
+    const dz = Math.abs(rz - fz);
+
+    // Adjust the coordinate with the largest error to satisfy x + y + z = 0
+    if (dx > dy && dx > dz) {
+      rx = -ry - rz;
+    } else if (dy > dz) {
+      ry = -rx - rz;
+    }
+
+    const candidate: ICoordinate = { x: rx, y: ry };
+    return this.isValid(candidate) ? candidate : null;
   }
 
   get(coordinate: ICoordinate): T | null {

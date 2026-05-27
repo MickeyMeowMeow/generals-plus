@@ -5,6 +5,7 @@ import { useCallback } from "react";
 
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
+import { drawCell } from "#/features/game/utils/renderer";
 
 extend({ Graphics });
 
@@ -32,8 +33,7 @@ export function GridLayer({
     (g: Graphics) => {
       g.clear();
       grid.forEach((cell) => {
-        const x = cell.coordinate.x * stride;
-        const y = cell.coordinate.y * stride;
+        drawCell(g, grid, cell.coordinate, stride, cellSize);
 
         let color = cell.ownerIndex
           ? (playerColors.get(cell.ownerIndex) ?? 0x333333)
@@ -47,7 +47,7 @@ export function GridLayer({
           color = tintColor(color, 0.38);
         }
 
-        g.rect(x, y, cellSize, cellSize).fill(color);
+        g.fill(color);
       });
     },
     [grid, stride, cellSize, playerColors],

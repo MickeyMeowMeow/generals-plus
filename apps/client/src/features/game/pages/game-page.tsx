@@ -341,12 +341,13 @@ export function GamePage({ connection, source }: GamePageProps) {
     );
   }
 
-  if (!renderGrid)
+  if (!renderGrid) {
     return (
       <StageCenter>
         <LoadingPanel message="Loading battlefield" />
       </StageCenter>
     );
+  }
 
   const isReadOnly =
     isViewingAsSpectator ||

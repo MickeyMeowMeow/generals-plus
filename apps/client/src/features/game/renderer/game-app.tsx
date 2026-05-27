@@ -9,7 +9,6 @@ import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 import { Viewport } from "#/features/game/renderer/viewport";
-import { getCoordWorldPosition } from "#/features/game/utils/coord";
 import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
 import { ClearMoveQueueKey, KeyToDirection } from "#/features/game/utils/move";
 
@@ -51,9 +50,9 @@ export function GameApp({
   const [isReady, setIsReady] = useState(false);
 
   const worldWidth =
-    grid.width * RenderConfig.cellStride - RenderConfig.cellGap;
+    grid.bounds.width * RenderConfig.cellStride - RenderConfig.cellGap;
   const worldHeight =
-    grid.height * RenderConfig.cellStride - RenderConfig.cellGap;
+    grid.bounds.height * RenderConfig.cellStride - RenderConfig.cellGap;
 
   useEffect(() => {
     // Preload terrain icon assets.
@@ -103,16 +102,12 @@ export function GameApp({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onArmSplitMove, onClearMoveQueue, onQueueMove]);
 
-  const initialTarget = useMemo(
-    () =>
-      initialCoord &&
-      getCoordWorldPosition(
-        initialCoord,
-        RenderConfig.cellStride,
-        RenderConfig.cellStride - RenderConfig.cellGap,
-      ),
-    [initialCoord],
-  );
+  const initialTarget = useMemo(() => {
+    if (initialCoord) {
+      const { x, y } = grid.toCartesian(initialCoord);
+      return { x: x * RenderConfig.cellStride, y: y * RenderConfig.cellStride };
+    }
+  }, [initialCoord, grid.toCartesian]);
 
   return (
     <div ref={containerRef} className={"h-full w-full"}>
