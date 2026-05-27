@@ -75,7 +75,7 @@ export function Viewport({
   const viewportRef = useRef<ViewportWrapper>(null);
 
   const isZoomInitialized = useRef(false);
-  const cameraInitializedWith = useRef<typeof initialTarget>(null);
+  const isCameraInitialized = useRef(false);
 
   const worldWidth = worldBounds.right - worldBounds.left;
   const worldHeight = worldBounds.bottom - worldBounds.top;
@@ -142,37 +142,37 @@ export function Viewport({
     // Initial camera centering should only run after zoom initialized
     if (!isZoomInitialized.current) return;
 
-    // Initial camera centering should only run when the initial target changes
-    if (cameraInitializedWith.current !== initialTarget) {
-      // Determine initial target coordinates, defaulting to world center
-      const { x, y } = initialTarget ?? {
-        x: worldBounds.left + worldWidth / 2,
-        y: worldBounds.top + worldHeight / 2,
-      };
+    // Initial camera centering should only run when initialTarget first becomes available
+    if (isCameraInitialized.current || !initialTarget) return;
+    isCameraInitialized.current = true;
 
-      const marginX = Math.min(
-        (app.screen.width * (0.5 - RenderConfig.initialMarginRatioX)) /
-          defaultZoom,
-        worldWidth / 2,
-      );
-      const marginY = Math.min(
-        (app.screen.height * (0.5 - RenderConfig.initialMarginRatioY)) /
-          defaultZoom,
-        worldHeight / 2,
-      );
+    // Determine initial target coordinates, defaulting to world center
+    const { x, y } = initialTarget ?? {
+      x: worldBounds.left + worldWidth / 2,
+      y: worldBounds.top + worldHeight / 2,
+    };
 
-      const clampedX = Math.max(
-        worldBounds.left + marginX,
-        Math.min(x, worldBounds.right - marginX),
-      );
-      const clampedY = Math.max(
-        worldBounds.top + marginY,
-        Math.min(y, worldBounds.bottom - marginY),
-      );
+    const marginX = Math.min(
+      (app.screen.width * (0.5 - RenderConfig.initialMarginRatioX)) /
+        defaultZoom,
+      worldWidth / 2,
+    );
+    const marginY = Math.min(
+      (app.screen.height * (0.5 - RenderConfig.initialMarginRatioY)) /
+        defaultZoom,
+      worldHeight / 2,
+    );
 
-      viewport.moveCenter(clampedX, clampedY);
-      cameraInitializedWith.current = initialTarget;
-    }
+    const clampedX = Math.max(
+      worldBounds.left + marginX,
+      Math.min(x, worldBounds.right - marginX),
+    );
+    const clampedY = Math.max(
+      worldBounds.top + marginY,
+      Math.min(y, worldBounds.bottom - marginY),
+    );
+
+    viewport.moveCenter(clampedX, clampedY);
   }, [
     app.screen.width,
     app.screen.height,
