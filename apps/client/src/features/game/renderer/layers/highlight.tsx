@@ -25,7 +25,6 @@ export function HighlightLayer({ grid, selection }: HighlightLayerProps) {
         g.stroke({
           width: RenderConfig.selectionStroke,
           color: RenderConfig.selectionColor,
-          alignment: 0,
         });
       }
     },

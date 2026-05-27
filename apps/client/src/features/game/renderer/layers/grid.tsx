@@ -27,7 +27,7 @@ export function GridLayer({ grid, playerColors }: GridLayerProps) {
     (g: Graphics) => {
       g.clear();
       grid.forEach((cell) => {
-        drawCell(g, grid, cell.coordinate, RenderConfig.cellStride);
+        drawCell(g, grid, cell.coordinate);
         g.stroke({
           width: RenderConfig.cellStroke,
           color: RenderConfig.background,
