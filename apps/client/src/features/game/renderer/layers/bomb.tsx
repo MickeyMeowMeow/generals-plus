@@ -1,3 +1,4 @@
+import { ItemType } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Container, Sprite, Texture } from "pixi.js";
 import { useEffect, useMemo, useState } from "react";
@@ -43,7 +44,7 @@ export function BombLayer({
   const bombCells = useMemo(() => {
     const cells: RenderGridCell[] = [];
     grid.forEach((cell) => {
-      if (cell.item && cell.item.type === 0) {
+      if (cell.item && cell.item.type === ItemType.BOMB) {
         cells.push(cell);
       }
     });
