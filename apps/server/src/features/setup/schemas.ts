@@ -25,6 +25,10 @@ export const setupSettingsUpdateSchema = z
     duration: z.number().min(30).max(600),
     flagCount: z.number().int().min(1).max(20),
     targetScore: z.number().int().min(100).max(10000),
+    bombSiteCount: z.number().int().min(1).max(10),
+    plantDuration: z.number().min(1).max(30),
+    defuseDuration: z.number().min(1).max(30),
+    detonateDuration: z.number().min(10).max(300),
   })
   .partial()
   .strict();

@@ -540,6 +540,41 @@ describe("MatchRoom", () => {
       }
       expect(visionFound).toBe(true);
     });
+
+    it("populates clientVisions with items from engine", async () => {
+      const getVisionGrid = vi.fn((playerId: string) =>
+        createMockGrid2D(1, 1, [
+          [
+            {
+              coordinate: { x: 0, y: 0 },
+              visibility: Visibility.VISIBLE,
+              terrain: Terrain.PLAIN,
+              troopCount: 1,
+              owner: { playerId, status: PlayerStatus.ACTIVE },
+              item: { id: "bomb_1", type: 0, coordinate: { x: 0, y: 0 } },
+            },
+          ],
+        ]),
+      );
+
+      const metadata = createValidRoomData({
+        game: createMockGame({ getVisionGrid }),
+      });
+      room = await createRoom<MatchRoom>("match", { metadata });
+
+      const client = await connectClient(room, {
+        id: "p1",
+        email: "p1@test.com",
+      });
+
+      await room.waitForNextSimulationTick();
+
+      const vision = room.state.clientVisions.get(client.sessionId);
+      if (!vision) throw new Error("vision not found");
+      expect(vision.cells.length).toBe(1);
+      expect(vision.cells[0].item_id).toBe("bomb_1");
+      expect(vision.cells[0].item_type).toBe(0);
+    });
   });
 
   // ── Game end ───────────────────────────────────────────────

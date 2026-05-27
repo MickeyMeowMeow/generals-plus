@@ -33,7 +33,15 @@ export interface IScoringTeam extends IBaseTeam {
   score: number;
 }
 
+export interface IAttackerTeam extends IBaseTeam {
+  readonly type: typeof TeamType.ATTACKER;
+}
+
+export interface IDefenderTeam extends IBaseTeam {
+  readonly type: typeof TeamType.DEFENDER;
+}
+
 /**
  * Combined type representing any possible state a team can be in.
  */
-export type Team = IStandardTeam | IScoringTeam;
+export type Team = IStandardTeam | IScoringTeam | IAttackerTeam | IDefenderTeam;

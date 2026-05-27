@@ -32,12 +32,22 @@ export interface DominationSetupSettings extends BaseSetupSettings {
   targetScore: number;
 }
 
+export interface DemolitionSetupSettings extends BaseSetupSettings {
+  gameMode: typeof GameMode.DEMOLITION;
+  duration: number;
+  bombSiteCount: number;
+  plantDuration: number;
+  defuseDuration: number;
+  detonateDuration: number;
+}
+
 export interface OtherSettings extends BaseSetupSettings {
   gameMode: Exclude<
     GameMode,
     | typeof GameMode.CLASSIC
     | typeof GameMode.TURF_WAR
     | typeof GameMode.DOMINATION
+    | typeof GameMode.DEMOLITION
   >;
 }
 
@@ -45,4 +55,5 @@ export type SetupSettings =
   | ClassicSetupSettings
   | TurfWarSetupSettings
   | DominationSetupSettings
+  | DemolitionSetupSettings
   | OtherSettings;

@@ -6,6 +6,7 @@ import {
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
+import type { DemolitionScoreboard } from "@generals-plus/shared-types";
 import {
   MatchClientMessage,
   MatchServerMessage,
@@ -412,12 +413,24 @@ export function GamePage({ connection, source }: GamePageProps) {
         onClearMoveQueue={isReadOnly ? () => {} : clearMoveQueue}
         playerColors={playerColors}
         pings={pings}
+        isPlanted={
+          gameState.mode === GameMode.DEMOLITION
+            ? !!(gameState.scoreboard as DemolitionScoreboard).isPlanted
+            : false
+        }
+        ticksRemaining={
+          gameState.mode === GameMode.DEMOLITION
+            ? Math.max(
+                0,
+                (gameState.scoreboard as DemolitionScoreboard).detonationTick -
+                  gameState.tick,
+              )
+            : -1
+        }
       />
 
-      <GameHud
-        scoreboard={gameState.scoreboard}
-        targetScore={gameState.targetScore}
-        timer={{
+      {(() => {
+        let timerProps = {
           currentTick: gameState.tick,
           targetTick:
             gameState.mode === GameMode.TURF_WAR ||
@@ -431,8 +444,60 @@ export function GamePage({ connection, source }: GamePageProps) {
             gameState.mode === GameMode.DOMINATION
               ? gameState.tickInterval
               : 0,
-        }}
-      />
+          label: "Time remaining",
+        };
+
+        if (gameState.mode === GameMode.DEMOLITION) {
+          const demoScoreboard = gameState.scoreboard as DemolitionScoreboard;
+
+          if (demoScoreboard.plantProgressTicks > 0) {
+            timerProps = {
+              currentTick: demoScoreboard.plantProgressTicks,
+              targetTick: demoScoreboard.plantDurationTicks,
+              tickInterval: gameState.tickInterval,
+              label: "Planting C4...",
+            };
+          } else if (demoScoreboard.defuseProgressTicks > 0) {
+            timerProps = {
+              currentTick: demoScoreboard.defuseProgressTicks,
+              targetTick: demoScoreboard.defuseDurationTicks,
+              tickInterval: gameState.tickInterval,
+              label: "Defusing C4...",
+            };
+          } else if (demoScoreboard.plantedAtSite) {
+            const remainingTicks = Math.max(
+              0,
+              demoScoreboard.detonationTick - gameState.tick,
+            );
+            const elapsedTicks = Math.max(
+              0,
+              demoScoreboard.detonateDurationTicks - remainingTicks,
+            );
+
+            timerProps = {
+              currentTick: elapsedTicks,
+              targetTick: demoScoreboard.detonateDurationTicks,
+              tickInterval: gameState.tickInterval,
+              label: `Bomb Planted (Site ${demoScoreboard.plantedAtSite})`,
+            };
+          } else {
+            timerProps = {
+              currentTick: gameState.tick,
+              targetTick: gameState.finishTick > 0 ? gameState.finishTick : 0,
+              tickInterval: gameState.tickInterval,
+              label: "Time remaining",
+            };
+          }
+        }
+
+        return (
+          <GameHud
+            scoreboard={gameState.scoreboard}
+            targetScore={gameState.targetScore}
+            timer={timerProps}
+          />
+        );
+      })()}
 
       {/* Floating Brush Tool Panel */}
       <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2 rounded-none border border-game-border/80 bg-[rgb(27_27_27/0.76)] p-2 shadow-xl shadow-black/25 backdrop-blur-sm">

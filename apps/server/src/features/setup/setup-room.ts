@@ -129,6 +129,18 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     if (modeDefaults?.targetScore !== undefined) {
       state.targetScore = modeDefaults.targetScore;
     }
+    if (modeDefaults?.bombSiteCount !== undefined) {
+      state.bombSiteCount = modeDefaults.bombSiteCount;
+    }
+    if (modeDefaults?.plantDuration !== undefined) {
+      state.plantDuration = modeDefaults.plantDuration;
+    }
+    if (modeDefaults?.defuseDuration !== undefined) {
+      state.defuseDuration = modeDefaults.defuseDuration;
+    }
+    if (modeDefaults?.detonateDuration !== undefined) {
+      state.detonateDuration = modeDefaults.detonateDuration;
+    }
 
     this.state = state;
 
@@ -292,6 +304,21 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         return;
       }
 
+      if (
+        (update.bombSiteCount !== undefined ||
+          update.plantDuration !== undefined ||
+          update.defuseDuration !== undefined ||
+          update.detonateDuration !== undefined) &&
+        activeMode !== GameMode.DEMOLITION
+      ) {
+        this.sendValidationFailed(client, {
+          severity: "warning",
+          field: "bombSiteCount",
+          message: "Demolition fields are only available in Demolition mode.",
+        });
+        return;
+      }
+
       // When gameMode changes without an explicit playersPerTeam, reset to the
       // mode default so the host doesn't carry a stale value across modes.
       if (
@@ -322,6 +349,30 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         ) {
           this.state.targetScore = modeDefaults.targetScore;
         }
+        if (
+          update.bombSiteCount === undefined &&
+          modeDefaults?.bombSiteCount !== undefined
+        ) {
+          this.state.bombSiteCount = modeDefaults.bombSiteCount;
+        }
+        if (
+          update.plantDuration === undefined &&
+          modeDefaults?.plantDuration !== undefined
+        ) {
+          this.state.plantDuration = modeDefaults.plantDuration;
+        }
+        if (
+          update.defuseDuration === undefined &&
+          modeDefaults?.defuseDuration !== undefined
+        ) {
+          this.state.defuseDuration = modeDefaults.defuseDuration;
+        }
+        if (
+          update.detonateDuration === undefined &&
+          modeDefaults?.detonateDuration !== undefined
+        ) {
+          this.state.detonateDuration = modeDefaults.detonateDuration;
+        }
       }
 
       // Apply valid updates to state
@@ -331,7 +382,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       this.state.tickInterval = calculateTickInterval(this.state.speed);
       if (
         this.state.gameMode === GameMode.TURF_WAR ||
-        this.state.gameMode === GameMode.DOMINATION
+        this.state.gameMode === GameMode.DOMINATION ||
+        this.state.gameMode === GameMode.DEMOLITION
       ) {
         this.state.finishTick = calculateFinishTick(
           this.state.duration,
@@ -547,6 +599,10 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       return { ...base, flagCount: this.state.flagCount };
     }
 
+    if (this.state.gameMode === GameMode.DEMOLITION) {
+      return { ...base, bombSiteCount: this.state.bombSiteCount };
+    }
+
     return base;
   }
 
@@ -573,6 +629,26 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           finishTick: this.state.finishTick,
           targetScore: this.state.targetScore,
         };
+      case GameMode.DEMOLITION:
+        return {
+          ...base,
+          mode: GameMode.DEMOLITION,
+          finishTick: this.state.finishTick,
+          plantDurationTicks: calculateFinishTick(
+            this.state.plantDuration,
+            this.state.tickInterval,
+          ),
+          defuseDurationTicks: calculateFinishTick(
+            this.state.defuseDuration,
+            this.state.tickInterval,
+          ),
+          detonateDurationTicks: calculateFinishTick(
+            this.state.detonateDuration,
+            this.state.tickInterval,
+          ),
+          bombSiteCount: this.state.bombSiteCount,
+          seed: this.state.seed,
+        };
       default:
         return { ...base, mode: this.state.gameMode };
     }
@@ -586,7 +662,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
     const isTimedMode =
       options.mode === GameMode.TURF_WAR ||
-      options.mode === GameMode.DOMINATION;
+      options.mode === GameMode.DOMINATION ||
+      options.mode === GameMode.DEMOLITION;
 
     const metadata: RoomData = {
       mode: options.mode,

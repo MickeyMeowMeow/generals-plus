@@ -317,7 +317,7 @@ describe("client room flows", () => {
     expect(
       await screen.findByRole("dialog", { name: "Choose mode" }),
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Demolition/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Demolition/ })).toBeEnabled();
 
     await user.click(screen.getByRole("button", { name: /Classic/ }));
 
@@ -717,10 +717,9 @@ describe("client room flows", () => {
     const modeSelect = screen.getByLabelText("Game Mode");
     expect(modeSelect).toBeTruthy();
     fireEvent.keyDown(modeSelect, { key: "ArrowDown" });
-    expect(screen.getByRole("option", { name: /Demolition/ })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    expect(
+      screen.getByRole("option", { name: /Demolition/ }),
+    ).not.toHaveAttribute("aria-disabled", "true");
     fireEvent.keyDown(modeSelect, { key: "Escape" });
     expect(
       screen.getByRole("button", { name: "Force start game" }),

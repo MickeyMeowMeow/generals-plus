@@ -82,8 +82,8 @@ describe("index route", () => {
       screen.getByRole("button", { name: "Classic, Ready" }),
     ).toBeEnabled();
     expect(
-      screen.getByRole("button", { name: "Demolition, Coming soon" }),
-    ).toBeDisabled();
+      screen.getByRole("button", { name: "Demolition, Ready" }),
+    ).toBeEnabled();
   });
 
   it("signs out from lobby", async () => {

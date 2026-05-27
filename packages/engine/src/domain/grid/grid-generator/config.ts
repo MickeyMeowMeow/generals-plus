@@ -41,6 +41,7 @@ export interface GridGeneratorOptions<T extends GridType> {
   readonly cityInitialTroops?: number;
 
   readonly flagCount?: number;
+  readonly bombSiteCount?: number;
 }
 
 /** Default options exposed for external reference. */
@@ -59,6 +60,7 @@ export const DefaultGenOptions: Omit<
   cityInitialTroops: 50,
 
   flagCount: 0,
+  bombSiteCount: 0,
 } as const;
 
 export const DefaultGridBounds: {

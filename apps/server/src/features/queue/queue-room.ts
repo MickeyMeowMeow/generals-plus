@@ -85,7 +85,13 @@ export class MatchQueueRoom extends QueueRoom {
                 flagCount: modeSettings?.flagCount ?? 3,
                 seed: generateSeed(),
               }
-            : { generalCount: groupPlayers.length, seed: generateSeed() };
+            : this.gameMode === GameMode.DEMOLITION
+              ? {
+                  generalCount: groupPlayers.length,
+                  bombSiteCount: modeSettings?.bombSiteCount ?? 2,
+                  seed: generateSeed(),
+                }
+              : { generalCount: groupPlayers.length, seed: generateSeed() };
 
         const finishTick = modeSettings?.duration
           ? calculateFinishTick(modeSettings.duration, BASE_TICK_INTERVAL)
@@ -117,6 +123,26 @@ export class MatchQueueRoom extends QueueRoom {
                 finishTick,
                 targetScore: modeSettings?.targetScore,
               };
+            case GameMode.DEMOLITION:
+              return {
+                ...base,
+                mode: GameMode.DEMOLITION,
+                finishTick,
+                plantDurationTicks: calculateFinishTick(
+                  modeSettings?.plantDuration ?? 3,
+                  BASE_TICK_INTERVAL,
+                ),
+                defuseDurationTicks: calculateFinishTick(
+                  modeSettings?.defuseDuration ?? 5,
+                  BASE_TICK_INTERVAL,
+                ),
+                detonateDurationTicks: calculateFinishTick(
+                  modeSettings?.detonateDuration ?? 45,
+                  BASE_TICK_INTERVAL,
+                ),
+                bombSiteCount: modeSettings?.bombSiteCount ?? 2,
+                seed: base.gridOptions.seed,
+              };
             default:
               return { ...base, mode: this.gameMode };
           }
@@ -128,7 +154,8 @@ export class MatchQueueRoom extends QueueRoom {
 
         const isTimedMode =
           this.gameMode === GameMode.TURF_WAR ||
-          this.gameMode === GameMode.DOMINATION;
+          this.gameMode === GameMode.DOMINATION ||
+          this.gameMode === GameMode.DEMOLITION;
 
         const metadata: RoomData = {
           mode: this.gameMode,

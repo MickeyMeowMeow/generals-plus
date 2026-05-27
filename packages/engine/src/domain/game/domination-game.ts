@@ -71,6 +71,18 @@ export class DominationGame extends BaseGame implements IDominationGame {
         interval: 25,
       }),
     );
+
+    this.effectRegistry.register(
+      this.tick,
+      new TroopModifierEffect(this.tick, {
+        id: "domination-flag-troop-gen",
+        type: EffectType.TROOP_GENERATION,
+        target: this.grid,
+        terrain: Terrain.FLAG,
+        delta: 1,
+        interval: 25,
+      }),
+    );
   }
 
   protected executeAction(action: Action): boolean {

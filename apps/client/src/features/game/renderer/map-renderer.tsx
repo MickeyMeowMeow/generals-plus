@@ -4,12 +4,14 @@ import type { FederatedPointerEvent } from "pixi.js";
 import { Container, Rectangle } from "pixi.js";
 import { useCallback, useMemo, useRef } from "react";
 
+import { BombLayer } from "#/features/game/renderer/layers/bomb";
 import { GridLayer } from "#/features/game/renderer/layers/grid";
 import { HighlightLayer } from "#/features/game/renderer/layers/highlight";
 import { IconLayer } from "#/features/game/renderer/layers/icon";
 import { MoveQueueLayer } from "#/features/game/renderer/layers/move-queue";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { PingLayer } from "#/features/game/renderer/layers/ping";
+import { SiteLabelLayer } from "#/features/game/renderer/layers/site-label";
 import { TroopLayer } from "#/features/game/renderer/layers/troop";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
@@ -27,6 +29,8 @@ interface MapRendererProps {
   onSplitMoveCell: (coordinate: ICoordinate) => void;
   playerColors: Map<string, number>;
   pings: Ping[];
+  isPlanted?: boolean;
+  ticksRemaining?: number;
 }
 
 export function MapRenderer({
@@ -39,6 +43,8 @@ export function MapRenderer({
   onSplitMoveCell,
   playerColors,
   pings,
+  isPlanted = false,
+  ticksRemaining = -1,
 }: MapRendererProps) {
   const cellSize = stride - RenderConfig.cellGap;
   const lastPrimaryClickRef = useRef<{
@@ -106,12 +112,19 @@ export function MapRenderer({
         playerColors={playerColors}
       />
       <IconLayer grid={grid} stride={stride} />
+      <SiteLabelLayer grid={grid} stride={stride} cellSize={cellSize} />
       <MoveQueueLayer stride={stride} moveQueue={moveQueue} />
       <TroopLayer
         grid={grid}
         stride={stride}
         cellSize={cellSize}
         splitMoveSelection={splitMoveSelection}
+      />
+      <BombLayer
+        grid={grid}
+        stride={stride}
+        isPlanted={isPlanted}
+        ticksRemaining={ticksRemaining}
       />
       <HighlightLayer
         stride={stride}

@@ -99,3 +99,31 @@ export class DominationScoreboard extends BaseScoreboard {
   @type([DominationScoreboardTeamEntry]) teams =
     new ArraySchema<DominationScoreboardTeamEntry>();
 }
+
+export class DemolitionScoreboardPlayerEntry extends TroopLandScoreboardPlayerEntry {
+  @type("boolean") isAlive: boolean = false;
+}
+
+export class DemolitionScoreboardTeamEntry extends Schema {
+  @type("string") teamId: string = "";
+  @type(["string"]) playerIds = new ArraySchema<string>();
+}
+
+export class DemolitionScoreboard extends BaseScoreboard {
+  @type([DemolitionScoreboardPlayerEntry]) players =
+    new ArraySchema<DemolitionScoreboardPlayerEntry>();
+  @type([DemolitionScoreboardTeamEntry]) teams =
+    new ArraySchema<DemolitionScoreboardTeamEntry>();
+
+  @type("number") bombSiteCount: number = 2;
+  @type("string") plantedAtSite: string = ""; // "A", "B", etc., or ""
+  @type("number") detonationTick: number = -1; // -1 if not planted
+  @type("number") plantProgressTicks: number = 0;
+  @type("number") defuseProgressTicks: number = 0;
+  @type("string") defuserId: string = ""; // player defusing, or ""
+  @type("boolean") isPlanted: boolean = false;
+  @type("boolean") isDefused: boolean = false;
+  @type("number") plantDurationTicks: number = 6;
+  @type("number") defuseDurationTicks: number = 10;
+  @type("number") detonateDurationTicks: number = 90;
+}

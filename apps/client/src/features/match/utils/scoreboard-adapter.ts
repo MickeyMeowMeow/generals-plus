@@ -1,5 +1,8 @@
 import { GameMode } from "@generals-plus/engine";
-import type { BaseScoreboard } from "@generals-plus/shared-types";
+import type {
+  BaseScoreboard,
+  DemolitionScoreboard,
+} from "@generals-plus/shared-types";
 
 import { formatTeamLabel } from "#/features/match/utils/team-label";
 
@@ -361,6 +364,27 @@ function createDominationModel(
   };
 }
 
+function createDemolitionModel(
+  scoreboard: BaseScoreboard,
+): GameHudScoreboardModel {
+  const rows = createPlayerRows(scoreboard);
+  const groups = createTeamGroups(rows);
+  const title = (scoreboard as DemolitionScoreboard).plantedAtSite
+    ? `BOMB PLANTED AT SITE ${(scoreboard as DemolitionScoreboard).plantedAtSite}`
+    : "Demolition";
+
+  return {
+    title,
+    columns: troopLandColumns,
+    groups: groups.sort(
+      (a, b) =>
+        Number(b.totals?.troops ?? 0) - Number(a.totals?.troops ?? 0) ||
+        a.label.localeCompare(b.label),
+    ),
+    hasTeams: true,
+  };
+}
+
 /**
  * Converts the mode-specific match scoreboard schema into a single HUD model.
  *
@@ -378,6 +402,8 @@ export function createGameHudScoreboardModel(
       return createTurfWarModel(scoreboard);
     case GameMode.DOMINATION:
       return createDominationModel(scoreboard, targetScore);
+    case GameMode.DEMOLITION:
+      return createDemolitionModel(scoreboard);
     default:
       return createTroopLandModel("Classic", scoreboard);
   }

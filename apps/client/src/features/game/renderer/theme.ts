@@ -50,6 +50,9 @@ export const TerrainTheme: Partial<
     color: 0x8aa4c8,
     icon: flagIcon,
   },
+  [Terrain.BOMB_SITE]: {
+    color: 0x8aa4c8,
+  },
   [MaskedTerrain.MAYBE_PLAIN]: {
     color: 0xd8dde3,
   },

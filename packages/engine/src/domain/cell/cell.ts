@@ -1,6 +1,7 @@
 import type { ICell, ICellOwner } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { EffectTarget } from "#/domain/effect/effect-target";
+import type { IItem } from "#/domain/item/interfaces";
 import type { IVisionModifier } from "#/domain/vision/interfaces";
 import type { ICoordinate } from "#/math/coordinate";
 
@@ -19,6 +20,10 @@ export interface CellOptions {
   readonly troopCount?: number | null;
   /** Vision radius contributed by this cell when owned. */
   readonly vision?: IVisionModifier;
+  /** Index of the bomb site if this cell is a BOMB_SITE, null otherwise. */
+  readonly siteIndex?: number | null;
+  /** Item currently residing in this cell, or null if none. */
+  readonly item?: IItem | null;
 }
 
 /**
@@ -32,6 +37,8 @@ export class Cell extends EffectTarget implements ICell {
   troopCount: number | null;
   owner: ICellOwner | null;
   vision: IVisionModifier;
+  siteIndex: number | null;
+  item: IItem | null;
   onTerrainChange?: (
     cell: ICell,
     oldTerrain: Terrain,
@@ -51,6 +58,8 @@ export class Cell extends EffectTarget implements ICell {
     this.owner = options.owner ?? null;
     this.troopCount = this.isPassable ? (options.troopCount ?? null) : null;
     this.vision = options.vision ?? { radius: 1 };
+    this.siteIndex = options.siteIndex ?? null;
+    this.item = options.item ?? null;
   }
 
   get terrain() {

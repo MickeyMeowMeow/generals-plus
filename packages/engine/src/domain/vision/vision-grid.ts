@@ -1,5 +1,6 @@
 import type { ICellOwner } from "#/domain/cell/interfaces";
 import type { Terrain } from "#/domain/cell/terrain";
+import type { IItem } from "#/domain/item/interfaces";
 import type { Visibility } from "#/domain/vision/visibility";
 import type { ICoordinate } from "#/math/coordinate";
 import type { GenericGrid2D } from "#/math/grid-2d";
@@ -45,6 +46,13 @@ export interface IVisionCell {
    * Null if unoccupied or if visibility is strictly less than `VISIBLE`.
    */
   readonly owner: ICellOwner | null;
+
+  /**
+   * The perceived item in the cell.
+   * Null if no item or if visibility does not reveal it.
+   */
+  readonly item: IItem | null;
+  readonly siteIndex: number | null;
 }
 
 /**
