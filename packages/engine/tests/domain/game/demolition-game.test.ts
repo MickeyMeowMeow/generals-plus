@@ -64,11 +64,10 @@ describe("DemolitionGame", () => {
     });
     expect(attackerGeneral).not.toBeNull();
 
-    const bomb = game.items.find((item) => item.type === ItemType.BOMB);
-    expect(bomb).toBeDefined();
+    const bomb = game.bomb;
+    expect(bomb).not.toBeNull();
     expect(bomb?.coordinate).toEqual(attackerGeneral?.coordinate);
-    expect(attackerGeneral?.items.length).toBe(1);
-    expect(attackerGeneral?.items[0]).toBe(bomb);
+    expect(attackerGeneral?.item).toBe(bomb);
   });
 
   it("updates planting progress when attacker-owned troops occupy bomb site with C4", () => {
@@ -100,14 +99,13 @@ describe("DemolitionGame", () => {
     expect(siteCell).not.toBeNull();
     if (!siteCell) throw new Error("siteCell should exist");
 
-    // Clear initial cells' items and place bomb on site cell
-    grid.forEach((c) => {
-      c.items.length = 0;
-    });
-    const bomb = game.items.find((item) => item.type === ItemType.BOMB);
+    // Move bomb from its current cell to the site cell
+    const bomb = game.bomb;
     if (!bomb) throw new Error("bomb should exist");
+    const currentBombCell = grid.get(bomb.coordinate);
+    if (currentBombCell) currentBombCell.item = null;
     bomb.coordinate = siteCell.coordinate;
-    siteCell.items.push(bomb);
+    siteCell.item = bomb;
 
     // If site cell is not owned by attacker, planting progress is 0
     game.nextTick();
@@ -126,8 +124,8 @@ describe("DemolitionGame", () => {
 
     game.nextTick();
     expect(game.isPlanted).toBe(true);
-    expect(game.plantedAtSite).toBe("A"); // string letter based on siteIndex 0
-    expect(game.detonationTick).toBe(game.tick + 90); // 45 seconds -> 90 ticks
+    expect(game.plantedAtSite).toBe("A");
+    expect(game.detonationTick).toBe(game.tick + 90);
   });
 
   it("updates defusing progress when defender-owned troops occupy planted bomb site", () => {
@@ -157,13 +155,13 @@ describe("DemolitionGame", () => {
       }
     });
     if (!siteCell) throw new Error("siteCell should exist");
-    grid.forEach((c) => {
-      c.items.length = 0;
-    });
-    const bomb = game.items.find((item) => item.type === ItemType.BOMB);
+
+    const bomb = game.bomb;
     if (!bomb) throw new Error("bomb should exist");
+    const currentBombCell = grid.get(bomb.coordinate);
+    if (currentBombCell) currentBombCell.item = null;
     bomb.coordinate = siteCell.coordinate;
-    siteCell.items.push(bomb);
+    siteCell.item = bomb;
 
     // Force bomb planted
     game.isPlanted = true;
@@ -328,13 +326,14 @@ describe("DemolitionGame", () => {
     if (!adjCell) throw new Error("adjCell should exist");
 
     // 1. Before planting: carrying works
-    grid.forEach((c) => {
-      c.items.length = 0;
-    });
-    const bomb = game.items.find((item) => item.type === ItemType.BOMB);
+    const bomb = game.bomb;
     if (!bomb) throw new Error("bomb should exist");
+
+    // Move bomb to siteCell
+    const currentBombCell = grid.get(bomb.coordinate);
+    if (currentBombCell) currentBombCell.item = null;
     bomb.coordinate = siteCell.coordinate;
-    siteCell.items.push(bomb);
+    siteCell.item = bomb;
     siteCell.owner = p1;
     siteCell.troopCount = 10;
 
@@ -348,17 +347,14 @@ describe("DemolitionGame", () => {
     game.nextTick();
 
     // Bomb should be moved because it is not planted yet!
-    expect(siteCell.items.length).toBe(0);
-    expect(adjCell.items.length).toBe(1);
-    expect(adjCell.items[0]).toBe(bomb);
+    expect(siteCell.item).toBeNull();
+    expect(adjCell.item).toBe(bomb);
     expect(bomb.coordinate).toEqual(adjCell.coordinate);
 
     // 2. After planting: carrying does NOT move the bomb
-    grid.forEach((c) => {
-      c.items.length = 0;
-    });
+    adjCell.item = null;
     bomb.coordinate = siteCell.coordinate;
-    siteCell.items.push(bomb);
+    siteCell.item = bomb;
     siteCell.owner = p1;
     siteCell.troopCount = 10;
     adjCell.owner = p1;
@@ -377,13 +373,12 @@ describe("DemolitionGame", () => {
     game.nextTick();
 
     // Bomb should NOT be moved because it is planted!
-    expect(siteCell.items.length).toBe(1);
-    expect(siteCell.items[0]).toBe(bomb);
-    expect(adjCell.items.length).toBe(0);
+    expect(siteCell.item).toBe(bomb);
+    expect(adjCell.item).toBeNull();
     expect(bomb.coordinate).toEqual(siteCell.coordinate);
   });
 
-  it("getVisionGrid includes bomb items for attacker player", () => {
+  it("getVisionGrid includes bomb item for attacker player", () => {
     const grid = createPlainGrid5x5();
     const game = new DemolitionGame({ grid }, { bombSiteCount: 1, seed: 1234 });
 
@@ -404,17 +399,16 @@ describe("DemolitionGame", () => {
     expect(visionGrid).not.toBeNull();
 
     // Find cells with items in the vision grid
-    let cellsWithItems = 0;
+    let cellsWithItem = 0;
     let bombFound = false;
     visionGrid?.forEach((cell) => {
-      if (cell.items && cell.items.length > 0) {
-        cellsWithItems++;
-        const hasBomb = cell.items.some((item) => item.type === ItemType.BOMB);
-        if (hasBomb) bombFound = true;
+      if (cell.item && cell.item.type === ItemType.BOMB) {
+        cellsWithItem++;
+        bombFound = true;
       }
     });
 
-    expect(cellsWithItems).toBeGreaterThan(0);
+    expect(cellsWithItem).toBeGreaterThan(0);
     expect(bombFound).toBe(true);
   });
 
@@ -436,7 +430,6 @@ describe("DemolitionGame", () => {
 
     // Find C4 bomb cell
     let siteCell: Cell | null = null;
-    let adjCell: Cell | null = null;
     grid.forEach((c) => {
       if (c.terrain === Terrain.BOMB_SITE) {
         siteCell = c as Cell;
@@ -444,6 +437,7 @@ describe("DemolitionGame", () => {
     });
     if (!siteCell) throw new Error("siteCell should exist");
 
+    let adjCell: Cell | null = null;
     const neighbors = grid.getNeighbors(siteCell.coordinate);
     for (const [coord] of neighbors) {
       const neighborCell = grid.get(coord);
@@ -455,13 +449,12 @@ describe("DemolitionGame", () => {
     if (!adjCell) throw new Error("adjCell should exist");
 
     // Place bomb on siteCell
-    grid.forEach((c) => {
-      c.items.length = 0;
-    });
-    const bomb = game.items.find((item) => item.type === ItemType.BOMB);
+    const bomb = game.bomb;
     if (!bomb) throw new Error("bomb should exist");
+    const currentBombCell = grid.get(bomb.coordinate);
+    if (currentBombCell) currentBombCell.item = null;
     bomb.coordinate = siteCell.coordinate;
-    siteCell.items.push(bomb);
+    siteCell.item = bomb;
 
     // Give siteCell to defender with troops
     siteCell.owner = p2;
@@ -479,9 +472,8 @@ describe("DemolitionGame", () => {
     game.nextTick();
 
     // Bomb should NOT be moved because player is a defender!
-    expect(siteCell.items.length).toBe(1);
-    expect(siteCell.items[0]).toBe(bomb);
-    expect(adjCell.items.length).toBe(0);
+    expect(siteCell.item).toBe(bomb);
+    expect(adjCell.item).toBeNull();
     expect(bomb.coordinate).toEqual(siteCell.coordinate);
   });
 });

@@ -12,7 +12,7 @@ export interface RenderGridCell {
   visibility: Visibility;
   ownerIndex: string | null;
   siteIndex: number | null;
-  items: Array<{ id: string; type: number; x: number; y: number }> | null;
+  item: { id: string; type: number } | null;
 }
 
 export class SquareRenderGrid extends SquareGrid2D<RenderGridCell> {}

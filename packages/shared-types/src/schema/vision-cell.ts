@@ -4,9 +4,7 @@ import { HiddenTerrain, Visibility } from "@generals-plus/engine";
 
 export class ItemSchema extends Schema {
   @type("string") id: string = "";
-  @type("number") type: number = 0;
-  @type("number") x: number = -1;
-  @type("number") y: number = -1;
+  @type("number") type: number = -1;
 }
 
 export class VisionCellSchema extends Schema {
@@ -15,9 +13,9 @@ export class VisionCellSchema extends Schema {
   @type("number") troopCount: number = -1;
   @type("string") ownerIndex: string = "";
   @type("number") siteIndex: number = -1;
+  @type(ItemSchema) item = new ItemSchema();
 }
 
 export class ClientVision extends Schema {
   @type([VisionCellSchema]) cells = new ArraySchema<VisionCellSchema>();
-  @type([ItemSchema]) items = new ArraySchema<ItemSchema>();
 }

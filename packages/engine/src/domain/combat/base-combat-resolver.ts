@@ -115,21 +115,15 @@ export abstract class BaseCombatResolver implements CombatResolver {
       }
     }
 
-    // Move any items from source cell to target cell if occupation is successful
-    if (isSuccessfulOccupation && source.items.length > 0) {
-      const itemsToMove: IItem[] = [];
-      const itemsToKeep: IItem[] = [];
-      for (const item of source.items) {
-        if (!this.canMoveItem || this.canMoveItem(item, attacker)) {
-          item.coordinate = target.coordinate;
-          itemsToMove.push(item);
-        } else {
-          itemsToKeep.push(item);
+    // Move item from source cell to target cell if occupation is successful
+    if (isSuccessfulOccupation && source.item !== null) {
+      if (!this.canMoveItem || this.canMoveItem(source.item, attacker)) {
+        if (target.item === null) {
+          source.item.coordinate = target.coordinate;
+          target.item = source.item;
+          source.item = null;
         }
       }
-      source.items.length = 0;
-      source.items.push(...itemsToKeep);
-      target.items.push(...itemsToMove);
     }
 
     return true;

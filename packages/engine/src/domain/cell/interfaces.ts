@@ -38,8 +38,8 @@ export interface ICell extends EffectTarget {
   /** Index of the bomb site if this cell is a BOMB_SITE, null otherwise. */
   siteIndex: number | null;
 
-  /** List of items currently residing in this cell. */
-  readonly items: IItem[];
+  /** Item currently residing in this cell, or null if none. */
+  item: IItem | null;
 
   /** Triggered when the terrain changes, allowing external systems to react to this change. */
   onTerrainChange?: (

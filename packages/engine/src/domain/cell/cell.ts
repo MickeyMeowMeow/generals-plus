@@ -22,8 +22,8 @@ export interface CellOptions {
   readonly vision?: IVisionModifier;
   /** Index of the bomb site if this cell is a BOMB_SITE, null otherwise. */
   readonly siteIndex?: number | null;
-  /** List of items currently residing in this cell. */
-  readonly items?: IItem[];
+  /** Item currently residing in this cell, or null if none. */
+  readonly item?: IItem | null;
 }
 
 /**
@@ -38,7 +38,7 @@ export class Cell extends EffectTarget implements ICell {
   owner: ICellOwner | null;
   vision: IVisionModifier;
   siteIndex: number | null;
-  readonly items: IItem[];
+  item: IItem | null;
   onTerrainChange?: (
     cell: ICell,
     oldTerrain: Terrain,
@@ -59,7 +59,7 @@ export class Cell extends EffectTarget implements ICell {
     this.troopCount = this.isPassable ? (options.troopCount ?? null) : null;
     this.vision = options.vision ?? { radius: 1 };
     this.siteIndex = options.siteIndex ?? null;
-    this.items = options.items ?? [];
+    this.item = options.item ?? null;
   }
 
   get terrain() {

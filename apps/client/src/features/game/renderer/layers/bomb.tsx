@@ -41,16 +41,10 @@ export function BombLayer({
   const cellSize = stride - RenderConfig.cellGap;
 
   const bombCells = useMemo(() => {
-    const cells: Array<{
-      cell: RenderGridCell;
-      item: NonNullable<RenderGridCell["items"]>[number];
-    }> = [];
+    const cells: RenderGridCell[] = [];
     grid.forEach((cell) => {
-      if (cell.items && cell.items.length > 0) {
-        const bomb = cell.items.find((item) => item.type === 0);
-        if (bomb) {
-          cells.push({ cell, item: bomb });
-        }
+      if (cell.item && cell.item.type === 0) {
+        cells.push(cell);
       }
     });
     return cells;
@@ -75,7 +69,7 @@ export function BombLayer({
 
   return (
     <pixiContainer>
-      {bombCells.map(({ cell }) => {
+      {bombCells.map((cell) => {
         const size = cellSize * 0.38;
         const x = cell.coordinate.x * stride + cellSize * 0.78;
         const y = cell.coordinate.y * stride + cellSize * 0.78;

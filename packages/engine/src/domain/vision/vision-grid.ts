@@ -48,10 +48,10 @@ export interface IVisionCell {
   readonly owner: ICellOwner | null;
 
   /**
-   * The perceived items in the cell.
-   * Empty if visibility is strictly less than `VISIBLE`.
+   * The perceived item in the cell.
+   * Null if no item or if visibility does not reveal it.
    */
-  readonly items: IItem[];
+  readonly item: IItem | null;
   readonly siteIndex: number | null;
 }
 

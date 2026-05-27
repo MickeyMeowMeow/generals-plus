@@ -181,7 +181,7 @@ describe("VisibilityMap", () => {
     if (!targetCell) throw new Error("target cell should exist");
 
     const bomb = new GameItem(ItemType.BOMB, "bomb-1", { x: 2, y: 2 });
-    targetCell.items.push(bomb);
+    targetCell.item = bomb;
 
     // 1. Evaluate for Attackers (who control no cells, so everything is shrouded)
     const attackerVision = new VisibilityMap(grid).evaluate(attackers);
@@ -191,8 +191,8 @@ describe("VisibilityMap", () => {
     expect(attackerPerceivedCell?.troopCount).toBeNull();
     expect(attackerPerceivedCell?.owner).toBeNull();
     // But they see the bomb item!
-    expect(attackerPerceivedCell?.items.length).toBe(1);
-    expect(attackerPerceivedCell?.items[0].type).toBe(ItemType.BOMB);
+    expect(attackerPerceivedCell?.item).not.toBeNull();
+    expect(attackerPerceivedCell?.item?.type).toBe(ItemType.BOMB);
 
     // 2. Evaluate for Defenders (who also control no cells)
     const defenderVision = new VisibilityMap(grid).evaluate(defenders);
@@ -200,7 +200,7 @@ describe("VisibilityMap", () => {
 
     expect(defenderPerceivedCell?.visibility).toBe(Visibility.SHROUDED);
     // They do NOT see the bomb item!
-    expect(defenderPerceivedCell?.items.length).toBe(0);
+    expect(defenderPerceivedCell?.item).toBeNull();
 
     // 3. Give defender player vision on (2, 2) by owning adjacent (2, 1) with vision
     const adjCell = grid.get({ x: 2, y: 1 });
@@ -216,7 +216,7 @@ describe("VisibilityMap", () => {
 
     expect(defenderPerceivedCellWithSight?.visibility).toBe(Visibility.VISIBLE);
     // Now they see the bomb item because they have vision!
-    expect(defenderPerceivedCellWithSight?.items.length).toBe(1);
-    expect(defenderPerceivedCellWithSight?.items[0].type).toBe(ItemType.BOMB);
+    expect(defenderPerceivedCellWithSight?.item).not.toBeNull();
+    expect(defenderPerceivedCellWithSight?.item?.type).toBe(ItemType.BOMB);
   });
 });

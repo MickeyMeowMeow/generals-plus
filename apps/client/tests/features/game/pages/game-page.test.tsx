@@ -96,7 +96,7 @@ function createRenderGrid(width: number, height: number) {
       visibility: Visibility.VISIBLE,
       ownerIndex: null,
       siteIndex: null,
-      items: null,
+      item: null,
     })),
   );
   return new SquareRenderGrid(width, height, gridData);

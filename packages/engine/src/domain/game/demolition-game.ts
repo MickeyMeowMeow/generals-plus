@@ -40,6 +40,10 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
   readonly bombSiteCount: number;
   readonly maxTicks: number;
   readonly seed: number;
+  private _bomb: IItem | null = null;
+  get bomb(): IItem | null {
+    return this._bomb;
+  }
 
   plantedAtSite: string | null = null;
   detonationTick: number | null = null;
@@ -131,10 +135,10 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
         const bomb = new GameItem(
           ItemType.BOMB,
           "bomb_1",
-          (generalCell as ICell).coordinate,
+          generalCell.coordinate,
         );
-        this.items.push(bomb);
-        (generalCell as ICell).items.push(bomb);
+        this._bomb = bomb;
+        generalCell.item = bomb;
       }
     }
 
@@ -234,7 +238,7 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
 
     super.nextTick();
 
-    const bomb = this.items.find((item) => item.type === ItemType.BOMB);
+    const bomb = this.bomb;
     if (bomb) {
       const bombCell = this.grid.get(bomb.coordinate);
       if (bombCell) {

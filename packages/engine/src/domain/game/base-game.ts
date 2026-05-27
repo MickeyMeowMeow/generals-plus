@@ -11,7 +11,6 @@ import type { Grid } from "#/domain/grid/grid";
 import type { GridInput } from "#/domain/grid/grid-generator";
 import { SquareGridGenerator } from "#/domain/grid/grid-generator";
 import { HexGridGenerator } from "#/domain/grid/grid-generator/hex";
-import type { IItem } from "#/domain/item/interfaces";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
 import type { Team } from "#/domain/team/interfaces";
@@ -32,7 +31,6 @@ export abstract class BaseGame implements IBaseGame {
   readonly grid: Grid;
   readonly players: Map<string, IPlayer> = new Map();
   readonly teams: Map<string, Team> = new Map();
-  readonly items: IItem[] = [];
   readonly effectRegistry = new EffectRegistry();
   protected readonly visibilityMap: VisibilityMap;
 

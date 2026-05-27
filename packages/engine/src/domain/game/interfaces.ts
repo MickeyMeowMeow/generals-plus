@@ -4,7 +4,6 @@ import type { GameMode } from "#/domain/game/game-mode";
 import type { IGameResult } from "#/domain/game/game-result";
 import type { GameStatus } from "#/domain/game/game-status";
 import type { Grid } from "#/domain/grid/grid";
-import type { IItem } from "#/domain/item/interfaces";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
@@ -33,9 +32,6 @@ export interface IBaseGame {
 
   /** Map of all teams (ID -> State). */
   readonly teams: Map<string, Team>;
-
-  /** Dynamic entities (bomb, cart, ball) based on the current mode. */
-  readonly items: IItem[];
 
   /**
    * Starts the internal tick counter and troop growth timers.

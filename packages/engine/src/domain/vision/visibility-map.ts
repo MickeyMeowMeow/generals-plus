@@ -17,13 +17,9 @@ export function createVisionCell(
   visibility: Visibility,
   teamType?: TeamType,
 ): IVisionCell {
-  const hasBomb = cell.items.some((item) => item.type === ItemType.BOMB);
+  const hasBomb = cell.item?.type === ItemType.BOMB;
   const showBombForAttackers = hasBomb && teamType === TeamType.ATTACKER;
-
-  const perceivedItems = [...cell.items];
-  const attackerPerceivedItems = showBombForAttackers
-    ? cell.items.filter((item) => item.type === ItemType.BOMB)
-    : [];
+  const attackerItem = showBombForAttackers ? cell.item : null;
 
   switch (visibility) {
     case Visibility.VISIBLE:
@@ -33,7 +29,7 @@ export function createVisionCell(
         terrain: cell.terrain,
         troopCount: cell.troopCount,
         owner: cell.owner,
-        items: perceivedItems,
+        item: cell.item,
         siteIndex: cell.siteIndex,
       };
     case Visibility.TERRAIN:
@@ -43,7 +39,7 @@ export function createVisionCell(
         terrain: cell.terrain,
         troopCount: null,
         owner: null,
-        items: attackerPerceivedItems,
+        item: attackerItem,
         siteIndex: cell.siteIndex,
       };
     case Visibility.SHROUDED:
@@ -56,7 +52,7 @@ export function createVisionCell(
             : MaskedTerrain.MAYBE_PLAIN,
         troopCount: null,
         owner: null,
-        items: attackerPerceivedItems,
+        item: attackerItem,
         siteIndex: null,
       };
     case Visibility.HIDDEN:
@@ -66,7 +62,7 @@ export function createVisionCell(
         terrain: HiddenTerrain,
         troopCount: null,
         owner: null,
-        items: attackerPerceivedItems,
+        item: attackerItem,
         siteIndex: null,
       };
   }
