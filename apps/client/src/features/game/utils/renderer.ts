@@ -18,30 +18,31 @@ export function drawCell(g: Graphics, grid: RenderGrid, coord: ICoordinate) {
       break;
     }
     case GridType.HEX: {
-      const height = Math.sqrt(3) / 2;
+      const halfSide = 1 / 3;
+      const height = Math.sqrt(3) / 3;
       g.poly([
         {
-          x: (x - 0.5) * RenderConfig.cellStride,
+          x: (x - halfSide) * RenderConfig.cellStride,
           y: (y - height) * RenderConfig.cellStride,
         },
         {
-          x: (x + 0.5) * RenderConfig.cellStride,
+          x: (x + halfSide) * RenderConfig.cellStride,
           y: (y - height) * RenderConfig.cellStride,
         },
         {
-          x: (x + 1) * RenderConfig.cellStride,
+          x: (x + 2 * halfSide) * RenderConfig.cellStride,
           y: y * RenderConfig.cellStride,
         },
         {
-          x: (x + 0.5) * RenderConfig.cellStride,
+          x: (x + halfSide) * RenderConfig.cellStride,
           y: (y + height) * RenderConfig.cellStride,
         },
         {
-          x: (x - 0.5) * RenderConfig.cellStride,
+          x: (x - halfSide) * RenderConfig.cellStride,
           y: (y + height) * RenderConfig.cellStride,
         },
         {
-          x: (x - 1) * RenderConfig.cellStride,
+          x: (x - 2 * halfSide) * RenderConfig.cellStride,
           y: y * RenderConfig.cellStride,
         },
       ]);

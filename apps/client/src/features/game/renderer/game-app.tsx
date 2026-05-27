@@ -62,11 +62,12 @@ export function GameApp({
       }
       case GridType.HEX: {
         return {
-          left: -(grid.bounds.left * 1.5 - 0.5) * RenderConfig.cellStride,
-          right: (grid.bounds.right * 1.5 - 0.5) * RenderConfig.cellStride,
-          top: (-Math.sqrt(3) * RenderConfig.cellStride) / 2,
+          left: -(grid.bounds.left - 1 / 3) * RenderConfig.cellStride,
+          right: (grid.bounds.right - 1 / 3) * RenderConfig.cellStride,
+          top: (-Math.sqrt(3) * RenderConfig.cellStride) / 3,
           bottom:
-            (Math.max(grid.bounds.leftSlant, grid.bounds.rightSlant) - 0.5) *
+            (Math.max(grid.bounds.leftSlant, grid.bounds.rightSlant) / 1.5 -
+              1 / 3) *
             Math.sqrt(3) *
             RenderConfig.cellStride,
         };
@@ -102,7 +103,6 @@ export function GameApp({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-      console.log("Key pressed:", key);
       if (key === "z") {
         e.preventDefault();
         onArmSplitMove();

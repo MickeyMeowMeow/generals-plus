@@ -588,18 +588,18 @@ export class HexGrid2D<T> implements GenericGrid2D<T, typeof GridType.HEX> {
     return leftCells + rightCells + x - this.getMinX(y);
   }
 
-  private static readonly SQRT3 = Math.sqrt(3);
+  private static readonly SQRT3_OVER_3 = Math.sqrt(3) / 3;
 
   toCartesian(coordinate: ICoordinate): { x: number; y: number } {
     return {
-      x: coordinate.x * 1.5,
-      y: (coordinate.y + coordinate.x / 2) * HexGrid2D.SQRT3,
+      x: coordinate.x,
+      y: (coordinate.y * 2 + coordinate.x) * HexGrid2D.SQRT3_OVER_3,
     };
   }
 
   fromCartesian(coordinate: ICoordinate): ICoordinate | null {
-    const fx = coordinate.x * (2 / 3);
-    const fy = coordinate.y / HexGrid2D.SQRT3 - fx / 2;
+    const fx = coordinate.x;
+    const fy = (coordinate.y / HexGrid2D.SQRT3_OVER_3 - fx) / 2;
     const fz = -fx - fy;
 
     let rx = Math.round(fx);
