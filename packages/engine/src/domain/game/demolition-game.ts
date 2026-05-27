@@ -185,6 +185,18 @@ export class DemolitionGame extends BaseGame implements IDemolitionGame {
         interval: 25,
       }),
     );
+
+    this.effectRegistry.register(
+      this.tick,
+      new TroopModifierEffect(this.tick, {
+        id: "demolition-bomb-site-troop-gen",
+        type: EffectType.TROOP_GENERATION,
+        target: this.grid,
+        terrain: Terrain.BOMB_SITE,
+        delta: 1,
+        interval: 25,
+      }),
+    );
   }
 
   protected executeAction(action: Action): boolean {
