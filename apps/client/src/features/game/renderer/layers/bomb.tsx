@@ -68,8 +68,10 @@ export function BombLayer({
     <pixiContainer>
       {bombCells.map((cell) => {
         const size = RenderConfig.cellStride * 0.38;
-        const x = (cell.coordinate.x + 0.28) * RenderConfig.cellStride;
-        const y = (cell.coordinate.y + 0.28) * RenderConfig.cellStride;
+
+        const cellCoord = grid.toCartesian(cell.coordinate);
+        const x = (cellCoord.x + 0.28) * RenderConfig.cellStride;
+        const y = (cellCoord.y + 0.28) * RenderConfig.cellStride;
 
         const icon = isPlanted
           ? flash
@@ -82,7 +84,7 @@ export function BombLayer({
 
         return (
           <pixiSprite
-            key={`bomb-${cell.coordinate.x},${cell.coordinate.y}`}
+            key={"bomb"}
             texture={texture}
             anchor={0.5}
             x={x}

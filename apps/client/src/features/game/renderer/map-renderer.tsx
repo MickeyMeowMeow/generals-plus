@@ -113,12 +113,11 @@ export function MapRenderer({
     >
       <GridLayer grid={grid} playerColors={playerColors} />
       <IconLayer grid={grid} />
-      <SiteLabelLayer grid={grid} stride={stride} cellSize={cellSize} />
+      <SiteLabelLayer grid={grid} />
       <MoveQueueLayer grid={grid} moveQueue={moveQueue} />
       <TroopLayer grid={grid} splitMoveSelection={splitMoveSelection} />
       <BombLayer
         grid={grid}
-        stride={stride}
         isPlanted={isPlanted}
         ticksRemaining={ticksRemaining}
       />
