@@ -11,22 +11,17 @@ extend({ Graphics });
 
 interface HighlightLayerProps {
   grid: RenderGrid;
-  stride: number;
   selection: ICoordinate | null;
 }
 
-export function HighlightLayer({
-  grid,
-  stride,
-  selection,
-}: HighlightLayerProps) {
+export function HighlightLayer({ grid, selection }: HighlightLayerProps) {
   const drawHighlight = useCallback(
     (g: Graphics) => {
       g.clear();
 
       // Draw selection highlight
       if (selection) {
-        drawCell(g, grid, selection, stride);
+        drawCell(g, grid, selection);
         g.stroke({
           width: RenderConfig.selectionStroke,
           color: RenderConfig.selectionColor,
@@ -34,7 +29,7 @@ export function HighlightLayer({
         });
       }
     },
-    [grid, stride, selection],
+    [grid, selection],
   );
 
   return <pixiGraphics draw={drawHighlight} />;

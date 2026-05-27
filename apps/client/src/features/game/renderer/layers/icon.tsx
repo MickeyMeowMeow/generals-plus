@@ -13,10 +13,9 @@ extend({ Container, Sprite });
 
 interface IconLayerProps {
   grid: RenderGrid;
-  stride: number;
 }
 
-export function IconLayer({ grid, stride }: IconLayerProps) {
+export function IconLayer({ grid }: IconLayerProps) {
   const iconCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; icon: string }> = [];
     grid.forEach((cell) => {
@@ -31,7 +30,8 @@ export function IconLayer({ grid, stride }: IconLayerProps) {
     <pixiContainer>
       {iconCells.map(({ cell, icon }) => {
         const { x, y } = grid.toCartesian(cell.coordinate);
-        const iconSize = Math.max(1, stride * RenderConfig.terrainIconScale);
+        const iconSize =
+          RenderConfig.cellStride * RenderConfig.terrainIconScale;
 
         return (
           <pixiSprite
@@ -40,8 +40,8 @@ export function IconLayer({ grid, stride }: IconLayerProps) {
             anchor={0.5}
             width={iconSize}
             height={iconSize}
-            x={x * stride}
-            y={y * stride}
+            x={x * RenderConfig.cellStride}
+            y={y * RenderConfig.cellStride}
           />
         );
       })}

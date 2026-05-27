@@ -129,7 +129,6 @@ export function GameApp({
           >
             <MapRenderer
               grid={grid}
-              stride={RenderConfig.cellStride}
               selection={selection}
               splitMoveSelection={splitMoveSelection}
               moveQueue={moveQueue}

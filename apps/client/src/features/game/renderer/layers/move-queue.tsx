@@ -119,15 +119,10 @@ function drawSplitArrow(
 
 interface MoveQueueLayerProps {
   grid: RenderGrid;
-  stride: number;
   moveQueue: MoveIntent[];
 }
 
-export function MoveQueueLayer({
-  grid,
-  stride,
-  moveQueue,
-}: MoveQueueLayerProps) {
+export function MoveQueueLayer({ grid, moveQueue }: MoveQueueLayerProps) {
   const drawMoveQueue = useCallback(
     (g: Graphics) => {
       g.clear();
@@ -138,7 +133,7 @@ export function MoveQueueLayer({
       // Draw move queue arrows
       moveQueue.forEach((move) => {
         // Keep the whole arrow inside the departure cell for stronger contrast.
-        const { anchorX, anchorY } = getArrowAnchor(grid, move, stride);
+        const { anchorX, anchorY } = getArrowAnchor(grid, move);
         const trigonometry = DIRECTION_TRIGONOMETRY[move.direction];
 
         if (move.type === ActionType.SPLIT_MOVE) {
@@ -153,7 +148,7 @@ export function MoveQueueLayer({
         );
       });
     },
-    [grid, moveQueue, stride],
+    [grid, moveQueue],
   );
 
   return <pixiGraphics draw={drawMoveQueue} />;

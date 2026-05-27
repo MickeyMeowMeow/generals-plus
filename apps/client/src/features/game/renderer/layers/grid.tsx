@@ -12,7 +12,6 @@ extend({ Graphics });
 
 interface GridLayerProps {
   grid: RenderGrid;
-  stride: number;
   playerColors: Map<string, number>;
 }
 
@@ -23,12 +22,12 @@ function tintColor(color: number, alpha: number): number {
   return (r << 16) | (g << 8) | b;
 }
 
-export function GridLayer({ grid, stride, playerColors }: GridLayerProps) {
+export function GridLayer({ grid, playerColors }: GridLayerProps) {
   const drawGrid = useCallback(
     (g: Graphics) => {
       g.clear();
       grid.forEach((cell) => {
-        drawCell(g, grid, cell.coordinate, stride);
+        drawCell(g, grid, cell.coordinate, RenderConfig.cellStride);
         g.stroke({
           width: RenderConfig.cellStroke,
           color: RenderConfig.background,
@@ -49,7 +48,7 @@ export function GridLayer({ grid, stride, playerColors }: GridLayerProps) {
         g.fill(color);
       });
     },
-    [grid, stride, playerColors],
+    [grid, playerColors],
   );
 
   return <pixiGraphics draw={drawGrid} />;

@@ -12,6 +12,7 @@ import { MoveQueueLayer } from "#/features/game/renderer/layers/move-queue";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { PingLayer } from "#/features/game/renderer/layers/ping";
 import { TroopLayer } from "#/features/game/renderer/layers/troop";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
 
@@ -19,7 +20,6 @@ extend({ Container });
 
 interface MapRendererProps {
   grid: RenderGrid;
-  stride: number;
   selection: ICoordinate | null;
   splitMoveSelection: ICoordinate | null;
   moveQueue: MoveIntent[];
@@ -31,7 +31,6 @@ interface MapRendererProps {
 
 export function MapRenderer({
   grid,
-  stride,
   selection,
   splitMoveSelection,
   moveQueue,
@@ -49,24 +48,24 @@ export function MapRenderer({
     switch (grid.gridType) {
       case GridType.SQUARE: {
         return new Rectangle(
-          -stride / 2,
-          -stride / 2,
-          grid.bounds.width * stride,
-          grid.bounds.height * stride,
+          -RenderConfig.cellStride / 2,
+          -RenderConfig.cellStride / 2,
+          grid.bounds.width * RenderConfig.cellStride,
+          grid.bounds.height * RenderConfig.cellStride,
         );
       }
       case GridType.HEX: {
         return new Rectangle();
       }
     }
-  }, [grid.gridType, grid.bounds, stride]);
+  }, [grid.gridType, grid.bounds]);
 
   const onPointerDown = useCallback(
     (e: FederatedPointerEvent) => {
       const localPos = e.currentTarget.toLocal(e.global);
       const coord = grid.fromCartesian({
-        x: localPos.x / stride,
-        y: localPos.y / stride,
+        x: localPos.x / RenderConfig.cellStride,
+        y: localPos.y / RenderConfig.cellStride,
       });
       if (!coord) return;
 
@@ -95,7 +94,7 @@ export function MapRenderer({
         lastPrimaryClickRef.current = { coord, time: now };
       }
     },
-    [grid.fromCartesian, stride, onCellClick, onSplitMoveCell],
+    [grid.fromCartesian, onCellClick, onSplitMoveCell],
   );
 
   return (
@@ -104,16 +103,12 @@ export function MapRenderer({
       hitArea={hitArea}
       onPointerDown={onPointerDown}
     >
-      <GridLayer grid={grid} stride={stride} playerColors={playerColors} />
-      <IconLayer grid={grid} stride={stride} />
-      <MoveQueueLayer grid={grid} stride={stride} moveQueue={moveQueue} />
-      <TroopLayer
-        grid={grid}
-        stride={stride}
-        splitMoveSelection={splitMoveSelection}
-      />
-      <HighlightLayer grid={grid} stride={stride} selection={selection} />
-      <PingLayer grid={grid} pings={pings} stride={stride} />
+      <GridLayer grid={grid} playerColors={playerColors} />
+      <IconLayer grid={grid} />
+      <MoveQueueLayer grid={grid} moveQueue={moveQueue} />
+      <TroopLayer grid={grid} splitMoveSelection={splitMoveSelection} />
+      <HighlightLayer grid={grid} selection={selection} />
+      <PingLayer grid={grid} pings={pings} />
     </pixiContainer>
   );
 }

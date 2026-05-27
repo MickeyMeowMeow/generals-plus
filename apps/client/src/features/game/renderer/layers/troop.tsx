@@ -14,7 +14,6 @@ extend({ Container, Text });
 
 interface TroopLayerProps {
   grid: RenderGrid;
-  stride: number;
   splitMoveSelection: ICoordinate | null;
 }
 
@@ -36,11 +35,7 @@ const troopTextStyle = new TextStyle({
   },
 });
 
-export function TroopLayer({
-  grid,
-  stride,
-  splitMoveSelection,
-}: TroopLayerProps) {
+export function TroopLayer({ grid, splitMoveSelection }: TroopLayerProps) {
   const troopCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; text: string }> = [];
     grid.forEach((cell) => {
@@ -66,8 +61,8 @@ export function TroopLayer({
             key={`troop-${cell.coordinate.x},${cell.coordinate.y}`}
             text={text}
             anchor={0.5}
-            x={x * stride}
-            y={y * stride}
+            x={x * RenderConfig.cellStride}
+            y={y * RenderConfig.cellStride}
             style={troopTextStyle}
           />
         );
