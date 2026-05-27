@@ -8,6 +8,8 @@ import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
 import type { Grid } from "#/domain/grid/grid";
 import { SquareGrid } from "#/domain/grid/grid";
+import { GameItem } from "#/domain/item/item";
+import { ItemType } from "#/domain/item/item-type";
 import { Player } from "#/domain/player/player";
 import { PlayerStatus } from "#/domain/player/player-status";
 import { StandardTeam } from "#/domain/team/team";
@@ -223,5 +225,96 @@ describe("StandardCombatResolver", () => {
     expect(resourceCell.owner).toBe(p1);
     expect(resourceCell.troopCount).toBe(8);
     expect(p2.status).toBe(PlayerStatus.ELIMINATED);
+  });
+
+  it("carries item only on successful occupation (conquest or reinforcement)", () => {
+    const resolver = new StandardCombatResolver();
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1");
+    const p2 = new Player(t2, "p2");
+    const players = new Map([
+      ["p1", p1],
+      ["p2", p2],
+    ]);
+
+    // 1. Success attack -> item transfers
+    const grid1 = createGrid();
+    const s1 = grid1.get({ x: 0, y: 0 });
+    const d1 = grid1.get({ x: 1, y: 0 });
+    if (!s1 || !d1) throw new Error("cells should exist");
+    s1.owner = p1;
+    s1.troopCount = 10;
+    d1.owner = p2;
+    d1.troopCount = 5;
+
+    const bomb1 = new GameItem(ItemType.BOMB, "bomb-1", { x: 0, y: 0 });
+    s1.item = bomb1;
+
+    expect(resolver.execute(createMoveAction(), grid1, players)).toBe(true);
+    expect(d1.owner).toBe(p1);
+    expect(s1.item).toBeNull();
+    expect(d1.item).toBe(bomb1);
+    expect(bomb1.coordinate).toEqual({ x: 1, y: 0 });
+
+    // 2. Failed attack -> item does NOT transfer
+    const grid2 = createGrid();
+    const s2 = grid2.get({ x: 0, y: 0 });
+    const d2 = grid2.get({ x: 1, y: 0 });
+    if (!s2 || !d2) throw new Error("cells should exist");
+    s2.owner = p1;
+    s2.troopCount = 5;
+    d2.owner = p2;
+    d2.troopCount = 10;
+
+    const bomb2 = new GameItem(ItemType.BOMB, "bomb-2", { x: 0, y: 0 });
+    s2.item = bomb2;
+
+    expect(resolver.execute(createMoveAction(), grid2, players)).toBe(true);
+    expect(d2.owner).toBe(p2);
+    expect(s2.item).toBe(bomb2);
+    expect(d2.item).toBeNull();
+    expect(bomb2.coordinate).toEqual({ x: 0, y: 0 });
+
+    // 3. Reinforcement -> item transfers
+    const grid3 = createGrid();
+    const s3 = grid3.get({ x: 0, y: 0 });
+    const d3 = grid3.get({ x: 1, y: 0 });
+    if (!s3 || !d3) throw new Error("cells should exist");
+    s3.owner = p1;
+    s3.troopCount = 10;
+    d3.owner = p1;
+    d3.troopCount = 2;
+
+    const bomb3 = new GameItem(ItemType.BOMB, "bomb-3", { x: 0, y: 0 });
+    s3.item = bomb3;
+
+    expect(resolver.execute(createMoveAction(), grid3, players)).toBe(true);
+    expect(d3.owner).toBe(p1);
+    expect(s3.item).toBeNull();
+    expect(d3.item).toBe(bomb3);
+    expect(bomb3.coordinate).toEqual({ x: 1, y: 0 });
+
+    // 4. Item does not move if target already has an item
+    const grid4 = createGrid();
+    const s4 = grid4.get({ x: 0, y: 0 });
+    const d4 = grid4.get({ x: 1, y: 0 });
+    if (!s4 || !d4) throw new Error("cells should exist");
+    s4.owner = p1;
+    s4.troopCount = 10;
+    d4.owner = p2;
+    d4.troopCount = 3;
+
+    const bomb4 = new GameItem(ItemType.BOMB, "bomb-4", { x: 0, y: 0 });
+    const blocker = new GameItem(ItemType.BOMB, "blocker", { x: 1, y: 0 });
+    s4.item = bomb4;
+    d4.item = blocker;
+
+    expect(resolver.execute(createMoveAction(), grid4, players)).toBe(true);
+    expect(d4.owner).toBe(p1);
+    // bomb4 stays because d4 already has blocker
+    expect(s4.item).toBe(bomb4);
+    expect(d4.item).toBe(blocker);
+    expect(bomb4.coordinate).toEqual({ x: 0, y: 0 });
   });
 });

@@ -1,6 +1,7 @@
 import { GameMode, GridType } from "@generals-plus/engine";
 import type {
   ClassicSetupSettings,
+  DemolitionSetupSettings,
   DominationSetupSettings,
   SetupSettings,
   SetupState,
@@ -38,7 +39,8 @@ type ExtractNumberKeys<T> = {
 type NumberKeys =
   | ExtractNumberKeys<ClassicSetupSettings>
   | ExtractNumberKeys<TurfWarSetupSettings>
-  | ExtractNumberKeys<DominationSetupSettings>;
+  | ExtractNumberKeys<DominationSetupSettings>
+  | ExtractNumberKeys<DemolitionSetupSettings>;
 
 const PLAYER_NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "maxPlayers", label: "Max Players" },
@@ -74,6 +76,13 @@ const MODE_SPECIFIC_FIELDS: Partial<
     { key: "duration", label: "Duration (s)" },
     { key: "flagCount", label: "Flag Count" },
     { key: "targetScore", label: "Target Score" },
+  ],
+  [GameMode.DEMOLITION]: [
+    { key: "duration", label: "Duration (s)" },
+    { key: "bombSiteCount", label: "Bomb Site Count" },
+    { key: "plantDuration", label: "Plant Duration (s)" },
+    { key: "defuseDuration", label: "Defuse Duration (s)" },
+    { key: "detonateDuration", label: "Detonate Duration (s)" },
   ],
 };
 

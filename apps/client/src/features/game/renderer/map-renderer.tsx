@@ -5,12 +5,14 @@ import type { FederatedPointerEvent } from "pixi.js";
 import { Container, Rectangle } from "pixi.js";
 import { useCallback, useMemo, useRef } from "react";
 
+import { BombLayer } from "#/features/game/renderer/layers/bomb";
 import { GridLayer } from "#/features/game/renderer/layers/grid";
 import { HighlightLayer } from "#/features/game/renderer/layers/highlight";
 import { IconLayer } from "#/features/game/renderer/layers/icon";
 import { MoveQueueLayer } from "#/features/game/renderer/layers/move-queue";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { PingLayer } from "#/features/game/renderer/layers/ping";
+import { SiteLabelLayer } from "#/features/game/renderer/layers/site-label";
 import { TroopLayer } from "#/features/game/renderer/layers/troop";
 import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
@@ -33,6 +35,8 @@ interface MapRendererProps {
   onSplitMoveCell: (coordinate: ICoordinate) => void;
   playerColors: Map<string, number>;
   pings: Ping[];
+  isPlanted?: boolean;
+  ticksRemaining?: number;
 }
 
 export function MapRenderer({
@@ -45,6 +49,8 @@ export function MapRenderer({
   onSplitMoveCell,
   playerColors,
   pings,
+  isPlanted = false,
+  ticksRemaining = -1,
 }: MapRendererProps) {
   const lastPrimaryClickRef = useRef<{
     coord: ICoordinate;
@@ -107,8 +113,15 @@ export function MapRenderer({
     >
       <GridLayer grid={grid} playerColors={playerColors} />
       <IconLayer grid={grid} />
+      <SiteLabelLayer grid={grid} stride={stride} cellSize={cellSize} />
       <MoveQueueLayer grid={grid} moveQueue={moveQueue} />
       <TroopLayer grid={grid} splitMoveSelection={splitMoveSelection} />
+      <BombLayer
+        grid={grid}
+        stride={stride}
+        isPlanted={isPlanted}
+        ticksRemaining={ticksRemaining}
+      />
       <HighlightLayer grid={grid} selection={selection} />
       <PingLayer grid={grid} pings={pings} />
     </pixiContainer>

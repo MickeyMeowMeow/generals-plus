@@ -4,6 +4,7 @@ import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import type { CombatResolver } from "#/domain/combat/interfaces";
 import type { IGrid } from "#/domain/grid/interfaces";
+import type { IItem } from "#/domain/item/interfaces";
 import type { IPlayer } from "#/domain/player/interfaces";
 
 /**
@@ -14,6 +15,8 @@ import type { IPlayer } from "#/domain/player/interfaces";
  * - Leaves the general capture behavior to subclasses.
  */
 export abstract class BaseCombatResolver implements CombatResolver {
+  canMoveItem?: (item: IItem, player: IPlayer) => boolean;
+
   execute(
     action: MoveAction,
     grid: IGrid,
@@ -68,6 +71,8 @@ export abstract class BaseCombatResolver implements CombatResolver {
     // Deduct troops from source
     source.addTroops(-movingTroops);
 
+    let isSuccessfulOccupation = false;
+
     if (isAllied) {
       // Reinforce (including taking ownership if it was a teammate's tile)
       // Ownership transfers only if it's not a general, troops are merged regardless
@@ -75,6 +80,7 @@ export abstract class BaseCombatResolver implements CombatResolver {
         target.owner = attacker;
       }
       target.troopCount = (target.troopCount ?? 0) + movingTroops;
+      isSuccessfulOccupation = true;
     } else {
       // Attack
       const targetTroops = target.troopCount ?? 0;
@@ -83,6 +89,7 @@ export abstract class BaseCombatResolver implements CombatResolver {
         // Attack succeeds, ownership transfers
         target.owner = attacker;
         target.troopCount = movingTroops - targetTroops;
+        isSuccessfulOccupation = true;
 
         if (
           target.terrain === Terrain.GENERAL &&
@@ -103,6 +110,17 @@ export abstract class BaseCombatResolver implements CombatResolver {
       } else {
         // Attack fails, defender keeps ownership and remaining troops
         target.troopCount = targetTroops - movingTroops;
+      }
+    }
+
+    // Move item from source cell to target cell if occupation is successful
+    if (isSuccessfulOccupation && source.item !== null) {
+      if (!this.canMoveItem || this.canMoveItem(source.item, attacker)) {
+        if (target.item === null) {
+          source.item.coordinate = target.coordinate;
+          target.item = source.item;
+          source.item = null;
+        }
       }
     }
 

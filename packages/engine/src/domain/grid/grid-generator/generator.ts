@@ -40,6 +40,8 @@ export abstract class AbstractGridGenerator<
   TerrainGrid extends GenericGrid2D<Terrain>,
   G extends Grid,
 > {
+  protected bombSites: ICoordinate[] = [];
+
   generate(options: GridGeneratorOptions<T> = {}): G {
     const config = this.resolveOptions(options);
     const seed = options.seed ?? DefaultGenOptions.seed;
@@ -66,6 +68,7 @@ export abstract class AbstractGridGenerator<
     config: ResolvedConfig<T>,
     rng: SeededRandom,
   ): G | null {
+    this.bombSites = [];
     const terrainGrid: TerrainGrid = this.createEmptyTerrainGrid(config);
 
     const generals = this.placeGenerals(config, rng, terrainGrid);
@@ -80,6 +83,8 @@ export abstract class AbstractGridGenerator<
     this.placeCities(config, rng, terrainGrid, protectedZone, generals);
 
     this.placeFlags(config, rng, terrainGrid, protectedZone, generals);
+
+    this.placeBombSites(config, rng, terrainGrid, protectedZone, generals);
 
     if (!this.checkGeneralConnectivity(terrainGrid, generals)) {
       return null;
@@ -104,6 +109,8 @@ export abstract class AbstractGridGenerator<
     const mountainRate = options.mountainRate ?? DefaultGenOptions.mountainRate;
     const cityRate = options.cityRate ?? DefaultGenOptions.cityRate;
     const flagCount = "flagCount" in options ? (options.flagCount ?? 0) : 0;
+    const bombSiteCount =
+      "bombSiteCount" in options ? (options.bombSiteCount ?? 0) : 0;
     const generalCount = options.generalCount ?? DefaultGenOptions.generalCount;
     const minGeneralDistanceFactor =
       options.minGeneralDistanceFactor ??
@@ -129,12 +136,18 @@ export abstract class AbstractGridGenerator<
     if (flagCount < 0) {
       throw new Error(`Flag count must be at least 0, got ${flagCount}.`);
     }
+    if (bombSiteCount < 0) {
+      throw new Error(
+        `Bomb site count must be at least 0, got ${bombSiteCount}.`,
+      );
+    }
 
     return {
       gridBounds,
       mountainRate,
       cityRate,
       flagCount,
+      bombSiteCount,
       generalCount,
       minGeneralDistanceFactor,
       generalInitialTroops,
@@ -344,6 +357,62 @@ export abstract class AbstractGridGenerator<
     }
   }
 
+  // ── Step 5b: place bomb sites (center-weighted) ──────────────────
+
+  protected placeBombSites(
+    config: ResolvedConfig<T>,
+    rng: SeededRandom,
+    terrainGrid: TerrainGrid,
+    protectedZone: Set<string>,
+    generals: ICoordinate[],
+  ): void {
+    const { bombSiteCount } = config;
+    if (bombSiteCount === 0) return;
+
+    const coords: ICoordinate[] = this.findCandidates(
+      protectedZone,
+      terrainGrid,
+      Terrain.PLAIN,
+      generals,
+      3, // MIN_FLAG_GENERAL_DISTANCE
+    );
+
+    const distances: number[] = coords.map((coord) =>
+      terrainGrid.getDistanceToCenter(coord),
+    );
+
+    const maxDist = Math.max(...distances);
+
+    const candidates: { coord: ICoordinate; weight: number }[] = coords.map(
+      (coord, idx) => ({ coord, weight: maxDist - distances[idx] }),
+    );
+
+    let placed = 0;
+    for (let i = 0; i < bombSiteCount && candidates.length > 0; i++) {
+      const idx = rng.weightedIndex(candidates.map((c) => c.weight));
+      const { coord } = candidates[idx];
+
+      terrainGrid.set(coord, Terrain.BOMB_SITE);
+      this.bombSites.push(coord);
+      placed++;
+      candidates.splice(idx, 1);
+
+      // Remove candidates too close to the placed bomb site
+      for (let j = candidates.length - 1; j >= 0; j--) {
+        if (terrainGrid.getDistance(candidates[j].coord, coord) < 3) {
+          candidates.splice(j, 1);
+        }
+      }
+    }
+
+    if (placed !== bombSiteCount) {
+      throw new Error(
+        `Unable to place requested number of bomb sites: requested ${bombSiteCount}, placed ${placed}. ` +
+          `Map generation constraints exhausted the candidate pool.`,
+      );
+    }
+  }
+
   // ── Step 6: materialize ──────────────────────────────────────────
 
   protected abstract materializeCells(
@@ -357,6 +426,7 @@ export abstract class AbstractGridGenerator<
     coordinate: ICoordinate,
   ): Cell {
     let troopCount: number | null;
+    let siteIndex: number | null = null;
     switch (terrain) {
       case Terrain.GENERAL: {
         troopCount =
@@ -369,11 +439,19 @@ export abstract class AbstractGridGenerator<
           options.cityInitialTroops ?? DefaultGenOptions.cityInitialTroops;
         break;
       }
+      case Terrain.BOMB_SITE: {
+        troopCount = null;
+        const index = this.bombSites.findIndex(
+          (c) => c.x === coordinate.x && c.y === coordinate.y,
+        );
+        siteIndex = index !== -1 ? index : null;
+        break;
+      }
       default: {
         troopCount = null;
       }
     }
-    return new Cell({ coordinate, terrain, troopCount });
+    return new Cell({ coordinate, terrain, troopCount, siteIndex });
   }
 
   protected checkGeneralConnectivity(

@@ -528,13 +528,22 @@ export class MatchRoom extends Room<{
     vision.cells.clear();
 
     for (const vc of visionGrid) {
-      const cell = new VisionCellSchema().assign({
-        visibility: vc.visibility,
-        terrain: vc.terrain,
-        troopCount: vc.troopCount ?? -1,
-        ownerIndex:
-          vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "",
-      });
+      const cell = new VisionCellSchema();
+      cell.visibility = vc.visibility;
+      cell.terrain = vc.terrain;
+      cell.troopCount = vc.troopCount ?? -1;
+      cell.ownerIndex =
+        vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "";
+      cell.siteIndex = vc.siteIndex ?? -1;
+
+      if (vc.item) {
+        cell.item_id = vc.item.id;
+        cell.item_type = vc.item.type;
+      } else {
+        cell.item_id = "";
+        cell.item_type = -1;
+      }
+
       vision.cells.push(cell);
     }
   }

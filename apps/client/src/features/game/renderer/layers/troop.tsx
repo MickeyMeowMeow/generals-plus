@@ -17,7 +17,7 @@ interface TroopLayerProps {
   splitMoveSelection: ICoordinate | null;
 }
 
-const troopTextStyle = new TextStyle({
+const TROOP_TEXT_STYLE = new TextStyle({
   fontFamily: RenderConfig.troopTextFontFamily,
   fontSize: RenderConfig.cellStride * RenderConfig.troopTextFontSizeRatio,
   fontWeight: RenderConfig.troopTextFontWeight,
@@ -63,7 +63,7 @@ export function TroopLayer({ grid, splitMoveSelection }: TroopLayerProps) {
             anchor={0.5}
             x={x * RenderConfig.cellStride}
             y={y * RenderConfig.cellStride}
-            style={troopTextStyle}
+            style={TROOP_TEXT_STYLE}
           />
         );
       })}

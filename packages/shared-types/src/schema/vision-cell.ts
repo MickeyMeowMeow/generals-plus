@@ -7,6 +7,9 @@ export class VisionCellSchema extends Schema {
   @type("string") terrain: VisionTerrain = HiddenTerrain;
   @type("number") troopCount: number = -1;
   @type("string") ownerIndex: string = "";
+  @type("number") siteIndex: number = -1;
+  @type("string") item_id: string = "";
+  @type("number") item_type: number = -1;
 }
 
 export class ClientVision extends Schema {

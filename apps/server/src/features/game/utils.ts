@@ -1,6 +1,9 @@
 import type { GridInput, IBaseGame } from "@generals-plus/engine";
 import {
+  AttackerTeam,
   ClassicGame,
+  DefenderTeam,
+  DemolitionGame,
   DominationGame,
   GameMode,
   GridType,
@@ -36,14 +39,25 @@ interface DominationCreateGameOptions extends BaseCreateGameOptions {
   targetScore?: number;
 }
 
+interface DemolitionCreateGameOptions extends BaseCreateGameOptions {
+  mode: typeof GameMode.DEMOLITION;
+  finishTick?: number;
+  plantDurationTicks?: number;
+  defuseDurationTicks?: number;
+  detonateDurationTicks?: number;
+  bombSiteCount?: number;
+  seed?: number;
+}
+
 interface OtherCreateGameOptions extends BaseCreateGameOptions {
-  mode: Exclude<GameMode, "classic" | "turf_war" | "domination">;
+  mode: Exclude<GameMode, "classic" | "turf_war" | "domination" | "demolition">;
 }
 
 export type CreateGameOptions =
   | ClassicCreateGameOptions
   | TurfWarCreateGameOptions
   | DominationCreateGameOptions
+  | DemolitionCreateGameOptions
   | OtherCreateGameOptions;
 
 /**
@@ -151,6 +165,37 @@ export function createGame(options: CreateGameOptions): IBaseGame {
           );
         }
 
+        const player = new Player(team, playerId);
+        team.addPlayer(player);
+        game.players.set(playerId, player);
+      }
+
+      return game;
+    }
+    case GameMode.DEMOLITION: {
+      const game = new DemolitionGame(
+        {
+          gridType: GridType.SQUARE,
+          ...options.gridOptions,
+        },
+        {
+          finishTick: options.finishTick,
+          plantDurationTicks: options.plantDurationTicks,
+          defuseDurationTicks: options.defuseDurationTicks,
+          detonateDurationTicks: options.detonateDurationTicks,
+          bombSiteCount: options.bombSiteCount,
+          seed: options.seed,
+        },
+      );
+
+      const attackers = new AttackerTeam("attackers");
+      const defenders = new DefenderTeam("defenders");
+      game.teams.set("attackers", attackers);
+      game.teams.set("defenders", defenders);
+
+      // Partition playerIds half and half into Attackers and Defenders
+      for (const [i, playerId] of options.playerIds.entries()) {
+        const team = i % 2 === 0 ? attackers : defenders;
         const player = new Player(team, playerId);
         team.addPlayer(player);
         game.players.set(playerId, player);

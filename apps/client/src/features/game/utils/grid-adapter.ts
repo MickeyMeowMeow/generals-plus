@@ -31,6 +31,11 @@ export function createRenderGrid<T extends GridType>(
     terrain: cellVision.terrain,
     troopCount: cellVision.troopCount === -1 ? null : cellVision.troopCount,
     ownerIndex: cellVision.ownerIndex || null,
+    siteIndex: cellVision.siteIndex === -1 ? null : cellVision.siteIndex,
+    item:
+      cellVision.item_type !== -1
+        ? { id: cellVision.item_id, type: cellVision.item_type }
+        : null,
   });
 
   switch (shape.gridType) {

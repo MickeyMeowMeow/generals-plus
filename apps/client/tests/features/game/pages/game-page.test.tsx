@@ -95,6 +95,8 @@ function createRenderGrid(width: number, height: number) {
       troopCount: null,
       visibility: Visibility.VISIBLE,
       ownerIndex: null,
+      siteIndex: null,
+      item: null,
     })),
   );
   return new SquareRenderGrid(width, height, gridData);
