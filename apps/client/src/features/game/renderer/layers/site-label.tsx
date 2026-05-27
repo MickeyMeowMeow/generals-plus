@@ -50,13 +50,6 @@ export function SiteLabelLayer({
         color: 0x111111,
         width: 6,
       },
-      dropShadow: {
-        color: 0x000000,
-        alpha: 0.6,
-        blur: 4,
-        distance: 2,
-        angle: Math.PI / 4,
-      },
     });
   }, [cellSize]);
 
