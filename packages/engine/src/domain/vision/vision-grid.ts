@@ -53,6 +53,7 @@ export interface IVisionCell {
    */
   readonly item: IItem | null;
   readonly siteIndex: number | null;
+  readonly willCollapse: boolean;
 }
 
 /**

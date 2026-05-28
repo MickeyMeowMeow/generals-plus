@@ -36,6 +36,7 @@ export function createRenderGrid(
       cellVision.item_type !== -1
         ? { id: cellVision.item_id, type: cellVision.item_type }
         : null,
+    willCollapse: cellVision.willCollapse,
   });
 
   switch (shape.gridType) {

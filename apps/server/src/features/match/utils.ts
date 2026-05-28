@@ -10,6 +10,9 @@ export interface ModeSettings {
   plantDuration?: number;
   defuseDuration?: number;
   detonateDuration?: number;
+  collapseInterval?: number;
+  startDelay?: number;
+  collapseShape?: string;
 }
 
 export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
@@ -21,6 +24,11 @@ export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
     plantDuration: 3,
     defuseDuration: 5,
     detonateDuration: 45,
+  },
+  [GameMode.COLLAPSE]: {
+    startDelay: 60,
+    collapseInterval: 30,
+    collapseShape: "circle",
   },
 };
 

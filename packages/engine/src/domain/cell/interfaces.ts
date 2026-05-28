@@ -20,6 +20,9 @@ export interface ICell extends EffectTarget {
   /** Terrain type of the cell. */
   terrain: Terrain;
 
+  /** Whether this cell is going to collapse in the next collapse tick. */
+  willCollapse: boolean;
+
   /**
    * Whether the cell can be traversed or occupied.
    * Impassable cells always have null troops and no owner.

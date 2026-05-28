@@ -45,6 +45,10 @@ export class SetupState extends Schema {
   @type("number") defuseDuration: number = 5;
   @type("number") detonateDuration: number = 45;
 
+  @type("number") collapseInterval: number = 30;
+  @type("number") startDelay: number = 60;
+  @type("string") collapseShape: string = "circle";
+
   @type("number") tickInterval: number = 500;
   @type("number") finishTick: number = 360;
 }

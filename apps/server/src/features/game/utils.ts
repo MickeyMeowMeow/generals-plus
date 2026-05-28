@@ -2,6 +2,7 @@ import type { GridInput, IBaseGame } from "@generals-plus/engine";
 import {
   AttackerTeam,
   ClassicGame,
+  CollapseGame,
   DefenderTeam,
   DemolitionGame,
   DominationGame,
@@ -49,8 +50,18 @@ interface DemolitionCreateGameOptions extends BaseCreateGameOptions {
   seed?: number;
 }
 
+interface CollapseCreateGameOptions extends BaseCreateGameOptions {
+  mode: typeof GameMode.COLLAPSE;
+  startDelayTicks?: number;
+  shrinkIntervalTicks?: number;
+  collapseShape?: "circle" | "square";
+}
+
 interface OtherCreateGameOptions extends BaseCreateGameOptions {
-  mode: Exclude<GameMode, "classic" | "turf_war" | "domination" | "demolition">;
+  mode: Exclude<
+    GameMode,
+    "classic" | "turf_war" | "domination" | "demolition" | "collapse"
+  >;
 }
 
 export type CreateGameOptions =
@@ -58,6 +69,7 @@ export type CreateGameOptions =
   | TurfWarCreateGameOptions
   | DominationCreateGameOptions
   | DemolitionCreateGameOptions
+  | CollapseCreateGameOptions
   | OtherCreateGameOptions;
 
 /**
@@ -68,6 +80,44 @@ export type CreateGameOptions =
  */
 export function createGame(options: CreateGameOptions): IBaseGame {
   switch (options.mode) {
+    case GameMode.COLLAPSE: {
+      const game = new CollapseGame(
+        {
+          gridType: GridType.SQUARE,
+          ...options.gridOptions,
+        },
+        {
+          startDelayTicks: options.startDelayTicks,
+          shrinkIntervalTicks: options.shrinkIntervalTicks,
+          collapseShape: options.collapseShape,
+        },
+      );
+
+      const teamsCount = Math.ceil(
+        options.playerIds.length / options.playerPerTeam,
+      );
+      for (let i = 0; i < teamsCount; i++) {
+        const teamId = `team_${i}`;
+        const team = new StandardTeam(teamId);
+        game.teams.set(teamId, team);
+      }
+
+      for (const [i, playerId] of options.playerIds.entries()) {
+        const teamId = `team_${i % teamsCount}`;
+        const team = game.teams.get(teamId);
+        if (!team) {
+          throw new Error(
+            `Team with id "${teamId}" not found for player "${playerId}".`,
+          );
+        }
+
+        const player = new Player(team, playerId);
+        team.addPlayer(player);
+        game.players.set(playerId, player);
+      }
+
+      return game;
+    }
     case GameMode.CLASSIC: {
       const game = new ClassicGame({
         gridType: GridType.SQUARE,

@@ -46,6 +46,13 @@ export interface DemolitionSetupSettings extends BaseSetupSettings {
   detonateDuration: number;
 }
 
+export interface CollapseSetupSettings extends BaseSetupSettings {
+  gameMode: typeof GameMode.COLLAPSE;
+  collapseInterval: number;
+  startDelay: number;
+  collapseShape: "circle" | "square";
+}
+
 export interface OtherSettings extends BaseSetupSettings {
   gameMode: Exclude<
     GameMode,
@@ -53,6 +60,7 @@ export interface OtherSettings extends BaseSetupSettings {
     | typeof GameMode.TURF_WAR
     | typeof GameMode.DOMINATION
     | typeof GameMode.DEMOLITION
+    | typeof GameMode.COLLAPSE
   >;
 }
 
@@ -61,4 +69,5 @@ export type SetupSettings =
   | TurfWarSetupSettings
   | DominationSetupSettings
   | DemolitionSetupSettings
+  | CollapseSetupSettings
   | OtherSettings;

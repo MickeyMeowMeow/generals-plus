@@ -141,6 +141,15 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     if (modeDefaults?.detonateDuration !== undefined) {
       state.detonateDuration = modeDefaults.detonateDuration;
     }
+    if (modeDefaults?.collapseInterval !== undefined) {
+      state.collapseInterval = modeDefaults.collapseInterval;
+    }
+    if (modeDefaults?.startDelay !== undefined) {
+      state.startDelay = modeDefaults.startDelay;
+    }
+    if (modeDefaults?.collapseShape !== undefined) {
+      state.collapseShape = modeDefaults.collapseShape;
+    }
 
     this.state = state;
 
@@ -319,6 +328,20 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         return;
       }
 
+      if (
+        (update.collapseInterval !== undefined ||
+          update.startDelay !== undefined ||
+          update.collapseShape !== undefined) &&
+        activeMode !== GameMode.COLLAPSE
+      ) {
+        this.sendValidationFailed(client, {
+          severity: "warning",
+          field: "collapseInterval",
+          message: "Collapse fields are only available in Collapse mode.",
+        });
+        return;
+      }
+
       // When gameMode changes without an explicit playersPerTeam, reset to the
       // mode default so the host doesn't carry a stale value across modes.
       if (
@@ -372,6 +395,24 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           modeDefaults?.detonateDuration !== undefined
         ) {
           this.state.detonateDuration = modeDefaults.detonateDuration;
+        }
+        if (
+          update.collapseInterval === undefined &&
+          modeDefaults?.collapseInterval !== undefined
+        ) {
+          this.state.collapseInterval = modeDefaults.collapseInterval;
+        }
+        if (
+          update.startDelay === undefined &&
+          modeDefaults?.startDelay !== undefined
+        ) {
+          this.state.startDelay = modeDefaults.startDelay;
+        }
+        if (
+          update.collapseShape === undefined &&
+          modeDefaults?.collapseShape !== undefined
+        ) {
+          this.state.collapseShape = modeDefaults.collapseShape;
         }
       }
 
@@ -648,6 +689,20 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           ),
           bombSiteCount: this.state.bombSiteCount,
           seed: this.state.seed,
+        };
+      case GameMode.COLLAPSE:
+        return {
+          ...base,
+          mode: GameMode.COLLAPSE,
+          startDelayTicks: calculateFinishTick(
+            this.state.startDelay,
+            this.state.tickInterval,
+          ),
+          shrinkIntervalTicks: calculateFinishTick(
+            this.state.collapseInterval,
+            this.state.tickInterval,
+          ),
+          collapseShape: this.state.collapseShape as "circle" | "square",
         };
       default:
         return { ...base, mode: this.state.gameMode };

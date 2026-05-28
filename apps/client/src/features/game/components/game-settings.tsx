@@ -1,6 +1,7 @@
 import { GameMode, GridType } from "@generals-plus/engine";
 import type {
   ClassicSetupSettings,
+  CollapseSetupSettings,
   DemolitionSetupSettings,
   DominationSetupSettings,
   SetupSettings,
@@ -40,7 +41,8 @@ type NumberKeys =
   | ExtractNumberKeys<ClassicSetupSettings>
   | ExtractNumberKeys<TurfWarSetupSettings>
   | ExtractNumberKeys<DominationSetupSettings>
-  | ExtractNumberKeys<DemolitionSetupSettings>;
+  | ExtractNumberKeys<DemolitionSetupSettings>
+  | ExtractNumberKeys<CollapseSetupSettings>;
 
 const PLAYER_NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "maxPlayers", label: "Max Players" },
@@ -84,6 +86,10 @@ const MODE_SPECIFIC_FIELDS: Partial<
     { key: "defuseDuration", label: "Defuse Duration (s)" },
     { key: "detonateDuration", label: "Detonate Duration (s)" },
   ],
+  [GameMode.COLLAPSE]: [
+    { key: "startDelay", label: "Start Delay (s)" },
+    { key: "collapseInterval", label: "Collapse Interval (s)" },
+  ],
 };
 
 const GAME_SPEED_OPTIONS = [0.5, 1, 2, 4];
@@ -91,6 +97,11 @@ const GAME_SPEED_OPTIONS = [0.5, 1, 2, 4];
 const MAP_TYPE_OPTIONS = [
   { id: GridType.SQUARE, label: "Square" },
   { id: GridType.HEX, label: "Hexagon" },
+];
+
+const SHAPE_OPTIONS = [
+  { id: "circle", label: "Circle" },
+  { id: "square", label: "Square" },
 ];
 
 /** Rounds a value to a consistent precision to avoid floating-point nonsense. */
@@ -320,6 +331,38 @@ export function GameSettings({
         {/* --- MODE SPECIFIC SETTINGS --- */}
         {(MODE_SPECIFIC_FIELDS[currentSettings.gameMode] ?? []).map(
           renderNumberField,
+        )}
+
+        {currentSettings.gameMode === GameMode.COLLAPSE && (
+          <div className={fieldClassName}>
+            <Label id="collapse-shape-label" className={labelClassName}>
+              Collapse Shape
+            </Label>
+            <Select
+              disabled={!isHost}
+              value={currentSettings.collapseShape ?? "circle"}
+              onValueChange={(val) => {
+                if (val === "circle" || val === "square") {
+                  onChangeSettings({ collapseShape: val });
+                }
+              }}
+            >
+              <SelectTrigger
+                aria-labelledby="collapse-shape-label"
+                size="sm"
+                className="h-7 w-full border-game-border bg-game-bg px-3 text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border border-game-border bg-game-surface text-game-text">
+                {SHAPE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
       </div>
     </section>

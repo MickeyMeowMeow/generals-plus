@@ -15,6 +15,8 @@ export {
   DominationScoreboard,
   DominationScoreboardPlayerEntry,
   DominationScoreboardTeamEntry,
+  CollapseScoreboard,
+  CollapseScoreboardPlayerEntry,
   TroopLandScoreboard,
   TroopLandScoreboardPlayerEntry,
   TurfWarScoreboard,

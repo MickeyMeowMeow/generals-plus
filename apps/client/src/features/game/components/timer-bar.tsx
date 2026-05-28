@@ -15,6 +15,8 @@ interface TimerBarProps {
   tickInterval: number;
   /** Text displayed above the progress bar. */
   label?: string;
+  /** Optional start tick of the current phase to calculate relative progress. */
+  startTick?: number;
 }
 
 /**
@@ -26,9 +28,12 @@ export function TimerBar({
   targetTick,
   tickInterval,
   label = "Time remaining",
+  startTick = 0,
 }: TimerBarProps) {
+  const range = targetTick - startTick;
+  const currentElapsed = currentTick - startTick;
   const progressPercentage =
-    targetTick > 0 ? (currentTick / targetTick) * 100 : 0;
+    range > 0 ? (currentElapsed / range) * 100 : 0;
 
   // Calculate remaining time in seconds
   const remainingTicks = Math.max(0, targetTick - currentTick);

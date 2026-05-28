@@ -13,6 +13,7 @@ export interface RenderGridCell {
   ownerIndex: string | null;
   siteIndex: number | null;
   item: { id: string; type: number } | null;
+  willCollapse?: boolean;
 }
 
 export class SquareRenderGrid extends SquareGrid2D<RenderGridCell> {}

@@ -1,4 +1,4 @@
-import { Visibility } from "@generals-plus/engine";
+import { Terrain, Visibility } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import { useCallback } from "react";
@@ -27,6 +27,10 @@ export function GridLayer({ grid, playerColors }: GridLayerProps) {
     (g: Graphics) => {
       g.clear();
       grid.forEach((cell) => {
+        if (cell.terrain === Terrain.VOID) {
+          return;
+        }
+
         drawCell(g, grid, cell.coordinate);
         g.stroke({
           width: RenderConfig.cellStroke,
@@ -46,6 +50,13 @@ export function GridLayer({ grid, playerColors }: GridLayerProps) {
         }
 
         g.fill(color);
+
+        // Handle collapse warning
+        if (cell.willCollapse) {
+          drawCell(g, grid, cell.coordinate);
+          g.fill({ color: 0x7c3aed, alpha: 0.26 });
+          g.stroke({ width: 2, color: 0xd946ef, alignment: 0.5 });
+        }
       });
     },
     [grid, playerColors],
