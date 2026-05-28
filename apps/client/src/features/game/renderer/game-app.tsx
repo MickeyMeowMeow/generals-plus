@@ -22,11 +22,13 @@ import { ClearMoveQueueKey, KeyToDirection } from "#/features/game/utils/move";
 
 interface GameAppProps {
   /** Grid snapshot to render. */
+  readonly tick: number;
   readonly grid: RenderGrid;
   readonly initialCoord?: ICoordinate;
   readonly selection: ICoordinate | null;
   readonly splitMoveSelection: ICoordinate | null;
   readonly moveQueue: MoveIntent[];
+  readonly bombMoveSignal: boolean;
   readonly onSelectCell: (coord: ICoordinate) => void;
   readonly onArmSplitMove: (coord?: ICoordinate) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
@@ -44,11 +46,13 @@ interface GameAppProps {
  * around it, allowing the game page to use the full browser viewport.
  */
 export function GameApp({
+  tick,
   grid,
   initialCoord,
   selection,
   splitMoveSelection,
   moveQueue,
+  bombMoveSignal,
   onSelectCell,
   onArmSplitMove,
   onQueueMove,
@@ -168,11 +172,13 @@ export function GameApp({
         >
           <Viewport worldBounds={worldBounds} initialTarget={initialTarget}>
             <MapRenderer
+              tick={tick}
               worldBounds={worldBounds}
               grid={grid}
               selection={selection}
               splitMoveSelection={splitMoveSelection}
               moveQueue={moveQueue}
+              bombMoveSignal={bombMoveSignal}
               onCellClick={onSelectCell}
               onSplitMoveCell={onArmSplitMove}
               playerColors={playerColors}

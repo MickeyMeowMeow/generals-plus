@@ -12,10 +12,12 @@ import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 extend({ Container, Sprite });
 
 interface IconLayerProps {
+  tick: number;
   grid: RenderGrid;
 }
 
-export function IconLayer({ grid }: IconLayerProps) {
+export function IconLayer({ tick, grid }: IconLayerProps) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tick is intentionally included to force a refresh each tick, since terrain can change frequently (e.g. from SHROUDED to VISIBLE)
   const iconCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; icon: string }> = [];
     grid.forEach((cell) => {
@@ -23,8 +25,7 @@ export function IconLayer({ grid }: IconLayerProps) {
       if (icon) cells.push({ cell, icon });
     });
     return cells;
-    // WARN: Dependency on entire grid, consider restricting to terrain changes
-  }, [grid]);
+  }, [tick, grid]);
 
   return (
     <pixiContainer>

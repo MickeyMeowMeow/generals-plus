@@ -1,5 +1,5 @@
 import type { VisionTerrain } from "@generals-plus/engine";
-import { MaskedTerrain, Terrain } from "@generals-plus/engine";
+import { HiddenTerrain, MaskedTerrain, Terrain } from "@generals-plus/engine";
 import type { TextStyle } from "pixi.js";
 
 import {
@@ -11,6 +11,7 @@ import {
   obstacleIcon,
   swampIcon,
 } from "#/features/game/assets";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 
 interface CellTheme {
   color: number;
@@ -20,7 +21,7 @@ interface CellTheme {
 /**
  * Theme configuration for each terrain type, combining both color and icon information.
  */
-export const TerrainTheme: Partial<Record<VisionTerrain, CellTheme>> = {
+export const TerrainTheme: Record<VisionTerrain, CellTheme> = {
   [Terrain.PLAIN]: {
     color: 0xd8dde3,
   },
@@ -51,12 +52,18 @@ export const TerrainTheme: Partial<Record<VisionTerrain, CellTheme>> = {
   [Terrain.BOMB_SITE]: {
     color: 0x8aa4c8,
   },
+  [Terrain.VOID]: {
+    color: RenderConfig.background,
+  },
   [MaskedTerrain.MAYBE_PLAIN]: {
-    color: 0xd8dde3,
+    color: 0x525356,
   },
   [MaskedTerrain.MAYBE_MOUNTAIN]: {
-    color: 0xd8dde3,
+    color: 0x525356,
     icon: obstacleIcon,
+  },
+  [HiddenTerrain]: {
+    color: 0x525356,
   },
 } as const;
 

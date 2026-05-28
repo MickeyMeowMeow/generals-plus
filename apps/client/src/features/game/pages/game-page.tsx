@@ -105,8 +105,10 @@ export function GamePage({ connection, source }: GamePageProps) {
     playerColors,
     playerNames,
     currentPlayer,
+    renderTick,
     renderGrid,
     moveQueue,
+    bombMoveSignal,
     gameState,
     gameResult,
     sendMove,
@@ -403,11 +405,13 @@ export function GamePage({ connection, source }: GamePageProps) {
       ) : null}
 
       <GameApp
+        tick={renderTick}
         grid={renderGrid}
         initialCoord={initialCoord.current ?? undefined}
         selection={isReadOnly ? null : selection}
         splitMoveSelection={isReadOnly ? null : splitMoveSelection}
         moveQueue={moveQueue}
+        bombMoveSignal={bombMoveSignal}
         onSelectCell={isReadOnly ? () => {} : handleSelectCell}
         onArmSplitMove={isReadOnly ? () => {} : handleArmSplitMove}
         onQueueMove={isReadOnly ? () => {} : handleQueueMove}

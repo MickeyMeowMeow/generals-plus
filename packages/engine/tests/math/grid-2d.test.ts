@@ -55,12 +55,12 @@ describe("SquareGrid2D", () => {
       coordinate: { x: 1, y: 1 },
     });
 
-    expect(() => SquareGrid2D.fromArray(2, 2, [1, 2, 3])).toThrow(
+    expect(() => SquareGrid2D.fromArray(2, 2, [1, 2, 3], (num) => num)).toThrow(
       "Array length does not match grid dimensions.",
     );
-    expect(() => SquareGrid2D.fromArray(2, 2, [1, 2, 3, 4, 5])).toThrow(
-      "Array length does not match grid dimensions.",
-    );
+    expect(() =>
+      SquareGrid2D.fromArray(2, 2, [1, 2, 3, 4, 5], (num) => num),
+    ).toThrow("Array length does not match grid dimensions.");
   });
 
   it("counts the total number of cells correctly", () => {
@@ -99,6 +99,23 @@ describe("SquareGrid2D", () => {
     expect(grid.toArrayIndex({ x: 0, y: 1 })).toBe(2);
     expect(grid.toArrayIndex({ x: 1, y: 1 })).toBe(3);
     expect(grid.toArrayIndex({ x: -1, y: 0 })).toBe(-1); // Invalid coordinate
+  });
+
+  it("updates cell values from flat array correctly", () => {
+    const grid = createSquareGrid();
+    const gridData = grid.gridData;
+
+    expect(grid.get({ x: 0, y: 1 })).toBe(3);
+    grid.updateFromArray([10, 20, 30, 40], (num) => num);
+    expect(grid.get({ x: 0, y: 1 })).toBe(30);
+    expect(grid.gridData).toBe(gridData); // Same reference, updated in-place
+
+    expect(() => grid.updateFromArray([1, 2, 3], (num) => num)).toThrow(
+      "Array length does not match grid dimensions.",
+    );
+    expect(() => grid.updateFromArray([1, 2, 3, 4, 5], (num) => num)).toThrow(
+      "Array length does not match grid dimensions.",
+    );
   });
 
   it("gets and sets values", () => {
@@ -246,11 +263,11 @@ describe("HexGrid2D", () => {
       coordinate: { x: -1, y: 2 },
     });
 
-    expect(() => HexGrid2D.fromArray(2, 2, 3, 3, [1, 2])).toThrow(
+    expect(() => HexGrid2D.fromArray(2, 2, 3, 3, [1, 2], (num) => num)).toThrow(
       "Array length does not match grid dimensions.",
     );
     expect(() =>
-      HexGrid2D.fromArray(2, 2, 3, 3, [1, 2, 3, 4, 5, 6, 7, 8]),
+      HexGrid2D.fromArray(2, 2, 3, 3, [1, 2, 3, 4, 5, 6, 7, 8], (num) => num),
     ).toThrow("Array length does not match grid dimensions.");
   });
 
@@ -337,6 +354,23 @@ describe("HexGrid2D", () => {
     expect(grid.toArrayIndex({ x: -1, y: 2 })).toBe(5);
     expect(grid.toArrayIndex({ x: 0, y: 2 })).toBe(6);
     expect(grid.toArrayIndex({ x: 1, y: 2 })).toBe(-1); // Invalid coordinate
+  });
+
+  it("updates cell values from flat array correctly", () => {
+    const grid = createHexGrid();
+    const gridData = grid.gridData;
+
+    expect(grid.get({ x: -1, y: 1 })).toBe(3);
+    grid.updateFromArray([10, 20, 30, 40, 50, 60, 70], (num) => num);
+    expect(grid.get({ x: -1, y: 1 })).toBe(30);
+    expect(grid.gridData).toBe(gridData); // Same reference, updated in-place
+
+    expect(() => grid.updateFromArray([1, 2, 3], (num) => num)).toThrow(
+      "Array length does not match grid dimensions.",
+    );
+    expect(() =>
+      grid.updateFromArray([1, 2, 3, 4, 5, 6, 7, 8], (num) => num),
+    ).toThrow("Array length does not match grid dimensions.");
   });
 
   it("gets and sets values using internal offset indexing", () => {

@@ -30,6 +30,7 @@ vi.mock("#/features/game/renderer/viewport", () => ({
 function renderGameApp(overrides: Partial<Parameters<typeof GameApp>[0]> = {}) {
   return render(
     <GameApp
+      tick={0}
       grid={SquareGrid2D.generate(10, 10, () => ({
         coordinate: { x: 0, y: 0 },
         visibility: Visibility.VISIBLE,
@@ -42,6 +43,7 @@ function renderGameApp(overrides: Partial<Parameters<typeof GameApp>[0]> = {}) {
       selection={null}
       splitMoveSelection={null}
       moveQueue={[]}
+      bombMoveSignal={false}
       onSelectCell={vi.fn()}
       onArmSplitMove={vi.fn()}
       onQueueMove={vi.fn()}
