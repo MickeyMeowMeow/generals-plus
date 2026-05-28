@@ -55,12 +55,12 @@ describe("SquareGrid2D", () => {
       coordinate: { x: 1, y: 1 },
     });
 
-    expect(() => SquareGrid2D.fromArray(2, 2, [1, 2, 3])).toThrow(
+    expect(() => SquareGrid2D.fromArray(2, 2, [1, 2, 3], (num) => num)).toThrow(
       "Array length does not match grid dimensions.",
     );
-    expect(() => SquareGrid2D.fromArray(2, 2, [1, 2, 3, 4, 5])).toThrow(
-      "Array length does not match grid dimensions.",
-    );
+    expect(() =>
+      SquareGrid2D.fromArray(2, 2, [1, 2, 3, 4, 5], (num) => num),
+    ).toThrow("Array length does not match grid dimensions.");
   });
 
   it("counts the total number of cells correctly", () => {
@@ -246,11 +246,11 @@ describe("HexGrid2D", () => {
       coordinate: { x: -1, y: 2 },
     });
 
-    expect(() => HexGrid2D.fromArray(2, 2, 3, 3, [1, 2])).toThrow(
+    expect(() => HexGrid2D.fromArray(2, 2, 3, 3, [1, 2], (num) => num)).toThrow(
       "Array length does not match grid dimensions.",
     );
     expect(() =>
-      HexGrid2D.fromArray(2, 2, 3, 3, [1, 2, 3, 4, 5, 6, 7, 8]),
+      HexGrid2D.fromArray(2, 2, 3, 3, [1, 2, 3, 4, 5, 6, 7, 8], (num) => num),
     ).toThrow("Array length does not match grid dimensions.");
   });
 
