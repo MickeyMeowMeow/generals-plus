@@ -5,7 +5,7 @@ import type {
   MoveActionType,
   SurrenderAction,
 } from "@generals-plus/engine";
-import { ActionType, GridType } from "@generals-plus/engine";
+import { ActionType, GameStatus, GridType } from "@generals-plus/engine";
 import type {
   ActionData,
   MatchClientMessagePayload,
@@ -169,6 +169,7 @@ export function useGameRoom(connection: GameRoomConnection) {
   );
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
 
+  const [renderTick, setRenderTick] = useState(0);
   const renderGrid = useRef<RenderGrid>(null);
   const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
   const [bombMoveSignal, setBombMoveSignal] = useState(false);
@@ -250,6 +251,9 @@ export function useGameRoom(connection: GameRoomConnection) {
               })),
             );
           }
+
+          // Set to -1 to force a final render after game end, since the client may receive the GAME_END message before the final state update.
+          setRenderTick(state.status === GameStatus.FINISHED ? -1 : state.tick);
         };
 
         syncState(currentRoom.state);
@@ -337,6 +341,7 @@ export function useGameRoom(connection: GameRoomConnection) {
     playerColors,
     playerNames,
     currentPlayer,
+    renderTick,
     renderGrid: renderGrid.current,
     moveQueue,
     bombMoveSignal,

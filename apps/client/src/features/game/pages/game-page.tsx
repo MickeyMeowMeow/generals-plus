@@ -105,6 +105,7 @@ export function GamePage({ connection, source }: GamePageProps) {
     playerColors,
     playerNames,
     currentPlayer,
+    renderTick,
     renderGrid,
     moveQueue,
     bombMoveSignal,
@@ -404,7 +405,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       ) : null}
 
       <GameApp
-        tick={gameState.tick}
+        tick={renderTick}
         grid={renderGrid}
         initialCoord={initialCoord.current ?? undefined}
         selection={isReadOnly ? null : selection}
