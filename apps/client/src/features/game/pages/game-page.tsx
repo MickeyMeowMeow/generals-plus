@@ -107,6 +107,7 @@ export function GamePage({ connection, source }: GamePageProps) {
     currentPlayer,
     renderGrid,
     moveQueue,
+    bombMoveSignal,
     gameState,
     gameResult,
     sendMove,
@@ -409,6 +410,7 @@ export function GamePage({ connection, source }: GamePageProps) {
         selection={isReadOnly ? null : selection}
         splitMoveSelection={isReadOnly ? null : splitMoveSelection}
         moveQueue={moveQueue}
+        bombMoveSignal={bombMoveSignal}
         onSelectCell={isReadOnly ? () => {} : handleSelectCell}
         onArmSplitMove={isReadOnly ? () => {} : handleArmSplitMove}
         onQueueMove={isReadOnly ? () => {} : handleQueueMove}

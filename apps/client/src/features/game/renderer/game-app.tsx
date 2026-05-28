@@ -28,6 +28,7 @@ interface GameAppProps {
   readonly selection: ICoordinate | null;
   readonly splitMoveSelection: ICoordinate | null;
   readonly moveQueue: MoveIntent[];
+  readonly bombMoveSignal: boolean;
   readonly onSelectCell: (coord: ICoordinate) => void;
   readonly onArmSplitMove: (coord?: ICoordinate) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
@@ -51,6 +52,7 @@ export function GameApp({
   selection,
   splitMoveSelection,
   moveQueue,
+  bombMoveSignal,
   onSelectCell,
   onArmSplitMove,
   onQueueMove,
@@ -176,6 +178,7 @@ export function GameApp({
               selection={selection}
               splitMoveSelection={splitMoveSelection}
               moveQueue={moveQueue}
+              bombMoveSignal={bombMoveSignal}
               onCellClick={onSelectCell}
               onSplitMoveCell={onArmSplitMove}
               playerColors={playerColors}

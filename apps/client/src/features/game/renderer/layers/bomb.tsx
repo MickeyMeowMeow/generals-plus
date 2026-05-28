@@ -13,6 +13,7 @@ import type {
 extend({ Container, Sprite });
 
 interface BombLayerProps {
+  bombMoveSignal: boolean;
   grid: RenderGrid;
   isPlanted: boolean;
   /** Ticks remaining until detonation. -1 if unknown or not applicable. */
@@ -33,10 +34,12 @@ function computeFlashInterval(ticksRemaining: number | undefined): number {
 }
 
 export function BombLayer({
+  bombMoveSignal,
   grid,
   isPlanted,
   ticksRemaining = -1,
 }: BombLayerProps) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: bombMoveSignal is intentionally included to force a refresh each time a bomb move occurs
   const bombCells = useMemo(() => {
     const cells: RenderGridCell[] = [];
     grid.forEach((cell) => {
@@ -45,7 +48,7 @@ export function BombLayer({
       }
     });
     return cells;
-  }, [grid]);
+  }, [bombMoveSignal, grid]);
 
   const [flash, setFlash] = useState(false);
 

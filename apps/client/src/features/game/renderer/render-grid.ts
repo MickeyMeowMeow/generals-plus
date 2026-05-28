@@ -6,6 +6,7 @@ import type {
 import {
   GridType,
   HexGrid2D,
+  ItemType,
   SquareGrid2D,
   Terrain,
   Visibility,
@@ -62,12 +63,21 @@ export function createRenderGrid(shape: GridShape): RenderGrid {
 export function updateRenderGrid(
   grid: RenderGrid,
   visionCells: VisionCellSchema[],
-) {
+): {
+  bombMoved: boolean;
+} {
+  let bombMoved = false;
+
   const createVisionCell = (
     newVision: VisionCellSchema,
-    _currentCell: RenderGridCell,
+    currentCell: RenderGridCell,
     coordinate: ICoordinate,
   ) => {
+    bombMoved ||=
+      (newVision.item_type === ItemType.BOMB ||
+        currentCell.item?.type === ItemType.BOMB) &&
+      newVision.item_id !== currentCell.item?.id;
+
     return {
       coordinate,
       visibility: newVision.visibility,
@@ -83,4 +93,5 @@ export function updateRenderGrid(
   };
 
   grid.updateFromArray(visionCells, createVisionCell);
+  return { bombMoved };
 }

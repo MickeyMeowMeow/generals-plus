@@ -167,11 +167,11 @@ export function useGameRoom(connection: GameRoomConnection) {
   const [playerNames, setPlayerNames] = useState<Map<string, string>>(
     new Map(),
   );
+  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
 
   const renderGrid = useRef<RenderGrid>(null);
-
-  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
+  const [bombMoveSignal, setBombMoveSignal] = useState(false);
 
   const [gameResult, setGameResult] = useState<IGameResult | null>(null);
 
@@ -226,7 +226,13 @@ export function useGameRoom(connection: GameRoomConnection) {
 
           const myVision = state.clientVisions.get(myId);
           if (myVision) {
-            updateRenderGrid(renderGrid.current, myVision.cells);
+            const { bombMoved } = updateRenderGrid(
+              renderGrid.current,
+              myVision.cells,
+            );
+            if (bombMoved) {
+              setBombMoveSignal((s) => !s);
+            }
           }
 
           const myQueue = state.clientActionQueues.get(myId);
@@ -332,6 +338,7 @@ export function useGameRoom(connection: GameRoomConnection) {
     currentPlayer,
     renderGrid: renderGrid.current,
     moveQueue,
+    bombMoveSignal,
     gameState,
     gameResult,
     sendMove,

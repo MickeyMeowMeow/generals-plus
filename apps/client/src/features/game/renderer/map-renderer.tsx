@@ -32,6 +32,7 @@ interface MapRendererProps {
   selection: ICoordinate | null;
   splitMoveSelection: ICoordinate | null;
   moveQueue: MoveIntent[];
+  bombMoveSignal: boolean;
   onCellClick: (coordinate: ICoordinate) => void;
   onSplitMoveCell: (coordinate: ICoordinate) => void;
   playerColors: Map<string, number>;
@@ -47,6 +48,7 @@ export function MapRenderer({
   selection,
   splitMoveSelection,
   moveQueue,
+  bombMoveSignal,
   onCellClick,
   onSplitMoveCell,
   playerColors,
@@ -123,6 +125,7 @@ export function MapRenderer({
         splitMoveSelection={splitMoveSelection}
       />
       <BombLayer
+        bombMoveSignal={bombMoveSignal}
         grid={grid}
         isPlanted={isPlanted}
         ticksRemaining={ticksRemaining}
