@@ -12,7 +12,7 @@ export interface ModeSettings {
   detonateDuration?: number;
   collapseInterval?: number;
   startDelay?: number;
-  collapseShape?: string;
+  collapseShape?: "circle" | "square";
 }
 
 export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
