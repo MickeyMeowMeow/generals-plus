@@ -12,7 +12,10 @@ export type SetupValidationField =
   | "bombSiteCount"
   | "plantDuration"
   | "defuseDuration"
-  | "detonateDuration";
+  | "detonateDuration"
+  | "collapseInterval"
+  | "startDelay"
+  | "collapseShape";
 
 export interface SetupValidationFailedMessage extends ToastMessage {
   field?: SetupValidationField;

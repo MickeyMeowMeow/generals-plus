@@ -6,7 +6,10 @@ import {
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
-import type { CollapseScoreboard, DemolitionScoreboard } from "@generals-plus/shared-types";
+import type {
+  CollapseScoreboard,
+  DemolitionScoreboard,
+} from "@generals-plus/shared-types";
 import {
   MatchClientMessage,
   MatchServerMessage,
@@ -456,7 +459,7 @@ export function GamePage({ connection, source }: GamePageProps) {
             gameState.mode === GameMode.TURF_WAR ||
             gameState.mode === GameMode.DOMINATION
               ? gameState.tickInterval
-                : 0,
+              : 0,
           label: "Time remaining",
         };
 

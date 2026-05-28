@@ -20,7 +20,7 @@ function createGrid(width = 5, height = 5): Grid {
         new Cell({
           coordinate: { x, y },
           terrain: Terrain.PLAIN,
-        })
+        }),
       );
     }
     cells.push(row);
@@ -28,12 +28,27 @@ function createGrid(width = 5, height = 5): Grid {
   return new SquareGrid(width, height, cells);
 }
 
+function getCell(grid: Grid, x: number, y: number): Cell {
+  const cell = grid.get({ x, y });
+  if (!cell) {
+    throw new Error(`Cell not found at x: ${x}, y: ${y}`);
+  }
+  return cell as Cell;
+}
+
+interface MockCollapseGame {
+  safeCircleRadius: number;
+  nextSafeCircleCenterX: number;
+  nextSafeCircleCenterY: number;
+  nextSafeCircleRadius: number;
+}
+
 describe("CollapseGame", () => {
   it("initializes safe circle and next collapse tick correctly", () => {
     const grid = createGrid();
     const game = new CollapseGame(
       { grid },
-      { startDelayTicks: 10, shrinkIntervalTicks: 5, collapseShape: "circle" }
+      { startDelayTicks: 10, shrinkIntervalTicks: 5, collapseShape: "circle" },
     );
 
     const t1 = new StandardTeam("t1");
@@ -53,7 +68,7 @@ describe("CollapseGame", () => {
     const grid = createGrid();
     const game = new CollapseGame(
       { grid },
-      { startDelayTicks: 10, shrinkIntervalTicks: 5, collapseShape: "circle" }
+      { startDelayTicks: 10, shrinkIntervalTicks: 5, collapseShape: "circle" },
     );
 
     const t1 = new StandardTeam("t1");
@@ -89,7 +104,7 @@ describe("CollapseGame", () => {
     const grid = createGrid(3, 3);
     const game = new CollapseGame(
       { grid },
-      { startDelayTicks: 2, shrinkIntervalTicks: 2, collapseShape: "circle" }
+      { startDelayTicks: 2, shrinkIntervalTicks: 2, collapseShape: "circle" },
     );
 
     const t1 = new StandardTeam("t1");
@@ -99,9 +114,9 @@ describe("CollapseGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    const cCenter = grid.get({ x: 1, y: 1 })!;
-    const cCorner = grid.get({ x: 0, y: 0 })!;
-    const cInside = grid.get({ x: 1, y: 0 })!;
+    const cCenter = getCell(grid, 1, 1);
+    const cCorner = getCell(grid, 0, 0);
+    const cInside = getCell(grid, 1, 0);
 
     cCenter.terrain = Terrain.GENERAL;
     cCenter.owner = p1;
@@ -117,10 +132,11 @@ describe("CollapseGame", () => {
 
     // Force shrink step to be 1.0, so the next circle has radius 0.5 (only covers (1,1))
     // We can directly mock/overwrite properties in the test
-    (game as any).safeCircleRadius = 0.5;
-    (game as any).nextSafeCircleCenterX = 1.0;
-    (game as any).nextSafeCircleCenterY = 1.0;
-    (game as any).nextSafeCircleRadius = 0.5;
+    const mockGame = game as unknown as MockCollapseGame;
+    mockGame.safeCircleRadius = 0.5;
+    mockGame.nextSafeCircleCenterX = 1.0;
+    mockGame.nextSafeCircleCenterY = 1.0;
+    mockGame.nextSafeCircleRadius = 0.5;
 
     // Set willCollapse manually matching the mocked next circle
     game.grid.forEach((cell) => {
@@ -154,7 +170,7 @@ describe("CollapseGame", () => {
     const grid = createGrid(3, 3);
     const game = new CollapseGame(
       { grid },
-      { startDelayTicks: 2, shrinkIntervalTicks: 2, collapseShape: "circle" }
+      { startDelayTicks: 2, shrinkIntervalTicks: 2, collapseShape: "circle" },
     );
 
     const t1 = new StandardTeam("t1");
@@ -164,9 +180,8 @@ describe("CollapseGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    const cCenter = grid.get({ x: 1, y: 1 })!;
-    const cInside = grid.get({ x: 1, y: 0 })!;
-    const cDevoured = grid.get({ x: 0, y: 0 })!;
+    const cInside = getCell(grid, 1, 0);
+    const cDevoured = getCell(grid, 0, 0);
 
     // Set p1's general at (0,0) which will be devoured!
     cDevoured.terrain = Terrain.GENERAL;
@@ -183,9 +198,10 @@ describe("CollapseGame", () => {
     // Distance from (1,1) to (0,0) is sqrt(2) ~ 1.41
     // Distance from (1,1) to (1,0) is 1.0
     // If center of next circle is (1,1) and radius is 1.2:
-    (game as any).nextSafeCircleCenterX = 1.0;
-    (game as any).nextSafeCircleCenterY = 1.0;
-    (game as any).nextSafeCircleRadius = 1.2;
+    const mockGame = game as unknown as MockCollapseGame;
+    mockGame.nextSafeCircleCenterX = 1.0;
+    mockGame.nextSafeCircleCenterY = 1.0;
+    mockGame.nextSafeCircleRadius = 1.2;
 
     // Advance to tick 2 (collapse)
     game.nextTick();
@@ -204,7 +220,7 @@ describe("CollapseGame", () => {
     const grid = createGrid(3, 3);
     const game = new CollapseGame(
       { grid },
-      { startDelayTicks: 2, shrinkIntervalTicks: 2, collapseShape: "circle" }
+      { startDelayTicks: 2, shrinkIntervalTicks: 2, collapseShape: "circle" },
     );
 
     const t1 = new StandardTeam("t1");
@@ -214,9 +230,8 @@ describe("CollapseGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    const cCenter = grid.get({ x: 1, y: 1 })!;
-    const cInside = grid.get({ x: 1, y: 0 })!;
-    const cCorner = grid.get({ x: 0, y: 0 })!;
+    const cCenter = getCell(grid, 1, 1);
+    const cCorner = getCell(grid, 0, 0);
 
     cCorner.terrain = Terrain.GENERAL;
     cCorner.owner = p1;
@@ -228,9 +243,10 @@ describe("CollapseGame", () => {
     game.startGame();
 
     // Shrink next circle so only p2's center is inside, and p1's corner is devoured
-    (game as any).nextSafeCircleCenterX = 1.0;
-    (game as any).nextSafeCircleCenterY = 1.0;
-    (game as any).nextSafeCircleRadius = 0.5;
+    const mockGame = game as unknown as MockCollapseGame;
+    mockGame.nextSafeCircleCenterX = 1.0;
+    mockGame.nextSafeCircleCenterY = 1.0;
+    mockGame.nextSafeCircleRadius = 0.5;
 
     // Advance to tick 2 (collapse)
     game.nextTick();
@@ -249,7 +265,7 @@ describe("CollapseGame", () => {
     const grid = createGrid(5, 5);
     const game = new CollapseGame(
       { grid },
-      { startDelayTicks: 2, shrinkIntervalTicks: 2, collapseShape: "square" }
+      { startDelayTicks: 2, shrinkIntervalTicks: 2, collapseShape: "square" },
     );
 
     const t1 = new StandardTeam("t1");
@@ -265,11 +281,12 @@ describe("CollapseGame", () => {
     // Inside: (2,2), neighbors (2,1), (2,3), (1,2), (3,2), and diagonals (1,1), (3,3), etc.
     // In circular collapse, diagonals like (1,1) are at distance sqrt(2) ~ 1.41 > 1.2.
     // In square collapse, |x - cx| = 1.0 <= 1.2 and |y - cy| = 1.0 <= 1.2, so diagonals remain inside!
-    (game as any).nextSafeCircleCenterX = 2.0;
-    (game as any).nextSafeCircleCenterY = 2.0;
-    (game as any).nextSafeCircleRadius = 1.2;
+    const mockGame = game as unknown as MockCollapseGame;
+    mockGame.nextSafeCircleCenterX = 2.0;
+    mockGame.nextSafeCircleCenterY = 2.0;
+    mockGame.nextSafeCircleRadius = 1.2;
 
-    const diagonalCell = grid.get({ x: 1, y: 1 })!;
+    const diagonalCell = getCell(grid, 1, 1);
     diagonalCell.owner = p1;
 
     game.nextTick();

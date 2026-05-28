@@ -148,7 +148,8 @@ export class CollapseGame extends BaseGame implements ICollapseGame {
     if (this.tick < this.startDelayTicks) {
       this.currentProgress = this.tick / this.startDelayTicks;
     } else {
-      const elapsed = (this.tick - this.startDelayTicks) % this.shrinkIntervalTicks;
+      const elapsed =
+        (this.tick - this.startDelayTicks) % this.shrinkIntervalTicks;
       this.currentProgress = elapsed / this.shrinkIntervalTicks;
     }
 
@@ -174,7 +175,14 @@ export class CollapseGame extends BaseGame implements ICollapseGame {
       if (cell.terrain === Terrain.VOID) return;
 
       const pos = this.grid.toCartesian(cell.coordinate);
-      if (!this.isInsideSafeZone(pos, this.safeCircleCenterX, this.safeCircleCenterY, this.safeCircleRadius)) {
+      if (
+        !this.isInsideSafeZone(
+          pos,
+          this.safeCircleCenterX,
+          this.safeCircleCenterY,
+          this.safeCircleRadius,
+        )
+      ) {
         const wasGeneral = cell.terrain === Terrain.GENERAL;
         const ownerId = cell.owner?.playerId;
 
@@ -223,8 +231,10 @@ export class CollapseGame extends BaseGame implements ICollapseGame {
     if (this.collapseShape === "circle") {
       const angle = Math.random() * Math.PI * 2;
       const distance = Math.random() * maxOffset;
-      this.nextSafeCircleCenterX = this.safeCircleCenterX + Math.cos(angle) * distance;
-      this.nextSafeCircleCenterY = this.safeCircleCenterY + Math.sin(angle) * distance;
+      this.nextSafeCircleCenterX =
+        this.safeCircleCenterX + Math.cos(angle) * distance;
+      this.nextSafeCircleCenterY =
+        this.safeCircleCenterY + Math.sin(angle) * distance;
     } else {
       // Pick random X and Y offsets independently within the bounds of containment
       const dx = (Math.random() * 2 - 1) * maxOffset;
@@ -240,7 +250,14 @@ export class CollapseGame extends BaseGame implements ICollapseGame {
       if (cell.terrain === Terrain.VOID) return;
 
       const pos = this.grid.toCartesian(cell.coordinate);
-      if (!this.isInsideSafeZone(pos, this.nextSafeCircleCenterX, this.nextSafeCircleCenterY, this.nextSafeCircleRadius)) {
+      if (
+        !this.isInsideSafeZone(
+          pos,
+          this.nextSafeCircleCenterX,
+          this.nextSafeCircleCenterY,
+          this.nextSafeCircleRadius,
+        )
+      ) {
         cell.willCollapse = true;
       }
     });
@@ -254,7 +271,14 @@ export class CollapseGame extends BaseGame implements ICollapseGame {
       if (cell.owner?.playerId !== playerId) return;
 
       const pos = this.grid.toCartesian(cell.coordinate);
-      if (this.isInsideSafeZone(pos, this.safeCircleCenterX, this.safeCircleCenterY, this.safeCircleRadius)) {
+      if (
+        this.isInsideSafeZone(
+          pos,
+          this.safeCircleCenterX,
+          this.safeCircleCenterY,
+          this.safeCircleRadius,
+        )
+      ) {
         candidates.push(cell);
       }
     });

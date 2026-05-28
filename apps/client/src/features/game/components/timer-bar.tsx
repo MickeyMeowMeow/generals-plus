@@ -32,8 +32,7 @@ export function TimerBar({
 }: TimerBarProps) {
   const range = targetTick - startTick;
   const currentElapsed = currentTick - startTick;
-  const progressPercentage =
-    range > 0 ? (currentElapsed / range) * 100 : 0;
+  const progressPercentage = range > 0 ? (currentElapsed / range) * 100 : 0;
 
   // Calculate remaining time in seconds
   const remainingTicks = Math.max(0, targetTick - currentTick);

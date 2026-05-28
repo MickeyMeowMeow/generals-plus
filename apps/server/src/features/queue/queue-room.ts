@@ -155,7 +155,9 @@ export class MatchQueueRoom extends QueueRoom {
                   modeSettings?.collapseInterval ?? 30,
                   BASE_TICK_INTERVAL,
                 ),
-                collapseShape: (modeSettings?.collapseShape ?? "circle") as "circle" | "square",
+                collapseShape: (modeSettings?.collapseShape ?? "circle") as
+                  | "circle"
+                  | "square",
               };
             default:
               return { ...base, mode: this.gameMode };
