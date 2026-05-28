@@ -199,6 +199,7 @@ export function useGameRoom(connection: GameRoomConnection) {
 
         setRoom(currentRoom);
         setIsConnecting(false);
+        renderGrid.current = null;
 
         const syncState = (state: MatchState) => {
           if (!isReadyMatchState(state)) return;
