@@ -57,7 +57,7 @@
   --warning: #c9892b;
   --game-bg: #111111;
   --game-surface: #1b1b1b;
-  --game-border: #343434;
+  --game-border: #5c5c5c;
   --game-text: #eeeeee;
   --game-text-dim: #a7a7a7;
   --game-accent: #d8d8d8;
@@ -113,7 +113,7 @@ body {
 
 .game-stage::before,
 .game-stage::after {
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
   content: "";
@@ -171,7 +171,7 @@ body {
   width: min(100%, 64rem);
   transform: translateX(-50%);
   pointer-events: none;
-  border-inline: 1px solid rgb(52 52 52 / 0.72);
+  border-inline: 1px solid rgb(92 92 92 / 0.72);
   background: rgb(27 27 27 / 0.58);
   box-shadow:
     inset 1px 0 0 rgb(255 255 255 / 0.08),

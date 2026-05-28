@@ -13,7 +13,7 @@ import { cn } from "#/lib/utils";
  */
 export function Stage({ children }: { children: ReactNode }) {
   return (
-    <main className="game-stage min-h-svh overflow-hidden text-game-text">
+    <main className="game-stage h-svh overflow-x-hidden overflow-y-auto text-game-text">
       <div className="relative flex min-h-svh flex-col px-2 sm:px-6 lg:px-8">
         {children}
       </div>
