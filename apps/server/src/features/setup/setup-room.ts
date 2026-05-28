@@ -313,30 +313,54 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         return;
       }
 
+      let invalidDemoField:
+        | "bombSiteCount"
+        | "plantDuration"
+        | "defuseDuration"
+        | "detonateDuration"
+        | undefined;
+      if (update.bombSiteCount !== undefined) {
+        invalidDemoField = "bombSiteCount";
+      } else if (update.plantDuration !== undefined) {
+        invalidDemoField = "plantDuration";
+      } else if (update.defuseDuration !== undefined) {
+        invalidDemoField = "defuseDuration";
+      } else if (update.detonateDuration !== undefined) {
+        invalidDemoField = "detonateDuration";
+      }
+
       if (
-        (update.bombSiteCount !== undefined ||
-          update.plantDuration !== undefined ||
-          update.defuseDuration !== undefined ||
-          update.detonateDuration !== undefined) &&
+        invalidDemoField !== undefined &&
         activeMode !== GameMode.DEMOLITION
       ) {
         this.sendValidationFailed(client, {
           severity: "warning",
-          field: "bombSiteCount",
+          field: invalidDemoField,
           message: "Demolition fields are only available in Demolition mode.",
         });
         return;
       }
 
+      let invalidCollapseField:
+        | "collapseInterval"
+        | "startDelay"
+        | "collapseShape"
+        | undefined;
+      if (update.collapseInterval !== undefined) {
+        invalidCollapseField = "collapseInterval";
+      } else if (update.startDelay !== undefined) {
+        invalidCollapseField = "startDelay";
+      } else if (update.collapseShape !== undefined) {
+        invalidCollapseField = "collapseShape";
+      }
+
       if (
-        (update.collapseInterval !== undefined ||
-          update.startDelay !== undefined ||
-          update.collapseShape !== undefined) &&
+        invalidCollapseField !== undefined &&
         activeMode !== GameMode.COLLAPSE
       ) {
         this.sendValidationFailed(client, {
           severity: "warning",
-          field: "collapseInterval",
+          field: invalidCollapseField,
           message: "Collapse fields are only available in Collapse mode.",
         });
         return;
