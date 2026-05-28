@@ -17,10 +17,13 @@ import {
   MatchClientMessage,
   MatchServerMessage,
 } from "@generals-plus/shared-types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
-import { createRenderGrid } from "#/features/game/utils/grid-adapter";
+import {
+  createRenderGrid,
+  updateRenderGrid,
+} from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
 import { MoveDirection } from "#/features/game/utils/move";
 import { networkProvider } from "#/infra/network/provider";
@@ -165,8 +168,10 @@ export function useGameRoom(connection: GameRoomConnection) {
     new Map(),
   );
 
+  const renderGrid = useRef<RenderGrid>(null);
+  const [terrainRevision, setTerrainRevision] = useState(0);
+
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
-  const [renderGrid, setRenderGrid] = useState<RenderGrid | null>(null);
   const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
 
   const [gameResult, setGameResult] = useState<IGameResult | null>(null);
@@ -201,6 +206,10 @@ export function useGameRoom(connection: GameRoomConnection) {
 
           setGameState(state);
 
+          if (!renderGrid.current) {
+            renderGrid.current = createRenderGrid(state);
+          }
+
           const colorMap = new Map<string, number>();
           const nameMap = new Map<string, string>();
           state.publicPlayers.forEach((player) => {
@@ -218,7 +227,13 @@ export function useGameRoom(connection: GameRoomConnection) {
 
           const myVision = state.clientVisions.get(myId);
           if (myVision) {
-            setRenderGrid(createRenderGrid(myVision, state));
+            const { terrainChanged } = updateRenderGrid(
+              renderGrid.current,
+              myVision.cells,
+            );
+            if (terrainChanged) {
+              setTerrainRevision((r) => r + 1);
+            }
           }
 
           const myQueue = state.clientActionQueues.get(myId);
@@ -322,7 +337,8 @@ export function useGameRoom(connection: GameRoomConnection) {
     playerColors,
     playerNames,
     currentPlayer,
-    renderGrid,
+    renderGrid: renderGrid.current,
+    terrainRevision,
     moveQueue,
     gameState,
     gameResult,

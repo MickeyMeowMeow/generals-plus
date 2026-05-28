@@ -23,6 +23,7 @@ import { ClearMoveQueueKey, KeyToDirection } from "#/features/game/utils/move";
 interface GameAppProps {
   /** Grid snapshot to render. */
   readonly grid: RenderGrid;
+  readonly terrainRevision: number;
   readonly initialCoord?: ICoordinate;
   readonly selection: ICoordinate | null;
   readonly splitMoveSelection: ICoordinate | null;
@@ -45,6 +46,7 @@ interface GameAppProps {
  */
 export function GameApp({
   grid,
+  terrainRevision,
   initialCoord,
   selection,
   splitMoveSelection,
@@ -170,6 +172,7 @@ export function GameApp({
             <MapRenderer
               worldBounds={worldBounds}
               grid={grid}
+              terrainRevision={terrainRevision}
               selection={selection}
               splitMoveSelection={splitMoveSelection}
               moveQueue={moveQueue}

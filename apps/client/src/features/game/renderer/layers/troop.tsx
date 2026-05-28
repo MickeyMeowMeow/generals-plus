@@ -2,13 +2,9 @@ import type { ICoordinate } from "@generals-plus/engine";
 import { isSameCoord } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Container, Text, TextStyle } from "pixi.js";
-import { useMemo } from "react";
 
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
-import type {
-  RenderGrid,
-  RenderGridCell,
-} from "#/features/game/renderer/render-grid";
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
 
 extend({ Container, Text });
 
@@ -36,29 +32,29 @@ const TROOP_TEXT_STYLE = new TextStyle({
 });
 
 export function TroopLayer({ grid, splitMoveSelection }: TroopLayerProps) {
-  const troopCells = useMemo(() => {
-    const cells: Array<{ cell: RenderGridCell; text: string }> = [];
-    grid.forEach((cell) => {
-      const isSplitMoveCell =
-        splitMoveSelection && isSameCoord(cell.coordinate, splitMoveSelection);
-      if (cell.troopCount || isSplitMoveCell) {
-        cells.push({
-          cell,
-          text: isSplitMoveCell ? "50%" : (cell.troopCount ?? "").toString(),
-        });
-      }
-    });
-    return cells;
-  }, [grid, splitMoveSelection]);
+  const troopCells: Array<{ coordinate: ICoordinate; text: string }> = [];
+
+  // Always re-compute troop cells since troop counts change almost every tick
+  grid.forEach(({ coordinate, troopCount }) => {
+    const isSplitMoveCell =
+      splitMoveSelection && isSameCoord(coordinate, splitMoveSelection);
+
+    if (troopCount || isSplitMoveCell) {
+      troopCells.push({
+        coordinate,
+        text: isSplitMoveCell ? "50%" : (troopCount ?? "").toString(),
+      });
+    }
+  });
 
   return (
     <pixiContainer>
-      {troopCells.map(({ cell, text }) => {
-        const { x, y } = grid.toCartesian(cell.coordinate);
+      {troopCells.map(({ coordinate, text }) => {
+        const { x, y } = grid.toCartesian(coordinate);
 
         return (
           <pixiText
-            key={`troop-${cell.coordinate.x},${cell.coordinate.y}`}
+            key={`troop-${coordinate.x},${coordinate.y}`}
             text={text}
             anchor={0.5}
             x={x * RenderConfig.cellStride}

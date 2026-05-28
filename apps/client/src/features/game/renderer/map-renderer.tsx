@@ -28,6 +28,7 @@ interface MapRendererProps {
     bottom: number;
   };
   grid: RenderGrid;
+  terrainRevision: number;
   selection: ICoordinate | null;
   splitMoveSelection: ICoordinate | null;
   moveQueue: MoveIntent[];
@@ -42,6 +43,7 @@ interface MapRendererProps {
 export function MapRenderer({
   worldBounds,
   grid,
+  terrainRevision,
   selection,
   splitMoveSelection,
   moveQueue,
@@ -112,7 +114,7 @@ export function MapRenderer({
       onPointerDown={onPointerDown}
     >
       <GridLayer grid={grid} playerColors={playerColors} />
-      <IconLayer grid={grid} />
+      <IconLayer grid={grid} terrainRevision={terrainRevision} />
       <SiteLabelLayer grid={grid} />
       <MoveQueueLayer grid={grid} moveQueue={moveQueue} />
       <TroopLayer grid={grid} splitMoveSelection={splitMoveSelection} />

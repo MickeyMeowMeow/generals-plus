@@ -1,7 +1,6 @@
 import { Visibility } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
-import { useCallback } from "react";
 
 import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
@@ -23,33 +22,31 @@ function tintColor(color: number, alpha: number): number {
 }
 
 export function GridLayer({ grid, playerColors }: GridLayerProps) {
-  const drawGrid = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      grid.forEach((cell) => {
-        drawCell(g, grid, cell.coordinate);
-        g.stroke({
-          width: RenderConfig.cellStroke,
-          color: RenderConfig.background,
-        });
-
-        let color = cell.ownerIndex
-          ? (playerColors.get(cell.ownerIndex) ?? 0x333333)
-          : TerrainTheme[cell.terrain]?.color || 0xffffff;
-
-        // Handle visibility
-        if (cell.visibility === Visibility.HIDDEN) {
-          color = 0x000000; // Total black for undiscovered
-        } else if (cell.visibility === Visibility.SHROUDED) {
-          // Simple way to "tint" for fog: darken the color
-          color = tintColor(color, 0.38);
-        }
-
-        g.fill(color);
+  // Always redraw the entire grid each frame since cell ownership can change frequently
+  const drawGrid = (g: Graphics) => {
+    g.clear();
+    grid.forEach((cell) => {
+      drawCell(g, grid, cell.coordinate);
+      g.stroke({
+        width: RenderConfig.cellStroke,
+        color: RenderConfig.background,
       });
-    },
-    [grid, playerColors],
-  );
+
+      let color = cell.ownerIndex
+        ? (playerColors.get(cell.ownerIndex) ?? 0x333333)
+        : TerrainTheme[cell.terrain]?.color || 0xffffff;
+
+      // Handle visibility
+      if (cell.visibility === Visibility.HIDDEN) {
+        color = 0x000000; // Total black for undiscovered
+      } else if (cell.visibility === Visibility.SHROUDED) {
+        // Simple way to "tint" for fog: darken the color
+        color = tintColor(color, 0.38);
+      }
+
+      g.fill(color);
+    });
+  };
 
   return <pixiGraphics draw={drawGrid} />;
 }
