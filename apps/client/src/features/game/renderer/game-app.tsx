@@ -22,6 +22,7 @@ import { ClearMoveQueueKey, KeyToDirection } from "#/features/game/utils/move";
 
 interface GameAppProps {
   /** Grid snapshot to render. */
+  readonly tick: number;
   readonly grid: RenderGrid;
   readonly initialCoord?: ICoordinate;
   readonly selection: ICoordinate | null;
@@ -44,6 +45,7 @@ interface GameAppProps {
  * around it, allowing the game page to use the full browser viewport.
  */
 export function GameApp({
+  tick,
   grid,
   initialCoord,
   selection,
@@ -168,6 +170,7 @@ export function GameApp({
         >
           <Viewport worldBounds={worldBounds} initialTarget={initialTarget}>
             <MapRenderer
+              tick={tick}
               worldBounds={worldBounds}
               grid={grid}
               selection={selection}

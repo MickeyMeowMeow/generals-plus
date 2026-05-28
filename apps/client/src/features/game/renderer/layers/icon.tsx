@@ -1,5 +1,6 @@
 import { extend } from "@pixi/react";
 import { Container, Sprite, Texture } from "pixi.js";
+import { useMemo } from "react";
 
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type {
@@ -11,17 +12,20 @@ import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 extend({ Container, Sprite });
 
 interface IconLayerProps {
+  tick: number;
   grid: RenderGrid;
 }
 
-export function IconLayer({ grid }: IconLayerProps) {
-  // Always redraw the entire layer each frame since terrain can change frequently (SHROUDED <-> VISIBLE)
-
-  const iconCells: Array<{ cell: RenderGridCell; icon: string }> = [];
-  grid.forEach((cell) => {
-    const icon = TerrainTheme[cell.terrain]?.icon;
-    if (icon) iconCells.push({ cell, icon });
-  });
+export function IconLayer({ tick, grid }: IconLayerProps) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tick is intentionally included to force a refresh each tick, since terrain can change frequently (e.g. from SHROUDED to VISIBLE)
+  const iconCells = useMemo(() => {
+    const cells: Array<{ cell: RenderGridCell; icon: string }> = [];
+    grid.forEach((cell) => {
+      const icon = TerrainTheme[cell.terrain]?.icon;
+      if (icon) cells.push({ cell, icon });
+    });
+    return cells;
+  }, [tick, grid]);
 
   return (
     <pixiContainer>

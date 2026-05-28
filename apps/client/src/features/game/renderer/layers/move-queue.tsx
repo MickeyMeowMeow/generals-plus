@@ -123,6 +123,7 @@ interface MoveQueueLayerProps {
 }
 
 export function MoveQueueLayer({ grid, moveQueue }: MoveQueueLayerProps) {
+  // Only redraw when move queue changes
   const drawMoveQueue = useCallback(
     (g: Graphics) => {
       g.clear();

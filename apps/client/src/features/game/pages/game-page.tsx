@@ -403,6 +403,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       ) : null}
 
       <GameApp
+        tick={gameState.tick}
         grid={renderGrid}
         initialCoord={initialCoord.current ?? undefined}
         selection={isReadOnly ? null : selection}

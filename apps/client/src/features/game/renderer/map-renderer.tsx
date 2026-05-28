@@ -21,6 +21,7 @@ import type { MoveIntent } from "#/features/game/utils/move";
 extend({ Container });
 
 interface MapRendererProps {
+  tick: number;
   worldBounds: {
     left: number;
     right: number;
@@ -40,6 +41,7 @@ interface MapRendererProps {
 }
 
 export function MapRenderer({
+  tick,
   worldBounds,
   grid,
   selection,
@@ -111,11 +113,15 @@ export function MapRenderer({
       hitArea={hitArea}
       onPointerDown={onPointerDown}
     >
-      <GridLayer grid={grid} playerColors={playerColors} />
-      <IconLayer grid={grid} />
+      <GridLayer tick={tick} grid={grid} playerColors={playerColors} />
+      <IconLayer tick={tick} grid={grid} />
       <SiteLabelLayer grid={grid} />
       <MoveQueueLayer grid={grid} moveQueue={moveQueue} />
-      <TroopLayer grid={grid} splitMoveSelection={splitMoveSelection} />
+      <TroopLayer
+        tick={tick}
+        grid={grid}
+        splitMoveSelection={splitMoveSelection}
+      />
       <BombLayer
         grid={grid}
         isPlanted={isPlanted}
