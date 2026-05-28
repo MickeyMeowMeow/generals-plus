@@ -1,6 +1,5 @@
 import { extend } from "@pixi/react";
 import { Container, Sprite, Texture } from "pixi.js";
-import { useRef } from "react";
 
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type {
@@ -13,27 +12,20 @@ extend({ Container, Sprite });
 
 interface IconLayerProps {
   grid: RenderGrid;
-  terrainRevision: number; // Used to trigger re-computation when terrain icons change
 }
 
-export function IconLayer({ grid, terrainRevision }: IconLayerProps) {
-  const cacheRef = useRef<{
-    revision: number;
-    cells: Array<{ cell: RenderGridCell; icon: string }>;
-  }>({ revision: -1, cells: [] });
+export function IconLayer({ grid }: IconLayerProps) {
+  // Always redraw the entire layer each frame since terrain can change frequently (SHROUDED <-> VISIBLE)
 
-  if (cacheRef.current.revision !== terrainRevision) {
-    cacheRef.current.revision = terrainRevision;
-    cacheRef.current.cells = [];
-    grid.forEach((cell) => {
-      const icon = TerrainTheme[cell.terrain]?.icon;
-      if (icon) cacheRef.current.cells.push({ cell, icon });
-    });
-  }
+  const iconCells: Array<{ cell: RenderGridCell; icon: string }> = [];
+  grid.forEach((cell) => {
+    const icon = TerrainTheme[cell.terrain]?.icon;
+    if (icon) iconCells.push({ cell, icon });
+  });
 
   return (
     <pixiContainer>
-      {cacheRef.current.cells.map(({ cell, icon }) => {
+      {iconCells.map(({ cell, icon }) => {
         const { x, y } = grid.toCartesian(cell.coordinate);
         const iconSize =
           RenderConfig.cellStride * RenderConfig.terrainIconScale;

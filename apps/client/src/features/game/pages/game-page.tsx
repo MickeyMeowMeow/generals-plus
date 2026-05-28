@@ -106,7 +106,6 @@ export function GamePage({ connection, source }: GamePageProps) {
     playerNames,
     currentPlayer,
     renderGrid,
-    terrainRevision,
     moveQueue,
     gameState,
     gameResult,
@@ -405,7 +404,6 @@ export function GamePage({ connection, source }: GamePageProps) {
 
       <GameApp
         grid={renderGrid}
-        terrainRevision={terrainRevision}
         initialCoord={initialCoord.current ?? undefined}
         selection={isReadOnly ? null : selection}
         splitMoveSelection={isReadOnly ? null : splitMoveSelection}

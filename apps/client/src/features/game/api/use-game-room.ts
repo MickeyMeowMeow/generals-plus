@@ -169,7 +169,6 @@ export function useGameRoom(connection: GameRoomConnection) {
   );
 
   const renderGrid = useRef<RenderGrid>(null);
-  const [terrainRevision, setTerrainRevision] = useState(0);
 
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
@@ -227,13 +226,7 @@ export function useGameRoom(connection: GameRoomConnection) {
 
           const myVision = state.clientVisions.get(myId);
           if (myVision) {
-            const { terrainChanged } = updateRenderGrid(
-              renderGrid.current,
-              myVision.cells,
-            );
-            if (terrainChanged) {
-              setTerrainRevision((r) => r + 1);
-            }
+            updateRenderGrid(renderGrid.current, myVision.cells);
           }
 
           const myQueue = state.clientActionQueues.get(myId);
@@ -338,7 +331,6 @@ export function useGameRoom(connection: GameRoomConnection) {
     playerNames,
     currentPlayer,
     renderGrid: renderGrid.current,
-    terrainRevision,
     moveQueue,
     gameState,
     gameResult,

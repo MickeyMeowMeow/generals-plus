@@ -62,17 +62,12 @@ export function createRenderGrid(shape: GridShape): RenderGrid {
 export function updateRenderGrid(
   grid: RenderGrid,
   visionCells: VisionCellSchema[],
-): {
-  terrainChanged: boolean;
-} {
-  let terrainChanged = false;
-
+) {
   const createVisionCell = (
     newVision: VisionCellSchema,
-    currentCell: RenderGridCell,
+    _currentCell: RenderGridCell,
     coordinate: ICoordinate,
   ) => {
-    terrainChanged ||= currentCell.terrain !== newVision.terrain;
     return {
       coordinate,
       visibility: newVision.visibility,
@@ -88,5 +83,4 @@ export function updateRenderGrid(
   };
 
   grid.updateFromArray(visionCells, createVisionCell);
-  return { terrainChanged };
 }
