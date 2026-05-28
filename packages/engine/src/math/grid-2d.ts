@@ -512,7 +512,8 @@ export class HexGrid2D<T> implements GenericGrid2D<T, typeof GridType.HEX> {
   }
 
   get totalCells(): number {
-    return this.gridData.reduce((sum, row) => sum + row.length, 0);
+    const maxY = this.leftSlant - 1;
+    return this.toArrayIndex({ x: this.getMaxX(maxY), y: maxY }) + 1;
   }
 
   get cartesianCenter(): ICoordinate {
