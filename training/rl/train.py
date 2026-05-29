@@ -1,7 +1,9 @@
 """
 PPO training with CNN + LSTM for Generals Plus.
 
-Uses the generals-bots JAX environment for vectorized self-play.
+Uses the built-in training/sim JAX environment (matching TS engine rules)
+for vectorized self-play.
+
 The recurrent network processes single-frame (spatial, scalar) observations
 through a CNN + LSTM architecture, with LSTM state carried across steps.
 
@@ -10,9 +12,7 @@ Usage (from the training/ directory):
 """
 
 import argparse
-import sys
 import time
-from pathlib import Path
 
 import jax
 import jax.numpy as jnp
@@ -20,16 +20,12 @@ import jax.random as jrandom
 import equinox as eqx
 import optax
 
-# generals-bots lives at the repo root alongside training/
-_repo_root = str(Path(__file__).resolve().parents[2])
-if _repo_root not in sys.path:
-    sys.path.insert(0, _repo_root)
-
-from generals.core.action import compute_valid_move_mask
-from generals.core.env import GeneralsEnv
-from generals.core import game
-from generals.core.observation import Observation
-from generals.core.rewards import composite_reward_fn
+# JAX-native game simulator matching generals-plus TypeScript engine rules
+from ..sim.action import compute_valid_move_mask
+from ..sim.env import GeneralsEnv
+from ..sim import game
+from ..sim.types import Observation
+from ..sim.rewards import composite_reward_fn
 
 from .network import RecurrentPolicyValueNetwork
 
