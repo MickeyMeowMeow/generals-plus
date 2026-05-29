@@ -5,7 +5,7 @@ import {
   isValidCustomRoomKeyLength,
 } from "@generals-plus/shared-types";
 import { LogOut, Play, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { BrandTitle, StageCenter } from "#/components/layout";
@@ -99,6 +99,25 @@ export function LobbyPage({
   const [customError, setCustomError] = useState<string | null>(null);
   const [isModePickerOpen, setIsModePickerOpen] = useState(false);
 
+  const [aiStatus, setAiStatus] = useState<"loading" | "online" | "offline">(
+    "loading",
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    networkProvider
+      .checkAiHealth()
+      .then((available) => {
+        if (!cancelled) setAiStatus(available ? "online" : "offline");
+      })
+      .catch(() => {
+        if (!cancelled) setAiStatus("offline");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const createOrJoinCustomRoom = async () => {
     const trimmedRoomId = customRoomId.trim();
     if (trimmedRoomId && !isValidCustomRoomKeyLength(trimmedRoomId)) {
@@ -173,10 +192,15 @@ export function LobbyPage({
               type="button"
               size="lg"
               variant="outline"
+              disabled={aiStatus !== "online"}
               onClick={onVsAi}
-              className="min-w-36 border-game-border text-game-text hover:border-white/50 hover:bg-game-surface"
+              className="min-w-36 border-game-border text-game-text hover:border-white/50 hover:bg-game-surface disabled:opacity-45"
             >
-              VS AI
+              {aiStatus === "loading"
+                ? "Checking AI..."
+                : aiStatus === "offline"
+                  ? "AI Offline"
+                  : "VS AI"}
             </Button>
           </section>
 

@@ -44,6 +44,7 @@ const networkMocks = vi.hoisted(() => ({
   joinById: vi.fn(),
   resolveCustomRoom: vi.fn(),
   consumeSeatReservation: vi.fn(),
+  checkAiHealth: vi.fn().mockResolvedValue(true),
 }));
 
 const { toastMock } = vi.hoisted(() => ({
