@@ -72,11 +72,13 @@ export class BotBridge {
 
   private handleMessage(msg: ClientMessage) {
     if (msg.type === "action") {
-      for (const [key, pending] of this.pendingCallbacks) {
+      const pending = this.pendingCallbacks.get(msg.player_id);
+      if (pending) {
         clearTimeout(pending.timer);
-        this.pendingCallbacks.delete(key);
+        this.pendingCallbacks.delete(msg.player_id);
         pending.resolve(msg.action);
-        return;
+      } else {
+        log("warn", `Received action for unknown player ${msg.player_id}`);
       }
     }
   }

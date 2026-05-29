@@ -1,11 +1,11 @@
 """
 Export a trained RecurrentPolicyValueNetwork to ONNX format.
 
-The ONNX model separates CNN spatial processing and LSTM recurrence into
-two sub-graphs so the inference engine can:
+The ONNX model takes single-frame inputs and returns action + updated LSTM state.
+The inference engine should:
   1. Run CNN on each new spatial frame
   2. Feed (cnn_features, scalar_features) + previous LSTM state into the LSTM step
-  3. Read the policy logits and value from the outputs
+  3. Read the policy logits and updated LSTM state from the outputs
 
 Usage:
     python -m rl.export_onnx --model models/ppo_recurrent.eqx --output models/bot.onnx
@@ -39,14 +39,13 @@ def export(args):
         print("Exporting with random weights (for testing)")
 
     grid_size = args.grid_size
-    stack_size = args.stack_size
     hidden_dim = network.lstm_cell.hidden_size
-    scalar_dim = 6  # SCALAR_DIM
+    scalar_dim = 6
 
     # --- Export the full inference function as a single ONNX graph ---
-    # Inputs:
-    #   spatial_seq: (stack_size, 9, H, W)
-    #   scalar_seq:  (stack_size, scalar_dim)
+    # Inputs (single-frame):
+    #   spatial:     (9, H, W)
+    #   scalar:      (scalar_dim,)
     #   h_prev:      (hidden_dim,)
     #   c_prev:      (hidden_dim,)
     #   mask:        (H, W, 4)
@@ -56,43 +55,29 @@ def export(args):
     #   h_new:       (hidden_dim,)
     #   c_new:       (hidden_dim,)
 
-    def inference_fn(spatial_seq, scalar_seq, h_prev, c_prev, mask):
-        return network.inference(
-            spatial_seq, scalar_seq, (h_prev, c_prev), mask, jrandom.PRNGKey(0),
+    def inference_fn(spatial, scalar, h_prev, c_prev, mask):
+        action, new_state = network.inference(
+            spatial, scalar, (h_prev, c_prev), mask, jrandom.PRNGKey(0),
         )
+        return action, new_state[0], new_state[1]
 
-    # Create dummy inputs
-    spatial_seq = jnp.zeros((stack_size, 9, grid_size, grid_size))
-    scalar_seq = jnp.zeros((stack_size, scalar_dim))
+    # Create dummy inputs (single-frame)
+    spatial = jnp.zeros((9, grid_size, grid_size))
+    scalar = jnp.zeros(scalar_dim)
     h_prev = jnp.zeros(hidden_dim)
     c_prev = jnp.zeros(hidden_dim)
     mask = jnp.zeros((grid_size, grid_size, 4))
 
     # Lower and export
-    print(f"Exporting to ONNX: grid={grid_size}x{grid_size}, stack={stack_size}, hidden={hidden_dim}")
+    print(f"Exporting to ONNX: grid={grid_size}x{grid_size}, hidden={hidden_dim} (single-frame)")
 
-    model = eqx.Module
     try:
-        import jax.experimental.export as export
-
-        exported = export.export(jax.jit(inference_fn))(
-            spatial_seq, scalar_seq, h_prev, c_prev, mask,
-        )
-        print(f"Exported successfully")
-        print(f"  Inputs:  {exported.in_tree}")
-        print(f"  Outputs: {exported.out_tree}")
-
-        # Save using the StableHLO serialization (can be converted to ONNX)
-        path = Path(args.output)
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Use jax2tf for ONNX conversion
         import tensorflow as tf
         import tf2onnx
 
         tf_fn = jax.experimental.jax2tf.convert(inference_fn, polymorphic_shapes=[
-            f"({stack_size}, 9, {grid_size}, {grid_size})",
-            f"({stack_size}, {scalar_dim})",
+            f"(9, {grid_size}, {grid_size})",
+            f"({scalar_dim},)",
             f"({hidden_dim},)",
             f"({hidden_dim},)",
             f"({grid_size}, {grid_size}, 4)",
@@ -100,14 +85,17 @@ def export(args):
 
         # Create TF concrete function
         input_signature = [
-            tf.TensorSpec([stack_size, 9, grid_size, grid_size], tf.float32),
-            tf.TensorSpec([stack_size, scalar_dim], tf.float32),
+            tf.TensorSpec([9, grid_size, grid_size], tf.float32),
+            tf.TensorSpec([scalar_dim], tf.float32),
             tf.TensorSpec([hidden_dim], tf.float32),
             tf.TensorSpec([hidden_dim], tf.float32),
             tf.TensorSpec([grid_size, grid_size, 4], tf.float32),
         ]
 
         tf_fn = tf.function(tf_fn, input_signature=input_signature)
+
+        path = Path(args.output)
+        path.parent.mkdir(parents=True, exist_ok=True)
 
         model_onnx, _ = tf2onnx.convert.from_function(
             tf_fn,
@@ -135,5 +123,4 @@ if __name__ == "__main__":
     parser.add_argument("--model", default=None, help="Path to trained .eqx model")
     parser.add_argument("--output", default="models/bot.onnx", help="Output ONNX path")
     parser.add_argument("--grid-size", type=int, default=10, help="Grid size")
-    parser.add_argument("--stack-size", type=int, default=8, help="Observation history length")
     export(parser.parse_args())

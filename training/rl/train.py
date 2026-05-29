@@ -2,8 +2,8 @@
 PPO training with CNN + LSTM for Generals Plus.
 
 Uses the generals-bots JAX environment for vectorized self-play.
-The recurrent network processes sequences of (spatial, scalar) observations
-through a CNN + LSTM architecture.
+The recurrent network processes single-frame (spatial, scalar) observations
+through a CNN + LSTM architecture, with LSTM state carried across steps.
 
 Usage (from the training/ directory):
     python -m rl.train --grid-size 10 --num-envs 64
@@ -80,12 +80,12 @@ def random_action(key, obs):
 # Rollout
 # ---------------------------------------------------------------------------
 
-def make_rollout_step(network, stack_size):
-    """Create a jitted rollout step that maintains an observation buffer."""
+def make_rollout_step(network):
+    """Create a jitted rollout step that processes single frames with LSTM state."""
 
     @jax.jit
     def rollout_step(carry, _):
-        states, lstm_states, spatial_bufs, scalar_bufs, key = carry
+        states, lstm_states, key = carry
         num_envs = states.armies.shape[0]
         hidden_dim = network.lstm_cell.hidden_size
 
@@ -93,22 +93,16 @@ def make_rollout_step(network, stack_size):
         obs_p0 = jax.vmap(lambda s: game.get_observation(s, 0))(states)
         obs_p1 = jax.vmap(lambda s: game.get_observation(s, 1))(states)
 
-        # Build spatial and scalar inputs
-        spatial = jax.vmap(obs_to_spatial)(obs_p0)
-        scalars = jax.vmap(obs_to_scalars)(obs_p0)
+        # Build spatial and scalar inputs (single-frame)
+        spatial = jax.vmap(obs_to_spatial)(obs_p0)       # (num_envs, 9, H, W)
+        scalars = jax.vmap(obs_to_scalars)(obs_p0)        # (num_envs, 6)
         masks = jax.vmap(lambda o: compute_valid_move_mask(o.armies, o.owned_cells, o.mountains))(obs_p0)
 
-        # Roll buffer: shift left and append new observation
-        new_spatial_bufs = jnp.roll(spatial_bufs, -1, axis=1)
-        new_spatial_bufs = new_spatial_bufs.at[:, -1].set(spatial)
-        new_scalar_bufs = jnp.roll(scalar_bufs, -1, axis=1)
-        new_scalar_bufs = new_scalar_bufs.at[:, -1].set(scalars)
-
-        # Network forward pass for all envs
+        # Network forward pass for all envs — single frame + LSTM state
         key, *env_keys = jrandom.split(key, num_envs + 1)
-        actions_p0, values, logprobs, entropies = jax.vmap(
+        actions_p0, values, logprobs, entropies, new_lstm_states = jax.vmap(
             lambda s, sc, ls, m, k: network(s, sc, ls, m, k, None)
-        )(new_spatial_bufs, new_scalar_bufs, lstm_states, masks, jnp.stack(env_keys))
+        )(spatial, scalars, lstm_states, masks, jnp.stack(env_keys))
 
         # Random opponent
         key, *opp_keys = jrandom.split(key, num_envs + 1)
@@ -127,35 +121,21 @@ def make_rollout_step(network, stack_size):
         truncated = (new_states.time >= 500) & ~terminated
         dones = terminated | truncated
 
-        # Reset LSTM state and buffers for done envs
-        zero_hidden = jnp.zeros(hidden_dim)
-        zero_lstm = (zero_hidden, zero_hidden)
-        new_lstm_states = jax.tree.map(
+        # Reset LSTM state for done envs
+        zero_lstm = (
+            jnp.zeros((num_envs, hidden_dim)),
+            jnp.zeros((num_envs, hidden_dim)),
+        )
+        lstm_states_for_next = jax.tree.map(
             lambda reset, current: jnp.where(
-                dones.reshape(num_envs, *([1] * (reset.ndim - 1))),
-                reset, current,
+                dones.reshape(num_envs, 1), reset, current,
             ),
-            zero_lstm, lstm_states,
-        )
-        zero_spatial = jnp.zeros_like(spatial_bufs)
-        new_spatial_bufs = jax.tree.map(
-            lambda z, b: jnp.where(
-                dones.reshape(num_envs, *([1] * (z.ndim - 1))),
-                z, b,
-            ),
-            zero_spatial, new_spatial_bufs,
-        )
-        zero_scalars = jnp.zeros_like(scalar_bufs)
-        new_scalar_bufs = jax.tree.map(
-            lambda z, b: jnp.where(
-                dones.reshape(num_envs, *([1] * (z.ndim - 1))),
-                z, b,
-            ),
-            zero_scalars, new_scalar_bufs,
+            zero_lstm, new_lstm_states,
         )
 
-        carry = (new_states, new_lstm_states, new_spatial_bufs, new_scalar_bufs, key)
-        return carry, (spatial, scalars, masks, actions_p0, logprobs, values, rewards, dones, infos)
+        # Save the *input* LSTM states for training (before reset)
+        carry = (new_states, lstm_states_for_next, key)
+        return carry, (spatial, scalars, masks, actions_p0, logprobs, values, rewards, dones, infos, lstm_states)
 
     return rollout_step
 
@@ -165,9 +145,12 @@ def make_rollout_step(network, stack_size):
 # ---------------------------------------------------------------------------
 
 @eqx.filter_jit
-def ppo_loss(network, spatial_seq, scalar_seq, mask, action, old_logprob, advantage, ret, clip=0.2):
-    """PPO loss for a single sample (sequence)."""
-    _, value, logprob, entropy = network(spatial_seq, scalar_seq, None, mask, jrandom.PRNGKey(0), action)
+def ppo_loss(network, spatial, scalar, lstm_h, lstm_c, mask, action, old_logprob, advantage, ret, clip=0.2):
+    """PPO loss for a single sample (with its recorded LSTM state)."""
+    lstm_state = (lstm_h, lstm_c)
+    _, value, logprob, entropy, _ = network(
+        spatial, scalar, lstm_state, mask, jrandom.PRNGKey(0), action,
+    )
 
     ratio = jnp.exp(logprob - old_logprob)
     clipped = jnp.clip(ratio, 1 - clip, 1 + clip) * advantage
@@ -181,13 +164,16 @@ def ppo_loss(network, spatial_seq, scalar_seq, mask, action, old_logprob, advant
 
 def train_step(network, opt_state, batch, optimizer):
     """Single training step on a minibatch."""
-    spatial_seqs, scalar_seqs, masks, actions, old_logprobs, advantages, returns = batch
-    bs = spatial_seqs.shape[0]
+    (spatial, scalar, lstm_h, lstm_c, masks,
+     actions, old_logprobs, advantages, returns) = batch
+    bs = spatial.shape[0]
 
     def loss_fn(net):
         losses = jax.vmap(
-            lambda s, sc, m, a, olp, adv, r: ppo_loss(net, s, sc, m, a, olp, adv, r)
-        )(spatial_seqs, scalar_seqs, masks, actions, old_logprobs, advantages, returns)
+            lambda s, sc, lh, lc, m, a, olp, adv, r: ppo_loss(
+                net, s, sc, lh, lc, m, a, olp, adv, r,
+            )
+        )(spatial, scalar, lstm_h, lstm_c, masks, actions, old_logprobs, advantages, returns)
         return jnp.mean(losses)
 
     loss, grads = eqx.filter_value_and_grad(loss_fn)(network)
@@ -229,7 +215,6 @@ def main():
     parser.add_argument("--num-steps", type=int, default=128, help="Steps per rollout")
     parser.add_argument("--num-iterations", type=int, default=500, help="Training iterations")
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate")
-    parser.add_argument("--stack-size", type=int, default=4, help="Observation history length")
     parser.add_argument("--minibatch-size", type=int, default=64, help="Minibatch size")
     parser.add_argument("--save-path", default="models/ppo_recurrent.eqx", help="Model save path")
     args = parser.parse_args()
@@ -237,12 +222,10 @@ def main():
     grid_size = args.grid_size
     num_envs = args.num_envs
     num_steps = args.num_steps
-    stack_size = args.stack_size
 
-    print(f"Generals Plus — PPO with CNN+LSTM")
+    print(f"Generals Plus — PPO with CNN+LSTM (single-frame)")
     print(f"Grid:          {grid_size}x{grid_size}")
     print(f"Environments:  {num_envs}")
-    print(f"Stack size:    {stack_size}")
     print(f"Device:        {jax.devices()[0]}")
     print()
 
@@ -270,18 +253,19 @@ def main():
     key, *state_keys = jrandom.split(key, num_envs + 1)
     states = jax.vmap(env.init_state)(jnp.stack(state_keys))
 
-    # Initialize buffers
+    # Initialize LSTM states (zero-initialized per env)
     hidden_dim = network.lstm_cell.hidden_size
-    lstm_states = (jnp.zeros((num_envs, hidden_dim)), jnp.zeros((num_envs, hidden_dim)))
-    spatial_bufs = jnp.zeros((num_envs, stack_size, 9, grid_size, grid_size))
-    scalar_bufs = jnp.zeros((num_envs, stack_size, 6))
+    lstm_states = (
+        jnp.zeros((num_envs, hidden_dim)),
+        jnp.zeros((num_envs, hidden_dim)),
+    )
 
     # Build rollout step
-    rollout_step = make_rollout_step(network, stack_size)
+    rollout_step = make_rollout_step(network)
 
     # Warmup
     print("Warming up...")
-    carry = (states, lstm_states, spatial_bufs, scalar_bufs, key)
+    carry = (states, lstm_states, key)
     for _ in range(3):
         carry, _ = rollout_step(carry, None)
     jax.block_until_ready(carry[0])
@@ -291,16 +275,17 @@ def main():
         t0 = time.time()
 
         # Collect rollout
-        carry = (states, lstm_states, spatial_bufs, scalar_bufs, key)
+        carry = (states, lstm_states, key)
         rollout_data = []
         for _ in range(num_steps):
             carry, data = rollout_step(carry, None)
             rollout_data.append(data)
 
-        states, lstm_states, spatial_bufs, scalar_bufs, key = carry
+        states, lstm_states, key = carry
         jax.block_until_ready(states)
 
         # Stack rollout data
+        # data = (spatial, scalars, masks, actions_p0, logprobs, values, rewards, dones, infos, lstm_states_in)
         spatial_all = jnp.stack([d[0] for d in rollout_data])
         scalar_all = jnp.stack([d[1] for d in rollout_data])
         masks_all = jnp.stack([d[2] for d in rollout_data])
@@ -310,6 +295,9 @@ def main():
         rewards_all = jnp.stack([d[6] for d in rollout_data])
         dones_all = jnp.stack([d[7] for d in rollout_data])
         infos_all = [d[8] for d in rollout_data]
+        # LSTM states: d[9] is (h, c) tuple, each (num_envs, hidden_dim)
+        lstm_h_all = jnp.stack([d[9][0] for d in rollout_data])
+        lstm_c_all = jnp.stack([d[9][1] for d in rollout_data])
 
         # Compute advantages
         advantages = compute_gae(rewards_all, values_all, dones_all)
@@ -321,6 +309,8 @@ def main():
         batch = (
             spatial_all.reshape(bs, *spatial_all.shape[2:]),
             scalar_all.reshape(bs, *scalar_all.shape[2:]),
+            lstm_h_all.reshape(bs, hidden_dim),
+            lstm_c_all.reshape(bs, hidden_dim),
             masks_all.reshape(bs, *masks_all.shape[2:]),
             actions_all.reshape(bs, -1),
             logprobs_all.reshape(-1),

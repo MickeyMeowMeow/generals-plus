@@ -5,13 +5,20 @@ Architecture:
     Spatial obs (9, H, W)  → CNN backbone → spatial features (flat vector)
                                                               │
                                                               ├─ concat → LSTM → value head
-                                                              │
-    Scoreboard scalars ───────→ scalar projection ────────────┘
+                                                              │                  │
+    Scoreboard scalars ──────→ scalar projection ────────────┘                  │
+                                                                                 │
+    LSTM hidden ──→ tanh projection → broadcast-add to CNN feature map           │
+                                                              │                  │
+                                                       policy head               │
+                                                       (action logits)           │
 
-    Policy head: uses CNN spatial features (action logits are spatial)
+    Policy head: uses CNN spatial features MODULATED by LSTM hidden state
+                 (enables memory-aware action selection)
     Value head:  uses LSTM hidden state (temporal context)
 
 Supports variable grid sizes via adaptive average pooling.
+Processes ONE frame per call — LSTM state is carried externally.
 """
 
 from typing import Optional, Tuple
@@ -23,7 +30,12 @@ import equinox as eqx
 
 
 class RecurrentPolicyValueNetwork(eqx.Module):
-    """CNN + LSTM policy-value network for Generals Plus RL agent."""
+    """CNN + LSTM policy-value network for Generals Plus RL agent.
+
+    Single-frame interface: each call processes one spatial+scalar observation
+    through the CNN backbone and LSTM cell. The caller is responsible for
+    maintaining the LSTM hidden state across timesteps.
+    """
 
     # CNN backbone
     conv1: eqx.nn.Conv2d
@@ -41,7 +53,10 @@ class RecurrentPolicyValueNetwork(eqx.Module):
     # LSTM
     lstm_cell: eqx.nn.LSTMCell
 
-    # Policy head (spatial — operates on CNN feature maps)
+    # LSTM-to-policy modulation: hidden_dim → channels[-1]
+    lstm_to_policy: eqx.nn.Linear
+
+    # Policy head (spatial — operates on modulated CNN feature maps)
     policy_conv: eqx.nn.Conv2d  # → 9 channels (4 dirs + 4 split dirs + 1 pass)
 
     # Value head (from LSTM hidden state)
@@ -56,7 +71,7 @@ class RecurrentPolicyValueNetwork(eqx.Module):
         hidden_dim: int = 128,
         scalar_dim: int = 6,
     ):
-        keys = jrandom.split(key, 10)
+        keys = jrandom.split(key, 11)
 
         # CNN backbone — 4 conv layers with 3x3 kernels and padding
         self.conv1 = eqx.nn.Conv2d(9, channels[0], kernel_size=3, padding=1, key=keys[0])
@@ -76,12 +91,15 @@ class RecurrentPolicyValueNetwork(eqx.Module):
         # LSTM cell: input = concat(spatial_features, scalar_features)
         self.lstm_cell = eqx.nn.LSTMCell(hidden_dim * 2, hidden_dim, key=keys[6])
 
-        # Policy head: from CNN features → 9-channel spatial logits
-        self.policy_conv = eqx.nn.Conv2d(channels[3], 9, kernel_size=1, key=keys[7])
+        # LSTM-to-policy modulation: project hidden state to feature-map channels
+        self.lstm_to_policy = eqx.nn.Linear(hidden_dim, channels[3], key=keys[7])
+
+        # Policy head: from modulated CNN features → 9-channel spatial logits
+        self.policy_conv = eqx.nn.Conv2d(channels[3], 9, kernel_size=1, key=keys[8])
 
         # Value head: from LSTM hidden → scalar value
-        self.value_linear1 = eqx.nn.Linear(hidden_dim, 64, key=keys[8])
-        self.value_linear2 = eqx.nn.Linear(64, 1, key=keys[9])
+        self.value_linear1 = eqx.nn.Linear(hidden_dim, 64, key=keys[9])
+        self.value_linear2 = eqx.nn.Linear(64, 1, key=keys[10])
 
     def _cnn_features(self, obs: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
         """
@@ -91,8 +109,8 @@ class RecurrentPolicyValueNetwork(eqx.Module):
             obs: shape (9, H, W)
 
         Returns:
-            spatial_vector: shape (hidden_dim,) — for LSTM input
-            feature_map: shape (channels[3], H, W) — for policy head
+            spatial_vector: shape (hidden_dim,) — for LSTM input (no modulation)
+            feature_map: shape (channels[3], H, W) — for policy head (no modulation)
         """
         x = jax.nn.relu(self.conv1(obs))
         x = jax.nn.relu(self.conv2(x))
@@ -106,30 +124,40 @@ class RecurrentPolicyValueNetwork(eqx.Module):
 
         return spatial_vector, feature_map
 
+    def _modulate_feature_map(
+        self, feature_map: jnp.ndarray, lstm_h: jnp.ndarray
+    ) -> jnp.ndarray:
+        """Broadcast-add LSTM hidden context to the CNN feature map.
+
+        Uses tanh to bound the modulation to [-1, 1] so the LSTM can't
+        overwhelm the spatial features.
+        """
+        modulation = jax.nn.tanh(self.lstm_to_policy(lstm_h))  # (C,)
+        return feature_map + modulation[:, None, None]  # (C, H, W)
+
     def forward(
         self,
-        spatial_seq: jnp.ndarray,
-        scalar_seq: jnp.ndarray,
+        spatial: jnp.ndarray,
+        scalar: jnp.ndarray,
         lstm_state: Optional[Tuple[jnp.ndarray, jnp.ndarray]],
         mask: jnp.ndarray,
         key: jnp.ndarray,
         action: Optional[jnp.ndarray] = None,
-    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, Tuple[jnp.ndarray, jnp.ndarray]]:
         """
-        Forward pass through CNN + LSTM.
+        Single-frame forward pass through CNN + LSTM.
 
         Args:
-            spatial_seq: (T, 9, H, W) — observation history
-            scalar_seq:  (T, scalar_dim) — scoreboard scalars per timestep
-            lstm_state:  ((h,), (c,)) or None — LSTM hidden state
+            spatial:     (9, H, W) — current spatial observation
+            scalar:      (scalar_dim,) — current scoreboard scalars
+            lstm_state:  ((h,), (c,)) or None — LSTM hidden state from previous step
             mask:        (H, W, 4) — valid move mask for the current frame
             key:         JAX random key for action sampling
             action:      If provided, evaluate this action. Otherwise sample.
 
         Returns:
-            (action, value, log_prob, entropy)
+            (action, value, log_prob, entropy, new_lstm_state)
         """
-        T = spatial_seq.shape[0]
         hidden_dim = self.lstm_cell.hidden_size
 
         # Initialize LSTM state if not provided
@@ -138,32 +166,24 @@ class RecurrentPolicyValueNetwork(eqx.Module):
             c0 = jnp.zeros(hidden_dim)
             lstm_state = (h0, c0)
 
-        # Run sequence through CNN + LSTM
-        # We use the last CNN feature map for the policy head
-        def scan_step(state, inputs):
-            spatial_t, scalar_t = inputs
-            spatial_vec, feat_map = self._cnn_features(spatial_t)
-            scalar_vec = jax.nn.relu(self.scalar_linear(scalar_t))
-            lstm_input = jnp.concatenate([spatial_vec, scalar_vec])
-            new_state = self.lstm_cell(lstm_input, state)
-            return new_state, feat_map
+        # CNN backbone on single frame
+        spatial_vec, feature_map = self._cnn_features(spatial)  # no modulation
 
-        final_state, feature_maps = jax.lax.scan(
-            scan_step,
-            lstm_state,
-            (spatial_seq, scalar_seq),
-        )
+        # Scalar projection
+        scalar_vec = jax.nn.relu(self.scalar_linear(scalar))
 
-        # Use the last feature map for policy logits
-        last_feat = feature_maps[-1]  # (channels[3], H, W)
+        # LSTM step
+        lstm_input = jnp.concatenate([spatial_vec, scalar_vec])
+        new_lstm_state = self.lstm_cell(lstm_input, lstm_state)
 
-        # Value from LSTM hidden state
-        h = final_state[0]
-        value_hidden = jax.nn.relu(self.value_linear1(h))
+        # Value from new LSTM hidden state
+        new_h = new_lstm_state[0]
+        value_hidden = jax.nn.relu(self.value_linear1(new_h))
         value = self.value_linear2(value_hidden)[0]
 
-        # Policy logits from CNN feature map
-        logits = self.policy_conv(last_feat)  # (9, H, W)
+        # Policy from CNN feature map modulated by new LSTM hidden state
+        modulated_feat = self._modulate_feature_map(feature_map, new_h)
+        logits = self.policy_conv(modulated_feat)  # (9, H, W)
         grid_size = logits.shape[-1]
 
         # Apply valid move mask
@@ -199,28 +219,28 @@ class RecurrentPolicyValueNetwork(eqx.Module):
         probs = jax.nn.softmax(logits_flat)
         entropy = -jnp.sum(probs * log_probs)
 
-        return action, value, logprob, entropy
+        return action, value, logprob, entropy, new_lstm_state
 
     def inference(
         self,
-        spatial_seq: jnp.ndarray,
-        scalar_seq: jnp.ndarray,
+        spatial: jnp.ndarray,
+        scalar: jnp.ndarray,
         lstm_state: Optional[Tuple[jnp.ndarray, jnp.ndarray]],
         mask: jnp.ndarray,
         key: Optional[jnp.ndarray] = None,
     ) -> Tuple[jnp.ndarray, Tuple[jnp.ndarray, jnp.ndarray]]:
         """
-        Inference-only forward pass — returns action and updated LSTM state.
+        Single-frame inference-only forward pass.
 
         Args:
-            spatial_seq: (T, 9, H, W)
-            scalar_seq:  (T, scalar_dim)
+            spatial:     (9, H, W)
+            scalar:      (scalar_dim,)
             lstm_state:  ((h,), (c,)) or None
             mask:        (H, W, 4) valid move mask
             key:         optional JAX key (defaults to deterministic argmax if None)
 
         Returns:
-            (action, lstm_state)
+            (action, new_lstm_state)
         """
         if key is None:
             key = jrandom.PRNGKey(0)
@@ -232,23 +252,20 @@ class RecurrentPolicyValueNetwork(eqx.Module):
             c0 = jnp.zeros(hidden_dim)
             lstm_state = (h0, c0)
 
-        def scan_step(state, inputs):
-            spatial_t, scalar_t = inputs
-            spatial_vec, _ = self._cnn_features(spatial_t)
-            scalar_vec = jax.nn.relu(self.scalar_linear(scalar_t))
-            lstm_input = jnp.concatenate([spatial_vec, scalar_vec])
-            new_state = self.lstm_cell(lstm_input, state)
-            return new_state, None
+        # CNN backbone
+        spatial_vec, feature_map = self._cnn_features(spatial)
 
-        final_state, _ = jax.lax.scan(
-            scan_step,
-            lstm_state,
-            (spatial_seq, scalar_seq),
-        )
+        # Scalar projection
+        scalar_vec = jax.nn.relu(self.scalar_linear(scalar))
 
-        # Policy from last spatial observation
-        _, last_feat = self._cnn_features(spatial_seq[-1])
-        logits = self.policy_conv(last_feat)
+        # LSTM step
+        lstm_input = jnp.concatenate([spatial_vec, scalar_vec])
+        new_lstm_state = self.lstm_cell(lstm_input, lstm_state)
+
+        # Policy from modulated feature map
+        new_h = new_lstm_state[0]
+        modulated_feat = self._modulate_feature_map(feature_map, new_h)
+        logits = self.policy_conv(modulated_feat)
 
         grid_size = logits.shape[-1]
         mask_t = jnp.transpose(mask, (2, 0, 1))
@@ -269,4 +286,4 @@ class RecurrentPolicyValueNetwork(eqx.Module):
         actual_dir = jnp.where(is_pass, 0, jnp.where(is_half, direction - 4, direction))
         action = jnp.array([is_pass, row, col, actual_dir, is_half], dtype=jnp.int32)
 
-        return action, final_state
+        return action, new_lstm_state

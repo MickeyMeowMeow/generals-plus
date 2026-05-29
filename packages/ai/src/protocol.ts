@@ -53,6 +53,7 @@ export interface BotAction {
 
 export interface ActionMessage {
   type: "action";
+  player_id: string;
   action: BotAction | null;
 }
 
