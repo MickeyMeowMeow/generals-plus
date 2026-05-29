@@ -29,3 +29,18 @@ build
 *.sw?
 
 coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ML / Training
+models/
+*.eqx
+*.pt
+*.safetensors
+runs/
+wandb/

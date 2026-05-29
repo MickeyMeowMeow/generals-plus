@@ -1,0 +1,29 @@
+[project]
+name = "generals-plus-bot"
+version = "0.1.0"
+description = "Python bot service and training pipeline for Generals Plus"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "websockets>=13.0",
+    "numpy>=2.0.0",
+    "onnxruntime>=1.17.0",
+]
+
+[project.optional-dependencies]
+train = [
+    "jax>=0.4.30",
+    "jaxlib>=0.4.30",
+    "equinox>=0.11.0",
+    "optax>=0.2.0",
+]
+export = [
+    "tensorflow>=2.16.0",
+    "tf2onnx>=1.16.0",
+]
+
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]

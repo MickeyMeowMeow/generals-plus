@@ -169,4 +169,11 @@ export interface NetworkProvider<User = unknown> {
   createCustomRoom(customRoomKey?: string): Promise<CustomRoomCreation>;
 
   resolveCustomRoom(customRoomKey: string): Promise<CustomRoomResolution>;
+
+  /**
+   * Checks if the AI bot service is available.
+   *
+   * @returns A promise that resolves to true if the AI service is reachable.
+   */
+  checkAiHealth(): Promise<boolean>;
 }

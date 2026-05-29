@@ -1,50 +1,91 @@
 import type { GameMode } from "@generals-plus/engine";
+import type { SeatReservation } from "@generals-plus/shared-types";
+import { QueueServerMessage } from "@generals-plus/shared-types";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Stage } from "#/components/layout";
 import { DEFAULT_GAME_MODE } from "#/config/ui-constants";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth } from "#/features/auth/hooks";
 import { AuthPage } from "#/features/auth/pages/auth-page";
+import { GamePage } from "#/features/game/pages/game-page";
 import { QueuePage } from "#/features/game/pages/queue-page";
 import { LobbyPage } from "#/features/lobby/pages/lobby-page";
+import { networkProvider } from "#/infra/network/provider";
 
-/**
- * Client-only phase for the official `/` route.
- *
- * Auth is handled separately by `AuthStatus`; once authenticated, the root route
- * intentionally keeps the URL stable and switches between the lobby scene and
- * queue scene in memory. The actual match phase is driven by a Colyseus seat
- * reservation, not by another route.
- */
-type OfficialPhase = "lobby" | "queue";
+type OfficialPhase = "lobby" | "queue" | "vs-ai";
 
-/**
- * Official-flow route container.
- *
- * `/` is the single entry point for unauthenticated auth, official lobby,
- * official queue, and official match rendering. Keeping these states in one
- * route avoids stale legacy URLs and matches the backend room lifecycle.
- */
 export default function Index() {
   const { state } = useAuth();
   const [phase, setPhase] = useState<OfficialPhase>("lobby");
   const [selectedMode, setSelectedMode] = useState<GameMode>(DEFAULT_GAME_MODE);
+  const [vsAiReservation, setVsAiReservation] =
+    useState<SeatReservation | null>(null);
+
+  const handleVsAi = async () => {
+    const available = await networkProvider.checkAiHealth();
+    if (!available) {
+      toast.error("AI service unavailable", {
+        description: "Please start the bot service and try again.",
+      });
+      return;
+    }
+    setPhase("vs-ai");
+    networkProvider
+      .joinOrCreate("vs-ai")
+      .then((room) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (room as any).onMessage(
+          QueueServerMessage.SEAT_RESERVATION,
+          (reservation: SeatReservation) => {
+            setVsAiReservation(reservation);
+          },
+        );
+      })
+      .catch(() => {
+        setPhase("lobby");
+      });
+  };
+
+  if (state.status !== AuthStatus.AUTHENTICATED) {
+    return (
+      <Stage>
+        <AuthPage />
+      </Stage>
+    );
+  }
+
+  if (phase === "queue") {
+    return (
+      <QueuePage gameMode={selectedMode} onLeave={() => setPhase("lobby")} />
+    );
+  }
+
+  if (phase === "vs-ai" && vsAiReservation) {
+    return (
+      <GamePage
+        connection={{ type: "reservation", reservation: vsAiReservation }}
+        source={{
+          type: "official",
+          onReturn: () => {
+            setPhase("lobby");
+            setVsAiReservation(null);
+          },
+        }}
+      />
+    );
+  }
 
   return (
     <Stage>
-      {state.status !== AuthStatus.AUTHENTICATED ? (
-        <AuthPage />
-      ) : phase === "queue" ? (
-        <QueuePage gameMode={selectedMode} onLeave={() => setPhase("lobby")} />
-      ) : (
-        <LobbyPage
-          onQueue={(mode) => {
-            setSelectedMode(mode);
-            setPhase("queue");
-          }}
-        />
-      )}
+      <LobbyPage
+        onQueue={(mode) => {
+          setSelectedMode(mode);
+          setPhase("queue");
+        }}
+        onVsAi={handleVsAi}
+      />
     </Stage>
   );
 }

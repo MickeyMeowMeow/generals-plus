@@ -2,6 +2,8 @@ import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, Room } from "@colyseus/core";
 import { StateView } from "@colyseus/schema";
+import type { GridInfo, ScoreboardEntry } from "@generals-plus/ai";
+import { BotBridge, BotSession } from "@generals-plus/ai";
 import type {
   Action,
   IBaseGame,
@@ -29,6 +31,7 @@ import {
 } from "@generals-plus/shared-types";
 import * as z from "zod";
 
+import { ENV } from "#/env";
 import { createPlayer } from "#/features/player/utils";
 import { calculateNewRatings } from "#/features/rating/rating-service";
 import { parseRoomData } from "#/features/room-data";
@@ -45,6 +48,8 @@ export class MatchRoom extends Room<{
   private game: IBaseGame | undefined;
   private sessionToPlayerId = new Map<string, string>();
   private playerToSessionId = new Map<string, string>();
+  private botBridge: BotBridge | null = null;
+  private botSessions: BotSession[] = [];
 
   async onCreate(options: { metadata: unknown }) {
     const metadata = parseRoomData(options.metadata);
@@ -56,7 +61,9 @@ export class MatchRoom extends Room<{
       await this.setPrivate(true);
     }
 
-    this.maxClients = metadata.playerInit.length;
+    // Count human players for maxClients (bots don't need real connections)
+    const humanPlayers = metadata.playerInit.filter((p) => !p.isBot);
+    this.maxClients = humanPlayers.length;
 
     this.game = metadata.game;
 
@@ -104,6 +111,41 @@ export class MatchRoom extends Room<{
     }
 
     this.state = state;
+
+    // Initialize bot sessions for players marked as bots
+    const botPlayers = metadata.playerInit.filter((p) => p.isBot);
+    if (botPlayers.length > 0) {
+      const bridge = new BotBridge(ENV.BOT_SERVICE_URL);
+      this.botBridge = bridge;
+
+      const gridInfo: GridInfo =
+        state.gridType === GridType.SQUARE
+          ? { type: "square", width: state.width, height: state.height }
+          : {
+              type: "hex",
+              width: state.right - state.left + 1,
+              height: state.rightSlant - state.leftSlant + 1,
+            };
+
+      bridge
+        .connect()
+        .then(() => {
+          for (const botInit of botPlayers) {
+            const session = new BotSession(botInit.id, bridge, gridInfo);
+            session.register(
+              this.state,
+              this.sessionToPlayerId,
+              this.playerToSessionId,
+            );
+            this.botSessions.push(session);
+          }
+          logger.info(`[MatchRoom] ${botPlayers.length} bot(s) registered`);
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          logger.error(`[MatchRoom] Failed to connect to bot service: ${msg}`);
+        });
+    }
 
     this.onMessage(MatchClientMessage.ACTION, (client, action: Action) => {
       logger.debug(`[MatchRoom] Received action: ${JSON.stringify(action)}`);
@@ -311,17 +353,54 @@ export class MatchRoom extends Room<{
   }
 
   onDispose() {
+    for (const session of this.botSessions) {
+      session.end();
+    }
+    this.botBridge?.dispose();
+    this.botSessions = [];
     this.sessionToPlayerId.clear();
     this.playerToSessionId.clear();
     logger.info("[MatchRoom] Room disposed");
   }
 
-  private onTick(_deltaTime: number) {
+  /**
+   * Extract scoreboard entries from the synced room state.
+   * All game modes share the same TroopLandScoreboardPlayerEntry base
+   * with playerId, troops, land, isAlive — which is exactly what the
+   * bot protocol needs.
+   */
+  private extractScoreboard(): ScoreboardEntry[] {
+    const scoreboard = this.state.scoreboard as unknown as {
+      players: Array<{
+        playerId: string;
+        troops: number;
+        land: number;
+        isAlive: boolean;
+      }>;
+    };
+    return scoreboard.players.map((p) => ({
+      playerId: p.playerId,
+      troops: p.troops,
+      land: p.land,
+      isAlive: p.isAlive,
+    }));
+  }
+
+  private async onTick(_deltaTime: number) {
     if (!this.game) {
       logger.error(`[MatchRoom] Error: Game instance not found on tick`);
       throw new Error("Game instance not found");
     }
     if (this.state.status === GameStatus.FINISHED) return;
+
+    // Collect bot actions before processing queues
+    const game = this.game;
+    if (this.botSessions.length > 0) {
+      const scoreboard = this.extractScoreboard();
+      await Promise.all(
+        this.botSessions.map((s) => s.onTick(game, this.state, scoreboard)),
+      );
+    }
 
     this.processActionQueues();
 
@@ -333,6 +412,11 @@ export class MatchRoom extends Room<{
 
     for (const client of this.clients) {
       this.updateClientView(client);
+    }
+
+    // Update bot visions for spectators
+    for (const session of this.botSessions) {
+      session.updateVision(this.game, this.state);
     }
 
     const result = this.game.checkGameEnd();
@@ -478,6 +562,13 @@ export class MatchRoom extends Room<{
   private async updateRatings(result: IGameResult) {
     const players = Array.from(this.state.players.values());
     if (players.length < 2) return;
+
+    // Skip rating updates for bot players
+    const humanPlayers = players.filter((p) => !p.id.startsWith("__bot__"));
+    if (humanPlayers.length < 2) {
+      logger.info("[MatchRoom] Skipping rating update for bot match");
+      return;
+    }
 
     const mode = result.mode;
 

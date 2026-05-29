@@ -7,6 +7,7 @@ export interface PlayerInit {
   displayName: string;
   teamId: string;
   color: number;
+  isBot?: boolean;
 }
 
 export interface ClientAuth {

@@ -84,7 +84,13 @@ function ModePickerDialog({
  * The lobby keeps the root route stable, offers a mode picker before official
  * queueing, and creates private custom setup rooms by URL.
  */
-export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
+export function LobbyPage({
+  onQueue,
+  onVsAi,
+}: {
+  onQueue: (mode: GameMode) => void;
+  onVsAi: () => void;
+}) {
   const navigate = useNavigate();
   const { actions } = useAuth();
   const displayName = useUser((user) => user?.displayName ?? "Commander");
@@ -153,7 +159,7 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
             </Button>
           </div>
 
-          <section className="grid min-h-40 place-items-center border-t border-game-border pt-5 sm:min-h-44">
+          <section className="grid min-h-40 place-items-center gap-3 border-t border-game-border pt-5 sm:min-h-44">
             <Button
               type="button"
               size="lg"
@@ -162,6 +168,15 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
             >
               <Play className="size-4" />
               Start
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              variant="outline"
+              onClick={onVsAi}
+              className="min-w-36 border-game-border text-game-text hover:border-white/50 hover:bg-game-surface"
+            >
+              VS AI
             </Button>
           </section>
 

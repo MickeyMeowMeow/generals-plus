@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+
+# Trained models
+models/
+*.eqx
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store

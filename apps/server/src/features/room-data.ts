@@ -1,3 +1,4 @@
+import { logger } from "@colyseus/core";
 import { GameMode, GridType } from "@generals-plus/engine";
 import type { RoomData } from "@generals-plus/shared-types";
 import * as z from "zod";
@@ -30,6 +31,12 @@ const roomDataSchema = z.object({
 });
 
 export function parseRoomData(raw: unknown): RoomData | null {
-  if (!roomDataSchema.safeParse(raw).success) return null;
+  const result = roomDataSchema.safeParse(raw);
+  if (!result.success) {
+    logger.error(
+      `[parseRoomData] Validation failed: ${JSON.stringify(result.error.issues)}`,
+    );
+    return null;
+  }
   return raw as RoomData;
 }
