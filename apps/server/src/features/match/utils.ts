@@ -13,6 +13,9 @@ export interface ModeSettings {
   collapseInterval?: number;
   startDelay?: number;
   collapseShape?: CollapseShape;
+  payloadSpeed?: number;
+  payloadCartSize?: number;
+  payloadRequiredOccupied?: number;
 }
 
 export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
@@ -29,6 +32,12 @@ export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
     startDelay: 60,
     collapseInterval: 30,
     collapseShape: CollapseShape.CIRCLE,
+  },
+  [GameMode.PAYLOAD]: {
+    duration: 300,
+    payloadSpeed: 2,
+    payloadCartSize: 3,
+    payloadRequiredOccupied: 6,
   },
 };
 

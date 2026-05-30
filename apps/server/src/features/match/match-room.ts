@@ -11,6 +11,7 @@ import type {
 } from "@generals-plus/engine";
 import {
   ActionType,
+  GameMode,
   GameStatus,
   GridType,
   PlayerStatus,
@@ -83,6 +84,13 @@ export class MatchRoom extends Room<{
       state.right = this.game.grid.right;
       state.leftSlant = this.game.grid.leftSlant;
       state.rightSlant = this.game.grid.rightSlant;
+    }
+
+    if (metadata.mode === GameMode.PAYLOAD) {
+      for (const coord of this.game.grid.track) {
+        state.payloadTrackX.push(coord.x);
+        state.payloadTrackY.push(coord.y);
+      }
     }
 
     for (const playerInit of metadata.playerInit) {
@@ -213,6 +221,11 @@ export class MatchRoom extends Room<{
 
     this.game.startGame();
     this.state.status = GameStatus.PLAYING;
+
+    // Immediately synchronize the starting scoreboard and player states
+    // so client subscriptions receive the correct centered cartIndex right away.
+    this.syncPlayerState();
+    this.syncScoreboard();
 
     this.setSimulationInterval(
       (deltaTime) => this.onTick(deltaTime),
@@ -438,12 +451,15 @@ export class MatchRoom extends Room<{
       const state = this.game.getPlayerState(playerId);
       if (!state) continue;
 
-      player.teamId = state.teamId;
       const publicPlayer = this.state.publicPlayers.get(playerId);
-      // Keep the public projection in lockstep with the authoritative engine
-      // state so the scoreboard stays accurate for every connected client.
-      if (publicPlayer) {
-        publicPlayer.teamId = state.teamId;
+
+      if (state.teamId) {
+        player.teamId = state.teamId;
+        // Keep the public projection in lockstep with the authoritative engine
+        // state so the scoreboard stays accurate for every connected client.
+        if (publicPlayer) {
+          publicPlayer.teamId = state.teamId;
+        }
       }
 
       const prevStatus = player.status;
@@ -480,6 +496,7 @@ export class MatchRoom extends Room<{
       this.state.scoreboard,
       this.game.getScoreboard(),
       this.state.publicPlayers.values(),
+      this.state.tickInterval,
     );
   }
 

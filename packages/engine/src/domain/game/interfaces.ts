@@ -211,6 +211,27 @@ export interface IDemolitionGame extends IBaseGame {
   getScoreboard(): IDemolitionScoreboard;
 }
 
+export interface IPayloadScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.PAYLOAD;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+    readonly isAlive: boolean;
+  }>;
+  readonly cartProgress: number; // 0.0 to 1.0
+  readonly cartIndex: number;
+  readonly trackLength: number;
+  readonly totalTimeTicks: number;
+  readonly speedTicks: number;
+  readonly cartSize: number;
+  readonly minPushers: number;
+  readonly isContested: boolean;
+  readonly pushingTeamId: string | null;
+  readonly leftTeamId: string;
+  readonly rightTeamId: string;
+}
+
 /**
  * Payload Mode.
  * Tracks the movement of the cart along a designated track.
@@ -219,6 +240,8 @@ export interface IPayloadGame extends IBaseGame {
   readonly mode: typeof GameMode.PAYLOAD;
   /** Progress of the cart from 0.0 (Start) to 1.0 (End). */
   payloadProgress: number;
+
+  getScoreboard(): IPayloadScoreboard;
 }
 
 /**

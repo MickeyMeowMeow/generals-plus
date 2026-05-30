@@ -50,6 +50,10 @@ export class SetupState extends Schema {
   @type("number") startDelay: number = 60;
   @type("string") collapseShape: string = CollapseShape.CIRCLE;
 
+  @type("number") payloadSpeed: number = 2;
+  @type("number") payloadCartSize: number = 3;
+  @type("number") payloadRequiredOccupied: number = 6;
+
   @type("number") tickInterval: number = 500;
   @type("number") finishTick: number = 360;
 }

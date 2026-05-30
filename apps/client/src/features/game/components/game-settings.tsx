@@ -4,6 +4,7 @@ import type {
   CollapseSetupSettings,
   DemolitionSetupSettings,
   DominationSetupSettings,
+  PayloadSetupSettings,
   SetupSettings,
   SetupState,
   TurfWarSetupSettings,
@@ -42,7 +43,8 @@ type NumberKeys =
   | ExtractNumberKeys<TurfWarSetupSettings>
   | ExtractNumberKeys<DominationSetupSettings>
   | ExtractNumberKeys<DemolitionSetupSettings>
-  | ExtractNumberKeys<CollapseSetupSettings>;
+  | ExtractNumberKeys<CollapseSetupSettings>
+  | ExtractNumberKeys<PayloadSetupSettings>;
 
 const PLAYER_NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "maxPlayers", label: "Max Players" },
@@ -89,6 +91,12 @@ const MODE_SPECIFIC_FIELDS: Partial<
   [GameMode.COLLAPSE]: [
     { key: "startDelay", label: "Start Delay (s)" },
     { key: "collapseInterval", label: "Collapse Interval (s)" },
+  ],
+  [GameMode.PAYLOAD]: [
+    { key: "payloadSpeed", label: "Cart Speed (s)" },
+    { key: "duration", label: "Duration (s)" },
+    { key: "payloadCartSize", label: "Cart Size" },
+    { key: "payloadRequiredOccupied", label: "Required Occupied Tiles" },
   ],
 };
 

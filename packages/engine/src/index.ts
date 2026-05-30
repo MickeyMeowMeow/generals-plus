@@ -22,6 +22,7 @@ export * from "#/domain/game/game-mode";
 export * from "#/domain/game/game-result";
 export * from "#/domain/game/game-status";
 export * from "#/domain/game/interfaces";
+export * from "#/domain/game/payload-game";
 export * from "#/domain/game/turf-war-game";
 export * from "#/domain/grid/grid";
 export * from "#/domain/grid/grid-generator";

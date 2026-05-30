@@ -46,6 +46,10 @@ interface GameAppProps {
   readonly pings?: Ping[];
   readonly isPlanted?: boolean;
   readonly ticksRemaining?: number;
+  readonly payloadTrackX?: number[];
+  readonly payloadTrackY?: number[];
+  readonly cartIndex?: number;
+  readonly cartSize?: number;
 }
 
 /**
@@ -71,6 +75,10 @@ export function GameApp({
   pings = [],
   isPlanted = false,
   ticksRemaining = -1,
+  payloadTrackX = [],
+  payloadTrackY = [],
+  cartIndex = -1,
+  cartSize = 0,
 }: GameAppProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
@@ -214,6 +222,10 @@ export function GameApp({
               pings={pings}
               isPlanted={isPlanted}
               ticksRemaining={ticksRemaining}
+              payloadTrackX={payloadTrackX}
+              payloadTrackY={payloadTrackY}
+              cartIndex={cartIndex}
+              cartSize={cartSize}
             />
           </Viewport>
         </Application>

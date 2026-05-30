@@ -5,6 +5,7 @@ import type {
   ICollapseScoreboard,
   IDemolitionScoreboard,
   IDominationScoreboard,
+  IPayloadScoreboard,
   ITurfWarScoreboard,
 } from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
@@ -24,6 +25,8 @@ import {
   DominationScoreboard,
   DominationScoreboardPlayerEntry,
   DominationScoreboardTeamEntry,
+  PayloadScoreboard,
+  PayloadScoreboardPlayerEntry,
   TurfWarScoreboard,
   TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
@@ -51,6 +54,9 @@ export function createScoreboard(mode: GameModeType): BaseScoreboard {
     case GameMode.COLLAPSE:
       scoreboard = new CollapseScoreboard();
       break;
+    case GameMode.PAYLOAD:
+      scoreboard = new PayloadScoreboard();
+      break;
     default:
       scoreboard = new ClassicScoreboard();
       break;
@@ -70,6 +76,7 @@ export function syncScoreboard(
   target: BaseScoreboard,
   source: IBaseScoreboard,
   playerMetadata: Iterable<PublicPlayer> = [],
+  tickInterval?: number,
 ): void {
   target.mode = source.mode;
   const metadataByPlayer = new Map(
@@ -95,6 +102,35 @@ export function syncScoreboard(
       collapseTarget.currentProgress = collapseSource.currentProgress;
       collapseTarget.startDelayTicks = collapseSource.startDelayTicks;
       collapseTarget.shrinkIntervalTicks = collapseSource.shrinkIntervalTicks;
+      break;
+    }
+    case GameMode.PAYLOAD: {
+      const payloadTarget = target as PayloadScoreboard;
+      const payloadSource = source as IPayloadScoreboard;
+      syncPlayers(
+        payloadTarget,
+        payloadSource.players,
+        metadataByPlayer,
+        () => new PayloadScoreboardPlayerEntry(),
+        (schema, entry) => {
+          schema.troops = entry.troops;
+          schema.land = entry.land;
+          schema.isAlive = entry.isAlive;
+        },
+      );
+      const interval = tickInterval ?? 500;
+      payloadTarget.cartProgress = payloadSource.cartProgress;
+      payloadTarget.cartIndex = payloadSource.cartIndex;
+      payloadTarget.trackLength = payloadSource.trackLength;
+      payloadTarget.totalTime =
+        (payloadSource.totalTimeTicks * interval) / 1000;
+      payloadTarget.speedSeconds = (payloadSource.speedTicks * interval) / 1000;
+      payloadTarget.cartSize = payloadSource.cartSize;
+      payloadTarget.minPushers = payloadSource.minPushers;
+      payloadTarget.isContested = payloadSource.isContested;
+      payloadTarget.pushingTeamId = payloadSource.pushingTeamId ?? "";
+      payloadTarget.leftTeamId = payloadSource.leftTeamId;
+      payloadTarget.rightTeamId = payloadSource.rightTeamId;
       break;
     }
     case GameMode.CLASSIC: {

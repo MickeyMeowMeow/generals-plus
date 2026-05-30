@@ -2,6 +2,7 @@ import { GameMode } from "@generals-plus/engine";
 import type {
   BaseScoreboard,
   DemolitionScoreboard,
+  PayloadScoreboard,
 } from "@generals-plus/shared-types";
 
 import { formatTeamLabel } from "#/features/match/utils/team-label";
@@ -385,6 +386,62 @@ function createDemolitionModel(
   };
 }
 
+const payloadColumns: GameHudColumn[] = [
+  { key: "progress", label: "Progress" },
+  { key: "land", label: "Land" },
+  { key: "troops", label: "Soldiers" },
+];
+
+function createPayloadModel(
+  scoreboard: BaseScoreboard,
+): GameHudScoreboardModel {
+  const payloadScoreboard = scoreboard as PayloadScoreboard;
+  const rows = createPlayerRows(scoreboard);
+  const groups = createTeamGroups(rows);
+  const progressVal = payloadScoreboard.cartProgress ?? 0;
+
+  const leftTeamId = payloadScoreboard.leftTeamId;
+  const rightTeamId = payloadScoreboard.rightTeamId;
+
+  const targetGroups: GameHudGroup[] = groups.map((group) => {
+    let pStr = "";
+    if (group.id === rightTeamId) {
+      pStr = `${Math.round((1 - progressVal) * 100)}%`;
+    } else if (group.id === leftTeamId) {
+      pStr = `${Math.round(progressVal * 100)}%`;
+    } else {
+      pStr = `${Math.round(progressVal * 100)}%`;
+    }
+
+    return {
+      ...group,
+      totals: {
+        ...group.totals,
+        progress: pStr,
+      },
+    };
+  });
+
+  let subtitle = "Stopped";
+  if (payloadScoreboard.isContested) {
+    subtitle = "Stopped (Contested)";
+  } else if (payloadScoreboard.pushingTeamId) {
+    subtitle = `Moving by ${formatTeamLabel(payloadScoreboard.pushingTeamId)}`;
+  }
+
+  return {
+    title: "Payload",
+    subtitle,
+    columns: payloadColumns,
+    groups: targetGroups.sort(
+      (a, b) =>
+        Number(b.totals?.troops ?? 0) - Number(a.totals?.troops ?? 0) ||
+        a.label.localeCompare(b.label),
+    ),
+    hasTeams: true,
+  };
+}
+
 /**
  * Converts the mode-specific match scoreboard schema into a single HUD model.
  *
@@ -404,6 +461,8 @@ export function createGameHudScoreboardModel(
       return createDominationModel(scoreboard, targetScore);
     case GameMode.DEMOLITION:
       return createDemolitionModel(scoreboard);
+    case GameMode.PAYLOAD:
+      return createPayloadModel(scoreboard);
     default:
       return createTroopLandModel("Classic", scoreboard);
   }

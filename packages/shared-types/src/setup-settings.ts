@@ -53,6 +53,14 @@ export interface CollapseSetupSettings extends BaseSetupSettings {
   collapseShape: CollapseShape;
 }
 
+export interface PayloadSetupSettings extends BaseSetupSettings {
+  gameMode: typeof GameMode.PAYLOAD;
+  duration: number;
+  payloadSpeed: number;
+  payloadCartSize: number;
+  payloadRequiredOccupied: number;
+}
+
 export interface OtherSettings extends BaseSetupSettings {
   gameMode: Exclude<
     GameMode,
@@ -61,6 +69,7 @@ export interface OtherSettings extends BaseSetupSettings {
     | typeof GameMode.DOMINATION
     | typeof GameMode.DEMOLITION
     | typeof GameMode.COLLAPSE
+    | typeof GameMode.PAYLOAD
   >;
 }
 
@@ -70,4 +79,5 @@ export type SetupSettings =
   | DominationSetupSettings
   | DemolitionSetupSettings
   | CollapseSetupSettings
+  | PayloadSetupSettings
   | OtherSettings;

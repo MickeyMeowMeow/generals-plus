@@ -159,6 +159,19 @@ export class MatchQueueRoom extends QueueRoom {
                   | "circle"
                   | "square",
               };
+            case GameMode.PAYLOAD:
+              return {
+                ...base,
+                mode: GameMode.PAYLOAD,
+                finishTick,
+                payloadSpeedTicks: calculateFinishTick(
+                  modeSettings?.payloadSpeed ?? 2,
+                  BASE_TICK_INTERVAL,
+                ),
+                payloadCartSize: modeSettings?.payloadCartSize ?? 3,
+                payloadRequiredOccupied:
+                  modeSettings?.payloadRequiredOccupied ?? 6,
+              };
             default:
               return { ...base, mode: this.gameMode };
           }
@@ -171,7 +184,8 @@ export class MatchQueueRoom extends QueueRoom {
         const isTimedMode =
           this.gameMode === GameMode.TURF_WAR ||
           this.gameMode === GameMode.DOMINATION ||
-          this.gameMode === GameMode.DEMOLITION;
+          this.gameMode === GameMode.DEMOLITION ||
+          this.gameMode === GameMode.PAYLOAD;
 
         const metadata: RoomData = {
           mode: this.gameMode,

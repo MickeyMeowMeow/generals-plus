@@ -12,6 +12,7 @@ import {
   DominationGame,
   GameMode,
   GridType,
+  PayloadGame,
   Player,
   StandardTeam,
   TurfWarGame,
@@ -62,10 +63,23 @@ interface CollapseCreateGameOptions extends BaseCreateGameOptions {
   collapseShape?: CollapseShape;
 }
 
+interface PayloadCreateGameOptions extends BaseCreateGameOptions {
+  mode: typeof GameMode.PAYLOAD;
+  finishTick?: number;
+  payloadSpeedTicks?: number;
+  payloadCartSize?: number;
+  payloadRequiredOccupied?: number;
+}
+
 interface OtherCreateGameOptions extends BaseCreateGameOptions {
   mode: Exclude<
     GameMode,
-    "classic" | "turf_war" | "domination" | "demolition" | "collapse"
+    | "classic"
+    | "turf_war"
+    | "domination"
+    | "demolition"
+    | "collapse"
+    | "payload"
   >;
 }
 
@@ -75,6 +89,7 @@ export type CreateGameOptions =
   | DominationCreateGameOptions
   | DemolitionCreateGameOptions
   | CollapseCreateGameOptions
+  | PayloadCreateGameOptions
   | OtherCreateGameOptions;
 
 function getRoundRobinTeamAssignments(
@@ -240,6 +255,25 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         game.players.set(playerId, player);
       }
 
+      return game;
+    }
+    case GameMode.PAYLOAD: {
+      const game = new PayloadGame(
+        {
+          gridType: GridType.SQUARE,
+          ...options.gridOptions,
+          isPayload: true,
+          payloadCartSize: options.payloadCartSize,
+        },
+        {
+          finishTick: options.finishTick,
+          payloadSpeedTicks: options.payloadSpeedTicks,
+          payloadCartSize: options.payloadCartSize,
+          payloadRequiredOccupied: options.payloadRequiredOccupied,
+        },
+      );
+
+      addStandardTeamsAndPlayers(game, options);
       return game;
     }
     default:

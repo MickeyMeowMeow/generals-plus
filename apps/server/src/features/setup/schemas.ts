@@ -32,6 +32,9 @@ export const setupSettingsUpdateSchema = z
     collapseInterval: z.number().min(5).max(300),
     startDelay: z.number().min(5).max(600),
     collapseShape: z.enum(["circle", "square"]),
+    payloadSpeed: z.number().min(0.5).max(10),
+    payloadCartSize: z.number().int().min(1).max(5),
+    payloadRequiredOccupied: z.number().int().min(1).max(25),
   })
   .partial()
   .strict();

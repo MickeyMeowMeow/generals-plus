@@ -9,6 +9,7 @@ import {
 import type {
   CollapseScoreboard,
   DemolitionScoreboard,
+  PayloadScoreboard,
 } from "@generals-plus/shared-types";
 import {
   MatchClientMessage,
@@ -459,6 +460,22 @@ export function GamePage({ connection, source }: GamePageProps) {
               )
             : -1
         }
+        payloadTrackX={
+          gameState.payloadTrackX ? Array.from(gameState.payloadTrackX) : []
+        }
+        payloadTrackY={
+          gameState.payloadTrackY ? Array.from(gameState.payloadTrackY) : []
+        }
+        cartIndex={
+          gameState.mode === GameMode.PAYLOAD
+            ? ((gameState.scoreboard as PayloadScoreboard).cartIndex ?? -1)
+            : -1
+        }
+        cartSize={
+          gameState.mode === GameMode.PAYLOAD
+            ? ((gameState.scoreboard as PayloadScoreboard).cartSize ?? 0)
+            : 0
+        }
       />
 
       {(() => {
@@ -543,6 +560,15 @@ export function GamePage({ connection, source }: GamePageProps) {
             tickInterval: gameState.tickInterval,
             label: "Void Collapse",
             startTick,
+          };
+        }
+
+        if (gameState.mode === GameMode.PAYLOAD) {
+          timerProps = {
+            currentTick: gameState.tick,
+            targetTick: gameState.finishTick > 0 ? gameState.finishTick : 0,
+            tickInterval: gameState.tickInterval,
+            label: "Time remaining",
           };
         }
 
