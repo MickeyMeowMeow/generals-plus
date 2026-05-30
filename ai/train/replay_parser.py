@@ -8,40 +8,36 @@ action, mask) tuples with memory channel tracking.
 Saves one .npz file per grid size (e.g., data/sft_18x18.npz) to preserve
 map size diversity — no padding. The U-Net network handles variable sizes natively.
 
-Supports parallel processing via threading (--workers N, default 4).
+Uses ProcessPoolExecutor for true multi-core parallelism (bypasses Python GIL).
+Set JAX_PLATFORMS=cpu before running — game re-simulation is tiny per-step,
+GPU kernel launch overhead exceeds actual compute.
 
 Usage:
-    cd ai/
-    python -m train.replay_parser --max-games 1000 --workers 4
+    JAX_PLATFORMS=cpu python -m train.replay_parser --max-games 1000 --workers 64
 """
 
 import argparse
 import os
 import sys
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
 
 import numpy as np
 from tqdm import tqdm
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import jax
-import jax.numpy as jnp
-
-from sim.types import GameState, Observation
-from sim import game
-from sim.action import compute_valid_move_mask, DIRECTIONS
-from sim.memory import init_memory, update_memory, memory_to_channels, MemoryState
+# Defer JAX imports to worker processes (ProcessPoolExecutor compatible)
+# Only numpy helpers at module level — JAX in parse_replay
 
 
-def obs_to_spatial(obs: Observation) -> np.ndarray:
-    """Convert Observation to (9, H, W) spatial tensor."""
+def obs_to_spatial(armies, generals, cities, mountains,
+                   neutral_cells, owned_cells, opponent_cells,
+                   fog_cells, structures_in_fog) -> np.ndarray:
+    """Convert observation fields to (9, H, W) spatial tensor (numpy only, picklable)."""
     return np.stack([
-        obs.armies, obs.generals, obs.cities, obs.mountains,
-        obs.neutral_cells, obs.owned_cells, obs.opponent_cells,
-        obs.fog_cells, obs.structures_in_fog,
+        armies, generals, cities, mountains,
+        neutral_cells, owned_cells, opponent_cells,
+        fog_cells, structures_in_fog,
     ], axis=0).astype(np.float32)
 
 
@@ -71,11 +67,30 @@ def move_to_action(start_flat: int, end_flat: int, is_half: int, width: int, hei
     return action, True
 
 
+def _init_worker():
+    """Per-process initializer: ensure sim/ package importable, JAX on CPU."""
+    import os as _os
+    _os.environ.setdefault("JAX_PLATFORMS", "cpu")
+    # Ensure ai/ directory is on path for `from sim import ...` in parse_replay
+    import sys as _sys
+    _ai_dir = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    if _ai_dir not in _sys.path:
+        _sys.path.insert(0, _ai_dir)
+
+
 def parse_replay(row: dict) -> list:
     """
     Parse a single replay. Returns list of dicts with obs_24ch, action, mask, grid_size.
     Only keeps winning player's moves. No padding — original grid size preserved.
+
+    Called from ProcessPoolExecutor workers — imports JAX locally per process.
     """
+    # Local imports for ProcessPoolExecutor compatibility
+    import jax.numpy as jnp
+    from sim import game
+    from sim.action import compute_valid_move_mask
+    from sim.memory import init_memory, update_memory, memory_to_channels
+
     W = row["mapWidth"]
     H = row["mapHeight"]
 
@@ -141,7 +156,10 @@ def parse_replay(row: dict) -> list:
                 continue
             obs = obs_p0 if p == 0 else obs_p1
             action = actions[p]
-            obs_9ch = obs_to_spatial(obs)
+            obs_9ch = obs_to_spatial(
+                obs.armies, obs.generals, obs.cities, obs.mountains,
+                obs.neutral_cells, obs.owned_cells, obs.opponent_cells,
+                obs.fog_cells, obs.structures_in_fog)
             mem_ch = np.array(memory_to_channels(mem[p]))
             obs_24ch = np.concatenate([obs_9ch, mem_ch], axis=0)
             mask = np.array(compute_valid_move_mask(obs.armies, obs.owned_cells, obs.mountains))
@@ -164,8 +182,8 @@ def main():
     parser = argparse.ArgumentParser(description="Parse generals.io replays for SFT")
     parser.add_argument("--max-games", type=int, default=0, help="Max games to parse (0=all)")
     parser.add_argument("--output-dir", default="data", help="Output directory for per-size .npz files")
-    parser.add_argument("--workers", type=int, default=16,
-                        help="Number of parallel threads (default: 16)")
+    parser.add_argument("--workers", type=int, default=min(64, cpu_count()),
+                        help="Number of parallel threads (default: min(64, cpu_count()))")
     args = parser.parse_args()
 
     parquet_path = os.path.expanduser("~/.cache/huggingface/datasets/train-00000-of-00001.parquet")
@@ -188,7 +206,8 @@ def main():
     import time
     t0 = time.time()
 
-    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+    with ProcessPoolExecutor(max_workers=args.workers,
+                             initializer=_init_worker) as executor:
         futures = []
         for i in range(min(max_games, total_games)):
             row = {col: table[col][i].as_py() for col in table.column_names}
