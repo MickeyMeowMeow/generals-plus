@@ -124,73 +124,115 @@ class OpponentPool:
 
 
 # ---------------------------------------------------------------------------
-# Rollout
+# Rollout (lax.scan for fused XLA computation)
 # ---------------------------------------------------------------------------
 
-def make_rollout_step(network, opponent_network=None):
-    """Create a jitted rollout step with memory state."""
+def _make_rollout_body_random(network):
+    """Create scan body for random-opponent rollout."""
 
-    @jax.jit
-    def rollout_step(carry, _):
+    def scan_body(carry, _):
         states, memories, key = carry
         num_envs = states.armies.shape[0]
 
-        # Observations for both players
         obs_p0 = jax.vmap(lambda s: game.get_observation(s, 0))(states)
         obs_p1 = jax.vmap(lambda s: game.get_observation(s, 1))(states)
 
         # Build 24ch inputs for player 0
         obs_24ch = jax.vmap(build_24ch_input)(obs_p0, memories)
 
-        # Valid move masks
         masks = jax.vmap(lambda o: compute_valid_move_mask(
             o.armies, o.owned_cells, o.mountains))(obs_p0)
 
-        # Network forward pass
         key, *env_keys = jrandom.split(key, num_envs + 1)
         actions_p0, values, logprobs, entropies = jax.vmap(
             lambda o, m, k: network(o, m, k, None)
         )(obs_24ch, masks, jnp.stack(env_keys))
 
-        # Opponent actions
+        # Random opponent
         key, *opp_keys = jrandom.split(key, num_envs + 1)
-        if opponent_network is not None:
-            # Self-play: use opponent network (argmax via inference)
-            obs_24ch_p1 = jax.vmap(build_24ch_input)(obs_p1, memories)  # simplified: share memory
-            masks_p1 = jax.vmap(lambda o: compute_valid_move_mask(
-                o.armies, o.owned_cells, o.mountains))(obs_p1)
-            actions_p1, _ = jax.vmap(
-                lambda o, m: opponent_network.inference(o, m)
-            )(obs_24ch_p1, masks_p1)
-        else:
-            # Random opponent
-            actions_p1 = jax.vmap(random_action)(jnp.stack(opp_keys), obs_p1)
+        actions_p1 = jax.vmap(random_action)(jnp.stack(opp_keys), obs_p1)
 
-        # Step game
         actions = jnp.stack([actions_p0, actions_p1], axis=1)
         new_states, infos = jax.vmap(game.step)(states, actions)
 
-        # Get new observations for reward
         obs_p0_new = jax.vmap(lambda s: game.get_observation(s, 0))(new_states)
-
-        # Compute rewards
         rewards = jax.vmap(potential_based_reward)(obs_p0, actions_p0, obs_p0_new)
 
-        # Done
         terminated = infos.is_done
         truncated = (new_states.time >= 500) & ~terminated
         dones = terminated | truncated
 
-        # Update memory
         new_memories = jax.vmap(update_memory)(obs_p0, actions_p0, memories)
-
-        # Reset memory for done envs
         new_memories = jax.vmap(reset_memory_on_done)(new_memories, dones)
 
-        carry = (new_states, new_memories, key)
-        return carry, (obs_24ch, masks, actions_p0, logprobs, values, rewards, dones, infos)
+        carry_new = (new_states, new_memories, key)
+        return carry_new, (obs_24ch, masks, actions_p0, logprobs, values,
+                           rewards, dones, infos)
 
-    return rollout_step
+    return scan_body
+
+
+def _make_rollout_body_selfplay(network, opponent_network):
+    """Create scan body for self-play opponent rollout."""
+
+    def scan_body(carry, _):
+        states, memories, key = carry
+        num_envs = states.armies.shape[0]
+
+        obs_p0 = jax.vmap(lambda s: game.get_observation(s, 0))(states)
+        obs_p1 = jax.vmap(lambda s: game.get_observation(s, 1))(states)
+
+        obs_24ch = jax.vmap(build_24ch_input)(obs_p0, memories)
+
+        masks = jax.vmap(lambda o: compute_valid_move_mask(
+            o.armies, o.owned_cells, o.mountains))(obs_p0)
+
+        key, *env_keys = jrandom.split(key, num_envs + 1)
+        actions_p0, values, logprobs, entropies = jax.vmap(
+            lambda o, m, k: network(o, m, k, None)
+        )(obs_24ch, masks, jnp.stack(env_keys))
+
+        # Self-play opponent (argmax inference)
+        obs_24ch_p1 = jax.vmap(build_24ch_input)(obs_p1, memories)
+        masks_p1 = jax.vmap(lambda o: compute_valid_move_mask(
+            o.armies, o.owned_cells, o.mountains))(obs_p1)
+        actions_p1, _ = jax.vmap(
+            lambda o, m: opponent_network.inference(o, m)
+        )(obs_24ch_p1, masks_p1)
+
+        actions = jnp.stack([actions_p0, actions_p1], axis=1)
+        new_states, infos = jax.vmap(game.step)(states, actions)
+
+        obs_p0_new = jax.vmap(lambda s: game.get_observation(s, 0))(new_states)
+        rewards = jax.vmap(potential_based_reward)(obs_p0, actions_p0, obs_p0_new)
+
+        terminated = infos.is_done
+        truncated = (new_states.time >= 500) & ~terminated
+        dones = terminated | truncated
+
+        new_memories = jax.vmap(update_memory)(obs_p0, actions_p0, memories)
+        new_memories = jax.vmap(reset_memory_on_done)(new_memories, dones)
+
+        carry_new = (new_states, new_memories, key)
+        return carry_new, (obs_24ch, masks, actions_p0, logprobs, values,
+                           rewards, dones, infos)
+
+    return scan_body
+
+
+def run_rollout(states, memories, key, network, opponent_network, num_steps):
+    """Run a full rollout using lax.scan (single fused XLA computation).
+
+    Replaces the old Python for-loop + per-step jit pattern.
+    """
+    if opponent_network is not None:
+        body = _make_rollout_body_selfplay(network, opponent_network)
+    else:
+        body = _make_rollout_body_random(network)
+
+    carry = (states, memories, key)
+    carry, data = jax.lax.scan(body, carry, None, length=num_steps)
+    return carry, data
 
 
 # ---------------------------------------------------------------------------
@@ -314,13 +356,10 @@ def main():
     _single_mem = init_memory(H, W)
     memories = jax.tree.map(lambda x: jnp.stack([x] * num_envs), _single_mem)
 
-    # Warmup
+    # Warmup — run a short rollout to trigger JIT compilation
     print("Warming up...")
     opponent = pool.get_opponent(key) if args.opponent == "self-play" else None
-    rollout_step = make_rollout_step(network, opponent)
-    carry = (states, memories, key)
-    for _ in range(3):
-        carry, _ = rollout_step(carry, None)
+    carry, _ = run_rollout(states, memories, key, network, opponent, num_steps=3)
     jax.block_until_ready(carry[0])
     print("Training...\n")
 
@@ -334,27 +373,22 @@ def main():
         else:
             opponent = None
 
-        rollout_step = make_rollout_step(network, opponent)
-
-        # Collect rollout
+        # Run full rollout via lax.scan (single fused XLA computation)
         carry = (states, memories, key)
-        rollout_data = []
-        for _ in range(num_steps):
-            carry, data = rollout_step(carry, None)
-            rollout_data.append(data)
-
+        carry, rollout_data = run_rollout(
+            states, memories, key, network, opponent, num_steps,
+        )
         states, memories, key = carry
-        jax.block_until_ready(states)
 
-        # Stack rollout data
-        obs_all = jnp.stack([d[0] for d in rollout_data])
-        masks_all = jnp.stack([d[1] for d in rollout_data])
-        actions_all = jnp.stack([d[2] for d in rollout_data])
-        logprobs_all = jnp.stack([d[3] for d in rollout_data])
-        values_all = jnp.stack([d[4] for d in rollout_data])
-        rewards_all = jnp.stack([d[5] for d in rollout_data])
-        dones_all = jnp.stack([d[6] for d in rollout_data])
-        infos_all = [d[7] for d in rollout_data]
+        # rollout_data is pre-stacked by lax.scan: (num_steps, num_envs, ...)
+        obs_all = rollout_data[0]
+        masks_all = rollout_data[1]
+        actions_all = rollout_data[2]
+        logprobs_all = rollout_data[3]
+        values_all = rollout_data[4]
+        rewards_all = rollout_data[5]
+        dones_all = rollout_data[6]
+        infos_all = rollout_data[7]
 
         # Compute advantages
         advantages = compute_gae(rewards_all, values_all, dones_all)
@@ -391,8 +425,8 @@ def main():
         if iteration % 10 == 0:
             avg_reward = float(rewards_all.mean())
             num_episodes = int(dones_all.sum())
-            infos_stacked = jax.tree.map(lambda *xs: jnp.stack(xs), *infos_all)
-            wins = int(jnp.sum(dones_all & (infos_stacked.winner == 0))) if num_episodes > 0 else 0
+            # infos_all already pre-stacked by lax.scan: (num_steps, num_envs, ...)
+            wins = int(jnp.sum(dones_all & (infos_all.winner == 0))) if num_episodes > 0 else 0
             win_rate = wins / max(num_episodes, 1) * 100
             sps = (num_envs * num_steps) / elapsed
             print(
