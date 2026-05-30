@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
+import type { UserProfile } from "#/common/types/user-profile";
 import { useAuth } from "#/features/auth/hooks";
 import type { AuthProvider as AuthProviderComponent } from "#/features/auth/providers/auth-provider";
 import type { NetworkProvider } from "#/infra/network/provider";
@@ -41,7 +42,7 @@ describe("AuthProvider profile updates", () => {
         id: "u1",
         displayName: "Nova Prime",
       }),
-    } as unknown as NetworkProvider;
+    } as unknown as NetworkProvider<UserProfile>;
 
     render(
       <AuthProvider provider={provider}>
