@@ -160,7 +160,10 @@ export function GamePage({ connection, source }: GamePageProps) {
   }, [room]);
 
   const [selection, setSelection] = useState<ICoordinate | null>(null);
-  const [isSplitMove, setIsSplitMove] = useState(false);
+  const [isStickySplitMove, setIsStickySplitMove] = useState(false);
+  const [isActiveSplitMove, setIsActiveSplitMove] = useState(false);
+  const isSplitMove = isStickySplitMove || isActiveSplitMove;
+
   const [isViewingAsSpectator, setIsViewingAsSpectator] = useState(false);
   const [spectatorSource, setSpectatorSource] = useState<
     "eliminated" | "game-end" | null
@@ -223,14 +226,16 @@ export function GamePage({ connection, source }: GamePageProps) {
       if (!cell || cell.terrain === Terrain.VOID) return;
 
       setSelection(coord);
-      setIsSplitMove(false);
+      setIsStickySplitMove(false);
     },
     [activeBrush, handlePing, renderGrid],
   );
 
-  const handleArmSplitMove = useCallback(() => {
-    setIsSplitMove((prev) => !prev);
-  }, []);
+  const handleToggleStickySplitMove = useCallback(() => {
+    if (!isActiveSplitMove) {
+      setIsStickySplitMove((prev) => !prev);
+    }
+  }, [isActiveSplitMove]);
 
   const handleQueueMove = useCallback(
     (direction: MoveDirection) => {
@@ -240,6 +245,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       if (!renderGrid.isValid(to)) {
         return;
       }
+
       const targetCell = renderGrid.get(to);
       if (
         !targetCell ||
@@ -248,10 +254,10 @@ export function GamePage({ connection, source }: GamePageProps) {
       ) {
         return;
       }
-      const moveType = isSplitMove ? ActionType.SPLIT_MOVE : ActionType.MOVE;
 
+      const moveType = isSplitMove ? ActionType.SPLIT_MOVE : ActionType.MOVE;
       setSelection(to);
-      setIsSplitMove(false);
+      setIsStickySplitMove(false);
       sendMove(from, to, moveType);
     },
     [renderGrid, selection, room, sendMove, isSplitMove],
@@ -414,7 +420,10 @@ export function GamePage({ connection, source }: GamePageProps) {
         moveQueue={moveQueue}
         bombMoveSignal={bombMoveSignal}
         onSelectCell={isReadOnly ? () => {} : handleSelectCell}
-        onSplitMoveSwitch={isReadOnly ? () => {} : handleArmSplitMove}
+        onToggleStickySplitMove={
+          isReadOnly ? () => {} : handleToggleStickySplitMove
+        }
+        onUpdateActiveSplitMove={isReadOnly ? () => {} : setIsActiveSplitMove}
         onQueueMove={isReadOnly ? () => {} : handleQueueMove}
         onClearMoveQueue={isReadOnly ? () => {} : clearMoveQueue}
         onPing={isReadOnly ? () => {} : handlePing}
@@ -654,7 +663,7 @@ export function GamePage({ connection, source }: GamePageProps) {
                   setIsSurrenderDialogOpen(false);
                   setActiveBrush(null);
                   setSelection(null);
-                  setIsSplitMove(false);
+                  setIsStickySplitMove(false);
                   surrender();
                 }}
               >
@@ -718,7 +727,7 @@ export function GamePage({ connection, source }: GamePageProps) {
                     activeModal === "eliminated" ? "eliminated" : "game-end",
                   );
                   setSelection(null);
-                  setIsSplitMove(false);
+                  setIsStickySplitMove(false);
                 }}
               >
                 View as spectator

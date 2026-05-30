@@ -21,7 +21,7 @@ import {
   ClearMoveQueueKey,
   KeyToDirection,
   KeyToPing,
-  SwitchSplitMoveKey,
+  SplitMoveModifier,
 } from "#/features/game/utils/hotkey";
 import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
 
@@ -35,7 +35,8 @@ interface GameAppProps {
   readonly moveQueue: MoveIntent[];
   readonly bombMoveSignal: boolean;
   readonly onSelectCell: (coord: ICoordinate) => void;
-  readonly onSplitMoveSwitch: () => void;
+  readonly onToggleStickySplitMove: () => void;
+  readonly onUpdateActiveSplitMove: (value: boolean) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
   readonly onClearMoveQueue: () => void;
   readonly onPing: (
@@ -63,7 +64,8 @@ export function GameApp({
   moveQueue,
   bombMoveSignal,
   onSelectCell,
-  onSplitMoveSwitch,
+  onToggleStickySplitMove,
+  onUpdateActiveSplitMove,
   onQueueMove,
   onClearMoveQueue,
   onPing,
@@ -139,20 +141,12 @@ export function GameApp({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === SwitchSplitMoveKey) {
-        e.preventDefault();
-        onSplitMoveSwitch();
-        return;
-      }
       if (e.code === ClearMoveQueueKey) {
         e.preventDefault();
         onClearMoveQueue();
         return;
       }
-      if (KeyToDirection[grid.gridType][e.code]) {
-        e.preventDefault();
-        onQueueMove(KeyToDirection[grid.gridType][e.code]);
-      }
+
       if (KeyToPing[e.code]) {
         e.preventDefault();
         const coord = grid?.fromCartesian({
@@ -162,15 +156,35 @@ export function GameApp({
         if (coord) {
           onPing(coord, KeyToPing[e.code]);
         }
+        return;
+      }
+
+      if (e.getModifierState(SplitMoveModifier)) {
+        onUpdateActiveSplitMove(true);
+      }
+      if (KeyToDirection[grid.gridType][e.code]) {
+        e.preventDefault();
+        onQueueMove(KeyToDirection[grid.gridType][e.code]);
+        return;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.getModifierState(SplitMoveModifier)) {
+        onUpdateActiveSplitMove(false);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
   }, [
     grid.gridType,
     grid.fromCartesian,
-    onSplitMoveSwitch,
+    onUpdateActiveSplitMove,
     onClearMoveQueue,
     onQueueMove,
     onPing,
@@ -209,7 +223,7 @@ export function GameApp({
               pointerRef={pointerRef}
               bombMoveSignal={bombMoveSignal}
               onCellClick={onSelectCell}
-              onSplitMoveSwitch={onSplitMoveSwitch}
+              onToggleStickySplitMove={onToggleStickySplitMove}
               playerColors={playerColors}
               pings={pings}
               isPlanted={isPlanted}

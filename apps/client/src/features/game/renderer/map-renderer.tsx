@@ -36,7 +36,7 @@ interface MapRendererProps {
   pointerRef: RefObject<ICoordinate>;
   bombMoveSignal: boolean;
   onCellClick: (coordinate: ICoordinate) => void;
-  onSplitMoveSwitch: () => void;
+  onToggleStickySplitMove: () => void;
   playerColors: Map<string, number>;
   pings: Ping[];
   isPlanted?: boolean;
@@ -53,7 +53,7 @@ export function MapRenderer({
   pointerRef,
   bombMoveSignal,
   onCellClick,
-  onSplitMoveSwitch,
+  onToggleStickySplitMove,
   playerColors,
   pings,
   isPlanted = false,
@@ -92,7 +92,7 @@ export function MapRenderer({
       if (!coord) return;
 
       if (e.button === 2) {
-        onSplitMoveSwitch();
+        onToggleStickySplitMove();
         lastPrimaryClickRef.current = null;
         return;
       }
@@ -106,7 +106,7 @@ export function MapRenderer({
         now - lastPrimaryClick.time <= 300;
 
       if (isDoubleClick) {
-        onSplitMoveSwitch();
+        onToggleStickySplitMove();
         lastPrimaryClickRef.current = null;
         return;
       }
@@ -116,7 +116,7 @@ export function MapRenderer({
         lastPrimaryClickRef.current = { coord, time: now };
       }
     },
-    [grid, onCellClick, onSplitMoveSwitch],
+    [grid, onCellClick, onToggleStickySplitMove],
   );
 
   return (

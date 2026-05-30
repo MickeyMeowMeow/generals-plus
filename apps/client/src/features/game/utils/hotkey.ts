@@ -23,9 +23,9 @@ export const KeyToDirection: Record<GridType, Record<string, MoveDirection>> = {
   },
 } as const;
 
-export const ClearMoveQueueKey = "Space";
+export const SplitMoveModifier = "Shift";
 
-export const SwitchSplitMoveKey = "KeyZ";
+export const ClearMoveQueueKey = "Space";
 
 export const SurrenderKey = "Escape";
 
