@@ -1,6 +1,6 @@
 import { ArraySchema, Schema, type } from "@colyseus/schema";
 import type { GameMode } from "@generals-plus/engine";
-import { GridType } from "@generals-plus/engine";
+import { CollapseShape, GridType } from "@generals-plus/engine";
 
 export class SetupPlayer extends Schema {
   @type("string") id: string = "";
@@ -48,7 +48,7 @@ export class SetupState extends Schema {
 
   @type("number") collapseInterval: number = 30;
   @type("number") startDelay: number = 60;
-  @type("string") collapseShape: string = "circle";
+  @type("string") collapseShape: string = CollapseShape.CIRCLE;
 
   @type("number") tickInterval: number = 500;
   @type("number") finishTick: number = 360;
