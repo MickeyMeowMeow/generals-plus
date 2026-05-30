@@ -99,10 +99,6 @@ export function registerCustomRoomRoutes(app: {
         }
         throw error;
       }
-      if (!resolution) {
-        response.status(404).json({ error: "room not found" });
-        return;
-      }
 
       response.status(200).json(resolution);
     },

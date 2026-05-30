@@ -194,6 +194,19 @@ describe("custom room registry", () => {
     expect(createCount).toBe(1);
   });
 
+  it("creates a custom room on first resolve when the key does not exist yet", async () => {
+    setCreateSetupRoomForKeyForTesting(async (customRoomKey) => {
+      expect(customRoomKey).toBe("fresh-room");
+      return "setup-fresh";
+    });
+
+    await expect(resolveCustomRoom("fresh-room", "guest-1")).resolves.toEqual({
+      customRoomKey: "fresh-room",
+      setupRoomId: "setup-fresh",
+      created: true,
+    });
+  });
+
   it("rejects resolving a full active setup room for a new guest", async () => {
     const created = await createCustomRoom("host-1");
     const room = matchMaker.getLocalRoomById(created.setupRoomId) as SetupRoom;
