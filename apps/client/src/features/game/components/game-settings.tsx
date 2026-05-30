@@ -107,6 +107,11 @@ export function GameSettings({
   currentSettings,
   onChangeSettings,
 }: GameSettingsProps) {
+  const demolitionPlayersPerTeamMin =
+    currentSettings.gameMode === GameMode.DEMOLITION
+      ? Math.ceil(currentSettings.maxPlayers / 2)
+      : 1;
+
   // Tracks the field currently being edited and its intermediate string value
   const [editing, setEditing] = useState<{
     key: NumberKeys;
@@ -163,6 +168,7 @@ export function GameSettings({
         id={key}
         type="number"
         disabled={!isHost}
+        min={key === "playersPerTeam" ? demolitionPlayersPerTeamMin : undefined}
         value={
           editing?.key === key ? editing.value : round(currentSettings[key])
         }
