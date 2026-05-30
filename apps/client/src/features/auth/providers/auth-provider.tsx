@@ -334,6 +334,22 @@ export function AuthProvider({
     }
   }, [provider]);
 
+  const updateUserProfile = useCallback(
+    async (update: Partial<UserProfile>) => {
+      try {
+        const user = await provider.updateUserProfile(update);
+        dispatch({ type: "PROFILE_UPDATED", user });
+      } catch (error) {
+        dispatch({
+          type: "ERROR",
+          error: normalizeError(error, "Failed to update profile."),
+        });
+        throw error;
+      }
+    },
+    [provider],
+  );
+
   const clearError = useCallback(() => {
     dispatch({ type: "CLEAR_ERROR" });
   }, []);
@@ -345,6 +361,7 @@ export function AuthProvider({
       registerWithEmailAndPassword,
       signInAnonymously,
       signOut,
+      updateUserProfile,
       clearError,
     }),
     [
@@ -353,6 +370,7 @@ export function AuthProvider({
       registerWithEmailAndPassword,
       signInAnonymously,
       signOut,
+      updateUserProfile,
       clearError,
     ],
   );
