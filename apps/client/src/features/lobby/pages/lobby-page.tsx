@@ -4,9 +4,9 @@ import {
   CUSTOM_ROOM_KEY_MIN_LENGTH,
   isValidCustomRoomKeyLength,
 } from "@generals-plus/shared-types";
-import { LogOut, Play, Plus } from "lucide-react";
+import { LogOut, Play, Plus, User } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { BrandTitle, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
@@ -147,10 +147,18 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
               <p className="text-sm text-game-text-dim">Hello,</p>
               <p className="text-2xl font-bold">{displayName}</p>
             </div>
-            <Button type="button" variant="ghost" onClick={signOut}>
-              <LogOut className="size-4" />
-              Sign out
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button asChild variant="ghost">
+                <Link to="/profile">
+                  <User className="size-4" />
+                  Profile
+                </Link>
+              </Button>
+              <Button type="button" variant="ghost" onClick={signOut}>
+                <LogOut className="size-4" />
+                Sign out
+              </Button>
+            </div>
           </div>
 
           <section className="grid min-h-40 place-items-center border-t border-game-border pt-5 sm:min-h-44">
