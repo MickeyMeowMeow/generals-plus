@@ -1,8 +1,10 @@
 import { matchMaker } from "@colyseus/core";
+import { SetupPlayer } from "@generals-plus/shared-types";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
   CustomRoomAlreadyExistsError,
+  CustomRoomFullError,
   createCustomRoom,
   markCustomRoomMatchStarted,
   onSetupRoomDisposed,
@@ -190,6 +192,28 @@ describe("custom room registry", () => {
     });
     // No additional room creation should have occurred.
     expect(createCount).toBe(1);
+  });
+
+  it("rejects resolving a full active setup room for a new guest", async () => {
+    const created = await createCustomRoom("host-1");
+    const room = matchMaker.getLocalRoomById(created.setupRoomId) as SetupRoom;
+
+    try {
+      room.maxClients = 2;
+
+      const host = new SetupPlayer();
+      host.id = "host-1";
+      const guest = new SetupPlayer();
+      guest.id = "guest-1";
+      room.state.players.push(host);
+      room.state.players.push(guest);
+
+      await expect(
+        resolveCustomRoom(created.customRoomKey, "guest-2"),
+      ).rejects.toBeInstanceOf(CustomRoomFullError);
+    } finally {
+      room.disconnect();
+    }
   });
 
   // --- Coverage for lines 124-127: onSetupRoomDisposed ---

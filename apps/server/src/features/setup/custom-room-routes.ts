@@ -9,6 +9,7 @@ import type { Request, Response } from "express";
 
 import {
   CustomRoomAlreadyExistsError,
+  CustomRoomFullError,
   createCustomRoom,
   resolveCustomRoom,
 } from "./custom-room-registry";
@@ -86,7 +87,18 @@ export function registerCustomRoomRoutes(app: {
         return;
       }
 
-      const resolution = await resolveCustomRoom(customRoomKey, ownerUserId);
+      let resolution = null;
+      try {
+        resolution = await resolveCustomRoom(customRoomKey, ownerUserId);
+      } catch (error) {
+        if (error instanceof CustomRoomFullError) {
+          response
+            .status(409)
+            .json({ error: "Room is full. Ask the host for more capacity." });
+          return;
+        }
+        throw error;
+      }
       if (!resolution) {
         response.status(404).json({ error: "room not found" });
         return;

@@ -13,6 +13,7 @@ import { GameSettings } from "#/features/game/components/game-settings";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
 import { networkProvider } from "#/infra/network/provider";
+import { HttpRequestError } from "#/infra/network/provider/colyseus";
 
 /**
  * Computes how many teams the current setup settings will produce.
@@ -39,7 +40,10 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
   const userId = useUser((user) => user?.id);
   const displayName = useUser((user) => user?.displayName ?? "Commander");
   const [resolvedRoomId, setResolvedRoomId] = useState<string | null>(null);
-  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [resolveError, setResolveError] = useState<{
+    message: string;
+    status: number | null;
+  } | null>(null);
   const [isResolvingRoom, setIsResolvingRoom] = useState(true);
   const [resolveRequestId, setResolveRequestId] = useState(0);
   const latestResolveRequestId = useRef(resolveRequestId);
@@ -63,9 +67,15 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
       } catch (error) {
         if (!isCurrent || latestResolveRequestId.current !== requestId) return;
         setResolveError(
-          error instanceof Error
-            ? error.message
-            : "Failed to resolve custom room",
+          error instanceof HttpRequestError
+            ? { message: error.message, status: error.status }
+            : {
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to resolve custom room",
+                status: null,
+              },
         );
       } finally {
         if (isCurrent) {
@@ -131,7 +141,11 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
       <StageCenter>
         <ErrorPanel
           title="Room unavailable"
-          message={`${resolveError ?? error}. Check the shared URL or ask the host for a fresh room link.`}
+          message={
+            resolveError?.status === 409
+              ? resolveError.message
+              : `${resolveError?.message ?? error}. Check the shared URL or ask the host for a fresh room link.`
+          }
           action={
             <Button type="button" onClick={() => navigate("/")}>
               Return to lobby

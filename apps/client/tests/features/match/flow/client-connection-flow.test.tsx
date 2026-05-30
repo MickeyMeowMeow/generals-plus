@@ -1134,6 +1134,29 @@ describe("client room flows", () => {
     expect(screen.getByText(/room not found/)).toBeTruthy();
   });
 
+  it("shows a dedicated full-room error for custom rooms", async () => {
+    networkMocks.resolveCustomRoom.mockRejectedValue(
+      new HttpRequestError(
+        409,
+        "Room is full. Ask the host for more capacity.",
+      ),
+    );
+
+    renderRoute("/match/full-room", auth());
+
+    expect(
+      await screen.findByRole("heading", { name: "Room unavailable" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Room is full. Ask the host for more capacity."),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(
+        /Check the shared URL or ask the host for a fresh room link./,
+      ),
+    ).toBeNull();
+  });
+
   it("shows a disconnect dialog when the active match room drops", async () => {
     const queueRoom = createRoom({
       roomId: "queue-disconnect",
