@@ -1,25 +1,27 @@
 """
 Export a trained UNetPolicyValueNetwork to ONNX format.
 
-The ONNX model takes single-frame inputs and returns action + value.
-No LSTM state — memory channels encode temporal information.
+The ONNX model takes 16-channel input (9 obs + 7 memory) + mask,
+returns action + value. No LSTM state — memory channels encode temporal info.
 
 Usage:
     python -m train.export_onnx --model models/sft_pretrained.eqx --output models/bot.onnx
 """
 
 import argparse
-from pathlib import Path
+import os
 import sys
+from pathlib import Path
+
+# Support running as module
+_ai_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ai_dir not in sys.path:
+    sys.path.insert(0, _ai_dir)
 
 import jax
 import jax.numpy as jnp
 import jax.random as jrandom
 import equinox as eqx
-
-_repo_root = str(Path(__file__).resolve().parents[2])
-if _repo_root not in sys.path:
-    sys.path.insert(0, _repo_root)
 
 from train.network import UNetPolicyValueNetwork
 
@@ -27,7 +29,7 @@ from train.network import UNetPolicyValueNetwork
 def export(args):
     key = jrandom.PRNGKey(0)
     key, net_key = jrandom.split(key)
-    network = RecurrentPolicyValueNetwork(net_key, grid_size=args.grid_size)
+    network = UNetPolicyValueNetwork(net_key, grid_size=args.grid_size)
 
     if args.model:
         network = eqx.tree_deserialise_leaves(args.model, network)
@@ -36,56 +38,30 @@ def export(args):
         print("Exporting with random weights (for testing)")
 
     grid_size = args.grid_size
-    hidden_dim = network.lstm_cell.hidden_size
-    scalar_dim = 6
 
-    # --- Export the full inference function as a single ONNX graph ---
-    # Inputs (single-frame):
-    #   spatial:     (9, H, W)
-    #   scalar:      (scalar_dim,)
-    #   h_prev:      (hidden_dim,)
-    #   c_prev:      (hidden_dim,)
-    #   mask:        (H, W, 4)
-    #
-    # Outputs:
-    #   action:      (5,) — [pass, row, col, direction, split]
-    #   h_new:       (hidden_dim,)
-    #   c_new:       (hidden_dim,)
+    # Inputs: obs_16ch (16, H, W) + mask (H, W, 4)
+    # Outputs: action (5,) + value (1,)
+    def inference_fn(obs_16ch, mask):
+        action, value = network.inference(obs_16ch, mask)
+        return action, value
 
-    def inference_fn(spatial, scalar, h_prev, c_prev, mask):
-        action, new_state = network.inference(
-            spatial, scalar, (h_prev, c_prev), mask, jrandom.PRNGKey(0),
-        )
-        return action, new_state[0], new_state[1]
-
-    # Create dummy inputs (single-frame)
-    spatial = jnp.zeros((9, grid_size, grid_size))
-    scalar = jnp.zeros(scalar_dim)
-    h_prev = jnp.zeros(hidden_dim)
-    c_prev = jnp.zeros(hidden_dim)
+    # Create dummy inputs
+    obs_16ch = jnp.zeros((16, grid_size, grid_size))
     mask = jnp.zeros((grid_size, grid_size, 4))
 
-    # Lower and export
-    print(f"Exporting to ONNX: grid={grid_size}x{grid_size}, hidden={hidden_dim} (single-frame)")
+    print(f"Exporting to ONNX: grid={grid_size}x{grid_size}, input=16ch + mask")
 
     try:
         import tensorflow as tf
         import tf2onnx
 
         tf_fn = jax.experimental.jax2tf.convert(inference_fn, polymorphic_shapes=[
-            f"(9, {grid_size}, {grid_size})",
-            f"({scalar_dim},)",
-            f"({hidden_dim},)",
-            f"({hidden_dim},)",
+            f"(16, {grid_size}, {grid_size})",
             f"({grid_size}, {grid_size}, 4)",
         ])
 
-        # Create TF concrete function
         input_signature = [
-            tf.TensorSpec([9, grid_size, grid_size], tf.float32),
-            tf.TensorSpec([scalar_dim], tf.float32),
-            tf.TensorSpec([hidden_dim], tf.float32),
-            tf.TensorSpec([hidden_dim], tf.float32),
+            tf.TensorSpec([16, grid_size, grid_size], tf.float32),
             tf.TensorSpec([grid_size, grid_size, 4], tf.float32),
         ]
 
@@ -107,17 +83,16 @@ def export(args):
         print(f"  pip install tensorflow tf2onnx onnxruntime")
         print(f"  Missing: {e}")
         print()
-        # Fallback: save as .eqx (JAX-native) for deployment with JAX CPU
+        # Fallback: save as .eqx for JAX deployment
         path = Path(args.output).with_suffix(".eqx")
         path.parent.mkdir(parents=True, exist_ok=True)
         eqx.tree_serialise_leaves(str(path), network)
         print(f"Saved as JAX-native model: {path}")
-        print(f"(Install tensorflow + tf2onnx for ONNX export)")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Export model to ONNX")
     parser.add_argument("--model", default=None, help="Path to trained .eqx model")
     parser.add_argument("--output", default="models/bot.onnx", help="Output ONNX path")
-    parser.add_argument("--grid-size", type=int, default=10, help="Grid size")
+    parser.add_argument("--grid-size", type=int, default=18, help="Grid size")
     export(parser.parse_args())

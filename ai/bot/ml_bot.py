@@ -1,60 +1,59 @@
 """
-MLBot: inference wrapper that loads a trained model and uses it to decide
+MLBot: inference wrapper that loads a trained U-Net model and uses it to decide
 actions in live games via the bot service.
 
 Supports two backends (auto-detected by file extension):
-  - .eqx  → JAX/Equinox (requires jax, equinox — used for training machines)
-  - .onnx → ONNX Runtime (lightweight CPU-only deployment, ~30MB dependency)
+  - .eqx  → JAX/Equinox (full training stack)
+  - .onnx → ONNX Runtime (lightweight CPU-only deployment)
 
-Integrates with the existing BotFactory in server.py (loaded via --model flag).
-Maintains LSTM hidden state across ticks for temporal memory.
-
-Architecture (single-frame LSTM):
-  Each tick, a single (spatial, scalar) observation is fed through the CNN
-  backbone and LSTM cell. The LSTM hidden state is carried across ticks so
-  the policy has access to accumulated temporal context.
+Uses memory channels (7 channels) instead of LSTM for temporal context.
+MemoryState is maintained across ticks and reset on new game.
+Variable grid sizes supported (reads from game state).
 """
 
 import logging
-import warnings
+import os
+import sys
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 
+# Ensure imports work when loaded from bot server
+_ai_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ai_dir not in sys.path:
+    sys.path.insert(0, _ai_dir)
+
 from .observation import (
-    SCALAR_DIM,
     compute_valid_move_mask,
-    extract_scalar_features,
     vision_to_observation,
 )
+from sim.memory import init_memory, update_memory, memory_to_channels, MemoryState
 
 logger = logging.getLogger(__name__)
 
 
+def obs_to_spatial(obs_array: np.ndarray) -> np.ndarray:
+    """Convert (9, H, W) observation to float32."""
+    return obs_array.astype(np.float32)
+
+
 class MLBot:
     """
-    Neural network bot that uses a trained CNN + LSTM model.
+    Neural network bot using U-Net + memory channels.
 
     Supports .eqx (JAX) and .onnx (ONNX Runtime) model formats.
-    Processes one frame per tick; LSTM hidden state is carried across ticks.
+    MemoryState is carried across ticks for temporal context (no LSTM).
+    Variable grid sizes (reads from game state on first tick).
     """
 
-    def __init__(self, model_path: str, stack_size: int = 8):
+    def __init__(self, model_path: str):
         self.model_path = model_path
-        if stack_size != 8:
-            warnings.warn(
-                f"stack_size={stack_size} is deprecated and ignored. "
-                f"The model now uses single-frame LSTM processing.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
         self._backend: Optional[str] = None
 
         self._player_id: Optional[str] = None
         self._grid_shape: Optional[tuple[int, int]] = None  # (height, width)
-        self._lstm_state = None
-        self._hidden_dim: int = 128
+        self._memory: Optional[MemoryState] = None
 
         path = Path(model_path)
         if path.suffix == ".onnx":
@@ -75,9 +74,8 @@ class MLBot:
         from train.network import UNetPolicyValueNetwork
 
         dummy_key = jrandom.PRNGKey(0)
-        network = RecurrentPolicyValueNetwork(dummy_key, grid_size=10)
+        network = UNetPolicyValueNetwork(dummy_key, grid_size=10)
         self._network = eqx.tree_deserialise_leaves(model_path, network)
-        self._hidden_dim = network.lstm_cell.hidden_size
         self._key = jrandom.PRNGKey(0)
         self._backend = "jax"
         self._jnp = jnp
@@ -100,20 +98,18 @@ class MLBot:
         """Reset bot state for a new game."""
         self._player_id = None
         self._grid_shape = None
-        self._lstm_state = None
+        self._memory = None
 
     def decide(self, tick_msg: dict) -> dict:
         """
         Entry point. Returns action dict {pass, row, col, direction, split}
         or a pass action if no valid move.
 
-        Processes a single-frame observation through the CNN+LSTM network.
-        LSTM state is carried across ticks for temporal memory.
+        Processes a single-frame observation through the U-Net with memory channels.
         """
         vision = tick_msg.get("vision", [])
         grid_data = tick_msg.get("grid", {})
         self._player_id = tick_msg.get("player_id", "0")
-        scoreboard = tick_msg.get("scoreboard", [])
         tick = tick_msg.get("tick", 0)
 
         width = grid_data.get("width", 0)
@@ -122,25 +118,27 @@ class MLBot:
         if width == 0 or height == 0 or len(vision) == 0:
             return {"pass": 1, "row": 0, "col": 0, "direction": 0, "split": 0}
 
-        # Initialize LSTM state on first tick
-        if self._lstm_state is None:
+        # Initialize memory on first tick
+        if self._memory is None:
             self._grid_shape = (height, width)
-            self._lstm_state = (
-                np.zeros(self._hidden_dim, dtype=np.float32),
-                np.zeros(self._hidden_dim, dtype=np.float32),
-            )
+            self._memory = init_memory(height, width)
 
-        # Single-frame observation (no buffer needed — LSTM carries memory)
+        # Build 9ch spatial observation
         spatial = vision_to_observation(vision, width, height, self._player_id)  # (9, H, W)
-        scalars = extract_scalar_features(scoreboard, self._player_id, tick)      # (6,)
+
+        # Build 7ch memory channels
+        mem_channels = np.array(memory_to_channels(self._memory))  # (7, H, W)
+
+        # Stack to 16ch input
+        obs_16ch = np.concatenate([spatial, mem_channels], axis=0)  # (16, H, W)
 
         # Compute valid move mask
         mask = compute_valid_move_mask(spatial)  # (H, W, 4)
 
         if self._backend == "jax":
-            return self._infer_jax(spatial, scalars, mask)
+            return self._infer_jax(obs_16ch, mask, spatial)
         elif self._backend == "onnx":
-            return self._infer_onnx(spatial, scalars, mask)
+            return self._infer_onnx(obs_16ch, mask, spatial)
         else:
             return {"pass": 1, "row": 0, "col": 0, "direction": 0, "split": 0}
 
@@ -148,18 +146,17 @@ class MLBot:
     # Inference backends
     # ------------------------------------------------------------------
 
-    def _infer_jax(self, spatial: np.ndarray, scalar: np.ndarray, mask: np.ndarray) -> dict:
-        """Run single-frame inference using JAX/Equinox backend."""
-        spatial_jax = self._jnp.array(spatial)       # (9, H, W)
-        scalar_jax = self._jnp.array(scalar)          # (6,)
+    def _infer_jax(self, obs_16ch: np.ndarray, mask: np.ndarray, spatial: np.ndarray) -> dict:
+        """Run inference using JAX/Equinox backend."""
+        obs_jax = self._jnp.array(obs_16ch)  # (16, H, W)
         mask_jax = self._jnp.array(mask)
 
-        self._key, action_key = self._jrandom.split(self._key)
+        action_jax, value = self._network.inference(obs_jax, mask_jax)
 
-        action_jax, new_state = self._network.inference(
-            spatial_jax, scalar_jax, self._lstm_state, mask_jax, action_key,
-        )
-        self._lstm_state = new_state
+        # Update memory with the action
+        action_np = np.array(action_jax)
+        # Build a minimal obs-like dict for memory update
+        self._update_memory(spatial, action_np)
 
         return {
             "pass": int(action_jax[0]),
@@ -169,29 +166,21 @@ class MLBot:
             "split": int(action_jax[4]),
         }
 
-    def _infer_onnx(self, spatial: np.ndarray, scalar: np.ndarray, mask: np.ndarray) -> dict:
-        """Run single-frame inference using ONNX Runtime backend (CPU)."""
-        h, c = self._lstm_state
-
-        # Build ONNX inputs — single-frame shapes
+    def _infer_onnx(self, obs_16ch: np.ndarray, mask: np.ndarray, spatial: np.ndarray) -> dict:
+        """Run inference using ONNX Runtime backend (CPU)."""
         input_names = [inp.name for inp in self._session.get_inputs()]
         arrays = [
-            spatial.astype(np.float32),       # (9, H, W)
-            scalar.astype(np.float32),        # (6,)
-            h.astype(np.float32),             # (hidden_dim,)
-            c.astype(np.float32),             # (hidden_dim,)
-            mask.astype(np.float32),          # (H, W, 4)
+            obs_16ch.astype(np.float32),   # (16, H, W)
+            mask.astype(np.float32),        # (H, W, 4)
         ]
         input_feed = {}
         for name, arr in zip(input_names, arrays):
             input_feed[name] = arr
 
         outputs = self._session.run(None, input_feed)
-
-        # Parse outputs: action (5,), h_new (hidden_dim,), c_new (hidden_dim,)
         action = outputs[0].flatten()
-        if len(outputs) > 1:
-            self._lstm_state = (outputs[1].flatten(), outputs[2].flatten())
+
+        self._update_memory(spatial, action)
 
         return {
             "pass": int(action[0]),
@@ -200,3 +189,29 @@ class MLBot:
             "direction": int(action[3]),
             "split": int(action[4]),
         }
+
+    def _update_memory(self, spatial: np.ndarray, action: np.ndarray) -> None:
+        """Update memory state with current observation and action."""
+        import jax.numpy as jnp
+
+        # Build a minimal Observation from spatial channels for memory update
+        # spatial channels: armies, generals, cities, mountains, neutral, owned, opponent, fog, struct_fog
+        H, W = spatial.shape[1], spatial.shape[2]
+        from sim.types import Observation
+        obs = Observation(
+            armies=jnp.array(spatial[0]),
+            generals=jnp.array(spatial[1]),
+            cities=jnp.array(spatial[2]),
+            mountains=jnp.array(spatial[3]),
+            neutral_cells=jnp.array(spatial[4]),
+            owned_cells=jnp.array(spatial[5]),
+            opponent_cells=jnp.array(spatial[6]),
+            fog_cells=jnp.array(spatial[7]),
+            structures_in_fog=jnp.array(spatial[8]),
+            owned_land_count=jnp.float32(0),  # not needed for memory
+            owned_army_count=jnp.float32(0),
+            opponent_land_count=jnp.float32(0),
+            opponent_army_count=jnp.float32(0),
+            timestep=jnp.int32(0),
+        )
+        self._memory = update_memory(obs, jnp.array(action, dtype=jnp.int32), self._memory)
