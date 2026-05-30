@@ -7,6 +7,7 @@ export class SetupPlayer extends Schema {
   @type("string") displayName: string = "";
   @type("boolean") isHost: boolean = false;
   @type("number") color: number = 0;
+  @type("string") teamId: string = "";
 }
 
 export class SetupState extends Schema {

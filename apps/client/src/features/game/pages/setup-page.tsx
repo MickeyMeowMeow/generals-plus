@@ -1,3 +1,4 @@
+import { GameMode } from "@generals-plus/engine";
 import { SetupClientMessage } from "@generals-plus/shared-types";
 import { LogOut, Play } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,16 +15,18 @@ import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
 import { networkProvider } from "#/infra/network/provider";
 
-/**
- * Computes how many teams the current setup settings will produce.
- *
- * The engine ends a classic match as soon as only one team is alive, so a room
- * that starts with every player on the same team immediately resolves as a win.
- * Keeping this check in the setup UI prevents custom rooms from starting in
- * that invalid one-team shape.
- */
-function getConfiguredTeamCount(playerCount: number, playersPerTeam: number) {
-  return Math.ceil(playerCount / playersPerTeam);
+const DEMOLITION_TEAM_GROUPS = [
+  { id: "attackers", label: "Attackers" },
+  { id: "defenders", label: "Defenders" },
+] as const;
+
+function getTeamCapacity({ playersPerTeam }: { playersPerTeam: number }) {
+  return playersPerTeam;
+}
+
+function getSetupTeamOrder(teamId: string) {
+  const match = /^setup_team_(\d+)$/.exec(teamId);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
 }
 
 /**
@@ -156,15 +159,48 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
     );
   }
 
-  const myPlayer = setupState.players.find((player) => player.id === userId);
+  const playersWithTeams = setupState.players.map((player) => ({
+    ...player,
+    teamId: player.teamId,
+  }));
+  const myPlayer = playersWithTeams.find((player) => player.id === userId);
   const takenColors = setupState.players.map((player) => player.color);
   const isHost = Boolean(myPlayer?.isHost);
-  const teamCount = getConfiguredTeamCount(
-    setupState.players.length,
-    setupState.playersPerTeam,
+  const shouldShowTeamControls =
+    setupState.gameMode === GameMode.DEMOLITION ||
+    setupState.playersPerTeam > 1;
+  const occupiedTeamIds = Array.from(
+    new Set(
+      playersWithTeams
+        .map((player) => player.teamId)
+        .filter((teamId): teamId is string => Boolean(teamId)),
+    ),
+  ).sort((left, right) => getSetupTeamOrder(left) - getSetupTeamOrder(right));
+  const teamCapacity = getTeamCapacity(setupState);
+  const teamGroups =
+    setupState.gameMode === GameMode.DEMOLITION
+      ? DEMOLITION_TEAM_GROUPS.map((team) => ({
+          ...team,
+          count: playersWithTeams.filter((player) => player.teamId === team.id)
+            .length,
+          capacity: teamCapacity,
+        }))
+      : occupiedTeamIds.map((teamId) => ({
+          id: teamId,
+          label: "",
+          count: playersWithTeams.filter((player) => player.teamId === teamId)
+            .length,
+          capacity: teamCapacity,
+        }));
+  const hasOversizedTeams = teamGroups.some(
+    (team) => team.count > team.capacity,
   );
-  const hasEnoughTeams = teamCount >= 2;
-  const canStart = isHost && setupState.players.length >= 2 && hasEnoughTeams;
+  const hasEnoughTeams = occupiedTeamIds.length >= 2;
+  const canStart =
+    isHost &&
+    setupState.players.length >= 2 &&
+    hasEnoughTeams &&
+    !hasOversizedTeams;
 
   return (
     <StageCenter>
@@ -212,9 +248,19 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
                     Force start game
                   </Button>
                 ) : null}
-                {isHost && setupState.players.length >= 2 && !hasEnoughTeams ? (
-                  <p className="basis-full text-sm text-game-text-dim">
-                    Set Players Per Team lower to create at least two teams.
+                {!hasOversizedTeams &&
+                setupState.players.length >= 2 &&
+                !hasEnoughTeams ? (
+                  <p className="basis-full text-sm text-amber-300">
+                    {setupState.gameMode === GameMode.DEMOLITION
+                      ? "Members on both teams are required to start the game."
+                      : "At least two teams are required to start the game."}
+                  </p>
+                ) : null}
+                {hasOversizedTeams ? (
+                  <p className="basis-full text-sm text-amber-300">
+                    Each team must have no more than {teamCapacity} players to
+                    start the game.
                   </p>
                 ) : null}
                 <Button
@@ -230,10 +276,26 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
           </div>
 
           <RoomPlayerList
-            players={setupState.players}
+            players={playersWithTeams}
             currentUserId={userId}
             maxPlayers={setupState.maxPlayers}
             showHost
+            teamGroups={shouldShowTeamControls ? teamGroups : undefined}
+            onJoinTeam={
+              shouldShowTeamControls
+                ? (teamId) =>
+                    room?.send(SetupClientMessage.PICK_TEAM, { teamId })
+                : undefined
+            }
+            onCreateTeam={
+              shouldShowTeamControls &&
+              setupState.gameMode !== GameMode.DEMOLITION
+                ? () =>
+                    room?.send(SetupClientMessage.PICK_TEAM, {
+                      createNew: true,
+                    })
+                : undefined
+            }
           />
         </div>
       </div>

@@ -1,4 +1,3 @@
-import { Visibility } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import { useCallback } from "react";
@@ -11,18 +10,13 @@ import { drawCell } from "#/features/game/utils/renderer";
 extend({ Graphics });
 
 interface GridLayerProps {
+  tick: number;
   grid: RenderGrid;
   playerColors: Map<string, number>;
 }
 
-function tintColor(color: number, alpha: number): number {
-  const r = ((color >> 16) & 0xff) * alpha;
-  const g = ((color >> 8) & 0xff) * alpha;
-  const b = (color & 0xff) * alpha;
-  return (r << 16) | (g << 8) | b;
-}
-
-export function GridLayer({ grid, playerColors }: GridLayerProps) {
+export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tick is intentionally included to force a refresh each tick, since cell ownership changes frequently
   const drawGrid = useCallback(
     (g: Graphics) => {
       g.clear();
@@ -33,17 +27,9 @@ export function GridLayer({ grid, playerColors }: GridLayerProps) {
           color: RenderConfig.background,
         });
 
-        let color = cell.ownerIndex
+        const color = cell.ownerIndex
           ? (playerColors.get(cell.ownerIndex) ?? 0x333333)
           : TerrainTheme[cell.terrain]?.color || 0xffffff;
-
-        // Handle visibility
-        if (cell.visibility === Visibility.HIDDEN) {
-          color = 0x000000; // Total black for undiscovered
-        } else if (cell.visibility === Visibility.SHROUDED) {
-          // Simple way to "tint" for fog: darken the color
-          color = tintColor(color, 0.38);
-        }
 
         g.fill(color);
 
@@ -55,7 +41,7 @@ export function GridLayer({ grid, playerColors }: GridLayerProps) {
         }
       });
     },
-    [grid, playerColors],
+    [tick, grid, playerColors],
   );
 
   return <pixiGraphics draw={drawGrid} />;

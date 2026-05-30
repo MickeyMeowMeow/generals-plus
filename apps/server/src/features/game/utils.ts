@@ -27,6 +27,7 @@ export interface BaseCreateGameOptions {
   gridOptions?: GridInput;
   playerIds: string[];
   playerPerTeam: number;
+  teamAssignments?: Record<string, string>;
 }
 
 interface ClassicCreateGameOptions extends BaseCreateGameOptions {
@@ -76,22 +77,54 @@ export type CreateGameOptions =
   | CollapseCreateGameOptions
   | OtherCreateGameOptions;
 
-function assignStandardTeams(
-  game: IBaseGame,
+function getRoundRobinTeamAssignments(
   playerIds: string[],
   playerPerTeam: number,
-): void {
+) {
   const teamsCount = Math.ceil(playerIds.length / playerPerTeam);
-  for (let i = 0; i < teamsCount; i++) {
-    const teamId = `team_${i}`;
+  return playerIds.map(
+    (playerId, i) => [playerId, `team_${i % teamsCount}`] as const,
+  );
+}
+
+function getExplicitTeamAssignments({
+  playerIds,
+  playerPerTeam,
+  teamAssignments,
+}: BaseCreateGameOptions) {
+  if (!teamAssignments) {
+    return getRoundRobinTeamAssignments(playerIds, playerPerTeam);
+  }
+
+  return playerIds.map((playerId) => {
+    const teamId = teamAssignments[playerId];
+    if (!teamId) {
+      throw new Error(`Missing team assignment for player "${playerId}".`);
+    }
+    return [playerId, teamId] as const;
+  });
+}
+
+function getTeamAssignmentLookup(options: BaseCreateGameOptions) {
+  return Object.fromEntries(getExplicitTeamAssignments(options));
+}
+
+function addStandardTeamsAndPlayers(
+  game: IBaseGame,
+  options: BaseCreateGameOptions,
+) {
+  const assignmentLookup = getTeamAssignmentLookup(options);
+  const teamIds = Array.from(new Set(Object.values(assignmentLookup)));
+
+  for (const teamId of teamIds) {
     const team = new StandardTeam(teamId);
     game.teams.set(teamId, team);
   }
 
-  for (const [i, playerId] of playerIds.entries()) {
-    const teamId = `team_${i % teamsCount}`;
-    const team = game.teams.get(teamId);
-    if (!team) {
+  for (const playerId of options.playerIds) {
+    const teamId = assignmentLookup[playerId];
+    const team = teamId ? game.teams.get(teamId) : undefined;
+    if (!team || !teamId) {
       throw new Error(
         `Team with id "${teamId}" not found for player "${playerId}".`,
       );
@@ -124,7 +157,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         },
       );
 
-      assignStandardTeams(game, options.playerIds, options.playerPerTeam);
+      addStandardTeamsAndPlayers(game, options);
       return game;
     }
     case GameMode.CLASSIC: {
@@ -133,7 +166,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         ...options.gridOptions,
       });
 
-      assignStandardTeams(game, options.playerIds, options.playerPerTeam);
+      addStandardTeamsAndPlayers(game, options);
       return game;
     }
     case GameMode.TURF_WAR: {
@@ -147,7 +180,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         },
       );
 
-      assignStandardTeams(game, options.playerIds, options.playerPerTeam);
+      addStandardTeamsAndPlayers(game, options);
       return game;
     }
     case GameMode.DOMINATION: {
@@ -162,7 +195,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         },
       );
 
-      assignStandardTeams(game, options.playerIds, options.playerPerTeam);
+      addStandardTeamsAndPlayers(game, options);
       return game;
     }
     case GameMode.DEMOLITION: {
@@ -186,8 +219,22 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       game.teams.set("attackers", attackers);
       game.teams.set("defenders", defenders);
 
+      const assignmentLookup = options.teamAssignments
+        ? getTeamAssignmentLookup(options)
+        : null;
+
       for (const [i, playerId] of options.playerIds.entries()) {
-        const team = i % 2 === 0 ? attackers : defenders;
+        const teamId = assignmentLookup?.[playerId];
+        const team = teamId
+          ? game.teams.get(teamId)
+          : i % 2 === 0
+            ? attackers
+            : defenders;
+        if (!team) {
+          throw new Error(
+            `Team with id "${teamId}" not found for player "${playerId}".`,
+          );
+        }
         const player = new Player(team, playerId);
         team.addPlayer(player);
         game.players.set(playerId, player);

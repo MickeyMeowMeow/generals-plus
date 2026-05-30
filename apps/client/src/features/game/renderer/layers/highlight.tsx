@@ -15,6 +15,7 @@ interface HighlightLayerProps {
 }
 
 export function HighlightLayer({ grid, selection }: HighlightLayerProps) {
+  // Only redraw when selection changes
   const drawHighlight = useCallback(
     (g: Graphics) => {
       g.clear();

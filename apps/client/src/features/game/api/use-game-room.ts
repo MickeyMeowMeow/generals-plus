@@ -5,7 +5,7 @@ import type {
   MoveActionType,
   SurrenderAction,
 } from "@generals-plus/engine";
-import { ActionType, GridType } from "@generals-plus/engine";
+import { ActionType, GameStatus, GridType } from "@generals-plus/engine";
 import type {
   ActionData,
   MatchClientMessagePayload,
@@ -17,10 +17,13 @@ import {
   MatchClientMessage,
   MatchServerMessage,
 } from "@generals-plus/shared-types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
-import { createRenderGrid } from "#/features/game/utils/grid-adapter";
+import {
+  createRenderGrid,
+  updateRenderGrid,
+} from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
 import { MoveDirection } from "#/features/game/utils/move";
 import { networkProvider } from "#/infra/network/provider";
@@ -164,10 +167,12 @@ export function useGameRoom(connection: GameRoomConnection) {
   const [playerNames, setPlayerNames] = useState<Map<string, string>>(
     new Map(),
   );
-
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
-  const [renderGrid, setRenderGrid] = useState<RenderGrid | null>(null);
+
+  const [renderTick, setRenderTick] = useState(0);
+  const renderGrid = useRef<RenderGrid>(null);
   const [moveQueue, setMoveQueue] = useState<MoveIntent[]>([]);
+  const [bombMoveSignal, setBombMoveSignal] = useState(false);
 
   const [gameResult, setGameResult] = useState<IGameResult | null>(null);
 
@@ -195,11 +200,16 @@ export function useGameRoom(connection: GameRoomConnection) {
 
         setRoom(currentRoom);
         setIsConnecting(false);
+        renderGrid.current = null;
 
         const syncState = (state: MatchState) => {
           if (!isReadyMatchState(state)) return;
 
           setGameState(state);
+
+          if (!renderGrid.current) {
+            renderGrid.current = createRenderGrid(state);
+          }
 
           const colorMap = new Map<string, number>();
           const nameMap = new Map<string, string>();
@@ -218,7 +228,13 @@ export function useGameRoom(connection: GameRoomConnection) {
 
           const myVision = state.clientVisions.get(myId);
           if (myVision) {
-            setRenderGrid(createRenderGrid(myVision, state));
+            const { bombMoved } = updateRenderGrid(
+              renderGrid.current,
+              myVision.cells,
+            );
+            if (bombMoved) {
+              setBombMoveSignal((s) => !s);
+            }
           }
 
           const myQueue = state.clientActionQueues.get(myId);
@@ -235,6 +251,9 @@ export function useGameRoom(connection: GameRoomConnection) {
               })),
             );
           }
+
+          // Set to -1 to force a final render after game end, since the client may receive the GAME_END message before the final state update.
+          setRenderTick(state.status === GameStatus.FINISHED ? -1 : state.tick);
         };
 
         syncState(currentRoom.state);
@@ -322,8 +341,10 @@ export function useGameRoom(connection: GameRoomConnection) {
     playerColors,
     playerNames,
     currentPlayer,
-    renderGrid,
+    renderTick,
+    renderGrid: renderGrid.current,
     moveQueue,
+    bombMoveSignal,
     gameState,
     gameResult,
     sendMove,
