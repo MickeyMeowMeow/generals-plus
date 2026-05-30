@@ -12,7 +12,7 @@ import { Player } from "#/domain/player/player";
 import { PlayerStatus } from "#/domain/player/player-status";
 import { StandardTeam } from "#/domain/team/team";
 
-function create3x3GridWithTrack(): Grid {
+function create7x3GridWithTrack(): Grid {
   const grid = new SquareGrid(7, 3, [
     [
       new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),
@@ -66,7 +66,7 @@ function getCell(grid: Grid, coord: { x: number; y: number }): Cell {
 
 describe("PayloadGame", () => {
   it("extracts track and sets initial cartIndex to the middle of the track", () => {
-    const grid = create3x3GridWithTrack();
+    const grid = create7x3GridWithTrack();
     const game = new PayloadGame({ grid });
 
     const t1 = new StandardTeam("left-team");
@@ -86,7 +86,7 @@ describe("PayloadGame", () => {
   });
 
   it("calculates cart coordinates correctly based on cartSize", () => {
-    const grid = create3x3GridWithTrack();
+    const grid = create7x3GridWithTrack();
     const game = new PayloadGame({ grid }, { payloadCartSize: 3 });
 
     game.startGame();
@@ -100,7 +100,7 @@ describe("PayloadGame", () => {
   });
 
   it("advances the cart when a team meets the occupied tiles threshold and the other does not", () => {
-    const grid = create3x3GridWithTrack();
+    const grid = create7x3GridWithTrack();
     // required to occupy: 3
     const game = new PayloadGame(
       { grid },
@@ -142,7 +142,7 @@ describe("PayloadGame", () => {
   });
 
   it("becomes contested when both sides meet pushing conditions or are present without pushing", () => {
-    const grid = create3x3GridWithTrack();
+    const grid = create7x3GridWithTrack();
     const game = new PayloadGame(
       { grid },
       { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeedTicks: 2 },
@@ -178,7 +178,7 @@ describe("PayloadGame", () => {
   });
 
   it("shifts cart tiles: leaves 1 troop behind, friendly merges, and resolves enemy combats", () => {
-    const grid = create3x3GridWithTrack();
+    const grid = create7x3GridWithTrack();
     const game = new PayloadGame(
       { grid },
       { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeedTicks: 2 },
@@ -249,7 +249,7 @@ describe("PayloadGame", () => {
   });
 
   it("wins immediately when a team pushes the cart to the opponent base end of the track", () => {
-    const grid = create3x3GridWithTrack();
+    const grid = create7x3GridWithTrack();
     const game = new PayloadGame(
       { grid },
       { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeedTicks: 2 },
@@ -290,7 +290,7 @@ describe("PayloadGame", () => {
   });
 
   it("ends in a win for the team closer to their target when timeout ticks are reached", () => {
-    const grid = create3x3GridWithTrack();
+    const grid = create7x3GridWithTrack();
     const game = new PayloadGame({ grid }, { finishTick: 3 });
 
     const t1 = new StandardTeam("left-team");
