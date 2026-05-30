@@ -1,4 +1,4 @@
-import { GameMode } from "@generals-plus/engine";
+import { CollapseShape, GameMode } from "@generals-plus/engine";
 
 export const BASE_TICK_INTERVAL = 500;
 
@@ -12,7 +12,7 @@ export interface ModeSettings {
   detonateDuration?: number;
   collapseInterval?: number;
   startDelay?: number;
-  collapseShape?: "circle" | "square";
+  collapseShape?: CollapseShape;
 }
 
 export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
@@ -28,7 +28,7 @@ export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
   [GameMode.COLLAPSE]: {
     startDelay: 60,
     collapseInterval: 30,
-    collapseShape: "circle",
+    collapseShape: CollapseShape.CIRCLE,
   },
 };
 

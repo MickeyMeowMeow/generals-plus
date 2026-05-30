@@ -1,4 +1,4 @@
-import { GameMode, GridType } from "@generals-plus/engine";
+import { CollapseShape, GameMode, GridType } from "@generals-plus/engine";
 import type {
   ClassicSetupSettings,
   CollapseSetupSettings,
@@ -99,9 +99,9 @@ const MAP_TYPE_OPTIONS = [
   { id: GridType.HEX, label: "Hexagon" },
 ];
 
-const SHAPE_OPTIONS = [
-  { id: "circle", label: "Circle" },
-  { id: "square", label: "Square" },
+const SHAPE_OPTIONS: Array<{ id: CollapseShape; label: string }> = [
+  { id: CollapseShape.CIRCLE, label: "Circle" },
+  { id: CollapseShape.SQUARE, label: "Square" },
 ];
 
 /** Rounds a value to a consistent precision to avoid floating-point nonsense. */
@@ -340,10 +340,11 @@ export function GameSettings({
             </Label>
             <Select
               disabled={!isHost}
-              value={currentSettings.collapseShape ?? "circle"}
+              value={currentSettings.collapseShape ?? CollapseShape.CIRCLE}
               onValueChange={(val) => {
-                if (val === "circle" || val === "square") {
-                  onChangeSettings({ collapseShape: val });
+                const shape = SHAPE_OPTIONS.find((o) => o.id === val)?.id;
+                if (shape) {
+                  onChangeSettings({ collapseShape: shape });
                 }
               }}
             >

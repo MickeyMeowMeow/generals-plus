@@ -15,11 +15,19 @@ import type {
 } from "#/domain/game/interfaces";
 import type { GridInput } from "#/domain/grid/grid-generator";
 import { PlayerStatus } from "#/domain/player/player-status";
+import { getSquaredDistance } from "#/math/coordinate";
+
+export const CollapseShape = {
+  CIRCLE: "circle",
+  SQUARE: "square",
+} as const;
+
+export type CollapseShape = (typeof CollapseShape)[keyof typeof CollapseShape];
 
 export interface CollapseGameOptions {
   startDelayTicks?: number;
   shrinkIntervalTicks?: number;
-  collapseShape?: "circle" | "square";
+  collapseShape?: CollapseShape;
 }
 
 export class CollapseGame extends BaseGame implements ICollapseGame {
@@ -29,7 +37,7 @@ export class CollapseGame extends BaseGame implements ICollapseGame {
   // Settings
   private readonly startDelayTicks: number;
   private readonly shrinkIntervalTicks: number;
-  private readonly collapseShape: "circle" | "square";
+  private readonly collapseShape: CollapseShape;
 
   // Private Safe Zone Tracker
   private safeCircleCenterX: number = 0;
@@ -49,7 +57,7 @@ export class CollapseGame extends BaseGame implements ICollapseGame {
     super(input);
     this.startDelayTicks = options?.startDelayTicks ?? 120; // 60s at 2 ticks/s
     this.shrinkIntervalTicks = options?.shrinkIntervalTicks ?? 60; // 30s at 2 ticks/s
-    this.collapseShape = options?.collapseShape ?? "circle";
+    this.collapseShape = options?.collapseShape ?? CollapseShape.CIRCLE;
     this.nextCollapseTick = this.startDelayTicks;
   }
 
@@ -100,14 +108,16 @@ export class CollapseGame extends BaseGame implements ICollapseGame {
     this.safeCircleCenterY = center.y;
 
     // Calculate initial radius to cover the entire grid
-    let maxDist = 0;
+    let maxSquaredDist = 0;
     this.grid.forEach((cell) => {
       const pos = this.grid.toCartesian(cell.coordinate);
-      const d = Math.sqrt((pos.x - center.x) ** 2 + (pos.y - center.y) ** 2);
-      if (d > maxDist) {
-        maxDist = d;
+      const d = getSquaredDistance(pos, center);
+      if (d > maxSquaredDist) {
+        maxSquaredDist = d;
       }
     });
+
+    const maxDist = Math.sqrt(maxSquaredDist);
 
     this.safeCircleRadius = maxDist + 1.0; // padding to cover fully
     this.shrinkStep = maxDist / 6; // shrink in 6 stages

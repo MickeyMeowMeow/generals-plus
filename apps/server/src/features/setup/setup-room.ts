@@ -1,7 +1,7 @@
 import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, matchMaker, Room } from "@colyseus/core";
-import type { GridGeneratorInput } from "@generals-plus/engine";
+import type { CollapseShape, GridGeneratorInput } from "@generals-plus/engine";
 import {
   DefaultGenOptions,
   DefaultGridBounds,
@@ -116,39 +116,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     // Initialize mode-specific defaults so startGame sees the right values
     // even if the host never opens the settings panel.
     const modeDefaults = MODE_SETTINGS[gameMode];
-    if (modeDefaults?.duration !== undefined) {
-      state.duration = modeDefaults.duration;
-      state.finishTick = calculateFinishTick(
-        modeDefaults.duration,
-        state.tickInterval,
-      );
-    }
-    if (modeDefaults?.flagCount !== undefined) {
-      state.flagCount = modeDefaults.flagCount;
-    }
-    if (modeDefaults?.targetScore !== undefined) {
-      state.targetScore = modeDefaults.targetScore;
-    }
-    if (modeDefaults?.bombSiteCount !== undefined) {
-      state.bombSiteCount = modeDefaults.bombSiteCount;
-    }
-    if (modeDefaults?.plantDuration !== undefined) {
-      state.plantDuration = modeDefaults.plantDuration;
-    }
-    if (modeDefaults?.defuseDuration !== undefined) {
-      state.defuseDuration = modeDefaults.defuseDuration;
-    }
-    if (modeDefaults?.detonateDuration !== undefined) {
-      state.detonateDuration = modeDefaults.detonateDuration;
-    }
-    if (modeDefaults?.collapseInterval !== undefined) {
-      state.collapseInterval = modeDefaults.collapseInterval;
-    }
-    if (modeDefaults?.startDelay !== undefined) {
-      state.startDelay = modeDefaults.startDelay;
-    }
-    if (modeDefaults?.collapseShape !== undefined) {
-      state.collapseShape = modeDefaults.collapseShape;
+    if (modeDefaults) {
+      Object.assign(state, modeDefaults);
+      if (modeDefaults.duration !== undefined) {
+        state.finishTick = calculateFinishTick(
+          modeDefaults.duration,
+          state.tickInterval,
+        );
+      }
     }
 
     this.state = state;
@@ -313,22 +288,15 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         return;
       }
 
-      let invalidDemoField:
-        | "bombSiteCount"
-        | "plantDuration"
-        | "defuseDuration"
-        | "detonateDuration"
-        | undefined;
-      if (update.bombSiteCount !== undefined) {
-        invalidDemoField = "bombSiteCount";
-      } else if (update.plantDuration !== undefined) {
-        invalidDemoField = "plantDuration";
-      } else if (update.defuseDuration !== undefined) {
-        invalidDemoField = "defuseDuration";
-      } else if (update.detonateDuration !== undefined) {
-        invalidDemoField = "detonateDuration";
-      }
-
+      const DEMOLITION_FIELDS = [
+        "bombSiteCount",
+        "plantDuration",
+        "defuseDuration",
+        "detonateDuration",
+      ] as const;
+      const invalidDemoField = DEMOLITION_FIELDS.find(
+        (f) => update[f] !== undefined,
+      );
       if (
         invalidDemoField !== undefined &&
         activeMode !== GameMode.DEMOLITION
@@ -341,19 +309,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         return;
       }
 
-      let invalidCollapseField:
-        | "collapseInterval"
-        | "startDelay"
-        | "collapseShape"
-        | undefined;
-      if (update.collapseInterval !== undefined) {
-        invalidCollapseField = "collapseInterval";
-      } else if (update.startDelay !== undefined) {
-        invalidCollapseField = "startDelay";
-      } else if (update.collapseShape !== undefined) {
-        invalidCollapseField = "collapseShape";
-      }
-
+      const COLLAPSE_FIELDS = [
+        "collapseInterval",
+        "startDelay",
+        "collapseShape",
+      ] as const;
+      const invalidCollapseField = COLLAPSE_FIELDS.find(
+        (f) => update[f] !== undefined,
+      );
       if (
         invalidCollapseField !== undefined &&
         activeMode !== GameMode.COLLAPSE
@@ -378,65 +341,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       // Reset mode-specific defaults when gameMode changes.
       if (update.gameMode !== undefined) {
         const modeDefaults = MODE_SETTINGS[update.gameMode];
-        if (
-          update.duration === undefined &&
-          modeDefaults?.duration !== undefined
-        ) {
-          this.state.duration = modeDefaults.duration;
-        }
-        if (
-          update.flagCount === undefined &&
-          modeDefaults?.flagCount !== undefined
-        ) {
-          this.state.flagCount = modeDefaults.flagCount;
-        }
-        if (
-          update.targetScore === undefined &&
-          modeDefaults?.targetScore !== undefined
-        ) {
-          this.state.targetScore = modeDefaults.targetScore;
-        }
-        if (
-          update.bombSiteCount === undefined &&
-          modeDefaults?.bombSiteCount !== undefined
-        ) {
-          this.state.bombSiteCount = modeDefaults.bombSiteCount;
-        }
-        if (
-          update.plantDuration === undefined &&
-          modeDefaults?.plantDuration !== undefined
-        ) {
-          this.state.plantDuration = modeDefaults.plantDuration;
-        }
-        if (
-          update.defuseDuration === undefined &&
-          modeDefaults?.defuseDuration !== undefined
-        ) {
-          this.state.defuseDuration = modeDefaults.defuseDuration;
-        }
-        if (
-          update.detonateDuration === undefined &&
-          modeDefaults?.detonateDuration !== undefined
-        ) {
-          this.state.detonateDuration = modeDefaults.detonateDuration;
-        }
-        if (
-          update.collapseInterval === undefined &&
-          modeDefaults?.collapseInterval !== undefined
-        ) {
-          this.state.collapseInterval = modeDefaults.collapseInterval;
-        }
-        if (
-          update.startDelay === undefined &&
-          modeDefaults?.startDelay !== undefined
-        ) {
-          this.state.startDelay = modeDefaults.startDelay;
-        }
-        if (
-          update.collapseShape === undefined &&
-          modeDefaults?.collapseShape !== undefined
-        ) {
-          this.state.collapseShape = modeDefaults.collapseShape;
+        if (modeDefaults) {
+          const defaultsToApply: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(modeDefaults)) {
+            if (value !== undefined && !(key in update)) {
+              defaultsToApply[key] = value;
+            }
+          }
+          Object.assign(this.state, defaultsToApply);
         }
       }
 
@@ -726,7 +638,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
             this.state.collapseInterval,
             this.state.tickInterval,
           ),
-          collapseShape: this.state.collapseShape as "circle" | "square",
+          collapseShape: this.state.collapseShape as CollapseShape,
         };
       default:
         return { ...base, mode: this.state.gameMode };

@@ -1,4 +1,4 @@
-import type { GameMode, GridType } from "@generals-plus/engine";
+import type { CollapseShape, GameMode, GridType } from "@generals-plus/engine";
 
 interface BaseSetupSettings {
   gameMode: GameMode;
@@ -50,7 +50,7 @@ export interface CollapseSetupSettings extends BaseSetupSettings {
   gameMode: typeof GameMode.COLLAPSE;
   collapseInterval: number;
   startDelay: number;
-  collapseShape: "circle" | "square";
+  collapseShape: CollapseShape;
 }
 
 export interface OtherSettings extends BaseSetupSettings {

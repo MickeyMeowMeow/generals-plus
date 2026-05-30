@@ -11,6 +11,7 @@ import {
   obstacleIcon,
   swampIcon,
 } from "#/features/game/assets";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 
 interface CellTheme {
   color: number;
@@ -21,6 +22,9 @@ interface CellTheme {
  * Theme configuration for each terrain type, combining both color and icon information.
  */
 export const TerrainTheme: Partial<Record<VisionTerrain, CellTheme>> = {
+  [Terrain.VOID]: {
+    color: RenderConfig.background,
+  },
   [Terrain.PLAIN]: {
     color: 0xd8dde3,
   },

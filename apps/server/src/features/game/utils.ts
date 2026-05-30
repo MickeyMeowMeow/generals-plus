@@ -1,4 +1,8 @@
-import type { GridInput, IBaseGame } from "@generals-plus/engine";
+import type {
+  CollapseShape,
+  GridInput,
+  IBaseGame,
+} from "@generals-plus/engine";
 import {
   AttackerTeam,
   ClassicGame,
@@ -54,7 +58,7 @@ interface CollapseCreateGameOptions extends BaseCreateGameOptions {
   mode: typeof GameMode.COLLAPSE;
   startDelayTicks?: number;
   shrinkIntervalTicks?: number;
-  collapseShape?: "circle" | "square";
+  collapseShape?: CollapseShape;
 }
 
 interface OtherCreateGameOptions extends BaseCreateGameOptions {
@@ -71,6 +75,33 @@ export type CreateGameOptions =
   | DemolitionCreateGameOptions
   | CollapseCreateGameOptions
   | OtherCreateGameOptions;
+
+function assignStandardTeams(
+  game: IBaseGame,
+  playerIds: string[],
+  playerPerTeam: number,
+): void {
+  const teamsCount = Math.ceil(playerIds.length / playerPerTeam);
+  for (let i = 0; i < teamsCount; i++) {
+    const teamId = `team_${i}`;
+    const team = new StandardTeam(teamId);
+    game.teams.set(teamId, team);
+  }
+
+  for (const [i, playerId] of playerIds.entries()) {
+    const teamId = `team_${i % teamsCount}`;
+    const team = game.teams.get(teamId);
+    if (!team) {
+      throw new Error(
+        `Team with id "${teamId}" not found for player "${playerId}".`,
+      );
+    }
+
+    const player = new Player(team, playerId);
+    team.addPlayer(player);
+    game.players.set(playerId, player);
+  }
+}
 
 /**
  * Factory function to create a game instance based on mode and options.
@@ -93,29 +124,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         },
       );
 
-      const teamsCount = Math.ceil(
-        options.playerIds.length / options.playerPerTeam,
-      );
-      for (let i = 0; i < teamsCount; i++) {
-        const teamId = `team_${i}`;
-        const team = new StandardTeam(teamId);
-        game.teams.set(teamId, team);
-      }
-
-      for (const [i, playerId] of options.playerIds.entries()) {
-        const teamId = `team_${i % teamsCount}`;
-        const team = game.teams.get(teamId);
-        if (!team) {
-          throw new Error(
-            `Team with id "${teamId}" not found for player "${playerId}".`,
-          );
-        }
-
-        const player = new Player(team, playerId);
-        team.addPlayer(player);
-        game.players.set(playerId, player);
-      }
-
+      assignStandardTeams(game, options.playerIds, options.playerPerTeam);
       return game;
     }
     case GameMode.CLASSIC: {
@@ -124,29 +133,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         ...options.gridOptions,
       });
 
-      const teamsCount = Math.ceil(
-        options.playerIds.length / options.playerPerTeam,
-      );
-      for (let i = 0; i < teamsCount; i++) {
-        const teamId = `team_${i}`;
-        const team = new StandardTeam(teamId);
-        game.teams.set(teamId, team);
-      }
-
-      for (const [i, playerId] of options.playerIds.entries()) {
-        const teamId = `team_${i % teamsCount}`;
-        const team = game.teams.get(teamId);
-        if (!team) {
-          throw new Error(
-            `Team with id "${teamId}" not found for player "${playerId}".`,
-          );
-        }
-
-        const player = new Player(team, playerId);
-        team.addPlayer(player);
-        game.players.set(playerId, player);
-      }
-
+      assignStandardTeams(game, options.playerIds, options.playerPerTeam);
       return game;
     }
     case GameMode.TURF_WAR: {
@@ -160,29 +147,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         },
       );
 
-      const teamsCount = Math.ceil(
-        options.playerIds.length / options.playerPerTeam,
-      );
-      for (let i = 0; i < teamsCount; i++) {
-        const teamId = `team_${i}`;
-        const team = new StandardTeam(teamId);
-        game.teams.set(teamId, team);
-      }
-
-      for (const [i, playerId] of options.playerIds.entries()) {
-        const teamId = `team_${i % teamsCount}`;
-        const team = game.teams.get(teamId);
-        if (!team) {
-          throw new Error(
-            `Team with id "${teamId}" not found for player "${playerId}".`,
-          );
-        }
-
-        const player = new Player(team, playerId);
-        team.addPlayer(player);
-        game.players.set(playerId, player);
-      }
-
+      assignStandardTeams(game, options.playerIds, options.playerPerTeam);
       return game;
     }
     case GameMode.DOMINATION: {
@@ -197,29 +162,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         },
       );
 
-      const teamsCount = Math.ceil(
-        options.playerIds.length / options.playerPerTeam,
-      );
-      for (let i = 0; i < teamsCount; i++) {
-        const teamId = `team_${i}`;
-        const team = new StandardTeam(teamId);
-        game.teams.set(teamId, team);
-      }
-
-      for (const [i, playerId] of options.playerIds.entries()) {
-        const teamId = `team_${i % teamsCount}`;
-        const team = game.teams.get(teamId);
-        if (!team) {
-          throw new Error(
-            `Team with id "${teamId}" not found for player "${playerId}".`,
-          );
-        }
-
-        const player = new Player(team, playerId);
-        team.addPlayer(player);
-        game.players.set(playerId, player);
-      }
-
+      assignStandardTeams(game, options.playerIds, options.playerPerTeam);
       return game;
     }
     case GameMode.DEMOLITION: {
@@ -243,7 +186,6 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       game.teams.set("attackers", attackers);
       game.teams.set("defenders", defenders);
 
-      // Partition playerIds half and half into Attackers and Defenders
       for (const [i, playerId] of options.playerIds.entries()) {
         const team = i % 2 === 0 ? attackers : defenders;
         const player = new Player(team, playerId);
