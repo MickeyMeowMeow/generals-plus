@@ -151,7 +151,9 @@ export abstract class AbstractGridGenerator<
       const track: ICoordinate[] = [];
       const isHex = grid.gridType !== "square";
       const bounds = grid.bounds;
-      const height = isHex ? bounds.leftSlant : bounds.height;
+      const height = isHex
+        ? (bounds as { readonly leftSlant: number }).leftSlant
+        : (bounds as { readonly height: number }).height;
       const cy = Math.floor(height / 2);
       const K = config.payloadCartSize;
       const startOffset = -Math.floor((K - 1) / 2);
@@ -163,9 +165,14 @@ export abstract class AbstractGridGenerator<
       const rightY = Math.min(height - 1 - endOffset, cy + bendOffset);
 
       if (isHex) {
-        const hL = bounds.left,
-          hR = bounds.right,
-          hRS = bounds.rightSlant;
+        const hexBounds = bounds as {
+          readonly left: number;
+          readonly right: number;
+          readonly rightSlant: number;
+        };
+        const hL = hexBounds.left;
+        const hR = hexBounds.right;
+        const hRS = hexBounds.rightSlant;
         const minXAt = (y: number) => Math.max(-hL + 1, -y);
         const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
         startX = Math.max(
@@ -177,8 +184,9 @@ export abstract class AbstractGridGenerator<
           maxXAt(Math.min(height - 1, rightY + 2)),
         );
       } else {
-        startX = Math.min(2 - startOffset, Math.floor(bounds.width / 2));
-        endX = Math.max(startX, bounds.width - 1 - (2 - startOffset));
+        const sqBounds = bounds as { readonly width: number };
+        startX = Math.min(2 - startOffset, Math.floor(sqBounds.width / 2));
+        endX = Math.max(startX, sqBounds.width - 1 - (2 - startOffset));
       }
 
       for (let y = leftY; y < cy; y++) track.push({ x: startX, y });

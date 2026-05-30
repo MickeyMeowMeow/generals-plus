@@ -443,12 +443,15 @@ export class MatchRoom extends Room<{
       const state = this.game.getPlayerState(playerId);
       if (!state) continue;
 
-      player.teamId = state.teamId;
       const publicPlayer = this.state.publicPlayers.get(playerId);
-      // Keep the public projection in lockstep with the authoritative engine
-      // state so the scoreboard stays accurate for every connected client.
-      if (publicPlayer) {
-        publicPlayer.teamId = state.teamId;
+
+      if (state.teamId) {
+        player.teamId = state.teamId;
+        // Keep the public projection in lockstep with the authoritative engine
+        // state so the scoreboard stays accurate for every connected client.
+        if (publicPlayer) {
+          publicPlayer.teamId = state.teamId;
+        }
       }
 
       const prevStatus = player.status;

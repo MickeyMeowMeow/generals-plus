@@ -56,6 +56,14 @@ function create3x3GridWithTrack(): Grid {
   return grid;
 }
 
+function getCell(grid: Grid, coord: { x: number; y: number }): Cell {
+  const cell = grid.get(coord);
+  if (!cell) {
+    throw new Error(`Cell not found at ${coord.x}, ${coord.y}`);
+  }
+  return cell;
+}
+
 describe("PayloadGame", () => {
   it("extracts track and sets initial cartIndex to the middle of the track", () => {
     const grid = create3x3GridWithTrack();
@@ -109,10 +117,10 @@ describe("PayloadGame", () => {
     game.players.set(p2.playerId, p2);
 
     // Setup mock positions of generals so game.startGame sets leftTeamId and rightTeamId correctly
-    grid.get({ x: 0, y: 1 })!.terrain = Terrain.GENERAL;
-    grid.get({ x: 0, y: 1 })!.owner = p1;
-    grid.get({ x: 6, y: 1 })!.terrain = Terrain.GENERAL;
-    grid.get({ x: 6, y: 1 })!.owner = p2;
+    getCell(grid, { x: 0, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 0, y: 1 }).owner = p1;
+    getCell(grid, { x: 6, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 6, y: 1 }).owner = p2;
 
     game.startGame();
 
@@ -120,9 +128,9 @@ describe("PayloadGame", () => {
     expect(game.rightTeamId).toBe("right-team");
 
     // Occupy 3 cells of the cart with left-team (p1)
-    grid.get({ x: 2, y: 0 })!.owner = p1;
-    grid.get({ x: 3, y: 0 })!.owner = p1;
-    grid.get({ x: 4, y: 0 })!.owner = p1;
+    getCell(grid, { x: 2, y: 0 }).owner = p1;
+    getCell(grid, { x: 3, y: 0 }).owner = p1;
+    getCell(grid, { x: 4, y: 0 }).owner = p1;
 
     // Evaluate push: Left team has 3/3, right team has 0. Left team pushes right (+1 index).
     // payloadSpeed = 1, so every 2 ticks it evaluates pushing
@@ -149,18 +157,18 @@ describe("PayloadGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    grid.get({ x: 0, y: 1 })!.terrain = Terrain.GENERAL;
-    grid.get({ x: 0, y: 1 })!.owner = p1;
-    grid.get({ x: 6, y: 1 })!.terrain = Terrain.GENERAL;
-    grid.get({ x: 6, y: 1 })!.owner = p2;
+    getCell(grid, { x: 0, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 0, y: 1 }).owner = p1;
+    getCell(grid, { x: 6, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 6, y: 1 }).owner = p2;
 
     game.startGame();
 
     // Left team owns 2 cells, Right team owns 2 cells
-    grid.get({ x: 2, y: 0 })!.owner = p1;
-    grid.get({ x: 3, y: 0 })!.owner = p1;
-    grid.get({ x: 2, y: 2 })!.owner = p2;
-    grid.get({ x: 3, y: 2 })!.owner = p2;
+    getCell(grid, { x: 2, y: 0 }).owner = p1;
+    getCell(grid, { x: 3, y: 0 }).owner = p1;
+    getCell(grid, { x: 2, y: 2 }).owner = p2;
+    getCell(grid, { x: 3, y: 2 }).owner = p2;
 
     game.nextTick();
     game.nextTick();
@@ -185,29 +193,29 @@ describe("PayloadGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    grid.get({ x: 0, y: 1 })!.terrain = Terrain.GENERAL;
-    grid.get({ x: 0, y: 1 })!.owner = p1;
-    grid.get({ x: 6, y: 1 })!.terrain = Terrain.GENERAL;
-    grid.get({ x: 6, y: 1 })!.owner = p2;
+    getCell(grid, { x: 0, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 0, y: 1 }).owner = p1;
+    getCell(grid, { x: 6, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 6, y: 1 }).owner = p2;
 
     game.startGame();
 
     // Left team pushes: occupies 2 cells of the cart
-    const c1 = grid.get({ x: 2, y: 1 })!;
+    const c1 = getCell(grid, { x: 2, y: 1 });
     c1.owner = p1;
     c1.troopCount = 10;
 
-    const c2 = grid.get({ x: 3, y: 1 })!;
+    const c2 = getCell(grid, { x: 3, y: 1 });
     c2.owner = p1;
     c2.troopCount = 20;
 
     // Friendly destination: (4, 1) has same owner p1 with 5 troops
-    const cFriendlyDest = grid.get({ x: 4, y: 1 })!;
+    const cFriendlyDest = getCell(grid, { x: 4, y: 1 });
     cFriendlyDest.owner = p1;
     cFriendlyDest.troopCount = 5;
 
     // Enemy destination: (5, 1) has enemy p2 with 3 troops
-    const cEnemyDest = grid.get({ x: 5, y: 1 })!;
+    const cEnemyDest = getCell(grid, { x: 5, y: 1 });
     cEnemyDest.owner = p2;
     cEnemyDest.troopCount = 3;
 
@@ -227,17 +235,17 @@ describe("PayloadGame", () => {
 
     expect(game.cartIndex).toBe(4);
 
-    expect(grid.get({ x: 2, y: 1 })?.troopCount).toBe(1);
-    expect(grid.get({ x: 2, y: 1 })?.owner).toBe(p1);
+    expect(getCell(grid, { x: 2, y: 1 }).troopCount).toBe(1);
+    expect(getCell(grid, { x: 2, y: 1 }).owner).toBe(p1);
 
-    expect(grid.get({ x: 3, y: 1 })?.troopCount).toBe(10);
-    expect(grid.get({ x: 3, y: 1 })?.owner).toBe(p1);
+    expect(getCell(grid, { x: 3, y: 1 }).troopCount).toBe(10);
+    expect(getCell(grid, { x: 3, y: 1 }).owner).toBe(p1);
 
-    expect(grid.get({ x: 4, y: 1 })?.troopCount).toBe(20);
-    expect(grid.get({ x: 4, y: 1 })?.owner).toBe(p1);
+    expect(getCell(grid, { x: 4, y: 1 }).troopCount).toBe(20);
+    expect(getCell(grid, { x: 4, y: 1 }).owner).toBe(p1);
 
-    expect(grid.get({ x: 5, y: 1 })?.troopCount).toBe(1);
-    expect(grid.get({ x: 5, y: 1 })?.owner).toBe(p1);
+    expect(getCell(grid, { x: 5, y: 1 }).troopCount).toBe(1);
+    expect(getCell(grid, { x: 5, y: 1 }).owner).toBe(p1);
   });
 
   it("wins immediately when a team pushes the cart to the opponent base end of the track", () => {
@@ -256,10 +264,10 @@ describe("PayloadGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    grid.get({ x: 0, y: 1 })!.terrain = Terrain.GENERAL;
-    grid.get({ x: 0, y: 1 })!.owner = p1;
-    grid.get({ x: 6, y: 1 })!.terrain = Terrain.GENERAL;
-    grid.get({ x: 6, y: 1 })!.owner = p2;
+    getCell(grid, { x: 0, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 0, y: 1 }).owner = p1;
+    getCell(grid, { x: 6, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 6, y: 1 }).owner = p2;
 
     game.startGame();
 
@@ -267,8 +275,8 @@ describe("PayloadGame", () => {
     game.cartIndex = 5;
 
     // Occupy 2 cells of the cart with left-team to trigger the last push
-    grid.get({ x: 4, y: 0 })!.owner = p1;
-    grid.get({ x: 5, y: 0 })!.owner = p1;
+    getCell(grid, { x: 4, y: 0 }).owner = p1;
+    getCell(grid, { x: 5, y: 0 }).owner = p1;
 
     game.nextTick();
     game.nextTick();
@@ -294,10 +302,10 @@ describe("PayloadGame", () => {
     game.players.set(p1.playerId, p1);
     game.players.set(p2.playerId, p2);
 
-    grid.get({ x: 0, y: 1 })!.terrain = Terrain.GENERAL;
-    grid.get({ x: 0, y: 1 })!.owner = p1;
-    grid.get({ x: 6, y: 1 })!.terrain = Terrain.GENERAL;
-    grid.get({ x: 6, y: 1 })!.owner = p2;
+    getCell(grid, { x: 0, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 0, y: 1 }).owner = p1;
+    getCell(grid, { x: 6, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 6, y: 1 }).owner = p2;
 
     game.startGame();
 
@@ -336,7 +344,7 @@ describe("PayloadGame", () => {
 
     for (let y = cy - 1; y <= cy + 1; y++) {
       for (let x = startX + startOffset; x <= endX + endOffset; x++) {
-        const cell = grid.get({ x, y })!;
+        const cell = getCell(grid, { x, y });
         // The cells inside the horizontal path band must either be generals or plains (no mountains or cities)
         if (cell.terrain === Terrain.GENERAL) continue;
         expect(cell.terrain).toBe(Terrain.PLAIN);
