@@ -4,6 +4,7 @@ import type {
   IUser,
   IUserRepository,
   UserCreateOptions,
+  UserProfileUpdate,
 } from "#/infra/db/interfaces";
 import type { IUserDocument } from "#/infra/db/models/user-model";
 import { UserModel } from "#/infra/db/models/user-model";
@@ -21,6 +22,7 @@ export class MongoUserRepository implements IUserRepository {
       anonymous: doc.anonymous,
       verified: doc.verified,
       ratings: doc.ratings,
+      preferences: doc.preferences,
     };
   }
 
@@ -105,6 +107,33 @@ export class MongoUserRepository implements IUserRepository {
       { verified: true },
     ).exec();
     return result.modifiedCount > 0;
+  }
+
+  async updateProfile(
+    userId: string,
+    update: UserProfileUpdate,
+  ): Promise<IUser | null> {
+    const setFields: UserProfileUpdate = {};
+
+    if (update.displayName !== undefined) {
+      setFields.displayName = update.displayName;
+    }
+
+    if (update.preferences !== undefined) {
+      setFields.preferences = update.preferences;
+    }
+
+    const user = await UserModel.findByIdAndUpdate(
+      userId,
+      { $set: setFields },
+      { new: true, runValidators: true },
+    ).exec();
+
+    if (!user) {
+      return null;
+    }
+
+    return this.mapToEntity(user);
   }
 
   async getRating(userId: string, mode: GameMode): Promise<number> {
