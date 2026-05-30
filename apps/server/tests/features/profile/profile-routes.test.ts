@@ -89,6 +89,8 @@ describe("registerProfileRoutes", () => {
           displayName: "  New Name  ",
           preferences: {
             backgroundImage: { source: "preset", presetId: "frontier" },
+            avatar: { source: "default" },
+            stageAppearance: { backdropBlur: true, backdropOpacity: 42 },
           },
         },
       }),
@@ -100,6 +102,8 @@ describe("registerProfileRoutes", () => {
       displayName: "New Name",
       preferences: {
         backgroundImage: { source: "preset", presetId: "frontier" },
+        avatar: { source: "default" },
+        stageAppearance: { backdropBlur: true, backdropOpacity: 42 },
       },
     });
     expect(response.status).toHaveBeenCalledWith(200);
