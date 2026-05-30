@@ -1,6 +1,16 @@
 // @vitest-environment jsdom
 
 import { cleanup, screen, within } from "@testing-library/react";
+
+// Polyfill ResizeObserver for Radix-based components (Slider, etc.)
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver =
+  ResizeObserverMock as unknown as typeof ResizeObserver;
+
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -31,6 +41,8 @@ describe("profile route", () => {
         },
         preferences: {
           backgroundImage: { source: "preset", presetId: "classic" },
+          avatar: { source: "default" },
+          stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
         },
       },
       token: "tok",

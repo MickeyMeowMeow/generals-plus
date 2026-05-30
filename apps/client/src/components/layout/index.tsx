@@ -18,6 +18,8 @@ interface StageProps {
 
 interface StageStyle extends CSSProperties {
   "--stage-background-image"?: string;
+  "--stage-backdrop-opacity"?: string;
+  "--stage-backdrop-filter"?: string;
 }
 
 /**
@@ -28,15 +30,24 @@ interface StageStyle extends CSSProperties {
  */
 export function Stage({ children, backgroundUrl }: StageProps) {
   const auth = useContext(AuthContext);
+  const preferences = auth?.state.user?.preferences;
   const resolvedBackgroundUrl =
-    backgroundUrl ?? resolveStageBackgroundUrl(auth?.state.user?.preferences);
-  const style: StageStyle | undefined = resolvedBackgroundUrl
-    ? {
-        "--stage-background-image": toStageBackgroundImageValue(
-          resolvedBackgroundUrl,
-        ),
-      }
-    : undefined;
+    backgroundUrl ?? resolveStageBackgroundUrl(preferences);
+  const stageAppearance = preferences?.stageAppearance;
+
+  const style: StageStyle = {
+    ...(resolvedBackgroundUrl && {
+      "--stage-background-image": toStageBackgroundImageValue(
+        resolvedBackgroundUrl,
+      ),
+    }),
+    "--stage-backdrop-opacity": String(
+      (stageAppearance?.backdropOpacity ?? 58) / 100,
+    ),
+    ...(stageAppearance?.backdropBlur === false && {
+      "--stage-backdrop-filter": "none",
+    }),
+  };
 
   return (
     <main

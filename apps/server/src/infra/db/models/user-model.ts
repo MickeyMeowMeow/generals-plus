@@ -38,11 +38,22 @@ const defaultUserPreferences = (): UserPreferences =>
 
 const backgroundPresetIds = BACKGROUND_PRESETS.map((preset) => preset.id);
 const backgroundSources = ["preset", "customUrl"] as const;
+const avatarSources = ["default", "customUrl"] as const;
 
 interface BackgroundImagePreferenceDocument {
   source: BackgroundImagePreference["source"];
   presetId?: string;
   customUrl?: string;
+}
+
+interface AvatarPreferenceDocument {
+  source: "default" | "customUrl";
+  customUrl?: string;
+}
+
+interface StageAppearancePreferenceDocument {
+  backdropBlur: boolean;
+  backdropOpacity: number;
 }
 
 const isValidBackgroundImagePreference = (
@@ -67,6 +78,27 @@ const isValidBackgroundImagePreference = (
   return false;
 };
 
+const isValidAvatarPreference = (
+  value: AvatarPreferenceDocument | null | undefined,
+) => {
+  if (!value) {
+    return false;
+  }
+
+  const hasCustomUrl =
+    value.customUrl !== undefined && value.customUrl !== null;
+
+  if (value.source === "default") {
+    return !hasCustomUrl;
+  }
+
+  if (value.source === "customUrl") {
+    return hasCustomUrl;
+  }
+
+  return false;
+};
+
 const BackgroundImagePreferenceSchema =
   new Schema<BackgroundImagePreferenceDocument>(
     {
@@ -81,6 +113,36 @@ const BackgroundImagePreferenceSchema =
         enum: backgroundPresetIds,
       },
       customUrl: { type: String },
+    },
+    { _id: false },
+  );
+
+const AvatarPreferenceSchema = new Schema<AvatarPreferenceDocument>(
+  {
+    source: {
+      type: String,
+      enum: avatarSources,
+      required: true,
+      default: DEFAULT_USER_PREFERENCES.avatar.source,
+    },
+    customUrl: { type: String },
+  },
+  { _id: false },
+);
+
+const StageAppearancePreferenceSchema =
+  new Schema<StageAppearancePreferenceDocument>(
+    {
+      backdropBlur: {
+        type: Boolean,
+        default: DEFAULT_USER_PREFERENCES.stageAppearance.backdropBlur,
+      },
+      backdropOpacity: {
+        type: Number,
+        default: DEFAULT_USER_PREFERENCES.stageAppearance.backdropOpacity,
+        min: 0,
+        max: 100,
+      },
     },
     { _id: false },
   );
@@ -114,6 +176,21 @@ const UserSchema = new Schema<IUserDocument>(
             validator: isValidBackgroundImagePreference,
             message: "Invalid background image preference.",
           },
+        },
+        avatar: {
+          type: AvatarPreferenceSchema,
+          required: true,
+          default: () => structuredClone(DEFAULT_USER_PREFERENCES.avatar),
+          validate: {
+            validator: isValidAvatarPreference,
+            message: "Invalid avatar preference.",
+          },
+        },
+        stageAppearance: {
+          type: StageAppearancePreferenceSchema,
+          required: true,
+          default: () =>
+            structuredClone(DEFAULT_USER_PREFERENCES.stageAppearance),
         },
       },
       default: defaultUserPreferences,

@@ -1,4 +1,5 @@
 import type {
+  AvatarPreference,
   BackgroundImagePreference,
   BackgroundPresetId,
   UserPreferences,
@@ -17,8 +18,11 @@ import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
+import { Slider } from "#/components/ui/slider";
+import { Switch } from "#/components/ui/switch";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
+import { getInitial, resolveAvatarUrl } from "#/features/profile/utils/avatar";
 import { cn } from "#/lib/utils";
 
 type BackgroundValue = BackgroundPresetId | "customUrl";
@@ -42,6 +46,22 @@ export function ProfilePage() {
     user?.preferences?.backgroundImage.source === "customUrl"
       ? user.preferences.backgroundImage.customUrl
       : "",
+  );
+  const [avatar, setAvatar] = useState<AvatarPreference>(
+    user?.preferences?.avatar ?? DEFAULT_USER_PREFERENCES.avatar,
+  );
+  const [avatarCustomUrl, setAvatarCustomUrl] = useState(
+    user?.preferences?.avatar?.source === "customUrl"
+      ? user.preferences.avatar.customUrl
+      : "",
+  );
+  const [backdropBlur, setBackdropBlur] = useState(
+    user?.preferences?.stageAppearance?.backdropBlur ??
+      DEFAULT_USER_PREFERENCES.stageAppearance.backdropBlur,
+  );
+  const [backdropOpacity, setBackdropOpacity] = useState(
+    user?.preferences?.stageAppearance?.backdropOpacity ??
+      DEFAULT_USER_PREFERENCES.stageAppearance.backdropOpacity,
   );
   const [isSaving, setIsSaving] = useState(false);
 
@@ -80,20 +100,30 @@ export function ProfilePage() {
       ? backgroundImage.presetId
       : "customUrl";
 
-  const handleBackgroundSave = async () => {
+  const avatarUrl = resolveAvatarUrl({ avatar } as UserPreferences);
+
+  const handlePreferencesSave = async () => {
     const preferences: UserPreferences = {
       backgroundImage:
         backgroundImage.source === "customUrl"
           ? { source: "customUrl", customUrl: customUrl.trim() }
           : backgroundImage,
+      avatar:
+        avatar.source === "customUrl"
+          ? { source: "customUrl", customUrl: avatarCustomUrl.trim() }
+          : avatar,
+      stageAppearance: {
+        backdropBlur,
+        backdropOpacity,
+      },
     };
 
     setIsSaving(true);
     try {
       await actions.updateUserProfile({ preferences });
-      toast.success("Background updated.");
+      toast.success("Preferences saved.");
     } catch (saveError) {
-      toast.error("Failed to save background.", {
+      toast.error("Failed to save preferences.", {
         description:
           saveError instanceof Error && saveError.message.trim().length > 0
             ? saveError.message
@@ -169,53 +199,123 @@ export function ProfilePage() {
           </section>
         ) : null}
 
+        {/* Avatar */}
         <section className="grid gap-3 border-t border-game-border pt-5">
-          <h2 className="text-base font-semibold">Background</h2>
-          <RadioGroup
-            value={selectedBackground}
-            onValueChange={(value: string) => {
-              if (value === "customUrl") {
-                setBackgroundImage({
-                  source: "customUrl",
-                  customUrl: customUrl.trim(),
-                });
-              } else {
-                setBackgroundImage({
-                  source: "preset",
-                  presetId: value as BackgroundPresetId,
-                });
-              }
-            }}
-            className="grid gap-2 sm:grid-cols-4"
-          >
-            {BACKGROUND_PRESETS.map((preset) => (
+          <h2 className="text-base font-semibold">Avatar</h2>
+          <div className="flex items-start gap-4">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar preview"
+                className="size-16 shrink-0 rounded-none border border-game-border object-cover"
+              />
+            ) : (
+              <div className="flex size-16 shrink-0 items-center justify-center rounded-none border border-game-border bg-game-surface text-2xl font-bold">
+                {getInitial(user.displayName)}
+              </div>
+            )}
+            <div className="flex-1 grid gap-2">
+              <RadioGroup
+                value={avatar.source}
+                onValueChange={(value: string) => {
+                  if (value === "default") {
+                    setAvatar({ source: "default" });
+                  } else {
+                    setAvatar({
+                      source: "customUrl",
+                      customUrl: avatarCustomUrl.trim(),
+                    });
+                  }
+                }}
+                className="grid grid-cols-2 gap-2"
+              >
+                <Label
+                  className={cn(
+                    "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-transparent px-3 py-2 text-sm",
+                    avatar.source === "default" && "border-white/60 bg-white/5",
+                  )}
+                >
+                  <RadioGroupItem value="default" />
+                  Default
+                </Label>
+                <Label
+                  className={cn(
+                    "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-transparent px-3 py-2 text-sm",
+                    avatar.source === "customUrl" &&
+                      "border-white/60 bg-white/5",
+                  )}
+                >
+                  <RadioGroupItem value="customUrl" />
+                  Custom URL
+                </Label>
+              </RadioGroup>
+              {avatar.source === "customUrl" && (
+                <Input
+                  value={avatarCustomUrl}
+                  onChange={(e) => {
+                    setAvatarCustomUrl(e.target.value);
+                    setAvatar({
+                      source: "customUrl",
+                      customUrl: e.target.value.trim(),
+                    });
+                  }}
+                  placeholder="https://example.com/avatar.jpg"
+                  className="border-game-border bg-game-bg text-game-text placeholder:text-game-text-dim"
+                />
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Appearance */}
+        <section className="grid gap-4 border-t border-game-border pt-5">
+          <h2 className="text-base font-semibold">Appearance</h2>
+
+          <div className="grid gap-2">
+            <Label>Background</Label>
+            <RadioGroup
+              value={selectedBackground}
+              onValueChange={(value: string) => {
+                if (value === "customUrl") {
+                  setBackgroundImage({
+                    source: "customUrl",
+                    customUrl: customUrl.trim(),
+                  });
+                } else {
+                  setBackgroundImage({
+                    source: "preset",
+                    presetId: value as BackgroundPresetId,
+                  });
+                }
+              }}
+              className="grid gap-2 sm:grid-cols-4"
+            >
+              {BACKGROUND_PRESETS.map((preset) => (
+                <Label
+                  key={preset.id}
+                  className={cn(
+                    "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-transparent px-3 py-2 text-sm",
+                    selectedBackground === preset.id &&
+                      "border-white/60 bg-white/5",
+                  )}
+                >
+                  <RadioGroupItem value={preset.id} />
+                  {preset.label}
+                </Label>
+              ))}
               <Label
-                key={preset.id}
                 className={cn(
                   "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-transparent px-3 py-2 text-sm",
-                  selectedBackground === preset.id &&
+                  selectedBackground === "customUrl" &&
                     "border-white/60 bg-white/5",
                 )}
               >
-                <RadioGroupItem value={preset.id} />
-                {preset.label}
+                <RadioGroupItem value="customUrl" />
+                Custom
               </Label>
-            ))}
-            <Label
-              className={cn(
-                "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-transparent px-3 py-2 text-sm",
-                selectedBackground === "customUrl" &&
-                  "border-white/60 bg-white/5",
-              )}
-            >
-              <RadioGroupItem value="customUrl" />
-              Custom
-            </Label>
-          </RadioGroup>
+            </RadioGroup>
 
-          {selectedBackground === "customUrl" && (
-            <div className="grid gap-2 sm:max-w-xl">
-              <Label htmlFor="custom-background-url">Custom image URL</Label>
+            {selectedBackground === "customUrl" && (
               <Input
                 id="custom-background-url"
                 value={customUrl}
@@ -232,19 +332,47 @@ export function ProfilePage() {
                 placeholder="https://example.com/background.jpg"
                 className="border-game-border bg-game-bg text-game-text placeholder:text-game-text-dim"
               />
-            </div>
-          )}
+            )}
+          </div>
 
-          <div className="flex justify-end pt-2">
-            <Button
-              type="button"
-              onClick={() => void handleBackgroundSave()}
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving..." : "Save Preferences"}
-            </Button>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="backdrop-blur">Blur</Label>
+              <div className="ml-auto">
+                <Switch
+                  id="backdrop-blur"
+                  checked={backdropBlur}
+                  onCheckedChange={setBackdropBlur}
+                />
+              </div>
+            </div>
+            <div className="col-span-3 flex items-center gap-3">
+              <Label>Opacity</Label>
+              <Slider
+                value={[backdropOpacity]}
+                onValueChange={([value]) => setBackdropOpacity(value)}
+                min={0}
+                max={100}
+                step={1}
+                className="flex-1"
+              />
+              <span className="w-8 text-right text-sm text-game-text-dim">
+                {backdropOpacity}%
+              </span>
+            </div>
           </div>
         </section>
+
+        {/* Save */}
+        <div className="flex justify-end border-t border-game-border pt-5">
+          <Button
+            type="button"
+            onClick={() => void handlePreferencesSave()}
+            disabled={isSaving}
+          >
+            {isSaving ? "Saving..." : "Save Preferences"}
+          </Button>
+        </div>
       </div>
     </StageCenter>
   );

@@ -25,15 +25,49 @@ export type BackgroundImagePreference =
       readonly presetId?: never;
     };
 
+/** Account-level avatar preference. */
+export type AvatarPreference =
+  | {
+      /** Uses the default initial-letter avatar. */
+      readonly source: "default";
+      /** Custom URLs are not valid for default avatars. */
+      readonly customUrl?: never;
+    }
+  | {
+      /** Uses a user-provided avatar image URL. */
+      readonly source: "customUrl";
+      /** User-provided image URL used when source is `customUrl`. */
+      readonly customUrl: string;
+    };
+
+/** Controls for the stage center backdrop visual. */
+export interface StageAppearancePreference {
+  /** Whether the backdrop blur effect is enabled. */
+  readonly backdropBlur: boolean;
+  /** Backdrop overlay opacity 0–100. */
+  readonly backdropOpacity: number;
+}
+
 /** Account-level user preferences shared across devices. */
 export interface UserPreferences {
   /** Account-level background image configuration shared across devices. */
   readonly backgroundImage: BackgroundImagePreference;
+  /** Account-level avatar configuration. */
+  readonly avatar: AvatarPreference;
+  /** Stage center backdrop visual controls. */
+  readonly stageAppearance: StageAppearancePreference;
 }
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   backgroundImage: {
     source: "preset",
     presetId: "classic",
+  },
+  avatar: {
+    source: "default",
+  },
+  stageAppearance: {
+    backdropBlur: true,
+    backdropOpacity: 58,
   },
 };
