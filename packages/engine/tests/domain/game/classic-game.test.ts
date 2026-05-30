@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, test, vi } from "vitest";
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
 import type { MoveActionType } from "#/domain/action/action-type";
 import { ActionType } from "#/domain/action/action-type";
 import type { Action, MoveAction } from "#/domain/action/interfaces";
