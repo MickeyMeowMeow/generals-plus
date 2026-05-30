@@ -863,6 +863,55 @@ describe("SetupRoom", () => {
       );
     });
 
+    it("uses playersPerTeam as demolition team capacity when starting", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DEMOLITION,
+        maxPlayers: 6,
+      });
+
+      for (let i = 1; i <= 6; i++) {
+        await connectClient(room, {
+          id: `p${i}`,
+          email: `p${i}@test.com`,
+        });
+      }
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        playersPerTeam: 4,
+      });
+      await msgPromise;
+
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        teamId: "attackers",
+      });
+
+      const sent = captureErrors(room.clients[0]);
+      const seats: unknown[] = [];
+      for (const client of room.clients) {
+        const originalSend = client.send.bind(client);
+        client.send = (type: string, data?: unknown) => {
+          if (type === "seat") seats.push(data);
+          originalSend(type, data);
+        };
+      }
+
+      room.clients[0].send(SetupClientMessage.START_GAME);
+
+      await vi.waitFor(
+        () => {
+          expect(seats).toHaveLength(6);
+        },
+        { timeout: 5000 },
+      );
+      expect(sent).not.toContain(
+        "Move players until every team is within the limit.",
+      );
+
+      room = null as unknown as SetupRoom;
+    });
+
     it("sends validation failed when game creation throws", async () => {
       const gameUtils = await import("#/features/game/utils");
       const spy = vi.spyOn(gameUtils, "createGame");

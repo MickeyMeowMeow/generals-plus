@@ -841,13 +841,6 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   private getTeamCapacity(): number {
-    if (this.state.gameMode === GameMode.DEMOLITION) {
-      return Math.max(
-        1,
-        Math.ceil(this.state.maxPlayers / DEMOLITION_FINAL_TEAM_IDS.length),
-      );
-    }
-
     return Math.max(1, this.state.playersPerTeam);
   }
 
