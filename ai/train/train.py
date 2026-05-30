@@ -1,18 +1,30 @@
 """
-PPO training with CNN + LSTM for Generals Plus.
+PPO training with U-Net and memory channels for Generals Plus.
 
 Uses the built-in ai/sim JAX environment (matching TS engine rules)
-for vectorized self-play.
+for vectorized self-play with opponent pool.
 
-The recurrent network processes single-frame (spatial, scalar) observations
-through a CNN + LSTM architecture, with LSTM state carried across steps.
+Key changes from previous version:
+  - No LSTM: MemoryState (7 channels) replaces recurrent state
+  - U-Net architecture with 16ch input (9 obs + 7 memory)
+  - Potential-based reward shaping (optimal-policy-preserving)
+  - Self-play with opponent pool (N=3) and win-rate gating
+  - Variable grid sizes
 
 Usage (from the ai/ directory):
-    python -m train.train --grid-size 10 --num-envs 64
+    python -m train.train --grid-size 18 --num-envs 64
 """
 
 import argparse
+import os
+import sys
 import time
+
+# Support running as `python -m train.train` from the ai/ directory
+if __name__ == "__main__" and __package__ is None:
+    _ai_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _ai_dir not in sys.path:
+        sys.path.insert(0, _ai_dir)
 
 import jax
 import jax.numpy as jnp
@@ -20,42 +32,30 @@ import jax.random as jrandom
 import equinox as eqx
 import optax
 
-# JAX-native game simulator matching generals-plus TypeScript engine rules
-from ..sim.action import compute_valid_move_mask
-from ..sim.env import GeneralsEnv
-from ..sim import game
-from ..sim.types import Observation
-from ..sim.rewards import potential_based_reward
-from ..sim.memory import init_memory, update_memory, memory_to_channels, MemoryState
+from sim.action import compute_valid_move_mask
+from sim.env import GeneralsEnv
+from sim import game
+from sim.types import Observation
+from sim.rewards import potential_based_reward
+from sim.memory import init_memory, update_memory, memory_to_channels, MemoryState, reset_memory_on_done
 
-from .network import UNetPolicyValueNetwork
+from train.network import UNetPolicyValueNetwork
 
 
 def obs_to_spatial(obs: Observation) -> jnp.ndarray:
-    """Convert generals-bots Observation to (9, H, W) spatial tensor."""
+    """Convert Observation to (9, H, W) spatial tensor."""
     return jnp.stack([
-        obs.armies,
-        obs.generals,
-        obs.cities,
-        obs.mountains,
-        obs.neutral_cells,
-        obs.owned_cells,
-        obs.opponent_cells,
-        obs.fog_cells,
-        obs.structures_in_fog,
+        obs.armies, obs.generals, obs.cities, obs.mountains,
+        obs.neutral_cells, obs.owned_cells, obs.opponent_cells,
+        obs.fog_cells, obs.structures_in_fog,
     ], axis=0).astype(jnp.float32)
 
 
-def obs_to_scalars(obs: Observation) -> jnp.ndarray:
-    """Extract scalar features from Observation (6-dim)."""
-    return jnp.array([
-        obs.owned_land_count,
-        obs.owned_army_count,
-        obs.opponent_land_count,
-        obs.opponent_army_count,
-        obs.timestep,
-        1.0,  # placeholder for num_alive (not directly available)
-    ], dtype=jnp.float32)
+def build_16ch_input(obs: Observation, memory: MemoryState) -> jnp.ndarray:
+    """Build 16-channel input: 9 obs + 7 memory channels."""
+    obs_9ch = obs_to_spatial(obs)
+    mem_7ch = memory_to_channels(memory)
+    return jnp.concatenate([obs_9ch, mem_7ch], axis=0)  # (16, H, W)
 
 
 def random_action(key, obs):
@@ -74,65 +74,121 @@ def random_action(key, obs):
 
 
 # ---------------------------------------------------------------------------
+# Opponent pool for self-play
+# ---------------------------------------------------------------------------
+
+class OpponentPool:
+    """
+    Manages N stored model checkpoints for self-play opponents.
+    New model replaces oldest at >=45% win rate.
+    """
+
+    def __init__(self, pool_size: int = 3):
+        self.pool_size = pool_size
+        self.models = []       # list of UNetPolicyValueNetwork
+        self.win_rates = []    # rolling win rate vs each pool model
+        self.games_played = [] # games played vs each pool model
+
+    def add_initial(self, model):
+        """Add initial model to pool."""
+        if len(self.models) < self.pool_size:
+            # Deep copy the model
+            self.models.append(eqx.filter_jit(lambda m: m)(model))
+            self.win_rates.append(0.0)
+            self.games_played.append(0)
+
+    def get_opponent(self, key):
+        """Sample a random opponent from the pool."""
+        if not self.models:
+            return None
+        idx = jrandom.randint(key, (), 0, len(self.models))
+        return self.models[int(idx)]
+
+    def update(self, model, win_rate):
+        """
+        Try to add current model to pool.
+        Replaces oldest if win_rate >= 45%.
+        """
+        if len(self.models) < self.pool_size:
+            self.models.append(eqx.filter_jit(lambda m: m)(model))
+            self.win_rates.append(win_rate)
+            self.games_played.append(1)
+        elif win_rate >= 0.45:
+            # Replace oldest
+            self.models.pop(0)
+            self.win_rates.pop(0)
+            self.games_played.pop(0)
+            self.models.append(eqx.filter_jit(lambda m: m)(model))
+            self.win_rates.append(win_rate)
+            self.games_played.append(1)
+
+
+# ---------------------------------------------------------------------------
 # Rollout
 # ---------------------------------------------------------------------------
 
-def make_rollout_step(network):
-    """Create a jitted rollout step that processes single frames with LSTM state."""
+def make_rollout_step(network, opponent_network=None):
+    """Create a jitted rollout step with memory state."""
 
     @jax.jit
     def rollout_step(carry, _):
-        states, lstm_states, key = carry
+        states, memories, key = carry
         num_envs = states.armies.shape[0]
-        hidden_dim = network.lstm_cell.hidden_size
 
-        # Get observations for player 0
+        # Observations for both players
         obs_p0 = jax.vmap(lambda s: game.get_observation(s, 0))(states)
         obs_p1 = jax.vmap(lambda s: game.get_observation(s, 1))(states)
 
-        # Build spatial and scalar inputs (single-frame)
-        spatial = jax.vmap(obs_to_spatial)(obs_p0)       # (num_envs, 9, H, W)
-        scalars = jax.vmap(obs_to_scalars)(obs_p0)        # (num_envs, 6)
-        masks = jax.vmap(lambda o: compute_valid_move_mask(o.armies, o.owned_cells, o.mountains))(obs_p0)
+        # Build 16ch inputs for player 0
+        obs_16ch = jax.vmap(build_16ch_input)(obs_p0, memories)
 
-        # Network forward pass for all envs — single frame + LSTM state
+        # Valid move masks
+        masks = jax.vmap(lambda o: compute_valid_move_mask(
+            o.armies, o.owned_cells, o.mountains))(obs_p0)
+
+        # Network forward pass
         key, *env_keys = jrandom.split(key, num_envs + 1)
-        actions_p0, values, logprobs, entropies, new_lstm_states = jax.vmap(
-            lambda s, sc, ls, m, k: network(s, sc, ls, m, k, None)
-        )(spatial, scalars, lstm_states, masks, jnp.stack(env_keys))
+        actions_p0, values, logprobs, entropies = jax.vmap(
+            lambda o, m, k: network(o, m, k, None)
+        )(obs_16ch, masks, jnp.stack(env_keys))
 
-        # Random opponent
+        # Opponent actions
         key, *opp_keys = jrandom.split(key, num_envs + 1)
-        actions_p1 = jax.vmap(random_action)(jnp.stack(opp_keys), obs_p1)
+        if opponent_network is not None:
+            # Self-play: use opponent network (argmax via inference)
+            obs_16ch_p1 = jax.vmap(build_16ch_input)(obs_p1, memories)  # simplified: share memory
+            masks_p1 = jax.vmap(lambda o: compute_valid_move_mask(
+                o.armies, o.owned_cells, o.mountains))(obs_p1)
+            actions_p1, _ = jax.vmap(
+                lambda o, m: opponent_network.inference(o, m)
+            )(obs_16ch_p1, masks_p1)
+        else:
+            # Random opponent
+            actions_p1 = jax.vmap(random_action)(jnp.stack(opp_keys), obs_p1)
 
         # Step game
         actions = jnp.stack([actions_p0, actions_p1], axis=1)
         new_states, infos = jax.vmap(game.step)(states, actions)
 
-        # Reward
+        # Get new observations for reward
         obs_p0_new = jax.vmap(lambda s: game.get_observation(s, 0))(new_states)
-        rewards = jax.vmap(composite_reward_fn)(obs_p0, actions_p0, obs_p0_new)
+
+        # Compute rewards
+        rewards = jax.vmap(potential_based_reward)(obs_p0, actions_p0, obs_p0_new)
 
         # Done
         terminated = infos.is_done
         truncated = (new_states.time >= 500) & ~terminated
         dones = terminated | truncated
 
-        # Reset LSTM state for done envs
-        zero_lstm = (
-            jnp.zeros((num_envs, hidden_dim)),
-            jnp.zeros((num_envs, hidden_dim)),
-        )
-        lstm_states_for_next = jax.tree.map(
-            lambda reset, current: jnp.where(
-                dones.reshape(num_envs, 1), reset, current,
-            ),
-            zero_lstm, new_lstm_states,
-        )
+        # Update memory
+        new_memories = jax.vmap(update_memory)(obs_p0, actions_p0, memories)
 
-        # Save the *input* LSTM states for training (before reset)
-        carry = (new_states, lstm_states_for_next, key)
-        return carry, (spatial, scalars, masks, actions_p0, logprobs, values, rewards, dones, infos, lstm_states)
+        # Reset memory for done envs
+        new_memories = jax.vmap(reset_memory_on_done)(new_memories, dones)
+
+        carry = (new_states, new_memories, key)
+        return carry, (obs_16ch, masks, actions_p0, logprobs, values, rewards, dones, infos)
 
     return rollout_step
 
@@ -142,12 +198,9 @@ def make_rollout_step(network):
 # ---------------------------------------------------------------------------
 
 @eqx.filter_jit
-def ppo_loss(network, spatial, scalar, lstm_h, lstm_c, mask, action, old_logprob, advantage, ret, clip=0.2):
-    """PPO loss for a single sample (with its recorded LSTM state)."""
-    lstm_state = (lstm_h, lstm_c)
-    _, value, logprob, entropy, _ = network(
-        spatial, scalar, lstm_state, mask, jrandom.PRNGKey(0), action,
-    )
+def ppo_loss(network, obs_16ch, mask, action, old_logprob, advantage, ret, clip=0.2):
+    """PPO loss for a single sample."""
+    _, value, logprob, entropy = network(obs_16ch, mask, jrandom.PRNGKey(0), action)
 
     ratio = jnp.exp(logprob - old_logprob)
     clipped = jnp.clip(ratio, 1 - clip, 1 + clip) * advantage
@@ -161,16 +214,12 @@ def ppo_loss(network, spatial, scalar, lstm_h, lstm_c, mask, action, old_logprob
 
 def train_step(network, opt_state, batch, optimizer):
     """Single training step on a minibatch."""
-    (spatial, scalar, lstm_h, lstm_c, masks,
-     actions, old_logprobs, advantages, returns) = batch
-    bs = spatial.shape[0]
+    obs_16ch, masks, actions, old_logprobs, advantages, returns = batch
 
     def loss_fn(net):
         losses = jax.vmap(
-            lambda s, sc, lh, lc, m, a, olp, adv, r: ppo_loss(
-                net, s, sc, lh, lc, m, a, olp, adv, r,
-            )
-        )(spatial, scalar, lstm_h, lstm_c, masks, actions, old_logprobs, advantages, returns)
+            lambda o, m, a, olp, adv, r: ppo_loss(net, o, m, a, olp, adv, r)
+        )(obs_16ch, masks, actions, old_logprobs, advantages, returns)
         return jnp.mean(losses)
 
     loss, grads = eqx.filter_value_and_grad(loss_fn)(network)
@@ -207,34 +256,39 @@ def compute_gae(rewards, values, dones, gamma=0.99, lam=0.95):
 
 def main():
     parser = argparse.ArgumentParser(description="Generals Plus PPO Training")
-    parser.add_argument("--grid-size", type=int, default=10, help="Grid size (square)")
-    parser.add_argument("--num-envs", type=int, default=64, help="Number of parallel environments")
+    parser.add_argument("--grid-size", type=int, default=18, help="Grid size (square)")
+    parser.add_argument("--num-envs", type=int, default=256, help="Number of parallel environments")
     parser.add_argument("--num-steps", type=int, default=128, help="Steps per rollout")
     parser.add_argument("--num-iterations", type=int, default=500, help="Training iterations")
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate")
-    parser.add_argument("--minibatch-size", type=int, default=64, help="Minibatch size")
-    parser.add_argument("--save-path", default="models/ppo_recurrent.eqx", help="Model save path")
+    parser.add_argument("--minibatch-size", type=int, default=256, help="Minibatch size")
+    parser.add_argument("--save-path", default="models/ppo_unet.eqx", help="Model save path")
+    parser.add_argument("--load-path", default=None, help="Load pretrained model (SFT)")
+    parser.add_argument("--opponent", default="random", choices=["random", "self-play"],
+                        help="Opponent type")
+    parser.add_argument("--pool-size", type=int, default=3, help="Opponent pool size for self-play")
     args = parser.parse_args()
 
     grid_size = args.grid_size
     num_envs = args.num_envs
     num_steps = args.num_steps
 
-    print(f"Generals Plus — PPO with CNN+LSTM (single-frame)")
+    print(f"Generals Plus — PPO with U-Net + Memory Channels")
     print(f"Grid:          {grid_size}x{grid_size}")
     print(f"Environments:  {num_envs}")
     print(f"Device:        {jax.devices()[0]}")
+    print(f"Opponent:      {args.opponent}")
     print()
 
     # Initialize network
     key = jrandom.PRNGKey(42)
     key, net_key = jrandom.split(key)
-    network = RecurrentPolicyValueNetwork(
-        net_key,
-        grid_size=grid_size,
-        hidden_dim=128,
-        scalar_dim=6,
-    )
+    network = UNetPolicyValueNetwork(net_key, grid_size=grid_size)
+
+    if args.load_path:
+        network = eqx.tree_deserialise_leaves(args.load_path, network)
+        print(f"Loaded pretrained weights from {args.load_path}")
+
     optimizer = optax.adam(args.lr)
     opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
 
@@ -243,26 +297,28 @@ def main():
     print(f"Parameters: {num_params:,}")
     print()
 
+    # Opponent pool
+    pool = OpponentPool(pool_size=args.pool_size)
+    if args.opponent == "self-play":
+        pool.add_initial(network)
+
     # Initialize environment
     env = GeneralsEnv(grid_dims=(grid_size, grid_size), truncation=500)
     key, pool_key, init_key = jrandom.split(key, 3)
-    pool, _ = env.reset(pool_key)
+    _, _ = env.reset(pool_key)
     key, *state_keys = jrandom.split(key, num_envs + 1)
     states = jax.vmap(env.init_state)(jnp.stack(state_keys))
 
-    # Initialize LSTM states (zero-initialized per env)
-    hidden_dim = network.lstm_cell.hidden_size
-    lstm_states = (
-        jnp.zeros((num_envs, hidden_dim)),
-        jnp.zeros((num_envs, hidden_dim)),
-    )
-
-    # Build rollout step
-    rollout_step = make_rollout_step(network)
+    # Initialize memory states (read actual grid size from env state)
+    H, W = states.armies.shape[1], states.armies.shape[2]
+    _single_mem = init_memory(H, W)
+    memories = jax.tree.map(lambda x: jnp.stack([x] * num_envs), _single_mem)
 
     # Warmup
     print("Warming up...")
-    carry = (states, lstm_states, key)
+    opponent = pool.get_opponent(key) if args.opponent == "self-play" else None
+    rollout_step = make_rollout_step(network, opponent)
+    carry = (states, memories, key)
     for _ in range(3):
         carry, _ = rollout_step(carry, None)
     jax.block_until_ready(carry[0])
@@ -271,43 +327,44 @@ def main():
     for iteration in range(args.num_iterations):
         t0 = time.time()
 
+        # Get opponent for this iteration
+        if args.opponent == "self-play" and pool.models:
+            key, opp_key = jrandom.split(key)
+            opponent = pool.get_opponent(opp_key)
+        else:
+            opponent = None
+
+        rollout_step = make_rollout_step(network, opponent)
+
         # Collect rollout
-        carry = (states, lstm_states, key)
+        carry = (states, memories, key)
         rollout_data = []
         for _ in range(num_steps):
             carry, data = rollout_step(carry, None)
             rollout_data.append(data)
 
-        states, lstm_states, key = carry
+        states, memories, key = carry
         jax.block_until_ready(states)
 
         # Stack rollout data
-        # data = (spatial, scalars, masks, actions_p0, logprobs, values, rewards, dones, infos, lstm_states_in)
-        spatial_all = jnp.stack([d[0] for d in rollout_data])
-        scalar_all = jnp.stack([d[1] for d in rollout_data])
-        masks_all = jnp.stack([d[2] for d in rollout_data])
-        actions_all = jnp.stack([d[3] for d in rollout_data])
-        logprobs_all = jnp.stack([d[4] for d in rollout_data])
-        values_all = jnp.stack([d[5] for d in rollout_data])
-        rewards_all = jnp.stack([d[6] for d in rollout_data])
-        dones_all = jnp.stack([d[7] for d in rollout_data])
-        infos_all = [d[8] for d in rollout_data]
-        # LSTM states: d[9] is (h, c) tuple, each (num_envs, hidden_dim)
-        lstm_h_all = jnp.stack([d[9][0] for d in rollout_data])
-        lstm_c_all = jnp.stack([d[9][1] for d in rollout_data])
+        obs_all = jnp.stack([d[0] for d in rollout_data])
+        masks_all = jnp.stack([d[1] for d in rollout_data])
+        actions_all = jnp.stack([d[2] for d in rollout_data])
+        logprobs_all = jnp.stack([d[3] for d in rollout_data])
+        values_all = jnp.stack([d[4] for d in rollout_data])
+        rewards_all = jnp.stack([d[5] for d in rollout_data])
+        dones_all = jnp.stack([d[6] for d in rollout_data])
+        infos_all = [d[7] for d in rollout_data]
 
         # Compute advantages
         advantages = compute_gae(rewards_all, values_all, dones_all)
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
         returns = advantages + values_all
 
-        # Flatten: (num_steps, num_envs, ...) → (num_steps * num_envs, ...)
+        # Flatten
         bs = num_steps * num_envs
         batch = (
-            spatial_all.reshape(bs, *spatial_all.shape[2:]),
-            scalar_all.reshape(bs, *scalar_all.shape[2:]),
-            lstm_h_all.reshape(bs, hidden_dim),
-            lstm_c_all.reshape(bs, hidden_dim),
+            obs_all.reshape(bs, *obs_all.shape[2:]),
             masks_all.reshape(bs, *masks_all.shape[2:]),
             actions_all.reshape(bs, -1),
             logprobs_all.reshape(-1),
@@ -315,7 +372,7 @@ def main():
             returns.reshape(-1),
         )
 
-        # Shuffle and train on minibatches
+        # Shuffle and train
         key, shuffle_key = jrandom.split(key)
         perm = jrandom.permutation(shuffle_key, bs)
         batch = tuple(x[perm] for x in batch)
@@ -334,9 +391,8 @@ def main():
         if iteration % 10 == 0:
             avg_reward = float(rewards_all.mean())
             num_episodes = int(dones_all.sum())
-            wins = int(jnp.sum(
-                dones_all & jax.tree.map(lambda *xs: jnp.stack(xs), *infos_all).winner == 0
-            )) if num_episodes > 0 else 0
+            infos_stacked = jax.tree.map(lambda *xs: jnp.stack(xs), *infos_all)
+            wins = int(jnp.sum(dones_all & (infos_stacked.winner == 0))) if num_episodes > 0 else 0
             win_rate = wins / max(num_episodes, 1) * 100
             sps = (num_envs * num_steps) / elapsed
             print(
@@ -345,6 +401,10 @@ def main():
                 f"Wins: {wins:2d}/{num_episodes} ({win_rate:.0f}%) | "
                 f"SPS: {sps:7.0f} | Time: {elapsed:.2f}s"
             )
+
+            # Update opponent pool
+            if args.opponent == "self-play" and num_episodes > 0:
+                pool.update(network, win_rate / 100.0)
 
     # Save model
     import os
