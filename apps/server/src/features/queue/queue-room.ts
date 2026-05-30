@@ -143,6 +143,22 @@ export class MatchQueueRoom extends QueueRoom {
                 bombSiteCount: modeSettings?.bombSiteCount ?? 2,
                 seed: base.gridOptions.seed,
               };
+            case GameMode.COLLAPSE:
+              return {
+                ...base,
+                mode: GameMode.COLLAPSE,
+                startDelayTicks: calculateFinishTick(
+                  modeSettings?.startDelay ?? 60,
+                  BASE_TICK_INTERVAL,
+                ),
+                shrinkIntervalTicks: calculateFinishTick(
+                  modeSettings?.collapseInterval ?? 30,
+                  BASE_TICK_INTERVAL,
+                ),
+                collapseShape: (modeSettings?.collapseShape ?? "circle") as
+                  | "circle"
+                  | "square",
+              };
             default:
               return { ...base, mode: this.gameMode };
           }

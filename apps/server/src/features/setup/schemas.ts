@@ -29,6 +29,9 @@ export const setupSettingsUpdateSchema = z
     plantDuration: z.number().min(1).max(30),
     defuseDuration: z.number().min(1).max(30),
     detonateDuration: z.number().min(10).max(300),
+    collapseInterval: z.number().min(5).max(300),
+    startDelay: z.number().min(5).max(600),
+    collapseShape: z.enum(["circle", "square"]),
   })
   .partial()
   .strict();

@@ -96,6 +96,7 @@ function createSetupState(
     displayName: string;
     color: number;
     isHost: boolean;
+    teamId?: string;
   }>,
   overrides: Partial<SetupSettings> = {},
 ) {
@@ -698,15 +699,17 @@ describe("client room flows", () => {
             displayName: "Nova",
             color: PLAYER_COLOR_PALETTE[0],
             isHost: true,
+            teamId: "setup_team_0",
           },
           {
             id: "player-2",
             displayName: "Rook",
             color: PLAYER_COLOR_PALETTE[1],
             isHost: false,
+            teamId: "setup_team_1",
           },
         ],
-        { playersPerTeam: 1 },
+        { playersPerTeam: 2 },
       ),
     });
     networkMocks.joinById.mockResolvedValue(setupRoom);
@@ -738,6 +741,42 @@ describe("client room flows", () => {
       expect.objectContaining({ maxPlayers: 6 }),
     );
 
+    const localPlayerRow = screen
+      .getAllByText("Nova")
+      .find((element) => element.closest("li"))
+      ?.closest("li");
+    expect(localPlayerRow).toBeTruthy();
+    fireEvent.pointerDown(localPlayerRow as Element, {
+      pointerId: 1,
+      clientX: 20,
+      clientY: 20,
+    });
+    fireEvent.pointerMove(window, {
+      pointerId: 1,
+      clientX: 40,
+      clientY: 40,
+    });
+    const createNewTeam = screen.getByText(
+      "Drag and drop here to create a new team",
+    );
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: vi.fn(() => createNewTeam),
+    });
+    fireEvent.pointerUp(window, {
+      pointerId: 1,
+      clientX: 40,
+      clientY: 40,
+    });
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: originalElementFromPoint,
+    });
+    expect(setupRoom.send).toHaveBeenCalledWith(SetupClientMessage.PICK_TEAM, {
+      createNew: true,
+    });
+
     await user.click(
       screen.getByRole("button", {
         name: `Pick color #${PLAYER_COLOR_PALETTE[0]
@@ -753,9 +792,9 @@ describe("client room flows", () => {
     expect(setupRoom.send).toHaveBeenCalledWith(SetupClientMessage.START_GAME);
   });
 
-  it("does not allow a custom match to start when all players are on one team", async () => {
+  it("hides team controls for one-player teams in standard custom rooms", async () => {
     const setupRoom = createRoom({
-      roomId: "setup-one-team",
+      roomId: "setup-ffa",
       state: createSetupState(
         [
           {
@@ -771,6 +810,75 @@ describe("client room flows", () => {
             isHost: false,
           },
         ],
+        { playersPerTeam: 1 },
+      ),
+    });
+    networkMocks.joinById.mockResolvedValue(setupRoom);
+
+    renderRoute("/match/setup-ffa", auth());
+
+    expect(await screen.findByText("You are host")).toBeTruthy();
+    expect(
+      screen.queryByText("Drag and drop here to create a new team"),
+    ).toBeNull();
+    expect(screen.queryByText("Team 1")).toBeNull();
+  });
+
+  it("shows fixed attackers and defenders teams in demolition setup rooms", async () => {
+    const setupRoom = createRoom({
+      roomId: "setup-demo",
+      state: createSetupState(
+        [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+            isHost: true,
+            teamId: "attackers",
+          },
+          {
+            id: "player-2",
+            displayName: "Rook",
+            color: PLAYER_COLOR_PALETTE[1],
+            isHost: false,
+            teamId: "defenders",
+          },
+        ],
+        { gameMode: GameMode.DEMOLITION, playersPerTeam: 2 },
+      ),
+    });
+    networkMocks.joinById.mockResolvedValue(setupRoom);
+
+    renderRoute("/match/setup-demo", auth());
+
+    expect(await screen.findByText("You are host")).toBeTruthy();
+    expect(screen.getByText("Attackers")).toBeTruthy();
+    expect(screen.getByText("Defenders")).toBeTruthy();
+    expect(
+      screen.queryByText("Drag and drop here to create a new team"),
+    ).toBeNull();
+  });
+
+  it("does not allow a custom match to start when all players are on one team", async () => {
+    const setupRoom = createRoom({
+      roomId: "setup-one-team",
+      state: createSetupState(
+        [
+          {
+            id: "player-1",
+            displayName: "Nova",
+            color: PLAYER_COLOR_PALETTE[0],
+            isHost: true,
+            teamId: "setup_team_0",
+          },
+          {
+            id: "player-2",
+            displayName: "Rook",
+            color: PLAYER_COLOR_PALETTE[1],
+            isHost: false,
+            teamId: "setup_team_0",
+          },
+        ],
         { playersPerTeam: 2 },
       ),
     });
@@ -782,7 +890,9 @@ describe("client room flows", () => {
     expect(
       screen.queryByRole("button", { name: "Force start game" }),
     ).toBeNull();
-    expect(screen.getByText(/at least two teams/)).toBeTruthy();
+    expect(
+      screen.getByText("At least two teams are required to start the game."),
+    ).toBeTruthy();
   });
 
   it("shows setup validation failures as stacked toasts without leaving the room", async () => {
@@ -1098,12 +1208,14 @@ describe("client room flows", () => {
             displayName: "Nova",
             color: PLAYER_COLOR_PALETTE[0],
             isHost: true,
+            teamId: "setup_team_0",
           },
           {
             id: "player-2",
             displayName: "Rook",
             color: PLAYER_COLOR_PALETTE[1],
             isHost: false,
+            teamId: "setup_team_1",
           },
         ]),
       );

@@ -1,4 +1,4 @@
-import type { GameMode, GridType } from "@generals-plus/engine";
+import type { CollapseShape, GameMode, GridType } from "@generals-plus/engine";
 
 interface BaseSetupSettings {
   gameMode: GameMode;
@@ -46,6 +46,13 @@ export interface DemolitionSetupSettings extends BaseSetupSettings {
   detonateDuration: number;
 }
 
+export interface CollapseSetupSettings extends BaseSetupSettings {
+  gameMode: typeof GameMode.COLLAPSE;
+  collapseInterval: number;
+  startDelay: number;
+  collapseShape: CollapseShape;
+}
+
 export interface OtherSettings extends BaseSetupSettings {
   gameMode: Exclude<
     GameMode,
@@ -53,6 +60,7 @@ export interface OtherSettings extends BaseSetupSettings {
     | typeof GameMode.TURF_WAR
     | typeof GameMode.DOMINATION
     | typeof GameMode.DEMOLITION
+    | typeof GameMode.COLLAPSE
   >;
 }
 
@@ -61,4 +69,5 @@ export type SetupSettings =
   | TurfWarSetupSettings
   | DominationSetupSettings
   | DemolitionSetupSettings
+  | CollapseSetupSettings
   | OtherSettings;

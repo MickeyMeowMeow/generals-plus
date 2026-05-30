@@ -15,6 +15,7 @@ class ViewportWrapper extends BaseViewport {
     const { app, ...rest } = options;
     super({
       ...rest,
+      passiveWheel: false,
       events: app.renderer.events,
     });
     this.drag().pinch().wheel().decelerate();

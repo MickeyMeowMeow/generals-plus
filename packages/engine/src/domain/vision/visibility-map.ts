@@ -17,6 +17,19 @@ export function createVisionCell(
   visibility: Visibility,
   teamType?: TeamType,
 ): IVisionCell {
+  if (cell.terrain === Terrain.VOID) {
+    return {
+      coordinate: cell.coordinate,
+      visibility: Visibility.VISIBLE,
+      terrain: Terrain.VOID,
+      troopCount: null,
+      owner: null,
+      item: null,
+      siteIndex: null,
+      willCollapse: false,
+    };
+  }
+
   const hasBomb = cell.item?.type === ItemType.BOMB;
   const showBombForAttackers = hasBomb && teamType === TeamType.ATTACKER;
   const attackerItem = showBombForAttackers ? cell.item : null;
@@ -31,6 +44,7 @@ export function createVisionCell(
         owner: cell.owner,
         item: cell.item,
         siteIndex: cell.siteIndex,
+        willCollapse: cell.willCollapse,
       };
     case Visibility.TERRAIN:
       return {
@@ -41,6 +55,7 @@ export function createVisionCell(
         owner: null,
         item: attackerItem,
         siteIndex: cell.siteIndex,
+        willCollapse: cell.willCollapse,
       };
     case Visibility.SHROUDED:
       return {
@@ -54,6 +69,7 @@ export function createVisionCell(
         owner: null,
         item: attackerItem,
         siteIndex: null,
+        willCollapse: cell.willCollapse,
       };
     case Visibility.HIDDEN:
       return {
@@ -64,6 +80,7 @@ export function createVisionCell(
         owner: null,
         item: attackerItem,
         siteIndex: null,
+        willCollapse: cell.willCollapse,
       };
   }
 }

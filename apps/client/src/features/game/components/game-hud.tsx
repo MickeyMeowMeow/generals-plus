@@ -11,6 +11,7 @@ interface TimerProps {
   currentTick: number;
   targetTick: number;
   tickInterval: number;
+  startTick?: number;
 }
 
 interface GameHudProps {
@@ -61,6 +62,7 @@ export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
               currentTick={timer.currentTick}
               targetTick={timer.targetTick}
               tickInterval={timer.tickInterval}
+              startTick={timer.startTick}
             />
             <Separator className="bg-game-border/70" />
           </>

@@ -10,6 +10,7 @@ export class VisionCellSchema extends Schema {
   @type("number") siteIndex: number = -1;
   @type("string") item_id: string = "";
   @type("number") item_type: number = -1;
+  @type("boolean") willCollapse: boolean = false;
 }
 
 export class ClientVision extends Schema {
