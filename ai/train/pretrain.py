@@ -28,6 +28,8 @@ import jax.random as jrandom
 import equinox as eqx
 import optax
 
+jax.config.update("jax_default_matmul_precision", "bfloat16")
+
 from train.network import UNetPolicyValueNetwork
 
 

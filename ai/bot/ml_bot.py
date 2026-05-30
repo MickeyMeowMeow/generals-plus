@@ -126,11 +126,11 @@ class MLBot:
         # Build 9ch spatial observation
         spatial = vision_to_observation(vision, width, height, self._player_id)  # (9, H, W)
 
-        # Build 7ch memory channels
+        # Build 15ch memory channels
         mem_channels = np.array(memory_to_channels(self._memory))  # (7, H, W)
 
         # Stack to 24ch input
-        obs_24ch = np.concatenate([spatial, mem_channels], axis=0)  # (16, H, W)
+        obs_24ch = np.concatenate([spatial, mem_channels], axis=0)  # (24, H, W)
 
         # Compute valid move mask
         mask = compute_valid_move_mask(spatial)  # (H, W, 4)
@@ -148,7 +148,7 @@ class MLBot:
 
     def _infer_jax(self, obs_24ch: np.ndarray, mask: np.ndarray, spatial: np.ndarray) -> dict:
         """Run inference using JAX/Equinox backend."""
-        obs_jax = self._jnp.array(obs_24ch)  # (16, H, W)
+        obs_jax = self._jnp.array(obs_24ch)  # (24, H, W)
         mask_jax = self._jnp.array(mask)
 
         action_jax, value = self._network.inference(obs_jax, mask_jax)
@@ -170,7 +170,7 @@ class MLBot:
         """Run inference using ONNX Runtime backend (CPU)."""
         input_names = [inp.name for inp in self._session.get_inputs()]
         arrays = [
-            obs_24ch.astype(np.float32),   # (16, H, W)
+            obs_24ch.astype(np.float32),   # (24, H, W)
             mask.astype(np.float32),        # (H, W, 4)
         ]
         input_feed = {}

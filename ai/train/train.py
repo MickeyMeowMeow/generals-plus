@@ -17,6 +17,7 @@ Usage (from the ai/ directory):
 
 import argparse
 import os
+import re
 import sys
 import time
 
@@ -31,6 +32,10 @@ import jax.numpy as jnp
 import jax.random as jrandom
 import equinox as eqx
 import optax
+
+# Enable bf16 matmul precision (A800 native, fp32 weights/gradients/optimizer).
+# Safe for ONNX export: export_onnx.py uses tf.float32 input signature.
+jax.config.update("jax_default_matmul_precision", "bfloat16")
 
 from sim.action import compute_valid_move_mask
 from sim.env import GeneralsEnv
@@ -302,6 +307,7 @@ def main():
     parser.add_argument("--num-envs", type=int, default=256, help="Number of parallel environments")
     parser.add_argument("--num-steps", type=int, default=128, help="Steps per rollout")
     parser.add_argument("--num-iterations", type=int, default=500, help="Training iterations")
+    parser.add_argument("--resume", default=None, help="Resume from checkpoint .eqx file")
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate")
     parser.add_argument("--minibatch-size", type=int, default=256, help="Minibatch size")
     parser.add_argument("--save-path", default="models/ppo_unet.eqx", help="Model save path")
@@ -324,20 +330,49 @@ def main():
 
     # Initialize network
     key = jrandom.PRNGKey(42)
-    key, net_key = jrandom.split(key)
-    network = UNetPolicyValueNetwork(net_key, grid_size=grid_size)
+    start_iter = 0
 
-    if args.load_path:
+    if args.resume:
+        key, net_key = jrandom.split(key)
+        network = UNetPolicyValueNetwork(net_key, grid_size=grid_size)
+        network = eqx.tree_deserialise_leaves(args.resume, network)
+        # Load optimizer state from companion file
+        opt_path = args.resume.replace(".eqx", ".opt")
+        if os.path.exists(opt_path):
+            optimizer = optax.adam(args.lr)
+            opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
+            opt_state = eqx.tree_deserialise_leaves(opt_path, opt_state)
+        else:
+            optimizer = optax.adam(args.lr)
+            opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
+        # Extract iteration number from filename
+        m = re.search(r"checkpoint_(\d+)", args.resume)
+        if m:
+            start_iter = int(m.group(1))
+        print(f"Resumed from {args.resume} (iteration {start_iter})")
+    elif args.load_path:
+        key, net_key = jrandom.split(key)
+        network = UNetPolicyValueNetwork(net_key, grid_size=grid_size)
         network = eqx.tree_deserialise_leaves(args.load_path, network)
         print(f"Loaded pretrained weights from {args.load_path}")
-
-    optimizer = optax.adam(args.lr)
-    opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
+        optimizer = optax.adam(args.lr)
+        opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
+    else:
+        key, net_key = jrandom.split(key)
+        network = UNetPolicyValueNetwork(net_key, grid_size=grid_size)
+        optimizer = optax.adam(args.lr)
+        opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
 
     params, _ = eqx.partition(network, eqx.is_array)
     num_params = sum(x.size for x in jax.tree.leaves(params))
     print(f"Parameters: {num_params:,}")
     print()
+
+    # Checkpoint config
+    CHECKPOINT_INTERVAL = 50
+    CHECKPOINT_KEEP = 3
+    best_win_rate = -1.0
+    saved_checkpoints = []
 
     # Opponent pool
     pool = OpponentPool(pool_size=args.pool_size)
@@ -363,7 +398,7 @@ def main():
     jax.block_until_ready(carry[0])
     print("Training...\n")
 
-    for iteration in range(args.num_iterations):
+    for iteration in range(start_iter, args.num_iterations):
         t0 = time.time()
 
         # Get opponent for this iteration
@@ -440,7 +475,28 @@ def main():
             if args.opponent == "self-play" and num_episodes > 0:
                 pool.update(network, win_rate / 100.0)
 
-    # Save model
+        # Checkpoint
+        if (iteration + 1) % CHECKPOINT_INTERVAL == 0:
+            ckpt_path = f"models/checkpoint_{iteration + 1}.eqx"
+            opt_ckpt_path = ckpt_path.replace(".eqx", ".opt")
+            eqx.tree_serialise_leaves(ckpt_path, network)
+            eqx.tree_serialise_leaves(opt_ckpt_path, opt_state)
+            saved_checkpoints.append(ckpt_path)
+            # Rotate: keep only N most recent
+            while len(saved_checkpoints) > CHECKPOINT_KEEP:
+                old = saved_checkpoints.pop(0)
+                old_opt = old.replace(".eqx", ".opt")
+                if os.path.exists(old):
+                    os.remove(old)
+                if os.path.exists(old_opt):
+                    os.remove(old_opt)
+
+        # Track best model by win rate
+        if num_episodes > 0 and win_rate > best_win_rate:
+            best_win_rate = win_rate
+            eqx.tree_serialise_leaves("models/best.eqx", network)
+
+    # Save final model
     import os
     os.makedirs(os.path.dirname(args.save_path) or ".", exist_ok=True)
     eqx.tree_serialise_leaves(args.save_path, network)

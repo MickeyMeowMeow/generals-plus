@@ -46,23 +46,24 @@ def export(args):
         return action, value
 
     # Create dummy inputs
-    obs_24ch = jnp.zeros((16, grid_size, grid_size))
+    obs_24ch = jnp.zeros((24, grid_size, grid_size))
     mask = jnp.zeros((grid_size, grid_size, 4))
 
-    print(f"Exporting to ONNX: grid={grid_size}x{grid_size}, input=24ch + mask")
+    print(f"Exporting to ONNX: grid={grid_size}x{grid_size}, input=24ch + mask (polymorphic)")
 
     try:
         import tensorflow as tf
         import tf2onnx
 
+        # Polymorphic spatial dims: ONNX model works with any grid size
         tf_fn = jax.experimental.jax2tf.convert(inference_fn, polymorphic_shapes=[
-            f"(16, {grid_size}, {grid_size})",
-            f"({grid_size}, {grid_size}, 4)",
+            "(24, h, w)",
+            "(h, w, 4)",
         ])
 
         input_signature = [
-            tf.TensorSpec([16, grid_size, grid_size], tf.float32),
-            tf.TensorSpec([grid_size, grid_size, 4], tf.float32),
+            tf.TensorSpec([24, None, None], tf.float32, name="obs"),
+            tf.TensorSpec([None, None, 4], tf.float32, name="mask"),
         ]
 
         tf_fn = tf.function(tf_fn, input_signature=input_signature)
