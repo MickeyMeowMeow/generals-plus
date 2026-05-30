@@ -5,8 +5,8 @@ import type {
   ICollapseScoreboard,
   IDemolitionScoreboard,
   IDominationScoreboard,
-  ITurfWarScoreboard,
   IPayloadScoreboard,
+  ITurfWarScoreboard,
 } from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
 import type {
@@ -25,11 +25,11 @@ import {
   DominationScoreboard,
   DominationScoreboardPlayerEntry,
   DominationScoreboardTeamEntry,
+  PayloadScoreboard,
+  PayloadScoreboardPlayerEntry,
   TurfWarScoreboard,
   TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
-  PayloadScoreboard,
-  PayloadScoreboardPlayerEntry,
 } from "@generals-plus/shared-types";
 
 /**

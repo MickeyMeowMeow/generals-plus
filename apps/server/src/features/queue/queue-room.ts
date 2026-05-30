@@ -166,7 +166,8 @@ export class MatchQueueRoom extends QueueRoom {
                 finishTick,
                 payloadSpeed: modeSettings?.payloadSpeed ?? 2,
                 payloadCartSize: modeSettings?.payloadCartSize ?? 3,
-                payloadRequiredOccupied: modeSettings?.payloadRequiredOccupied ?? 6,
+                payloadRequiredOccupied:
+                  modeSettings?.payloadRequiredOccupied ?? 6,
               };
             default:
               return { ...base, mode: this.gameMode };

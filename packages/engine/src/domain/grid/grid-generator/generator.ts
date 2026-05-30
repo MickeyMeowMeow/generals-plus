@@ -78,13 +78,13 @@ export abstract class AbstractGridGenerator<
 
     const protectedZone = this.buildProtectedZones(generals, terrainGrid);
 
-    if ((config as any).isPayload) {
-      const bounds = terrainGrid.bounds as any;
-      const isHex = terrainGrid.gridType !== "square";
-      const height = isHex ? bounds.leftSlant : (terrainGrid as any).height;
+    if (config.isPayload) {
+      const bounds = terrainGrid.bounds;
+      const isHex = "leftSlant" in bounds;
+      const height = isHex ? bounds.leftSlant : bounds.height;
       const cy = Math.floor(height / 2);
 
-      const K = (config as any).payloadCartSize ?? 3;
+      const K = config.payloadCartSize;
       const startOffset = -Math.floor((K - 1) / 2);
       const endOffset = Math.floor(K / 2);
 
@@ -94,14 +94,23 @@ export abstract class AbstractGridGenerator<
       const rightY = Math.min(height - 1 - endOffset, cy + bendOffset);
 
       if (isHex) {
-        const hL = bounds.left, hR = bounds.right, hRS = bounds.rightSlant;
+        const hL = bounds.left,
+          hR = bounds.right,
+          hRS = bounds.rightSlant;
         const minXAt = (y: number) => Math.max(-hL + 1, -y);
         const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
-        startX = Math.max(minXAt(leftY) + endOffset, minXAt(Math.max(0, leftY - 2)));
-        endX = Math.min(maxXAt(rightY) - endOffset, maxXAt(Math.min(height - 1, rightY + 2)));
+        startX = Math.max(
+          minXAt(leftY) + endOffset,
+          minXAt(Math.max(0, leftY - 2)),
+        );
+        endX = Math.min(
+          maxXAt(rightY) - endOffset,
+          maxXAt(Math.min(height - 1, rightY + 2)),
+        );
       } else {
-        startX = Math.min(2 - startOffset, Math.floor((terrainGrid as any).width / 2));
-        endX = Math.max(startX, (terrainGrid as any).width - 1 - (2 - startOffset));
+        const w = bounds.width;
+        startX = Math.min(2 - startOffset, Math.floor(w / 2));
+        endX = Math.max(startX, w - 1 - (2 - startOffset));
       }
 
       const trackPoints: { x: number; y: number }[] = [];
@@ -138,12 +147,13 @@ export abstract class AbstractGridGenerator<
 
     const grid = this.materializeCells(terrainGrid, config);
 
-    if ((config as any).isPayload) {
+    if (config.isPayload) {
       const track: ICoordinate[] = [];
       const isHex = grid.gridType !== "square";
-      const height = isHex ? (grid.bounds as any).leftSlant : (grid as any).height;
+      const bounds = grid.bounds;
+      const height = isHex ? bounds.leftSlant : bounds.height;
       const cy = Math.floor(height / 2);
-      const K = (config as any).payloadCartSize ?? 3;
+      const K = config.payloadCartSize;
       const startOffset = -Math.floor((K - 1) / 2);
       const endOffset = Math.floor(K / 2);
 
@@ -153,15 +163,22 @@ export abstract class AbstractGridGenerator<
       const rightY = Math.min(height - 1 - endOffset, cy + bendOffset);
 
       if (isHex) {
-        const bounds = grid.bounds as any;
-        const hL = bounds.left, hR = bounds.right, hRS = bounds.rightSlant;
+        const hL = bounds.left,
+          hR = bounds.right,
+          hRS = bounds.rightSlant;
         const minXAt = (y: number) => Math.max(-hL + 1, -y);
         const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
-        startX = Math.max(minXAt(leftY) + endOffset, minXAt(Math.max(0, leftY - 2)));
-        endX = Math.min(maxXAt(rightY) - endOffset, maxXAt(Math.min(height - 1, rightY + 2)));
+        startX = Math.max(
+          minXAt(leftY) + endOffset,
+          minXAt(Math.max(0, leftY - 2)),
+        );
+        endX = Math.min(
+          maxXAt(rightY) - endOffset,
+          maxXAt(Math.min(height - 1, rightY + 2)),
+        );
       } else {
-        startX = Math.min(2 - startOffset, Math.floor(grid.width / 2));
-        endX = Math.max(startX, grid.width - 1 - (2 - startOffset));
+        startX = Math.min(2 - startOffset, Math.floor(bounds.width / 2));
+        endX = Math.max(startX, bounds.width - 1 - (2 - startOffset));
       }
 
       for (let y = leftY; y < cy; y++) track.push({ x: startX, y });
@@ -190,7 +207,8 @@ export abstract class AbstractGridGenerator<
     const bombSiteCount =
       "bombSiteCount" in options ? (options.bombSiteCount ?? 0) : 0;
     const isPayload = "isPayload" in options ? !!options.isPayload : false;
-    const payloadCartSize = "payloadCartSize" in options ? (options.payloadCartSize ?? 3) : 3;
+    const payloadCartSize =
+      "payloadCartSize" in options ? (options.payloadCartSize ?? 3) : 3;
     const generalCount = options.generalCount ?? DefaultGenOptions.generalCount;
     const minGeneralDistanceFactor =
       options.minGeneralDistanceFactor ??
@@ -234,7 +252,7 @@ export abstract class AbstractGridGenerator<
       cityInitialTroops,
       isPayload,
       payloadCartSize,
-    } as any;
+    };
   }
 
   protected abstract resolveGridBounds(
@@ -251,13 +269,13 @@ export abstract class AbstractGridGenerator<
     const { generalCount } = config;
     const minDistance = this.calculateMinGeneralDistance(config);
 
-    if ((config as any).isPayload) {
-      const bounds = terrainGrid.bounds as any;
-      const isHex = terrainGrid.gridType !== "square";
-      const height = isHex ? bounds.leftSlant : (terrainGrid as any).height;
+    if (config.isPayload) {
+      const bounds = terrainGrid.bounds;
+      const isHex = "leftSlant" in bounds;
+      const height = isHex ? bounds.leftSlant : bounds.height;
       const cy = Math.floor(height / 2);
 
-      const K = (config as any).payloadCartSize ?? 3;
+      const K = config.payloadCartSize;
       const kStart = -Math.floor((K - 1) / 2);
       const kEnd = Math.floor(K / 2);
       const bendOffset = Math.floor(height / 5);
@@ -266,14 +284,20 @@ export abstract class AbstractGridGenerator<
 
       let startX: number, endX: number;
       if (isHex) {
-        const hL = bounds.left, hR = bounds.right, hRS = bounds.rightSlant;
+        const hL = bounds.left,
+          hR = bounds.right,
+          hRS = bounds.rightSlant;
         const minXAt = (y: number) => Math.max(-hL + 1, -y);
         const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
         startX = Math.max(minXAt(leftY) + kEnd, minXAt(Math.max(0, leftY - 2)));
-        endX = Math.min(maxXAt(rightY) - kEnd, maxXAt(Math.min(height - 1, rightY + 2)));
+        endX = Math.min(
+          maxXAt(rightY) - kEnd,
+          maxXAt(Math.min(height - 1, rightY + 2)),
+        );
       } else {
-        startX = Math.min(2 - kStart, Math.floor((terrainGrid as any).width / 2));
-        endX = Math.max(startX, (terrainGrid as any).width - 1 - (2 - kStart));
+        const w = bounds.width;
+        startX = Math.min(2 - kStart, Math.floor(w / 2));
+        endX = Math.max(startX, w - 1 - (2 - kStart));
       }
 
       const selected: ICoordinate[] = [];

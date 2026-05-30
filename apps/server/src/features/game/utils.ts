@@ -10,9 +10,9 @@ import {
   DefenderTeam,
   DemolitionGame,
   DominationGame,
-  PayloadGame,
   GameMode,
   GridType,
+  PayloadGame,
   Player,
   StandardTeam,
   TurfWarGame,
@@ -74,7 +74,12 @@ interface PayloadCreateGameOptions extends BaseCreateGameOptions {
 interface OtherCreateGameOptions extends BaseCreateGameOptions {
   mode: Exclude<
     GameMode,
-    "classic" | "turf_war" | "domination" | "demolition" | "collapse" | "payload"
+    | "classic"
+    | "turf_war"
+    | "domination"
+    | "demolition"
+    | "collapse"
+    | "payload"
   >;
 }
 
@@ -259,7 +264,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
           ...options.gridOptions,
           isPayload: true,
           payloadCartSize: options.payloadCartSize,
-        } as any,
+        },
         {
           finishTick: options.finishTick,
           payloadSpeed: options.payloadSpeed,

@@ -1,6 +1,5 @@
 import { ActionType } from "#/domain/action/action-type";
 import type { Action } from "#/domain/action/interfaces";
-import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
 import { EffectType } from "#/domain/effect/effect-type";
@@ -16,6 +15,7 @@ import type {
 import type { GridInput } from "#/domain/grid/grid-generator";
 import type { IPlayer } from "#/domain/player/interfaces";
 import { PlayerStatus } from "#/domain/player/player-status";
+import type { ICoordinate } from "#/math/coordinate";
 
 export interface PayloadGameOptions {
   finishTick?: number;
@@ -59,8 +59,9 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
     // Get track from grid
     this.track = this.grid.track;
     if (this.track.length === 0) {
-      const isHex = this.grid.gridType !== "square";
-      const height = isHex ? (this.grid.bounds as any).leftSlant : (this.grid as any).height;
+      const bounds = this.grid.bounds;
+      const isHex = "leftSlant" in bounds;
+      const height = isHex ? bounds.leftSlant : bounds.height;
       const cy = Math.floor(height / 2);
       const track: ICoordinate[] = [];
       const bendOffset = Math.floor(height / 5);
@@ -69,15 +70,19 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
 
       let startX: number, endX: number;
       if (!isHex) {
-        startX = Math.min(3, Math.floor((this.grid as any).width / 2));
-        endX = Math.max(startX, (this.grid as any).width - 1 - startX);
+        startX = Math.min(3, Math.floor(bounds.width / 2));
+        endX = Math.max(startX, bounds.width - 1 - startX);
       } else {
-        const bounds = this.grid.bounds as any;
-        const hL = bounds.left, hR = bounds.right, hRS = bounds.rightSlant;
+        const hL = bounds.left,
+          hR = bounds.right,
+          hRS = bounds.rightSlant;
         const minXAt = (y: number) => Math.max(-hL + 1, -y);
         const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
         startX = Math.max(minXAt(leftY) + 1, minXAt(Math.max(0, leftY - 2)));
-        endX = Math.min(maxXAt(rightY) - 1, maxXAt(Math.min(height - 1, rightY + 2)));
+        endX = Math.min(
+          maxXAt(rightY) - 1,
+          maxXAt(Math.min(height - 1, rightY + 2)),
+        );
       }
 
       for (let y = leftY; y < cy; y++) track.push({ x: startX, y });
@@ -99,7 +104,7 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
         if (
           cell.terrain === Terrain.GENERAL &&
           cell.owner &&
-          cell.owner.team.teamId === team.teamId
+          (cell.owner as IPlayer).team.teamId === team.teamId
         ) {
           sumX += cell.coordinate.x;
           count++;
@@ -236,8 +241,8 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
     const currentCartCoords = this.getCartCoordinates(this.cartIndex);
     for (const coord of currentCartCoords) {
       const cell = this.grid.get(coord);
-      if (cell && cell.owner) {
-        const ownerTeamId = cell.owner.team.teamId;
+      if (cell?.owner) {
+        const ownerTeamId = (cell.owner as IPlayer).team.teamId;
         if (ownerTeamId === this.leftTeamId) {
           leftTeamCount++;
         } else if (ownerTeamId === this.rightTeamId) {
@@ -287,7 +292,7 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
 
     for (const coord of oldCartCoords) {
       const cell = this.grid.get(coord);
-      if (cell && cell.owner && cell.troopCount && cell.troopCount > 1) {
+      if (cell?.owner && cell.troopCount && cell.troopCount > 1) {
         const targetCoord = { x: coord.x + dx, y: coord.y + dy };
         if (this.grid.isValid(targetCoord)) {
           this.combatResolver.execute(

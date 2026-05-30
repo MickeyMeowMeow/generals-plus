@@ -9,6 +9,7 @@ import {
 import type {
   CollapseScoreboard,
   DemolitionScoreboard,
+  PayloadScoreboard,
 } from "@generals-plus/shared-types";
 import {
   MatchClientMessage,
@@ -441,10 +442,22 @@ export function GamePage({ connection, source }: GamePageProps) {
               )
             : -1
         }
-        payloadTrackX={gameState.payloadTrackX ? Array.from(gameState.payloadTrackX) : []}
-        payloadTrackY={gameState.payloadTrackY ? Array.from(gameState.payloadTrackY) : []}
-        cartIndex={gameState.mode === GameMode.PAYLOAD ? ((gameState.scoreboard as any).cartIndex ?? -1) : -1}
-        cartSize={gameState.mode === GameMode.PAYLOAD ? ((gameState.scoreboard as any).cartSize ?? 0) : 0}
+        payloadTrackX={
+          gameState.payloadTrackX ? Array.from(gameState.payloadTrackX) : []
+        }
+        payloadTrackY={
+          gameState.payloadTrackY ? Array.from(gameState.payloadTrackY) : []
+        }
+        cartIndex={
+          gameState.mode === GameMode.PAYLOAD
+            ? ((gameState.scoreboard as PayloadScoreboard).cartIndex ?? -1)
+            : -1
+        }
+        cartSize={
+          gameState.mode === GameMode.PAYLOAD
+            ? ((gameState.scoreboard as PayloadScoreboard).cartSize ?? 0)
+            : 0
+        }
       />
 
       {(() => {
@@ -533,12 +546,14 @@ export function GamePage({ connection, source }: GamePageProps) {
         }
 
         if (gameState.mode === GameMode.PAYLOAD) {
-          const payloadScoreboard = gameState.scoreboard as any;
+          const payloadScoreboard = gameState.scoreboard as PayloadScoreboard;
           timerProps = {
             currentTick: gameState.tick,
             targetTick: gameState.finishTick > 0 ? gameState.finishTick : 0,
             tickInterval: gameState.tickInterval,
-            label: payloadScoreboard.isContested ? "Contested (Contested)" : "Pushing Cart",
+            label: payloadScoreboard.isContested
+              ? "Contested (Contested)"
+              : "Pushing Cart",
           };
         }
 

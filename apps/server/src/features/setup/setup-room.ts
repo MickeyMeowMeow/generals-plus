@@ -14,6 +14,7 @@ import type {
   RoomData,
   SetupSettings,
   SetupValidationFailedMessage,
+  SetupValidationField,
 } from "@generals-plus/shared-types";
 import {
   isPaletteColor,
@@ -401,7 +402,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       ) {
         this.sendValidationFailed(client, {
           severity: "warning",
-          field: invalidPayloadField,
+          field: invalidPayloadField as SetupValidationField,
           message: "Payload fields are only available in Payload mode.",
         });
         return;

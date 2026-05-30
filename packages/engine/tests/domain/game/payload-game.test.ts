@@ -96,7 +96,7 @@ describe("PayloadGame", () => {
     // required to occupy: 3
     const game = new PayloadGame(
       { grid },
-      { payloadRequiredOccupied: 3, payloadCartSize: 3, payloadSpeed: 1 }
+      { payloadRequiredOccupied: 3, payloadCartSize: 3, payloadSpeed: 1 },
     );
 
     const t1 = new StandardTeam("left-team");
@@ -137,7 +137,7 @@ describe("PayloadGame", () => {
     const grid = create3x3GridWithTrack();
     const game = new PayloadGame(
       { grid },
-      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeed: 1 }
+      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeed: 1 },
     );
 
     const t1 = new StandardTeam("left-team");
@@ -173,7 +173,7 @@ describe("PayloadGame", () => {
     const grid = create3x3GridWithTrack();
     const game = new PayloadGame(
       { grid },
-      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeed: 1 }
+      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeed: 1 },
     );
 
     const t1 = new StandardTeam("left-team");
@@ -227,24 +227,24 @@ describe("PayloadGame", () => {
 
     expect(game.cartIndex).toBe(4);
 
-    expect(grid.get({ x: 2, y: 1 })!.troopCount).toBe(1);
-    expect(grid.get({ x: 2, y: 1 })!.owner).toBe(p1);
+    expect(grid.get({ x: 2, y: 1 })?.troopCount).toBe(1);
+    expect(grid.get({ x: 2, y: 1 })?.owner).toBe(p1);
 
-    expect(grid.get({ x: 3, y: 1 })!.troopCount).toBe(10);
-    expect(grid.get({ x: 3, y: 1 })!.owner).toBe(p1);
+    expect(grid.get({ x: 3, y: 1 })?.troopCount).toBe(10);
+    expect(grid.get({ x: 3, y: 1 })?.owner).toBe(p1);
 
-    expect(grid.get({ x: 4, y: 1 })!.troopCount).toBe(20);
-    expect(grid.get({ x: 4, y: 1 })!.owner).toBe(p1);
+    expect(grid.get({ x: 4, y: 1 })?.troopCount).toBe(20);
+    expect(grid.get({ x: 4, y: 1 })?.owner).toBe(p1);
 
-    expect(grid.get({ x: 5, y: 1 })!.troopCount).toBe(1);
-    expect(grid.get({ x: 5, y: 1 })!.owner).toBe(p1);
+    expect(grid.get({ x: 5, y: 1 })?.troopCount).toBe(1);
+    expect(grid.get({ x: 5, y: 1 })?.owner).toBe(p1);
   });
 
   it("wins immediately when a team pushes the cart to the opponent base end of the track", () => {
     const grid = create3x3GridWithTrack();
     const game = new PayloadGame(
       { grid },
-      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeed: 1 }
+      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeed: 1 },
     );
 
     const t1 = new StandardTeam("left-team");

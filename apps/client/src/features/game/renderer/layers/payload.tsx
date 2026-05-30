@@ -26,7 +26,8 @@ export function PayloadLayer({
 }: PayloadLayerProps) {
   // Map track coordinates to pixel coordinates
   const trackPoints = useMemo(() => {
-    if (!payloadTrackX || !payloadTrackY || payloadTrackX.length === 0) return [];
+    if (!payloadTrackX || !payloadTrackY || payloadTrackX.length === 0)
+      return [];
     const points = [];
     for (let i = 0; i < payloadTrackX.length; i++) {
       const coord = { x: payloadTrackX[i], y: payloadTrackY[i] };
@@ -42,7 +43,13 @@ export function PayloadLayer({
 
   // Compute coordinates covered by the cart
   const cartCoordinates = useMemo(() => {
-    if (!grid || cartIndex < 0 || !payloadTrackX || !payloadTrackY || payloadTrackX[cartIndex] === undefined) {
+    if (
+      !grid ||
+      cartIndex < 0 ||
+      !payloadTrackX ||
+      !payloadTrackY ||
+      payloadTrackX[cartIndex] === undefined
+    ) {
       return [];
     }
     const center = { x: payloadTrackX[cartIndex], y: payloadTrackY[cartIndex] };

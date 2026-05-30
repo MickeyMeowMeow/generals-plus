@@ -17,13 +17,13 @@ export {
   DominationScoreboard,
   DominationScoreboardPlayerEntry,
   DominationScoreboardTeamEntry,
+  PayloadScoreboard,
+  PayloadScoreboardPlayerEntry,
   TroopLandScoreboard,
   TroopLandScoreboardPlayerEntry,
   TurfWarScoreboard,
   TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
-  PayloadScoreboard,
-  PayloadScoreboardPlayerEntry,
 } from "#/schema/scoreboard";
 export { SetupPlayer, SetupState } from "#/schema/setup-state";
 export {

@@ -16,7 +16,10 @@ export type SetupValidationField =
   | "detonateDuration"
   | "collapseInterval"
   | "startDelay"
-  | "collapseShape";
+  | "collapseShape"
+  | "payloadSpeed"
+  | "payloadCartSize"
+  | "payloadRequiredOccupied";
 
 export interface SetupValidationFailedMessage extends ToastMessage {
   field?: SetupValidationField;
