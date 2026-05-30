@@ -28,7 +28,7 @@ def generate_grid(
     pad_to: int | None = None,
     mountain_density_range: tuple[float, float] = (0.15, 0.25),
     num_cities_range: tuple[int, int] = (4, 8),
-    min_generals_distance: int = 3,
+    min_generals_distance: int = 0,
     castle_val_range: tuple[int, int] = (40, 51),
 ) -> jnp.ndarray:
     """
@@ -41,6 +41,8 @@ def generate_grid(
         mountain_density_range: (min, max) fraction of cells that are mountains.
         num_cities_range: (min, max) number of cities.
         min_generals_distance: Minimum Manhattan distance between generals.
+            If <= 0, auto-computed as max(8, int(0.6 * min(h, w))) matching
+            the TS engine's minGeneralDistanceFactor=0.6 (paper: BFS ≥ 15).
         castle_val_range: (min, max) army value for cities.
 
     Returns:
@@ -49,6 +51,11 @@ def generate_grid(
     keys = jax.random.split(key, 10)
 
     h, w = grid_dims
+
+    # Auto-compute general distance following TS engine: min(w,h) * 0.6
+    # with floor of 8 (paper requires BFS >= 15 for full-size grids)
+    if min_generals_distance <= 0:
+        min_generals_distance = max(8, int(0.6 * min(h, w)))
     num_tiles = h * w
 
     # Number of cities and mountains

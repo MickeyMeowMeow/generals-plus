@@ -39,17 +39,17 @@ def export(args):
 
     grid_size = args.grid_size
 
-    # Inputs: obs_16ch (16, H, W) + mask (H, W, 4)
+    # Inputs: obs_24ch (16, H, W) + mask (H, W, 4)
     # Outputs: action (5,) + value (1,)
-    def inference_fn(obs_16ch, mask):
-        action, value = network.inference(obs_16ch, mask)
+    def inference_fn(obs_24ch, mask):
+        action, value = network.inference(obs_24ch, mask)
         return action, value
 
     # Create dummy inputs
-    obs_16ch = jnp.zeros((16, grid_size, grid_size))
+    obs_24ch = jnp.zeros((16, grid_size, grid_size))
     mask = jnp.zeros((grid_size, grid_size, 4))
 
-    print(f"Exporting to ONNX: grid={grid_size}x{grid_size}, input=16ch + mask")
+    print(f"Exporting to ONNX: grid={grid_size}x{grid_size}, input=24ch + mask")
 
     try:
         import tensorflow as tf

@@ -5,8 +5,8 @@ Uses the built-in ai/sim JAX environment (matching TS engine rules)
 for vectorized self-play with opponent pool.
 
 Key changes from previous version:
-  - No LSTM: MemoryState (7 channels) replaces recurrent state
-  - U-Net architecture with 16ch input (9 obs + 7 memory)
+  - No LSTM: MemoryState (15 channels) replaces recurrent state
+  - U-Net architecture with 24ch input (9 obs + 15 memory)
   - Potential-based reward shaping (optimal-policy-preserving)
   - Self-play with opponent pool (N=3) and win-rate gating
   - Variable grid sizes
@@ -51,11 +51,11 @@ def obs_to_spatial(obs: Observation) -> jnp.ndarray:
     ], axis=0).astype(jnp.float32)
 
 
-def build_16ch_input(obs: Observation, memory: MemoryState) -> jnp.ndarray:
-    """Build 16-channel input: 9 obs + 7 memory channels."""
+def build_24ch_input(obs: Observation, memory: MemoryState) -> jnp.ndarray:
+    """Build 24-channel input: 9 obs + 15 memory channels."""
     obs_9ch = obs_to_spatial(obs)
-    mem_7ch = memory_to_channels(memory)
-    return jnp.concatenate([obs_9ch, mem_7ch], axis=0)  # (16, H, W)
+    mem_15ch = memory_to_channels(memory)
+    return jnp.concatenate([obs_9ch, mem_15ch], axis=0)  # (24, H, W)
 
 
 def random_action(key, obs):
@@ -139,8 +139,8 @@ def make_rollout_step(network, opponent_network=None):
         obs_p0 = jax.vmap(lambda s: game.get_observation(s, 0))(states)
         obs_p1 = jax.vmap(lambda s: game.get_observation(s, 1))(states)
 
-        # Build 16ch inputs for player 0
-        obs_16ch = jax.vmap(build_16ch_input)(obs_p0, memories)
+        # Build 24ch inputs for player 0
+        obs_24ch = jax.vmap(build_24ch_input)(obs_p0, memories)
 
         # Valid move masks
         masks = jax.vmap(lambda o: compute_valid_move_mask(
@@ -150,18 +150,18 @@ def make_rollout_step(network, opponent_network=None):
         key, *env_keys = jrandom.split(key, num_envs + 1)
         actions_p0, values, logprobs, entropies = jax.vmap(
             lambda o, m, k: network(o, m, k, None)
-        )(obs_16ch, masks, jnp.stack(env_keys))
+        )(obs_24ch, masks, jnp.stack(env_keys))
 
         # Opponent actions
         key, *opp_keys = jrandom.split(key, num_envs + 1)
         if opponent_network is not None:
             # Self-play: use opponent network (argmax via inference)
-            obs_16ch_p1 = jax.vmap(build_16ch_input)(obs_p1, memories)  # simplified: share memory
+            obs_24ch_p1 = jax.vmap(build_24ch_input)(obs_p1, memories)  # simplified: share memory
             masks_p1 = jax.vmap(lambda o: compute_valid_move_mask(
                 o.armies, o.owned_cells, o.mountains))(obs_p1)
             actions_p1, _ = jax.vmap(
                 lambda o, m: opponent_network.inference(o, m)
-            )(obs_16ch_p1, masks_p1)
+            )(obs_24ch_p1, masks_p1)
         else:
             # Random opponent
             actions_p1 = jax.vmap(random_action)(jnp.stack(opp_keys), obs_p1)
@@ -188,7 +188,7 @@ def make_rollout_step(network, opponent_network=None):
         new_memories = jax.vmap(reset_memory_on_done)(new_memories, dones)
 
         carry = (new_states, new_memories, key)
-        return carry, (obs_16ch, masks, actions_p0, logprobs, values, rewards, dones, infos)
+        return carry, (obs_24ch, masks, actions_p0, logprobs, values, rewards, dones, infos)
 
     return rollout_step
 
@@ -198,9 +198,9 @@ def make_rollout_step(network, opponent_network=None):
 # ---------------------------------------------------------------------------
 
 @eqx.filter_jit
-def ppo_loss(network, obs_16ch, mask, action, old_logprob, advantage, ret, clip=0.2):
+def ppo_loss(network, obs_24ch, mask, action, old_logprob, advantage, ret, clip=0.2):
     """PPO loss for a single sample."""
-    _, value, logprob, entropy = network(obs_16ch, mask, jrandom.PRNGKey(0), action)
+    _, value, logprob, entropy = network(obs_24ch, mask, jrandom.PRNGKey(0), action)
 
     ratio = jnp.exp(logprob - old_logprob)
     clipped = jnp.clip(ratio, 1 - clip, 1 + clip) * advantage
@@ -214,12 +214,12 @@ def ppo_loss(network, obs_16ch, mask, action, old_logprob, advantage, ret, clip=
 
 def train_step(network, opt_state, batch, optimizer):
     """Single training step on a minibatch."""
-    obs_16ch, masks, actions, old_logprobs, advantages, returns = batch
+    obs_24ch, masks, actions, old_logprobs, advantages, returns = batch
 
     def loss_fn(net):
         losses = jax.vmap(
             lambda o, m, a, olp, adv, r: ppo_loss(net, o, m, a, olp, adv, r)
-        )(obs_16ch, masks, actions, old_logprobs, advantages, returns)
+        )(obs_24ch, masks, actions, old_logprobs, advantages, returns)
         return jnp.mean(losses)
 
     loss, grads = eqx.filter_value_and_grad(loss_fn)(network)

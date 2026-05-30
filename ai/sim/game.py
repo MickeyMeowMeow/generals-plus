@@ -392,6 +392,15 @@ def get_info(state: GameState) -> GameInfo:
 # ---------------------------------------------------------------------------
 
 @jax.jit
+def compute_visibility(ownership: jnp.ndarray) -> jnp.ndarray:
+    """Compute visibility mask (3x3 Chebyshev radius around owned cells).
+
+    Public alias for _get_visibility — used by memory.py for opponent_explored channel.
+    """
+    return _get_visibility(ownership)
+
+
+@jax.jit
 def _get_visibility(ownership: jnp.ndarray) -> jnp.ndarray:
     """Compute visibility mask (3x3 Chebyshev radius around owned cells)."""
     H, W = ownership.shape
@@ -406,6 +415,64 @@ def _get_visibility(ownership: jnp.ndarray) -> jnp.ndarray:
     ], axis=0)
 
     return jnp.max(stacked, axis=0) > 0
+
+
+# ---------------------------------------------------------------------------
+# BFS distance field
+# ---------------------------------------------------------------------------
+
+@jax.jit
+def compute_bfs_distance(
+    passable: jnp.ndarray,
+    sources: jnp.ndarray,
+) -> jnp.ndarray:
+    """Compute normalized BFS distance from source cells to all passable cells.
+
+    Uses iterative 4-direction dilation (jnp.roll pattern) for JAX compatibility.
+    Distances are normalized by max(H, W) → range [0, 1].
+
+    Args:
+        passable: (H, W) bool — traversable cells (False = blocked).
+        sources:  (H, W) bool — one or more source positions.
+
+    Returns:
+        (H, W) float32 — 0.0 at sources, increasing outward to 1.0 at max distance.
+    """
+    H, W = passable.shape
+    max_dist = jnp.float32(max(H, W))
+
+    # Initialize: 0 at sources, max_dist elsewhere
+    dist = jnp.where(sources, jnp.float32(0.0), max_dist)
+    # Track which cells have been reached
+    reached = sources
+
+    def cond(state):
+        dist_arr, reached_arr, changed = state
+        return changed & ~jnp.all(reached_arr)
+
+    def body(state):
+        dist_arr, reached_arr, _ = state
+        # Dilate reached front in 4 directions
+        up = jnp.roll(reached_arr, -1, axis=0).at[-1, :].set(False)
+        down = jnp.roll(reached_arr, 1, axis=0).at[0, :].set(False)
+        left = jnp.roll(reached_arr, -1, axis=1).at[:, -1].set(False)
+        right = jnp.roll(reached_arr, 1, axis=1).at[:, 0].set(False)
+
+        new_reached = (reached_arr | up | down | left | right) & passable
+        newly_reached = new_reached & ~reached_arr
+
+        # Assign distance: current front distance + 1
+        front_dist = jnp.where(reached_arr, dist_arr, max_dist)
+        front_dist_min = front_dist.min()
+        new_dist = jnp.where(newly_reached, front_dist_min + jnp.float32(1.0), dist_arr)
+
+        changed = jnp.any(newly_reached)
+        return new_dist, new_reached, changed
+
+    dist, _, _ = jax.lax.while_loop(cond, body, (dist, reached, jnp.bool_(True)))
+
+    # Normalize to [0, 1]
+    return jnp.clip(dist / max_dist, 0.0, 1.0)
 
 
 @jax.jit

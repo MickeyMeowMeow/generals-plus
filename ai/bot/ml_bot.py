@@ -129,16 +129,16 @@ class MLBot:
         # Build 7ch memory channels
         mem_channels = np.array(memory_to_channels(self._memory))  # (7, H, W)
 
-        # Stack to 16ch input
-        obs_16ch = np.concatenate([spatial, mem_channels], axis=0)  # (16, H, W)
+        # Stack to 24ch input
+        obs_24ch = np.concatenate([spatial, mem_channels], axis=0)  # (16, H, W)
 
         # Compute valid move mask
         mask = compute_valid_move_mask(spatial)  # (H, W, 4)
 
         if self._backend == "jax":
-            return self._infer_jax(obs_16ch, mask, spatial)
+            return self._infer_jax(obs_24ch, mask, spatial)
         elif self._backend == "onnx":
-            return self._infer_onnx(obs_16ch, mask, spatial)
+            return self._infer_onnx(obs_24ch, mask, spatial)
         else:
             return {"pass": 1, "row": 0, "col": 0, "direction": 0, "split": 0}
 
@@ -146,9 +146,9 @@ class MLBot:
     # Inference backends
     # ------------------------------------------------------------------
 
-    def _infer_jax(self, obs_16ch: np.ndarray, mask: np.ndarray, spatial: np.ndarray) -> dict:
+    def _infer_jax(self, obs_24ch: np.ndarray, mask: np.ndarray, spatial: np.ndarray) -> dict:
         """Run inference using JAX/Equinox backend."""
-        obs_jax = self._jnp.array(obs_16ch)  # (16, H, W)
+        obs_jax = self._jnp.array(obs_24ch)  # (16, H, W)
         mask_jax = self._jnp.array(mask)
 
         action_jax, value = self._network.inference(obs_jax, mask_jax)
@@ -166,11 +166,11 @@ class MLBot:
             "split": int(action_jax[4]),
         }
 
-    def _infer_onnx(self, obs_16ch: np.ndarray, mask: np.ndarray, spatial: np.ndarray) -> dict:
+    def _infer_onnx(self, obs_24ch: np.ndarray, mask: np.ndarray, spatial: np.ndarray) -> dict:
         """Run inference using ONNX Runtime backend (CPU)."""
         input_names = [inp.name for inp in self._session.get_inputs()]
         arrays = [
-            obs_16ch.astype(np.float32),   # (16, H, W)
+            obs_24ch.astype(np.float32),   # (16, H, W)
             mask.astype(np.float32),        # (H, W, 4)
         ]
         input_feed = {}

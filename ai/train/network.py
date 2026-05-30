@@ -2,9 +2,9 @@
 U-Net Policy-Value Network for Generals Plus.
 
 Architecture (following paper's U-Net design):
-  Input: (16, H, W) — 9 obs channels + 7 memory channels
+  Input: (24, H, W) — 9 obs channels + 15 memory channels
     │
-    ├─ Encoder Block 1: Conv(16→64, 3, pad=1) + ReLU → skip_1
+    ├─ Encoder Block 1: Conv(24→64, 3, pad=1) + ReLU → skip_1
     ├─ MaxPool2d(2)
     ├─ Encoder Block 2: Conv(64→128, 3, pad=1) + ReLU → skip_2
     ├─ MaxPool2d(2)
@@ -73,8 +73,8 @@ class UNetPolicyValueNetwork(eqx.Module):
         """
         keys = jrandom.split(key, 10)
 
-        # Encoder block 1: 16 → 64
-        self.enc1_conv = eqx.nn.Conv2d(16, 64, kernel_size=3, padding=1, key=keys[0])
+        # Encoder block 1: 24 → 64
+        self.enc1_conv = eqx.nn.Conv2d(24, 64, kernel_size=3, padding=1, key=keys[0])
 
         # Encoder block 2: 64 → 128
         self.enc2_conv = eqx.nn.Conv2d(64, 128, kernel_size=3, padding=1, key=keys[1])
@@ -121,7 +121,7 @@ class UNetPolicyValueNetwork(eqx.Module):
         Run U-Net encoder-decoder.
 
         Args:
-            obs: (16, H, W) input tensor.
+            obs: (24, H, W) input tensor.
 
         Returns:
             features: (64, H, W) decoder output for policy head.
@@ -209,7 +209,7 @@ class UNetPolicyValueNetwork(eqx.Module):
 
     def __call__(
         self,
-        obs_16ch: jnp.ndarray,
+        obs_24ch: jnp.ndarray,
         mask: jnp.ndarray,
         key: jnp.ndarray,
         action: Optional[jnp.ndarray] = None,
@@ -218,7 +218,7 @@ class UNetPolicyValueNetwork(eqx.Module):
         Forward pass for training: returns (action, value, logprob, entropy).
 
         Args:
-            obs_16ch: (16, H, W) observation + memory channels.
+            obs_24ch: (16, H, W) observation + memory channels.
             mask: (H, W, 4) valid move mask.
             key: JAX random key for action sampling.
             action: If provided, evaluate this action. Otherwise sample.
@@ -226,7 +226,7 @@ class UNetPolicyValueNetwork(eqx.Module):
         Returns:
             (action, value, logprob, entropy)
         """
-        features, value_pooled = self._unet_forward(obs_16ch)
+        features, value_pooled = self._unet_forward(obs_24ch)
 
         # Policy head
         logits = self.policy_conv(features)  # (9, H, W)
@@ -251,7 +251,7 @@ class UNetPolicyValueNetwork(eqx.Module):
 
     def inference(
         self,
-        obs_16ch: jnp.ndarray,
+        obs_24ch: jnp.ndarray,
         mask: jnp.ndarray,
         key: Optional[jnp.ndarray] = None,
     ) -> Tuple[jnp.ndarray, jnp.ndarray]:
@@ -259,14 +259,14 @@ class UNetPolicyValueNetwork(eqx.Module):
         Inference-only forward pass for deployment.
 
         Args:
-            obs_16ch: (16, H, W) observation + memory channels.
+            obs_24ch: (16, H, W) observation + memory channels.
             mask: (H, W, 4) valid move mask.
             key: Optional JAX key (defaults to deterministic argmax).
 
         Returns:
             (action, value)
         """
-        features, value_pooled = self._unet_forward(obs_16ch)
+        features, value_pooled = self._unet_forward(obs_24ch)
 
         # Policy: argmax for deterministic deployment
         logits = self.policy_conv(features)

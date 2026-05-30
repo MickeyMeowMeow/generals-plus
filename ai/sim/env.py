@@ -64,7 +64,7 @@ class GeneralsEnv:
         truncation: int = 500,
         mountain_density_range: tuple[float, float] = (0.18, 0.26),
         num_cities_range: tuple[int, int] = (9, 11),
-        min_generals_distance: int = 3,
+        min_generals_distance: int = 0,
         pool_size: int = 10_000,
         castle_val_range: tuple[int, int] = (40, 51),
     ):
