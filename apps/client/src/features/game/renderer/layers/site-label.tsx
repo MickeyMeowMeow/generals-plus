@@ -12,13 +12,13 @@ import type {
 extend({ Container, Text });
 
 const SITE_TEXT_STYLE = new TextStyle({
-  fontFamily: "Oxanium Variable, sans-serif",
-  fontSize: RenderConfig.cellStride * 0.48,
-  fontWeight: "900",
-  fill: 0xffffff,
+  fontFamily: RenderConfig.siteLabelFontFamily,
+  fontSize: RenderConfig.cellStride * RenderConfig.siteLabelFontSizeRatio,
+  fontWeight: RenderConfig.siteLabelFontWeight,
+  fill: RenderConfig.siteLabelColor,
   stroke: {
-    color: 0x111111,
-    width: 6,
+    color: RenderConfig.siteLabelStrokeColor,
+    width: RenderConfig.siteLabelStrokeWidth,
   },
 });
 
