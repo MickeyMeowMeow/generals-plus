@@ -2,7 +2,6 @@ import type { ICoordinate } from "@generals-plus/engine";
 import {
   ActionType,
   GameMode,
-  isSameCoord,
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
@@ -161,8 +160,7 @@ export function GamePage({ connection, source }: GamePageProps) {
   }, [room]);
 
   const [selection, setSelection] = useState<ICoordinate | null>(null);
-  const [splitMoveSelection, setSplitMoveSelection] =
-    useState<ICoordinate | null>(null);
+  const [isSplitMove, setIsSplitMove] = useState(false);
   const [isViewingAsSpectator, setIsViewingAsSpectator] = useState(false);
   const [spectatorSource, setSpectatorSource] = useState<
     "eliminated" | "game-end" | null
@@ -225,29 +223,14 @@ export function GamePage({ connection, source }: GamePageProps) {
       if (!cell || cell.terrain === Terrain.VOID) return;
 
       setSelection(coord);
-      setSplitMoveSelection(null);
+      setIsSplitMove(false);
     },
     [activeBrush, handlePing, renderGrid],
   );
 
-  const handleArmSplitMove = useCallback(
-    (coord?: ICoordinate) => {
-      if (activeBrush) {
-        if (coord) {
-          handlePing(coord, activeBrush);
-        }
-        return;
-      }
-      const nextSelection = coord ?? selection;
-      if (!nextSelection) return;
-      const cell = renderGrid?.get(nextSelection);
-      if (!cell || cell.terrain === Terrain.VOID) return;
-
-      setSelection(nextSelection);
-      setSplitMoveSelection(nextSelection);
-    },
-    [activeBrush, selection, handlePing, renderGrid],
-  );
+  const handleArmSplitMove = useCallback(() => {
+    setIsSplitMove((prev) => !prev);
+  }, []);
 
   const handleQueueMove = useCallback(
     (direction: MoveDirection) => {
@@ -265,16 +248,13 @@ export function GamePage({ connection, source }: GamePageProps) {
       ) {
         return;
       }
-      const moveType =
-        splitMoveSelection && isSameCoord(splitMoveSelection, from)
-          ? ActionType.SPLIT_MOVE
-          : ActionType.MOVE;
+      const moveType = isSplitMove ? ActionType.SPLIT_MOVE : ActionType.MOVE;
 
       setSelection(to);
-      setSplitMoveSelection(null);
+      setIsSplitMove(false);
       sendMove(from, to, moveType);
     },
-    [renderGrid, selection, room, sendMove, splitMoveSelection],
+    [renderGrid, selection, room, sendMove, isSplitMove],
   );
 
   const handleReturn = () => {
@@ -318,11 +298,6 @@ export function GamePage({ connection, source }: GamePageProps) {
         setActiveBrush(null);
       }
 
-      console.log(
-        "Key pressed:",
-        e.code,
-        e.getModifierState(ChoosePingBrushModifier),
-      );
       if (e.getModifierState(ChoosePingBrushModifier) && KeyToPing[e.code]) {
         const pingType = KeyToPing[e.code];
         setActiveBrush((prev) => (prev === pingType ? null : pingType));
@@ -435,11 +410,11 @@ export function GamePage({ connection, source }: GamePageProps) {
         grid={renderGrid}
         initialCoord={initialCoord.current ?? undefined}
         selection={isReadOnly ? null : selection}
-        splitMoveSelection={isReadOnly ? null : splitMoveSelection}
+        isSplitMove={isSplitMove}
         moveQueue={moveQueue}
         bombMoveSignal={bombMoveSignal}
         onSelectCell={isReadOnly ? () => {} : handleSelectCell}
-        onArmSplitMove={isReadOnly ? () => {} : handleArmSplitMove}
+        onSplitMoveSwitch={isReadOnly ? () => {} : handleArmSplitMove}
         onQueueMove={isReadOnly ? () => {} : handleQueueMove}
         onClearMoveQueue={isReadOnly ? () => {} : clearMoveQueue}
         onPing={isReadOnly ? () => {} : handlePing}
@@ -679,7 +654,7 @@ export function GamePage({ connection, source }: GamePageProps) {
                   setIsSurrenderDialogOpen(false);
                   setActiveBrush(null);
                   setSelection(null);
-                  setSplitMoveSelection(null);
+                  setIsSplitMove(false);
                   surrender();
                 }}
               >
@@ -743,7 +718,7 @@ export function GamePage({ connection, source }: GamePageProps) {
                     activeModal === "eliminated" ? "eliminated" : "game-end",
                   );
                   setSelection(null);
-                  setSplitMoveSelection(null);
+                  setIsSplitMove(false);
                 }}
               >
                 View as spectator

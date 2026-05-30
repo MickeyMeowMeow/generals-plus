@@ -31,12 +31,12 @@ interface MapRendererProps {
   };
   grid: RenderGrid;
   selection: ICoordinate | null;
-  splitMoveSelection: ICoordinate | null;
+  isSplitMove: boolean;
   moveQueue: MoveIntent[];
   pointerRef: RefObject<ICoordinate>;
   bombMoveSignal: boolean;
   onCellClick: (coordinate: ICoordinate) => void;
-  onSplitMoveCell: (coordinate: ICoordinate) => void;
+  onSplitMoveSwitch: () => void;
   playerColors: Map<string, number>;
   pings: Ping[];
   isPlanted?: boolean;
@@ -48,12 +48,12 @@ export function MapRenderer({
   worldBounds,
   grid,
   selection,
-  splitMoveSelection,
+  isSplitMove,
   moveQueue,
   pointerRef,
   bombMoveSignal,
   onCellClick,
-  onSplitMoveCell,
+  onSplitMoveSwitch,
   playerColors,
   pings,
   isPlanted = false,
@@ -92,7 +92,7 @@ export function MapRenderer({
       if (!coord) return;
 
       if (e.button === 2) {
-        onSplitMoveCell(coord);
+        onSplitMoveSwitch();
         lastPrimaryClickRef.current = null;
         return;
       }
@@ -106,7 +106,7 @@ export function MapRenderer({
         now - lastPrimaryClick.time <= 300;
 
       if (isDoubleClick) {
-        onSplitMoveCell(coord);
+        onSplitMoveSwitch();
         lastPrimaryClickRef.current = null;
         return;
       }
@@ -116,7 +116,7 @@ export function MapRenderer({
         lastPrimaryClickRef.current = { coord, time: now };
       }
     },
-    [grid, onCellClick, onSplitMoveCell],
+    [grid, onCellClick, onSplitMoveSwitch],
   );
 
   return (
@@ -133,7 +133,7 @@ export function MapRenderer({
       <TroopLayer
         tick={tick}
         grid={grid}
-        splitMoveSelection={splitMoveSelection}
+        splitMoveSelection={isSplitMove ? selection : null}
       />
       <BombLayer
         bombMoveSignal={bombMoveSignal}

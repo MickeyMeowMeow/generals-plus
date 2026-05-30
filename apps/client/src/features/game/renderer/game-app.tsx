@@ -31,11 +31,11 @@ interface GameAppProps {
   readonly grid: RenderGrid;
   readonly initialCoord?: ICoordinate;
   readonly selection: ICoordinate | null;
-  readonly splitMoveSelection: ICoordinate | null;
+  readonly isSplitMove: boolean;
   readonly moveQueue: MoveIntent[];
   readonly bombMoveSignal: boolean;
   readonly onSelectCell: (coord: ICoordinate) => void;
-  readonly onArmSplitMove: (coord?: ICoordinate) => void;
+  readonly onSplitMoveSwitch: () => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
   readonly onClearMoveQueue: () => void;
   readonly onPing: (
@@ -43,7 +43,7 @@ interface GameAppProps {
     type: "attack" | "defense" | "rally",
   ) => void;
   readonly playerColors: Map<string, number>;
-  readonly pings?: Ping[];
+  readonly pings: Ping[];
   readonly isPlanted?: boolean;
   readonly ticksRemaining?: number;
 }
@@ -59,16 +59,16 @@ export function GameApp({
   grid,
   initialCoord,
   selection,
-  splitMoveSelection,
+  isSplitMove,
   moveQueue,
   bombMoveSignal,
   onSelectCell,
-  onArmSplitMove,
+  onSplitMoveSwitch,
   onQueueMove,
   onClearMoveQueue,
   onPing,
   playerColors,
-  pings = [],
+  pings,
   isPlanted = false,
   ticksRemaining = -1,
 }: GameAppProps) {
@@ -141,7 +141,7 @@ export function GameApp({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === SwitchSplitMoveKey) {
         e.preventDefault();
-        onArmSplitMove();
+        onSplitMoveSwitch();
         return;
       }
       if (e.code === ClearMoveQueueKey) {
@@ -170,7 +170,7 @@ export function GameApp({
   }, [
     grid.gridType,
     grid.fromCartesian,
-    onArmSplitMove,
+    onSplitMoveSwitch,
     onClearMoveQueue,
     onQueueMove,
     onPing,
@@ -204,12 +204,12 @@ export function GameApp({
               worldBounds={worldBounds}
               grid={grid}
               selection={selection}
-              splitMoveSelection={splitMoveSelection}
+              isSplitMove={isSplitMove}
               moveQueue={moveQueue}
               pointerRef={pointerRef}
               bombMoveSignal={bombMoveSignal}
               onCellClick={onSelectCell}
-              onSplitMoveCell={onArmSplitMove}
+              onSplitMoveSwitch={onSplitMoveSwitch}
               playerColors={playerColors}
               pings={pings}
               isPlanted={isPlanted}
