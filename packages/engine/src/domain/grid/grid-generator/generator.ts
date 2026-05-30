@@ -80,20 +80,29 @@ export abstract class AbstractGridGenerator<
 
     if ((config as any).isPayload) {
       const bounds = terrainGrid.bounds as any;
-      const width = terrainGrid.gridType === "square" ? (terrainGrid as any).width : (bounds.left + bounds.right);
-      const height = terrainGrid.gridType === "square" ? (terrainGrid as any).height : (bounds.leftSlant);
+      const isHex = terrainGrid.gridType !== "square";
+      const height = isHex ? bounds.leftSlant : (terrainGrid as any).height;
       const cy = Math.floor(height / 2);
 
       const K = (config as any).payloadCartSize ?? 3;
       const startOffset = -Math.floor((K - 1) / 2);
       const endOffset = Math.floor(K / 2);
 
-      const startX = Math.min(2 - startOffset, Math.floor(width / 2));
-      const endX = Math.max(startX, width - 1 - (2 - startOffset));
-
+      let startX: number, endX: number;
       const bendOffset = Math.floor(height / 5);
       const leftY = Math.max(-startOffset, cy - bendOffset);
       const rightY = Math.min(height - 1 - endOffset, cy + bendOffset);
+
+      if (isHex) {
+        const hL = bounds.left, hR = bounds.right, hRS = bounds.rightSlant;
+        const minXAt = (y: number) => Math.max(-hL + 1, -y);
+        const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
+        startX = Math.max(minXAt(leftY) + endOffset, minXAt(Math.max(0, leftY - 2)));
+        endX = Math.min(maxXAt(rightY) - endOffset, maxXAt(Math.min(height - 1, rightY + 2)));
+      } else {
+        startX = Math.min(2 - startOffset, Math.floor((terrainGrid as any).width / 2));
+        endX = Math.max(startX, (terrainGrid as any).width - 1 - (2 - startOffset));
+      }
 
       const trackPoints: { x: number; y: number }[] = [];
       for (let y = leftY; y < cy; y++) trackPoints.push({ x: startX, y });
@@ -131,16 +140,29 @@ export abstract class AbstractGridGenerator<
 
     if ((config as any).isPayload) {
       const track: ICoordinate[] = [];
-      const cy = Math.floor(grid.height / 2);
+      const isHex = grid.gridType !== "square";
+      const height = isHex ? (grid.bounds as any).leftSlant : (grid as any).height;
+      const cy = Math.floor(height / 2);
       const K = (config as any).payloadCartSize ?? 3;
       const startOffset = -Math.floor((K - 1) / 2);
       const endOffset = Math.floor(K / 2);
-      const startX = Math.min(2 - startOffset, Math.floor(grid.width / 2));
-      const endX = Math.max(startX, grid.width - 1 - (2 - startOffset));
 
-      const bendOffset = Math.floor(grid.height / 5);
+      let startX: number, endX: number;
+      const bendOffset = Math.floor(height / 5);
       const leftY = Math.max(-startOffset, cy - bendOffset);
-      const rightY = Math.min(grid.height - 1 - endOffset, cy + bendOffset);
+      const rightY = Math.min(height - 1 - endOffset, cy + bendOffset);
+
+      if (isHex) {
+        const bounds = grid.bounds as any;
+        const hL = bounds.left, hR = bounds.right, hRS = bounds.rightSlant;
+        const minXAt = (y: number) => Math.max(-hL + 1, -y);
+        const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
+        startX = Math.max(minXAt(leftY) + endOffset, minXAt(Math.max(0, leftY - 2)));
+        endX = Math.min(maxXAt(rightY) - endOffset, maxXAt(Math.min(height - 1, rightY + 2)));
+      } else {
+        startX = Math.min(2 - startOffset, Math.floor(grid.width / 2));
+        endX = Math.max(startX, grid.width - 1 - (2 - startOffset));
+      }
 
       for (let y = leftY; y < cy; y++) track.push({ x: startX, y });
       for (let x = startX; x <= endX; x++) track.push({ x, y: cy });
@@ -231,33 +253,60 @@ export abstract class AbstractGridGenerator<
 
     if ((config as any).isPayload) {
       const bounds = terrainGrid.bounds as any;
-      const width = terrainGrid.gridType === "square" ? (terrainGrid as any).width : (bounds.left + bounds.right);
-      const height = terrainGrid.gridType === "square" ? (terrainGrid as any).height : (bounds.leftSlant);
+      const isHex = terrainGrid.gridType !== "square";
+      const height = isHex ? bounds.leftSlant : (terrainGrid as any).height;
       const cy = Math.floor(height / 2);
 
       const K = (config as any).payloadCartSize ?? 3;
       const kStart = -Math.floor((K - 1) / 2);
       const kEnd = Math.floor(K / 2);
-      const startX = Math.min(2 - kStart, Math.floor(width / 2));
-      const endX = Math.max(startX, width - 1 - (2 - kStart));
       const bendOffset = Math.floor(height / 5);
       const leftY = Math.max(-kStart, cy - bendOffset);
       const rightY = Math.min(height - 1 - kEnd, cy + bendOffset);
 
+      let startX: number, endX: number;
+      if (isHex) {
+        const hL = bounds.left, hR = bounds.right, hRS = bounds.rightSlant;
+        const minXAt = (y: number) => Math.max(-hL + 1, -y);
+        const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
+        startX = Math.max(minXAt(leftY) + kEnd, minXAt(Math.max(0, leftY - 2)));
+        endX = Math.min(maxXAt(rightY) - kEnd, maxXAt(Math.min(height - 1, rightY + 2)));
+      } else {
+        startX = Math.min(2 - kStart, Math.floor((terrainGrid as any).width / 2));
+        endX = Math.max(startX, (terrainGrid as any).width - 1 - (2 - kStart));
+      }
+
       const selected: ICoordinate[] = [];
       const halfCount = Math.ceil(generalCount / 2);
 
-      // Left team: same column as left track endpoint, above
-      for (let i = 0; i < halfCount; i++) {
-        const y = leftY - 2 - i;
-        if (y >= 1) selected.push({ x: startX, y });
-      }
-
-      // Right team: same column as right track endpoint, below
-      const rightCount = generalCount - selected.length;
-      for (let i = 0; i < rightCount; i++) {
-        const y = rightY + 2 + i;
-        if (y < height - 1) selected.push({ x: endX, y });
+      if (isHex) {
+        // Hex: spread horizontally at same y (hex narrows at top/bottom)
+        const genYL = leftY - 2;
+        for (let i = 0; i < halfCount; i++) {
+          const x = startX + i;
+          if (genYL >= 0 && terrainGrid.isValid({ x, y: genYL })) {
+            selected.push({ x, y: genYL });
+          }
+        }
+        const rightCount = generalCount - selected.length;
+        const genYR = rightY + 2;
+        for (let i = 0; i < rightCount; i++) {
+          const x = endX - i;
+          if (genYR < height && terrainGrid.isValid({ x, y: genYR })) {
+            selected.push({ x, y: genYR });
+          }
+        }
+      } else {
+        // Square: stack vertically at same x
+        for (let i = 0; i < halfCount; i++) {
+          const y = leftY - 2 - i;
+          if (y >= 1) selected.push({ x: startX, y });
+        }
+        const rightCount = generalCount - selected.length;
+        for (let i = 0; i < rightCount; i++) {
+          const y = rightY + 2 + i;
+          if (y < height - 1) selected.push({ x: endX, y });
+        }
       }
 
       for (const g of selected) {

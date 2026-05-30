@@ -59,14 +59,26 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
     // Get track from grid
     this.track = this.grid.track;
     if (this.track.length === 0) {
-      const cy = Math.floor(this.grid.height / 2);
+      const isHex = this.grid.gridType !== "square";
+      const height = isHex ? (this.grid.bounds as any).leftSlant : (this.grid as any).height;
+      const cy = Math.floor(height / 2);
       const track: ICoordinate[] = [];
-      const startX = Math.min(3, Math.floor(this.grid.width / 2));
-      const endX = Math.max(startX, this.grid.width - 1 - startX);
-
-      const bendOffset = Math.floor(this.grid.height / 5);
+      const bendOffset = Math.floor(height / 5);
       const leftY = Math.max(1, cy - bendOffset);
-      const rightY = Math.min(this.grid.height - 2, cy + bendOffset);
+      const rightY = Math.min(height - 2, cy + bendOffset);
+
+      let startX: number, endX: number;
+      if (!isHex) {
+        startX = Math.min(3, Math.floor((this.grid as any).width / 2));
+        endX = Math.max(startX, (this.grid as any).width - 1 - startX);
+      } else {
+        const bounds = this.grid.bounds as any;
+        const hL = bounds.left, hR = bounds.right, hRS = bounds.rightSlant;
+        const minXAt = (y: number) => Math.max(-hL + 1, -y);
+        const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
+        startX = Math.max(minXAt(leftY) + 1, minXAt(Math.max(0, leftY - 2)));
+        endX = Math.min(maxXAt(rightY) - 1, maxXAt(Math.min(height - 1, rightY + 2)));
+      }
 
       for (let y = leftY; y < cy; y++) track.push({ x: startX, y });
       for (let x = startX; x <= endX; x++) track.push({ x, y: cy });
