@@ -7,8 +7,8 @@ import {
   BACKGROUND_PRESETS,
   DEFAULT_USER_PREFERENCES,
 } from "@generals-plus/shared-types";
-import { ArrowLeft, Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, Pencil } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
@@ -32,6 +32,7 @@ export function ProfilePage() {
   }, [actions]);
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
+  const [isEditingName, setIsEditingName] = useState(false);
   const [backgroundImage, setBackgroundImage] =
     useState<BackgroundImagePreference>(
       user?.preferences?.backgroundImage ??
@@ -44,6 +45,32 @@ export function ProfilePage() {
   );
   const [isSaving, setIsSaving] = useState(false);
 
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  const handleNameSave = useCallback(async () => {
+    setIsEditingName(false);
+    const trimmed = displayName.trim();
+
+    if (trimmed.length === 0) {
+      toast.error("Display name cannot be empty.", { duration: 5_000 });
+      setDisplayName(user?.displayName ?? "");
+      return;
+    }
+
+    if (trimmed === user?.displayName) return;
+
+    setIsSaving(true);
+    try {
+      await actions.updateUserProfile({ displayName: trimmed });
+      toast.success("Display name updated.");
+    } catch {
+      toast.error("Failed to update display name.", { duration: 5_000 });
+      setDisplayName(user?.displayName ?? "");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [actions, displayName, user]);
+
   if (!user) {
     return null;
   }
@@ -53,17 +80,7 @@ export function ProfilePage() {
       ? backgroundImage.presetId
       : "customUrl";
 
-  const saveProfile = async () => {
-    const trimmedDisplayName = displayName.trim();
-
-    if (trimmedDisplayName.length === 0) {
-      toast.error("Profile save failed", {
-        description: "Display name cannot be empty.",
-        duration: 5_000,
-      });
-      return;
-    }
-
+  const handleBackgroundSave = async () => {
     const preferences: UserPreferences = {
       backgroundImage:
         backgroundImage.source === "customUrl"
@@ -72,15 +89,11 @@ export function ProfilePage() {
     };
 
     setIsSaving(true);
-
     try {
-      await actions.updateUserProfile({
-        displayName: trimmedDisplayName,
-        preferences,
-      });
-      toast.success("Profile saved.");
+      await actions.updateUserProfile({ preferences });
+      toast.success("Background updated.");
     } catch (saveError) {
-      toast.error("Profile save failed", {
+      toast.error("Failed to save background.", {
         description:
           saveError instanceof Error && saveError.message.trim().length > 0
             ? saveError.message
@@ -95,12 +108,37 @@ export function ProfilePage() {
   return (
     <StageCenter>
       <div className="mx-auto grid w-full max-w-3xl gap-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold leading-tight">Profile</h1>
-            <p className="mt-1 text-sm text-game-text-dim">
-              View and edit your profile
-            </p>
+        {/* Header with inline-editable display name */}
+        <div className="flex items-center justify-between">
+          <div className="group/name relative">
+            {isEditingName ? (
+              <Input
+                ref={nameInputRef}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                onBlur={() => void handleNameSave()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") nameInputRef.current?.blur();
+                  if (e.key === "Escape") {
+                    setDisplayName(user.displayName ?? "");
+                    setIsEditingName(false);
+                  }
+                }}
+                autoFocus
+                className="h-9 w-56 rounded-none text-2xl! font-bold"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsEditingName(true)}
+                className="flex cursor-pointer items-center gap-1.5 rounded-none px-1 -mx-1 transition-colors hover:bg-white/5"
+              >
+                <h1 className="text-3xl font-bold leading-tight">
+                  {user.displayName}
+                </h1>
+                <Pencil className="size-4 text-game-text-dim" />
+              </button>
+            )}
           </div>
           <Button asChild variant="ghost" className="w-fit">
             <Link to="/">
@@ -109,20 +147,6 @@ export function ProfilePage() {
             </Link>
           </Button>
         </div>
-
-        <section className="grid gap-4 border-t border-game-border pt-5">
-          <div className="grid gap-2 sm:max-w-xs">
-            <Label htmlFor="display-name">Display name</Label>
-            <Input
-              id="display-name"
-              value={displayName}
-              onChange={(event) => {
-                setDisplayName(event.target.value);
-              }}
-              className="border-game-border bg-game-bg text-game-text"
-            />
-          </div>
-        </section>
 
         {user.ratings ? (
           <section className="grid gap-3 border-t border-game-border pt-5">
@@ -210,18 +234,17 @@ export function ProfilePage() {
               />
             </div>
           )}
-        </section>
 
-        <div className="flex justify-end border-t border-game-border pt-5">
-          <Button
-            type="button"
-            onClick={() => void saveProfile()}
-            disabled={isSaving}
-          >
-            <Save className="size-4" />
-            {isSaving ? "Saving..." : "Save profile"}
-          </Button>
-        </div>
+          <div className="flex justify-end pt-2">
+            <Button
+              type="button"
+              onClick={() => void handleBackgroundSave()}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save Preferences"}
+            </Button>
+          </div>
+        </section>
       </div>
     </StageCenter>
   );

@@ -39,7 +39,8 @@ describe("profile route", () => {
 
     renderRoute("/profile", auth);
 
-    expect(screen.getByRole("heading", { name: "Profile" })).toBeTruthy();
+    // Display name is shown as heading
+    expect(screen.getByRole("heading", { name: "Nova" })).toBeTruthy();
     const ratings = screen.getByRole("heading", {
       name: "Ratings",
     }).parentElement;
@@ -47,9 +48,12 @@ describe("profile route", () => {
     expect(within(ratings as HTMLElement).getByText("Classic")).toBeTruthy();
     expect(within(ratings as HTMLElement).getByText("1200")).toBeTruthy();
 
-    await userEvent.clear(screen.getByLabelText("Display name"));
-    await userEvent.type(screen.getByLabelText("Display name"), "Nova Prime");
-    await userEvent.click(screen.getByRole("button", { name: "Save profile" }));
+    // Click name to enter edit mode
+    await userEvent.click(screen.getByRole("heading", { name: "Nova" }));
+    const nameInput = screen.getByDisplayValue("Nova");
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, "Nova Prime");
+    await userEvent.keyboard("{Enter}");
 
     expect(updateUserProfile).toHaveBeenCalledWith(
       expect.objectContaining({ displayName: "Nova Prime" }),
