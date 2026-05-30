@@ -5,7 +5,10 @@ import { useContext } from "react";
 import { Toaster } from "#/components/ui/sonner";
 import { APP_TITLE } from "#/config/ui-constants";
 import { AuthContext } from "#/features/auth/providers/auth-provider";
-import { resolveStageBackgroundUrl } from "#/features/profile/utils/background";
+import {
+  resolveStageBackgroundUrl,
+  toStageBackgroundImageValue,
+} from "#/features/profile/utils/background";
 import { cn } from "#/lib/utils";
 
 interface StageProps {
@@ -28,7 +31,11 @@ export function Stage({ children, backgroundUrl }: StageProps) {
   const resolvedBackgroundUrl =
     backgroundUrl ?? resolveStageBackgroundUrl(auth?.state.user?.preferences);
   const style: StageStyle | undefined = resolvedBackgroundUrl
-    ? { "--stage-background-image": `url("${resolvedBackgroundUrl}")` }
+    ? {
+        "--stage-background-image": toStageBackgroundImageValue(
+          resolvedBackgroundUrl,
+        ),
+      }
     : undefined;
 
   return (

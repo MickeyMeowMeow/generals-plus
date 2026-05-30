@@ -2,6 +2,30 @@ import type { UserPreferences } from "@generals-plus/shared-types";
 import { BACKGROUND_PRESETS } from "@generals-plus/shared-types";
 
 const DEFAULT_BACKGROUND_URL = "/bg.jpg";
+const CSS_URL_ESCAPE_MAP: Record<string, string> = {
+  '"': '\\"',
+  "\\": "\\\\",
+  "\n": "\\a ",
+  "\r": "\\d ",
+  "\f": "\\c ",
+};
+
+/**
+ * Formats an image URL for safe use inside a quoted CSS `url(...)` value.
+ *
+ * React writes custom properties as raw CSS tokens, so URLs must escape
+ * characters that can terminate a quoted CSS string before they are assigned to
+ * `--stage-background-image`.
+ *
+ * @param url Image URL to place in a CSS background-image value.
+ * @returns A quoted `url(...)` CSS value with string terminators escaped.
+ */
+export function toStageBackgroundImageValue(url: string): string {
+  return `url("${url.replace(
+    /["\\\n\r\f]/g,
+    (character) => CSS_URL_ESCAPE_MAP[character] ?? character,
+  )}")`;
+}
 
 /**
  * Resolves a saved user background preference into the image URL used by Stage.

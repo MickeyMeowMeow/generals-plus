@@ -20,6 +20,22 @@ describe("Stage background", () => {
     );
   });
 
+  test("escapes quotes in the stage background URL", () => {
+    render(
+      <Stage
+        backgroundUrl={
+          'https://cdn.example.com/a"),linear-gradient(red,blue),url("x'
+        }
+      >
+        <p>Scene</p>
+      </Stage>,
+    );
+
+    expect(screen.getByRole("main").getAttribute("style")).toContain(
+      '--stage-background-image: url("https://cdn.example.com/a\\"),linear-gradient(red,blue),url(\\"x")',
+    );
+  });
+
   test("sets the stage background from a preset user preference", () => {
     setAuthValue(
       createMockAuth({
