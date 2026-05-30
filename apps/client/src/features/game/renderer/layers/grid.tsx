@@ -3,8 +3,14 @@ import { Graphics } from "pixi.js";
 import { useCallback } from "react";
 
 import { RenderConfig } from "#/features/game/renderer/render-config";
-import type { RenderGrid } from "#/features/game/renderer/render-grid";
-import { TerrainTheme } from "#/features/game/renderer/theme.ts";
+import type {
+  RenderGrid,
+  RenderGridCell,
+} from "#/features/game/renderer/render-grid";
+import {
+  NeutralTroopCellColor,
+  TerrainTheme,
+} from "#/features/game/renderer/theme.ts";
 import { drawCell } from "#/features/game/utils/renderer";
 
 extend({ Graphics });
@@ -13,6 +19,21 @@ interface GridLayerProps {
   tick: number;
   grid: RenderGrid;
   playerColors: Map<string, number>;
+}
+
+export function getCellFillColor(
+  cell: RenderGridCell,
+  playerColors: Map<string, number>,
+) {
+  if (cell.ownerIndex) {
+    return playerColors.get(cell.ownerIndex) ?? 0x333333;
+  }
+
+  if ((cell.troopCount ?? 0) > 0) {
+    return NeutralTroopCellColor;
+  }
+
+  return TerrainTheme[cell.terrain]?.color || 0xffffff;
 }
 
 export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
@@ -27,11 +48,7 @@ export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
           color: RenderConfig.background,
         });
 
-        const color = cell.ownerIndex
-          ? (playerColors.get(cell.ownerIndex) ?? 0x333333)
-          : TerrainTheme[cell.terrain]?.color || 0xffffff;
-
-        g.fill(color);
+        g.fill(getCellFillColor(cell, playerColors));
       });
     },
     [tick, grid, playerColors],
