@@ -210,7 +210,6 @@ export function RoomPlayerList({
             />
           ) : null}
           {showHost && player.isHost ? (
-            // <span className="text-xs text-game-text-dim">host</01span>
             <Crown
               className="ml-[-5px] size-3.5 shrink-0 text-game-text-dim"
               strokeWidth={2.5}
