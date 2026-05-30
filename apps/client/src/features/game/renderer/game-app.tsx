@@ -21,7 +21,7 @@ import {
   ClearMoveQueueKey,
   KeyToDirection,
   KeyToPing,
-  SwitchSplitMoveKey,
+  SplitMoveModifier,
 } from "#/features/game/utils/hotkey";
 import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
 
@@ -31,11 +31,12 @@ interface GameAppProps {
   readonly grid: RenderGrid;
   readonly initialCoord?: ICoordinate;
   readonly selection: ICoordinate | null;
-  readonly splitMoveSelection: ICoordinate | null;
+  readonly isSplitMove: boolean;
   readonly moveQueue: MoveIntent[];
   readonly bombMoveSignal: boolean;
   readonly onSelectCell: (coord: ICoordinate) => void;
-  readonly onArmSplitMove: (coord?: ICoordinate) => void;
+  readonly onToggleStickySplitMove: () => void;
+  readonly onUpdateActiveSplitMove: (value: boolean) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
   readonly onClearMoveQueue: () => void;
   readonly onPing: (
@@ -43,7 +44,7 @@ interface GameAppProps {
     type: "attack" | "defense" | "rally",
   ) => void;
   readonly playerColors: Map<string, number>;
-  readonly pings?: Ping[];
+  readonly pings: Ping[];
   readonly isPlanted?: boolean;
   readonly ticksRemaining?: number;
   readonly payloadTrackX?: number[];
@@ -63,16 +64,17 @@ export function GameApp({
   grid,
   initialCoord,
   selection,
-  splitMoveSelection,
+  isSplitMove,
   moveQueue,
   bombMoveSignal,
   onSelectCell,
-  onArmSplitMove,
+  onToggleStickySplitMove,
+  onUpdateActiveSplitMove,
   onQueueMove,
   onClearMoveQueue,
   onPing,
   playerColors,
-  pings = [],
+  pings,
   isPlanted = false,
   ticksRemaining = -1,
   payloadTrackX = [],
@@ -147,20 +149,12 @@ export function GameApp({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === SwitchSplitMoveKey) {
-        e.preventDefault();
-        onArmSplitMove();
-        return;
-      }
       if (e.code === ClearMoveQueueKey) {
         e.preventDefault();
         onClearMoveQueue();
         return;
       }
-      if (KeyToDirection[grid.gridType][e.code]) {
-        e.preventDefault();
-        onQueueMove(KeyToDirection[grid.gridType][e.code]);
-      }
+
       if (KeyToPing[e.code]) {
         e.preventDefault();
         const coord = grid?.fromCartesian({
@@ -170,15 +164,41 @@ export function GameApp({
         if (coord) {
           onPing(coord, KeyToPing[e.code]);
         }
+        return;
+      }
+
+      if (e.getModifierState(SplitMoveModifier)) {
+        onUpdateActiveSplitMove(true);
+      }
+      if (KeyToDirection[grid.gridType][e.code]) {
+        e.preventDefault();
+        onQueueMove(KeyToDirection[grid.gridType][e.code]);
+        return;
       }
     };
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.getModifierState(SplitMoveModifier)) {
+        onUpdateActiveSplitMove(false);
+      }
+    };
+
+    const handleWindowBlur = () => {
+      onUpdateActiveSplitMove(false);
+    };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleWindowBlur);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleWindowBlur);
+    };
   }, [
     grid.gridType,
     grid.fromCartesian,
-    onArmSplitMove,
+    onUpdateActiveSplitMove,
     onClearMoveQueue,
     onQueueMove,
     onPing,
@@ -212,12 +232,12 @@ export function GameApp({
               worldBounds={worldBounds}
               grid={grid}
               selection={selection}
-              splitMoveSelection={splitMoveSelection}
+              isSplitMove={isSplitMove}
               moveQueue={moveQueue}
               pointerRef={pointerRef}
               bombMoveSignal={bombMoveSignal}
               onCellClick={onSelectCell}
-              onSplitMoveCell={onArmSplitMove}
+              onToggleStickySplitMove={onToggleStickySplitMove}
               playerColors={playerColors}
               pings={pings}
               isPlanted={isPlanted}

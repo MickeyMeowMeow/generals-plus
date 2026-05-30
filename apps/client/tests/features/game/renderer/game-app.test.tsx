@@ -41,14 +41,16 @@ function renderGameApp(overrides: Partial<Parameters<typeof GameApp>[0]> = {}) {
         item: null,
       }))}
       selection={null}
-      splitMoveSelection={null}
+      isSplitMove={false}
       moveQueue={[]}
       bombMoveSignal={false}
       onSelectCell={vi.fn()}
-      onArmSplitMove={vi.fn()}
+      onToggleStickySplitMove={vi.fn()}
+      onUpdateActiveSplitMove={vi.fn()}
       onQueueMove={vi.fn()}
       onClearMoveQueue={vi.fn()}
       onPing={vi.fn()}
+      pings={[]}
       playerColors={new Map()}
       {...overrides}
     />,
