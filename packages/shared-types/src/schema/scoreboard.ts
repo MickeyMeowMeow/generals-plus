@@ -127,3 +127,17 @@ export class DemolitionScoreboard extends BaseScoreboard {
   @type("number") defuseDurationTicks: number = 10;
   @type("number") detonateDurationTicks: number = 90;
 }
+
+export class CollapseScoreboardPlayerEntry extends TroopLandScoreboardPlayerEntry {
+  @type("boolean") isAlive: boolean = false;
+}
+
+export class CollapseScoreboard extends BaseScoreboard {
+  @type([CollapseScoreboardPlayerEntry]) players =
+    new ArraySchema<CollapseScoreboardPlayerEntry>();
+
+  @type("number") nextCollapseTick: number = -1;
+  @type("number") currentProgress: number = 0;
+  @type("number") startDelayTicks: number = 0;
+  @type("number") shrinkIntervalTicks: number = 0;
+}

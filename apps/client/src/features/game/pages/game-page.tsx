@@ -6,7 +6,10 @@ import {
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
-import type { DemolitionScoreboard } from "@generals-plus/shared-types";
+import type {
+  CollapseScoreboard,
+  DemolitionScoreboard,
+} from "@generals-plus/shared-types";
 import {
   MatchClientMessage,
   MatchServerMessage,
@@ -204,10 +207,13 @@ export function GamePage({ connection, source }: GamePageProps) {
         });
         return;
       }
+      const cell = renderGrid?.get(coord);
+      if (!cell || cell.terrain === Terrain.VOID) return;
+
       setSelection(coord);
       setSplitMoveSelection(null);
     },
-    [activeBrush, room],
+    [activeBrush, room, renderGrid],
   );
 
   const handleArmSplitMove = useCallback(
@@ -224,10 +230,13 @@ export function GamePage({ connection, source }: GamePageProps) {
       }
       const nextSelection = coord ?? selection;
       if (!nextSelection) return;
+      const cell = renderGrid?.get(nextSelection);
+      if (!cell || cell.terrain === Terrain.VOID) return;
+
       setSelection(nextSelection);
       setSplitMoveSelection(nextSelection);
     },
-    [activeBrush, selection, room],
+    [activeBrush, selection, room, renderGrid],
   );
 
   const handleQueueMove = useCallback(
@@ -435,7 +444,13 @@ export function GamePage({ connection, source }: GamePageProps) {
       />
 
       {(() => {
-        let timerProps = {
+        let timerProps: {
+          currentTick: number;
+          targetTick: number;
+          tickInterval: number;
+          label?: string;
+          startTick?: number;
+        } = {
           currentTick: gameState.tick,
           targetTick:
             gameState.mode === GameMode.TURF_WAR ||
@@ -493,6 +508,24 @@ export function GamePage({ connection, source }: GamePageProps) {
               label: "Time remaining",
             };
           }
+        }
+
+        if (gameState.mode === GameMode.COLLAPSE) {
+          const collapseScoreboard = gameState.scoreboard as CollapseScoreboard;
+          const startDelay = collapseScoreboard.startDelayTicks ?? 120;
+          const shrinkInterval = collapseScoreboard.shrinkIntervalTicks ?? 60;
+          const startTick =
+            gameState.tick < startDelay
+              ? 0
+              : collapseScoreboard.nextCollapseTick - shrinkInterval;
+
+          timerProps = {
+            currentTick: gameState.tick,
+            targetTick: collapseScoreboard.nextCollapseTick,
+            tickInterval: gameState.tickInterval,
+            label: "Void Collapse",
+            startTick,
+          };
         }
 
         return (

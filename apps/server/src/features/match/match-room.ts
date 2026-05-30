@@ -535,6 +535,7 @@ export class MatchRoom extends Room<{
       cell.ownerIndex =
         vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "";
       cell.siteIndex = vc.siteIndex ?? -1;
+      cell.willCollapse = vc.willCollapse ?? false;
 
       if (vc.item) {
         cell.item_id = vc.item.id;

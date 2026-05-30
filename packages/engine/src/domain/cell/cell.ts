@@ -34,6 +34,7 @@ export class Cell extends EffectTarget implements ICell {
   readonly coordinate: ICoordinate;
   private terrain_: Terrain;
   isPassable: boolean;
+  willCollapse: boolean = false;
   troopCount: number | null;
   owner: ICellOwner | null;
   vision: IVisionModifier;

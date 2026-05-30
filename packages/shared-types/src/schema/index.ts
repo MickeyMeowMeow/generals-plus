@@ -9,6 +9,8 @@ export {
   BaseScoreboardPlayerEntry,
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
+  CollapseScoreboard,
+  CollapseScoreboardPlayerEntry,
   DemolitionScoreboard,
   DemolitionScoreboardPlayerEntry,
   DemolitionScoreboardTeamEntry,

@@ -21,6 +21,7 @@ export interface RenderGridCell {
   ownerIndex: string | null;
   siteIndex: number | null;
   item: { id: string; type: number } | null;
+  willCollapse?: boolean;
 }
 
 export class SquareRenderGrid extends SquareGrid2D<RenderGridCell> {}
@@ -89,6 +90,7 @@ export function updateRenderGrid(
         newVision.item_type !== -1
           ? { id: newVision.item_id, type: newVision.item_type }
           : null,
+      willCollapse: newVision.willCollapse,
     };
   };
 
