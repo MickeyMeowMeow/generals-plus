@@ -13,7 +13,7 @@ extend({ Container, Text });
 
 const SITE_TEXT_STYLE = new TextStyle({
   fontFamily: "Oxanium Variable, sans-serif",
-  fontSize: RenderConfig.cellStride * 0.48,
+  fontSize: RenderConfig.cellStride * 0.75,
   fontWeight: "900",
   fill: 0xffffff,
   stroke: {
