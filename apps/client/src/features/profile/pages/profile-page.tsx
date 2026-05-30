@@ -1,5 +1,6 @@
 import type {
   BackgroundImagePreference,
+  BackgroundPresetId,
   UserPreferences,
 } from "@generals-plus/shared-types";
 import {
@@ -9,16 +10,18 @@ import {
 import { ArrowLeft, Save } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
+import { toast } from "sonner";
 
 import { StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
 import { cn } from "#/lib/utils";
 
-const CUSTOM_BACKGROUND_VALUE = "customUrl";
+type BackgroundValue = BackgroundPresetId | "customUrl";
 
 export function ProfilePage() {
   const user = useUser();
@@ -34,23 +37,25 @@ export function ProfilePage() {
       ? user.preferences.backgroundImage.customUrl
       : "",
   );
-  const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   if (!user) {
     return null;
   }
 
-  const selectedBackground =
+  const selectedBackground: BackgroundValue =
     backgroundImage.source === "preset"
       ? backgroundImage.presetId
-      : CUSTOM_BACKGROUND_VALUE;
+      : "customUrl";
 
   const saveProfile = async () => {
     const trimmedDisplayName = displayName.trim();
 
     if (trimmedDisplayName.length === 0) {
-      setError("Display name cannot be empty.");
+      toast.error("Profile save failed", {
+        description: "Display name cannot be empty.",
+        duration: 5_000,
+      });
       return;
     }
 
@@ -62,19 +67,21 @@ export function ProfilePage() {
     };
 
     setIsSaving(true);
-    setError(null);
 
     try {
       await actions.updateUserProfile({
         displayName: trimmedDisplayName,
         preferences,
       });
+      toast.success("Profile saved.");
     } catch (saveError) {
-      setError(
-        saveError instanceof Error && saveError.message.trim().length > 0
-          ? saveError.message
-          : "Failed to save profile.",
-      );
+      toast.error("Profile save failed", {
+        description:
+          saveError instanceof Error && saveError.message.trim().length > 0
+            ? saveError.message
+            : "",
+        duration: 5_000,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -87,7 +94,7 @@ export function ProfilePage() {
           <div>
             <h1 className="text-3xl font-bold leading-tight">Profile</h1>
             <p className="mt-1 text-sm text-game-text-dim">
-              Account settings for {user.displayName}
+              View and edit your profile
             </p>
           </div>
           <Button asChild variant="ghost" className="w-fit">
@@ -99,16 +106,13 @@ export function ProfilePage() {
         </div>
 
         <section className="grid gap-4 border-t border-game-border pt-5">
-          <div className="grid gap-2 sm:max-w-sm">
+          <div className="grid gap-2 sm:max-w-xs">
             <Label htmlFor="display-name">Display name</Label>
             <Input
               id="display-name"
               value={displayName}
               onChange={(event) => {
                 setDisplayName(event.target.value);
-                if (error) {
-                  setError(null);
-                }
               }}
               className="border-game-border bg-game-bg text-game-text"
             />
@@ -124,7 +128,7 @@ export function ProfilePage() {
               ).map((mode) => (
                 <div
                   key={mode.id}
-                  className="flex min-h-10 items-center justify-between gap-4 border border-game-border bg-game-bg px-3 py-2"
+                  className="flex min-h-10 items-center justify-between gap-4 border border-game-border bg-transparent px-3 py-2"
                 >
                   <dt className="text-sm text-game-text-dim">{mode.label}</dt>
                   <dd className="text-sm font-semibold">
@@ -138,82 +142,70 @@ export function ProfilePage() {
 
         <section className="grid gap-3 border-t border-game-border pt-5">
           <h2 className="text-base font-semibold">Background</h2>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <RadioGroup
+            value={selectedBackground}
+            onValueChange={(value: string) => {
+              if (value === "customUrl") {
+                setBackgroundImage({
+                  source: "customUrl",
+                  customUrl: customUrl.trim(),
+                });
+              } else {
+                setBackgroundImage({
+                  source: "preset",
+                  presetId: value as BackgroundPresetId,
+                });
+              }
+            }}
+            className="grid gap-2 sm:grid-cols-4"
+          >
             {BACKGROUND_PRESETS.map((preset) => (
-              <label
+              <Label
                 key={preset.id}
                 className={cn(
-                  "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-game-bg px-3 py-2 text-sm",
+                  "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-transparent px-3 py-2 text-sm",
                   selectedBackground === preset.id &&
-                    "border-white/60 bg-game-surface",
+                    "border-white/60 bg-white/5",
                 )}
               >
-                <input
-                  type="radio"
-                  name="background"
-                  value={preset.id}
-                  checked={selectedBackground === preset.id}
-                  onChange={() =>
-                    setBackgroundImage({
-                      source: "preset",
-                      presetId: preset.id,
-                    })
-                  }
-                  className="size-3 accent-current"
-                />
+                <RadioGroupItem value={preset.id} />
                 {preset.label}
-              </label>
+              </Label>
             ))}
-            <label
+            <Label
               className={cn(
-                "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-game-bg px-3 py-2 text-sm",
-                selectedBackground === CUSTOM_BACKGROUND_VALUE &&
-                  "border-white/60 bg-game-surface",
+                "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-transparent px-3 py-2 text-sm",
+                selectedBackground === "customUrl" &&
+                  "border-white/60 bg-white/5",
               )}
             >
-              <input
-                type="radio"
-                name="background"
-                value={CUSTOM_BACKGROUND_VALUE}
-                checked={selectedBackground === CUSTOM_BACKGROUND_VALUE}
-                onChange={() =>
-                  setBackgroundImage({
-                    source: "customUrl",
-                    customUrl: customUrl.trim(),
-                  })
-                }
-                className="size-3 accent-current"
+              <RadioGroupItem value="customUrl" />
+              Custom
+            </Label>
+          </RadioGroup>
+
+          {selectedBackground === "customUrl" && (
+            <div className="grid gap-2 sm:max-w-xl">
+              <Label htmlFor="custom-background-url">Custom image URL</Label>
+              <Input
+                id="custom-background-url"
+                value={customUrl}
+                onChange={(event) => {
+                  const nextUrl = event.target.value;
+                  setCustomUrl(nextUrl);
+                  if (backgroundImage.source === "customUrl") {
+                    setBackgroundImage({
+                      source: "customUrl",
+                      customUrl: nextUrl.trim(),
+                    });
+                  }
+                }}
+                placeholder="https://example.com/background.jpg"
+                className="border-game-border bg-game-bg text-game-text placeholder:text-game-text-dim"
               />
-              Custom image URL
-            </label>
-          </div>
-
-          <div className="grid gap-2 sm:max-w-xl">
-            <Label htmlFor="custom-background-url">Custom image URL</Label>
-            <Input
-              id="custom-background-url"
-              value={customUrl}
-              onChange={(event) => {
-                const nextUrl = event.target.value;
-                setCustomUrl(nextUrl);
-                if (backgroundImage.source === "customUrl") {
-                  setBackgroundImage({
-                    source: "customUrl",
-                    customUrl: nextUrl.trim(),
-                  });
-                }
-              }}
-              placeholder="https://example.com/background.jpg"
-              className="border-game-border bg-game-bg text-game-text placeholder:text-game-text-dim"
-            />
-          </div>
+            </div>
+          )}
         </section>
-
-        {error ? (
-          <p className="border border-destructive/40 px-3 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        ) : null}
 
         <div className="flex justify-end border-t border-game-border pt-5">
           <Button
