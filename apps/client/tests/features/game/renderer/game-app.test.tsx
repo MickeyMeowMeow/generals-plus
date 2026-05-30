@@ -48,6 +48,7 @@ function renderGameApp(overrides: Partial<Parameters<typeof GameApp>[0]> = {}) {
       onArmSplitMove={vi.fn()}
       onQueueMove={vi.fn()}
       onClearMoveQueue={vi.fn()}
+      onPing={vi.fn()}
       playerColors={new Map()}
       {...overrides}
     />,
@@ -65,7 +66,7 @@ describe("GameApp keyboard input", () => {
 
     renderGameApp({ onQueueMove, onClearMoveQueue });
 
-    fireEvent.keyDown(window, { key: " " });
+    fireEvent.keyDown(window, { code: "Space" });
 
     expect(onClearMoveQueue).toHaveBeenCalledTimes(1);
     expect(onQueueMove).not.toHaveBeenCalled();

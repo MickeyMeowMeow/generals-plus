@@ -24,29 +24,6 @@ export interface MoveIntent {
   type?: MoveActionType;
 }
 
-export const KeyToDirection: Record<GridType, Record<string, MoveDirection>> = {
-  [GridType.SQUARE]: {
-    w: MoveDirection.UP,
-    a: MoveDirection.LEFT,
-    s: MoveDirection.DOWN,
-    d: MoveDirection.RIGHT,
-    arrowup: MoveDirection.UP,
-    arrowleft: MoveDirection.LEFT,
-    arrowdown: MoveDirection.DOWN,
-    arrowright: MoveDirection.RIGHT,
-  },
-  [GridType.HEX]: {
-    q: MoveDirection.TOP_LEFT,
-    w: MoveDirection.TOP,
-    e: MoveDirection.TOP_RIGHT,
-    a: MoveDirection.BOTTOM_LEFT,
-    s: MoveDirection.BOTTOM,
-    d: MoveDirection.BOTTOM_RIGHT,
-  },
-} as const;
-
-export const ClearMoveQueueKey = " ";
-
 export function getTargetCoord(move: MoveIntent): ICoordinate {
   switch (move.direction) {
     // Square directions
@@ -72,5 +49,33 @@ export function getTargetCoord(move: MoveIntent): ICoordinate {
       return { x: move.from.x, y: move.from.y + 1 };
     case MoveDirection.BOTTOM_RIGHT:
       return { x: move.from.x + 1, y: move.from.y };
+  }
+}
+
+export function getDirection(
+  gridType: GridType,
+  from: ICoordinate,
+  to: ICoordinate,
+): MoveDirection {
+  switch (gridType) {
+    case GridType.SQUARE: {
+      if (to.y < from.y) return MoveDirection.UP;
+      if (to.y > from.y) return MoveDirection.DOWN;
+      if (to.x < from.x) return MoveDirection.LEFT;
+      return MoveDirection.RIGHT;
+    }
+    case GridType.HEX: {
+      if (to.x < from.x) {
+        return to.y === from.y
+          ? MoveDirection.TOP_LEFT
+          : MoveDirection.BOTTOM_LEFT;
+      }
+      if (to.x > from.x) {
+        return to.y < from.y
+          ? MoveDirection.TOP_RIGHT
+          : MoveDirection.BOTTOM_RIGHT;
+      }
+      return to.y < from.y ? MoveDirection.TOP : MoveDirection.BOTTOM;
+    }
   }
 }
