@@ -488,6 +488,7 @@ export class MatchRoom extends Room<{
       this.state.scoreboard,
       this.game.getScoreboard(),
       this.state.publicPlayers.values(),
+      this.state.tickInterval,
     );
   }
 

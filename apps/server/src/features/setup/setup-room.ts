@@ -793,7 +793,10 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           ...base,
           mode: GameMode.PAYLOAD,
           finishTick: this.state.finishTick,
-          payloadSpeed: this.state.payloadSpeed,
+          payloadSpeedTicks: calculateFinishTick(
+            this.state.payloadSpeed,
+            this.state.tickInterval,
+          ),
           payloadCartSize: this.state.payloadCartSize,
           payloadRequiredOccupied: this.state.payloadRequiredOccupied,
         };

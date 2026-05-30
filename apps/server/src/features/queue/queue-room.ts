@@ -164,7 +164,10 @@ export class MatchQueueRoom extends QueueRoom {
                 ...base,
                 mode: GameMode.PAYLOAD,
                 finishTick,
-                payloadSpeed: modeSettings?.payloadSpeed ?? 2,
+                payloadSpeedTicks: calculateFinishTick(
+                  modeSettings?.payloadSpeed ?? 2,
+                  BASE_TICK_INTERVAL,
+                ),
                 payloadCartSize: modeSettings?.payloadCartSize ?? 3,
                 payloadRequiredOccupied:
                   modeSettings?.payloadRequiredOccupied ?? 6,

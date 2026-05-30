@@ -66,7 +66,7 @@ interface CollapseCreateGameOptions extends BaseCreateGameOptions {
 interface PayloadCreateGameOptions extends BaseCreateGameOptions {
   mode: typeof GameMode.PAYLOAD;
   finishTick?: number;
-  payloadSpeed?: number;
+  payloadSpeedTicks?: number;
   payloadCartSize?: number;
   payloadRequiredOccupied?: number;
 }
@@ -267,7 +267,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         },
         {
           finishTick: options.finishTick,
-          payloadSpeed: options.payloadSpeed,
+          payloadSpeedTicks: options.payloadSpeedTicks,
           payloadCartSize: options.payloadCartSize,
           payloadRequiredOccupied: options.payloadRequiredOccupied,
         },

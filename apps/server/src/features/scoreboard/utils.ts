@@ -76,6 +76,7 @@ export function syncScoreboard(
   target: BaseScoreboard,
   source: IBaseScoreboard,
   playerMetadata: Iterable<PublicPlayer> = [],
+  tickInterval?: number,
 ): void {
   target.mode = source.mode;
   const metadataByPlayer = new Map(
@@ -117,11 +118,13 @@ export function syncScoreboard(
           schema.isAlive = entry.isAlive;
         },
       );
+      const interval = tickInterval ?? 500;
       payloadTarget.cartProgress = payloadSource.cartProgress;
       payloadTarget.cartIndex = payloadSource.cartIndex;
       payloadTarget.trackLength = payloadSource.trackLength;
-      payloadTarget.totalTime = payloadSource.totalTime;
-      payloadTarget.speedSeconds = payloadSource.speedSeconds;
+      payloadTarget.totalTime =
+        (payloadSource.totalTimeTicks * interval) / 1000;
+      payloadTarget.speedSeconds = (payloadSource.speedTicks * interval) / 1000;
       payloadTarget.cartSize = payloadSource.cartSize;
       payloadTarget.minPushers = payloadSource.minPushers;
       payloadTarget.isContested = payloadSource.isContested;

@@ -222,8 +222,8 @@ export interface IPayloadScoreboard extends IBaseScoreboard {
   readonly cartProgress: number; // 0.0 to 1.0
   readonly cartIndex: number;
   readonly trackLength: number;
-  readonly totalTime: number;
-  readonly speedSeconds: number;
+  readonly totalTimeTicks: number;
+  readonly speedTicks: number;
   readonly cartSize: number;
   readonly minPushers: number;
   readonly isContested: boolean;

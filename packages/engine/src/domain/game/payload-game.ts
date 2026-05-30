@@ -19,7 +19,7 @@ import type { ICoordinate } from "#/math/coordinate";
 
 export interface PayloadGameOptions {
   finishTick?: number;
-  payloadSpeed?: number;
+  payloadSpeedTicks?: number;
   payloadCartSize?: number;
   payloadRequiredOccupied?: number;
 }
@@ -28,7 +28,7 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
   readonly mode = GameMode.PAYLOAD;
   private readonly combatResolver = new StandardCombatResolver();
 
-  readonly payloadSpeed: number;
+  readonly payloadSpeedTicks: number;
   readonly payloadCartSize: number;
   readonly payloadRequiredOccupied: number;
   readonly maxTicks: number;
@@ -47,7 +47,7 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
   constructor(input: GridInput, options?: PayloadGameOptions) {
     super(input);
     this.maxTicks = options?.finishTick ?? 600;
-    this.payloadSpeed = options?.payloadSpeed ?? 2;
+    this.payloadSpeedTicks = options?.payloadSpeedTicks ?? 4;
     this.payloadCartSize = options?.payloadCartSize ?? 3;
     this.payloadRequiredOccupied = options?.payloadRequiredOccupied ?? 6;
   }
@@ -225,8 +225,7 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
 
     super.nextTick();
 
-    // 1 tick = 0.5s, so payloadSpeed seconds translates to payloadSpeed * 2 ticks
-    const speedTicks = Math.max(1, Math.round(this.payloadSpeed * 2));
+    const speedTicks = Math.max(1, Math.round(this.payloadSpeedTicks));
     if (this.tick % speedTicks === 0) {
       this.evaluateCartPushing();
     }
@@ -375,8 +374,8 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
       cartProgress: this.payloadProgress,
       cartIndex: this.cartIndex,
       trackLength: this.track.length,
-      totalTime: this.maxTicks / 2, // Represent in seconds
-      speedSeconds: this.payloadSpeed,
+      totalTimeTicks: this.maxTicks,
+      speedTicks: this.payloadSpeedTicks,
       cartSize: this.payloadCartSize,
       minPushers: this.payloadRequiredOccupied,
       isContested: this.isContested,

@@ -104,7 +104,7 @@ describe("PayloadGame", () => {
     // required to occupy: 3
     const game = new PayloadGame(
       { grid },
-      { payloadRequiredOccupied: 3, payloadCartSize: 3, payloadSpeed: 1 },
+      { payloadRequiredOccupied: 3, payloadCartSize: 3, payloadSpeedTicks: 2 },
     );
 
     const t1 = new StandardTeam("left-team");
@@ -133,7 +133,7 @@ describe("PayloadGame", () => {
     getCell(grid, { x: 4, y: 0 }).owner = p1;
 
     // Evaluate push: Left team has 3/3, right team has 0. Left team pushes right (+1 index).
-    // payloadSpeed = 1, so every 2 ticks it evaluates pushing
+    // payloadSpeedTicks = 2, so every 2 ticks it evaluates pushing
     game.nextTick();
     game.nextTick();
 
@@ -145,7 +145,7 @@ describe("PayloadGame", () => {
     const grid = create3x3GridWithTrack();
     const game = new PayloadGame(
       { grid },
-      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeed: 1 },
+      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeedTicks: 2 },
     );
 
     const t1 = new StandardTeam("left-team");
@@ -181,7 +181,7 @@ describe("PayloadGame", () => {
     const grid = create3x3GridWithTrack();
     const game = new PayloadGame(
       { grid },
-      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeed: 1 },
+      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeedTicks: 2 },
     );
 
     const t1 = new StandardTeam("left-team");
@@ -252,7 +252,7 @@ describe("PayloadGame", () => {
     const grid = create3x3GridWithTrack();
     const game = new PayloadGame(
       { grid },
-      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeed: 1 },
+      { payloadRequiredOccupied: 2, payloadCartSize: 3, payloadSpeedTicks: 2 },
     );
 
     const t1 = new StandardTeam("left-team");
