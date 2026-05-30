@@ -18,6 +18,7 @@ export * from "#/domain/game/classic-game";
 export * from "#/domain/game/collapse-game";
 export * from "#/domain/game/demolition-game";
 export * from "#/domain/game/domination-game";
+export * from "#/domain/game/payload-game";
 export * from "#/domain/game/game-mode";
 export * from "#/domain/game/game-result";
 export * from "#/domain/game/game-status";

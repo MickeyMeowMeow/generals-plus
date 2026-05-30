@@ -441,6 +441,10 @@ export function GamePage({ connection, source }: GamePageProps) {
               )
             : -1
         }
+        payloadTrackX={gameState.payloadTrackX ? Array.from(gameState.payloadTrackX) : []}
+        payloadTrackY={gameState.payloadTrackY ? Array.from(gameState.payloadTrackY) : []}
+        cartIndex={gameState.mode === GameMode.PAYLOAD ? ((gameState.scoreboard as any).cartIndex ?? -1) : -1}
+        cartSize={gameState.mode === GameMode.PAYLOAD ? ((gameState.scoreboard as any).cartSize ?? 0) : 0}
       />
 
       {(() => {
@@ -525,6 +529,16 @@ export function GamePage({ connection, source }: GamePageProps) {
             tickInterval: gameState.tickInterval,
             label: "Void Collapse",
             startTick,
+          };
+        }
+
+        if (gameState.mode === GameMode.PAYLOAD) {
+          const payloadScoreboard = gameState.scoreboard as any;
+          timerProps = {
+            currentTick: gameState.tick,
+            targetTick: gameState.finishTick > 0 ? gameState.finishTick : 0,
+            tickInterval: gameState.tickInterval,
+            label: payloadScoreboard.isContested ? "Contested (Contested)" : "Pushing Cart",
           };
         }
 

@@ -1,4 +1,4 @@
-import { MapSchema, Schema, type, view } from "@colyseus/schema";
+import { ArraySchema, MapSchema, Schema, type, view } from "@colyseus/schema";
 import { GameMode, GameStatus, GridType } from "@generals-plus/engine";
 
 import { ClientActionQueue } from "#/schema/action-data";
@@ -26,6 +26,9 @@ export class MatchState extends Schema {
   @type("number") right: number = 0;
   @type("number") leftSlant: number = 0;
   @type("number") rightSlant: number = 0;
+
+  @type(["number"]) payloadTrackX = new ArraySchema<number>();
+  @type(["number"]) payloadTrackY = new ArraySchema<number>();
 
   // Shared metadata that every client can see without exposing the full
   // per-player server state kept in `players`.

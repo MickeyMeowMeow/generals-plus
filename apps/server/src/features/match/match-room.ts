@@ -11,6 +11,7 @@ import type {
 } from "@generals-plus/engine";
 import {
   ActionType,
+  GameMode,
   GameStatus,
   GridType,
   PlayerStatus,
@@ -79,6 +80,13 @@ export class MatchRoom extends Room<{
       state.right = this.game.grid.right;
       state.leftSlant = this.game.grid.leftSlant;
       state.rightSlant = this.game.grid.rightSlant;
+    }
+
+    if (metadata.mode === GameMode.PAYLOAD) {
+      for (const coord of this.game.grid.track) {
+        state.payloadTrackX.push(coord.x);
+        state.payloadTrackY.push(coord.y);
+      }
     }
 
     for (const playerInit of metadata.playerInit) {

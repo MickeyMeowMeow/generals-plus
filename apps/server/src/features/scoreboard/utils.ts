@@ -6,6 +6,7 @@ import type {
   IDemolitionScoreboard,
   IDominationScoreboard,
   ITurfWarScoreboard,
+  IPayloadScoreboard,
 } from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
 import type {
@@ -27,6 +28,8 @@ import {
   TurfWarScoreboard,
   TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
+  PayloadScoreboard,
+  PayloadScoreboardPlayerEntry,
 } from "@generals-plus/shared-types";
 
 /**
@@ -50,6 +53,9 @@ export function createScoreboard(mode: GameModeType): BaseScoreboard {
       break;
     case GameMode.COLLAPSE:
       scoreboard = new CollapseScoreboard();
+      break;
+    case GameMode.PAYLOAD:
+      scoreboard = new PayloadScoreboard();
       break;
     default:
       scoreboard = new ClassicScoreboard();
@@ -95,6 +101,32 @@ export function syncScoreboard(
       collapseTarget.currentProgress = collapseSource.currentProgress;
       collapseTarget.startDelayTicks = collapseSource.startDelayTicks;
       collapseTarget.shrinkIntervalTicks = collapseSource.shrinkIntervalTicks;
+      break;
+    }
+    case GameMode.PAYLOAD: {
+      const payloadTarget = target as PayloadScoreboard;
+      const payloadSource = source as IPayloadScoreboard;
+      syncPlayers(
+        payloadTarget,
+        payloadSource.players,
+        metadataByPlayer,
+        () => new PayloadScoreboardPlayerEntry(),
+        (schema, entry) => {
+          schema.troops = entry.troops;
+          schema.land = entry.land;
+          schema.isAlive = entry.isAlive;
+        },
+      );
+      payloadTarget.cartProgress = payloadSource.cartProgress;
+      payloadTarget.cartIndex = payloadSource.cartIndex;
+      payloadTarget.trackLength = payloadSource.trackLength;
+      payloadTarget.totalTime = payloadSource.totalTime;
+      payloadTarget.speedSeconds = payloadSource.speedSeconds;
+      payloadTarget.cartSize = payloadSource.cartSize;
+      payloadTarget.minPushers = payloadSource.minPushers;
+      payloadTarget.isContested = payloadSource.isContested;
+      payloadTarget.leftTeamId = payloadSource.leftTeamId;
+      payloadTarget.rightTeamId = payloadSource.rightTeamId;
       break;
     }
     case GameMode.CLASSIC: {

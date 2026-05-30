@@ -13,6 +13,7 @@ import { MoveQueueLayer } from "#/features/game/renderer/layers/move-queue";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { PingLayer } from "#/features/game/renderer/layers/ping";
 import { SiteLabelLayer } from "#/features/game/renderer/layers/site-label";
+import { PayloadLayer } from "#/features/game/renderer/layers/payload";
 import { TroopLayer } from "#/features/game/renderer/layers/troop";
 import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
@@ -39,6 +40,10 @@ interface MapRendererProps {
   pings: Ping[];
   isPlanted?: boolean;
   ticksRemaining?: number;
+  payloadTrackX?: number[];
+  payloadTrackY?: number[];
+  cartIndex?: number;
+  cartSize?: number;
 }
 
 export function MapRenderer({
@@ -55,6 +60,10 @@ export function MapRenderer({
   pings,
   isPlanted = false,
   ticksRemaining = -1,
+  payloadTrackX = [],
+  payloadTrackY = [],
+  cartIndex = -1,
+  cartSize = 0,
 }: MapRendererProps) {
   const lastPrimaryClickRef = useRef<{
     coord: ICoordinate;
@@ -117,6 +126,15 @@ export function MapRenderer({
     >
       <GridLayer tick={tick} grid={grid} playerColors={playerColors} />
       <IconLayer tick={tick} grid={grid} />
+      {payloadTrackX && payloadTrackX.length > 0 && (
+        <PayloadLayer
+          grid={grid}
+          payloadTrackX={payloadTrackX}
+          payloadTrackY={payloadTrackY}
+          cartIndex={cartIndex}
+          cartSize={cartSize}
+        />
+      )}
       <SiteLabelLayer grid={grid} />
       <MoveQueueLayer grid={grid} moveQueue={moveQueue} />
       <TroopLayer

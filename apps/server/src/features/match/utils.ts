@@ -30,6 +30,12 @@ export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
     collapseInterval: 30,
     collapseShape: CollapseShape.CIRCLE,
   },
+  [GameMode.PAYLOAD]: {
+    payloadSpeed: 2,
+    payloadDuration: 300,
+    payloadCartSize: 3,
+    payloadRequiredOccupied: 6,
+  },
 };
 
 export function calculateFinishTick(

@@ -66,6 +66,10 @@ const SETTING_LABELS: Record<string, string> = {
   duration: "Duration",
   flagCount: "Flag count",
   targetScore: "Target score",
+  payloadSpeed: "Cart speed",
+  payloadDuration: "Duration",
+  payloadCartSize: "Cart size",
+  payloadRequiredOccupied: "Required occupied tiles",
 };
 
 type SetupSettingsIssue = {
@@ -384,6 +388,27 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         return;
       }
 
+      const PAYLOAD_FIELDS = [
+        "payloadSpeed",
+        "payloadDuration",
+        "payloadCartSize",
+        "payloadRequiredOccupied",
+      ] as const;
+      const invalidPayloadField = PAYLOAD_FIELDS.find(
+        (f) => update[f] !== undefined,
+      );
+      if (
+        invalidPayloadField !== undefined &&
+        activeMode !== GameMode.PAYLOAD
+      ) {
+        this.sendValidationFailed(client, {
+          severity: "warning",
+          field: invalidPayloadField,
+          message: "Payload fields are only available in Payload mode.",
+        });
+        return;
+      }
+
       // Reset mode-specific defaults when gameMode changes.
       if (update.gameMode !== undefined) {
         const modeDefaults = MODE_SETTINGS[update.gameMode];
@@ -416,6 +441,11 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       ) {
         this.state.finishTick = calculateFinishTick(
           this.state.duration,
+          this.state.tickInterval,
+        );
+      } else if (this.state.gameMode === GameMode.PAYLOAD) {
+        this.state.finishTick = calculateFinishTick(
+          this.state.payloadDuration,
           this.state.tickInterval,
         );
       }
@@ -693,6 +723,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       return { ...base, bombSiteCount: this.state.bombSiteCount };
     }
 
+    if (this.state.gameMode === GameMode.PAYLOAD) {
+      return {
+        ...base,
+        isPayload: true,
+        payloadCartSize: this.state.payloadCartSize,
+      };
+    }
+
     return base;
   }
 
@@ -755,6 +793,15 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           ),
           collapseShape: this.state.collapseShape as CollapseShape,
         };
+      case GameMode.PAYLOAD:
+        return {
+          ...base,
+          mode: GameMode.PAYLOAD,
+          finishTick: this.state.finishTick,
+          payloadSpeed: this.state.payloadSpeed,
+          payloadCartSize: this.state.payloadCartSize,
+          payloadRequiredOccupied: this.state.payloadRequiredOccupied,
+        };
       default:
         return { ...base, mode: this.state.gameMode };
     }
@@ -769,7 +816,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     const isTimedMode =
       options.mode === GameMode.TURF_WAR ||
       options.mode === GameMode.DOMINATION ||
-      options.mode === GameMode.DEMOLITION;
+      options.mode === GameMode.DEMOLITION ||
+      options.mode === GameMode.PAYLOAD;
 
     const metadata: RoomData = {
       mode: options.mode,

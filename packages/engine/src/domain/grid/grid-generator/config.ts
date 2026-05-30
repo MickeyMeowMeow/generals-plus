@@ -42,6 +42,8 @@ export interface GridGeneratorOptions<T extends GridType> {
 
   readonly flagCount?: number;
   readonly bombSiteCount?: number;
+  readonly isPayload?: boolean;
+  readonly payloadCartSize?: number;
 }
 
 /** Default options exposed for external reference. */

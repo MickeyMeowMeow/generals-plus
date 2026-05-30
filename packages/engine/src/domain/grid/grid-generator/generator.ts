@@ -78,6 +78,34 @@ export abstract class AbstractGridGenerator<
 
     const protectedZone = this.buildProtectedZones(generals, terrainGrid);
 
+    if ((config as any).isPayload) {
+      const bounds = terrainGrid.bounds as any;
+      const width = terrainGrid.gridType === "square" ? (terrainGrid as any).width : (bounds.left + bounds.right);
+      const height = terrainGrid.gridType === "square" ? (terrainGrid as any).height : (bounds.leftSlant);
+      const cy = Math.floor(height / 2);
+
+      const startX = Math.min(3, Math.floor(width / 2));
+      const endX = Math.max(startX, width - 1 - startX);
+
+      const K = (config as any).payloadCartSize ?? 3;
+      const startOffset = -Math.floor((K - 1) / 2);
+      const endOffset = Math.floor(K / 2);
+
+      for (let x = startX; x <= endX; x++) {
+        for (let dy = startOffset; dy <= endOffset; dy++) {
+          for (let dx = startOffset; dx <= endOffset; dx++) {
+            const coord = { x: x + dx, y: cy + dy };
+            if (terrainGrid.isValid(coord)) {
+              protectedZone.add(`${coord.x},${coord.y}`);
+              if (terrainGrid.get(coord) !== Terrain.GENERAL) {
+                terrainGrid.set(coord, Terrain.PLAIN);
+              }
+            }
+          }
+        }
+      }
+    }
+
     this.paintMountains(config, rng, terrainGrid, protectedZone);
 
     this.placeCities(config, rng, terrainGrid, protectedZone, generals);
@@ -91,6 +119,17 @@ export abstract class AbstractGridGenerator<
     }
 
     const grid = this.materializeCells(terrainGrid, config);
+
+    if ((config as any).isPayload) {
+      const track: ICoordinate[] = [];
+      const cy = Math.floor(grid.height / 2);
+      const startX = Math.min(3, Math.floor(grid.width / 2));
+      const endX = Math.max(startX, grid.width - 1 - startX);
+      for (let x = startX; x <= endX; x++) {
+        track.push({ x, y: cy });
+      }
+      grid.track = track;
+    }
 
     return grid;
   }
@@ -111,6 +150,8 @@ export abstract class AbstractGridGenerator<
     const flagCount = "flagCount" in options ? (options.flagCount ?? 0) : 0;
     const bombSiteCount =
       "bombSiteCount" in options ? (options.bombSiteCount ?? 0) : 0;
+    const isPayload = "isPayload" in options ? !!options.isPayload : false;
+    const payloadCartSize = "payloadCartSize" in options ? (options.payloadCartSize ?? 3) : 3;
     const generalCount = options.generalCount ?? DefaultGenOptions.generalCount;
     const minGeneralDistanceFactor =
       options.minGeneralDistanceFactor ??
@@ -152,7 +193,9 @@ export abstract class AbstractGridGenerator<
       minGeneralDistanceFactor,
       generalInitialTroops,
       cityInitialTroops,
-    };
+      isPayload,
+      payloadCartSize,
+    } as any;
   }
 
   protected abstract resolveGridBounds(
@@ -168,6 +211,40 @@ export abstract class AbstractGridGenerator<
   ): ICoordinate[] | null {
     const { generalCount } = config;
     const minDistance = this.calculateMinGeneralDistance(config);
+
+    if ((config as any).isPayload) {
+      const bounds = terrainGrid.bounds as any;
+      const width = terrainGrid.gridType === "square" ? (terrainGrid as any).width : (bounds.left + bounds.right);
+      const height = terrainGrid.gridType === "square" ? (terrainGrid as any).height : (bounds.leftSlant);
+      const cy = Math.floor(height / 2);
+
+      const selected: ICoordinate[] = [];
+      const halfCount = Math.ceil(generalCount / 2);
+
+      // Left side candidates: x = 1, y = cy, cy - 1, cy + 1, ...
+      for (let i = 0; i < halfCount; i++) {
+        const yOffset = i === 0 ? 0 : Math.ceil(i / 2) * (i % 2 === 0 ? 1 : -1);
+        const y = cy + yOffset;
+        if (y >= 1 && y < height - 1) {
+          selected.push({ x: 1, y });
+        }
+      }
+
+      // Right side candidates: x = W - 2, y = cy, cy - 1, cy + 1, ...
+      const rightCount = generalCount - selected.length;
+      for (let i = 0; i < rightCount; i++) {
+        const yOffset = i === 0 ? 0 : Math.ceil(i / 2) * (i % 2 === 0 ? 1 : -1);
+        const y = cy + yOffset;
+        if (y >= 1 && y < height - 1) {
+          selected.push({ x: width - 2, y });
+        }
+      }
+
+      for (const g of selected) {
+        terrainGrid.set(g, Terrain.GENERAL);
+      }
+      return selected;
+    }
 
     // Build shuffled candidate pool (interior cells only)
     const candidates: ICoordinate[] =
