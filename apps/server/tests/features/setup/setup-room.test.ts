@@ -422,6 +422,29 @@ describe("SetupRoom", () => {
       expect(room.state.playersPerTeam).toBe(5);
     });
 
+    it("auto-bumps demolition playersPerTeam when maxPlayers increases", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DEMOLITION,
+        maxPlayers: 6,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      expect(room.state.playersPerTeam).toBe(3);
+
+      const sent = captureErrors(room.clients[0]);
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        maxPlayers: 8,
+      });
+      await msgPromise;
+
+      expect(sent).not.toContain(
+        "Players per team must be at least half of max players in Demolition.",
+      );
+      expect(room.state.maxPlayers).toBe(8);
+      expect(room.state.playersPerTeam).toBe(4);
+    });
+
     it("rejects invalid settings update", async () => {
       room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
       await connectClient(room, { id: "p1", email: "p1@test.com" });

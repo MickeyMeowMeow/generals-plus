@@ -251,6 +251,34 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
       const update = result.data;
 
+      // When gameMode changes without an explicit playersPerTeam, reset to the
+      // mode default so the host doesn't carry a stale value across modes.
+      if (
+        update.gameMode !== undefined &&
+        update.playersPerTeam === undefined
+      ) {
+        update.playersPerTeam =
+          update.gameMode === GameMode.DEMOLITION
+            ? Math.max(
+                this.state.playersPerTeam,
+                getDemolitionPlayersPerTeam(
+                  update.maxPlayers ?? this.state.maxPlayers,
+                ),
+              )
+            : getDefaultPlayersPerTeam(update.gameMode);
+      } else if (
+        (update.gameMode === GameMode.DEMOLITION ||
+          (update.gameMode === undefined &&
+            this.state.gameMode === GameMode.DEMOLITION)) &&
+        update.maxPlayers !== undefined &&
+        update.playersPerTeam === undefined
+      ) {
+        update.playersPerTeam = Math.max(
+          this.state.playersPerTeam,
+          getDemolitionPlayersPerTeam(update.maxPlayers),
+        );
+      }
+
       // playersPerTeam must be < maxPlayers for standard modes, and large
       // enough to fit two fixed teams in Demolition.
       if (
@@ -344,34 +372,6 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           message: "Demolition fields are only available in Demolition mode.",
         });
         return;
-      }
-
-      // When gameMode changes without an explicit playersPerTeam, reset to the
-      // mode default so the host doesn't carry a stale value across modes.
-      if (
-        update.gameMode !== undefined &&
-        update.playersPerTeam === undefined
-      ) {
-        update.playersPerTeam =
-          update.gameMode === GameMode.DEMOLITION
-            ? Math.max(
-                this.state.playersPerTeam,
-                getDemolitionPlayersPerTeam(
-                  update.maxPlayers ?? this.state.maxPlayers,
-                ),
-              )
-            : getDefaultPlayersPerTeam(update.gameMode);
-      } else if (
-        (update.gameMode === GameMode.DEMOLITION ||
-          (update.gameMode === undefined &&
-            this.state.gameMode === GameMode.DEMOLITION)) &&
-        update.maxPlayers !== undefined &&
-        update.playersPerTeam === undefined
-      ) {
-        update.playersPerTeam = Math.max(
-          this.state.playersPerTeam,
-          getDemolitionPlayersPerTeam(update.maxPlayers),
-        );
       }
 
       // Reset mode-specific defaults when gameMode changes.
