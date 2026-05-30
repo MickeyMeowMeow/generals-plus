@@ -106,9 +106,18 @@ export abstract class BaseGame implements IBaseGame {
       return false;
     }
 
+    const surrenderBeneficiary = this.pickSurrenderBeneficiary(playerId);
     player.status = PlayerStatus.ELIMINATED;
     this.grid.forEach((cell) => {
       if (cell.owner?.playerId === playerId) {
+        if (surrenderBeneficiary) {
+          cell.owner = surrenderBeneficiary;
+          if (cell.terrain === Terrain.GENERAL) {
+            cell.terrain = Terrain.CITY;
+          }
+          return;
+        }
+
         cell.owner = null;
         this.onCellNeutralized(cell);
       }
@@ -116,6 +125,23 @@ export abstract class BaseGame implements IBaseGame {
 
     this.checkGameEnd();
     return true;
+  }
+
+  private pickSurrenderBeneficiary(playerId: string): IPlayer | null {
+    const player = this.players.get(playerId);
+    if (!player) return null;
+
+    const teammates = player.team.players.filter(
+      (teammate) =>
+        teammate.playerId !== playerId &&
+        teammate.status === PlayerStatus.ACTIVE,
+    );
+    if (teammates.length === 0) {
+      return null;
+    }
+
+    const index = Math.floor(Math.random() * teammates.length);
+    return teammates[index] ?? null;
   }
 
   /**

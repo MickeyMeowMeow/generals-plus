@@ -43,6 +43,7 @@ export class MatchRoom extends Room<{
   metadata: RoomData;
 }> {
   private game: IBaseGame | undefined;
+  private isRatedMatch = true;
   private sessionToPlayerId = new Map<string, string>();
   private playerToSessionId = new Map<string, string>();
 
@@ -52,9 +53,12 @@ export class MatchRoom extends Room<{
       throw new Error("[MatchRoom] Invalid room metadata");
     }
 
+    await this.setMetadata(metadata);
+
     if (!metadata.isPublic) {
       await this.setPrivate(true);
     }
+    this.isRatedMatch = metadata.isPublic !== false;
 
     this.maxClients = metadata.playerInit.length;
 
@@ -352,6 +356,10 @@ export class MatchRoom extends Room<{
   private finishMatch(result: IGameResult) {
     this.state.status = GameStatus.FINISHED;
     this.broadcast(MatchServerMessage.GAME_END, result);
+
+    // Skip rating updates for custom rooms
+    if (this.metadata.isCustomRoom) return;
+
     this.updateRatings(result).catch((err) => {
       logger.error(`[MatchRoom] Failed to update ratings: ${err}`);
     });
@@ -476,6 +484,10 @@ export class MatchRoom extends Room<{
   }
 
   private async updateRatings(result: IGameResult) {
+    if (!this.isRatedMatch) {
+      return;
+    }
+
     const players = Array.from(this.state.players.values());
     if (players.length < 2) return;
 

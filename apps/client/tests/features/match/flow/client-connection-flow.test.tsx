@@ -1233,17 +1233,43 @@ describe("client room flows", () => {
     });
   });
 
-  it("shows a clear error for unavailable custom rooms", async () => {
+  it("shows a clear error for invalid custom room links", async () => {
     networkMocks.resolveCustomRoom.mockRejectedValue(
-      new Error("room not found"),
+      new HttpRequestError(
+        400,
+        `Room id must be ${CUSTOM_ROOM_KEY_MIN_LENGTH} - ${CUSTOM_ROOM_KEY_MAX_LENGTH} characters.`,
+      ),
     );
 
-    renderRoute("/match/missing-room", auth());
+    renderRoute("/match/abc", auth());
 
     expect(
       await screen.findByRole("heading", { name: "Room unavailable" }),
     ).toBeTruthy();
-    expect(screen.getByText(/room not found/)).toBeTruthy();
+    expect(screen.getByText(/Room id must be/)).toBeTruthy();
+  });
+
+  it("shows a dedicated full-room error for custom rooms", async () => {
+    networkMocks.resolveCustomRoom.mockRejectedValue(
+      new HttpRequestError(
+        409,
+        "Room is full. Ask the host for more capacity.",
+      ),
+    );
+
+    renderRoute("/match/full-room", auth());
+
+    expect(
+      await screen.findByRole("heading", { name: "Room unavailable" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Room is full. Ask the host for more capacity."),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(
+        /Check the shared URL or ask the host for a fresh room link./,
+      ),
+    ).toBeNull();
   });
 
   it("shows a disconnect dialog when the active match room drops", async () => {

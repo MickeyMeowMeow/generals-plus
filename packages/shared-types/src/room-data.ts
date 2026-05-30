@@ -27,6 +27,7 @@ export interface RoomData {
   game: IBaseGame;
   playerInit: PlayerInit[];
   isPublic?: boolean;
+  isCustomRoom?: boolean;
   tickInterval?: number;
   finishTick?: number;
   targetScore?: number;

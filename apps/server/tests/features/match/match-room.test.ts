@@ -1149,4 +1149,48 @@ describe("MatchRoom", () => {
       expect(ratingMocks.updateRatings).not.toHaveBeenCalled();
     });
   });
+
+  it("updates ratings for public matches when the game ends", async () => {
+    ratingMocks.getRating.mockClear();
+    ratingMocks.updateRatings.mockClear();
+    ratingMocks.getRating.mockResolvedValue(1000);
+    ratingMocks.updateRatings.mockResolvedValue(undefined);
+
+    const metadata = createValidRoomData({
+      isPublic: true,
+      game: createMockGame({
+        checkGameEnd: () => ({
+          mode: "classic",
+          winnerTeamId: "team_0",
+        }),
+      }),
+    });
+    room = await createRoom<MatchRoom>("match", { metadata });
+
+    await room.waitForNextSimulationTick();
+
+    expect(ratingMocks.getRating).toHaveBeenCalled();
+    expect(ratingMocks.updateRatings).toHaveBeenCalledOnce();
+  });
+
+  it("does not update ratings for private custom matches when the game ends", async () => {
+    ratingMocks.getRating.mockClear();
+    ratingMocks.updateRatings.mockClear();
+
+    const metadata = createValidRoomData({
+      isPublic: false,
+      game: createMockGame({
+        checkGameEnd: () => ({
+          mode: "classic",
+          winnerTeamId: "team_0",
+        }),
+      }),
+    });
+    room = await createRoom<MatchRoom>("match", { metadata });
+
+    await room.waitForNextSimulationTick();
+
+    expect(ratingMocks.getRating).not.toHaveBeenCalled();
+    expect(ratingMocks.updateRatings).not.toHaveBeenCalled();
+  });
 });
