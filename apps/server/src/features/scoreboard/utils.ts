@@ -128,6 +128,7 @@ export function syncScoreboard(
       payloadTarget.cartSize = payloadSource.cartSize;
       payloadTarget.minPushers = payloadSource.minPushers;
       payloadTarget.isContested = payloadSource.isContested;
+      payloadTarget.pushingTeamId = payloadSource.pushingTeamId ?? "";
       payloadTarget.leftTeamId = payloadSource.leftTeamId;
       payloadTarget.rightTeamId = payloadSource.rightTeamId;
       break;

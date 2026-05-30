@@ -227,6 +227,7 @@ export interface IPayloadScoreboard extends IBaseScoreboard {
   readonly cartSize: number;
   readonly minPushers: number;
   readonly isContested: boolean;
+  readonly pushingTeamId: string | null;
   readonly leftTeamId: string;
   readonly rightTeamId: string;
 }

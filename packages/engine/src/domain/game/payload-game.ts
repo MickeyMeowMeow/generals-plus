@@ -38,6 +38,7 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
   leftTeamId: string | null = null;
   rightTeamId: string | null = null;
   isContested: boolean = false;
+  pushingTeamId: string | null = null;
 
   get payloadProgress(): number {
     if (this.track.length <= 1) return 0.5;
@@ -225,15 +226,19 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
 
     super.nextTick();
 
+    // 1. Evaluate push conditions immediately every single tick so UI shows "Moving by Team X" or "Stopped" in real-time.
+    this.evaluateCartPushingStatus();
+
+    // 2. Controlled cart movement shifting still only executes at the speed frequency tick interval.
     const speedTicks = Math.max(1, Math.round(this.payloadSpeedTicks));
     if (this.tick % speedTicks === 0) {
-      this.evaluateCartPushing();
+      this.executeCartMovement();
     }
 
     this.checkGameEnd();
   }
 
-  private evaluateCartPushing(): void {
+  private evaluateCartPushingStatus(): void {
     let leftTeamCount = 0;
     let rightTeamCount = 0;
 
@@ -256,20 +261,30 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
     if (leftPushes && !rightPushes) {
       // Pushing right
       this.isContested = false;
-      if (this.cartIndex < this.track.length - 1) {
-        this.shiftCart(1);
-      }
+      this.pushingTeamId = this.leftTeamId;
     } else if (rightPushes && !leftPushes) {
       // Pushing left
       this.isContested = false;
-      if (this.cartIndex > 0) {
-        this.shiftCart(-1);
-      }
+      this.pushingTeamId = this.rightTeamId;
     } else if (leftTeamCount > 0 && rightTeamCount > 0) {
       // Both sides present but neither pushing/both pushing is contested
       this.isContested = true;
+      this.pushingTeamId = null;
     } else {
       this.isContested = false;
+      this.pushingTeamId = null;
+    }
+  }
+
+  private executeCartMovement(): void {
+    if (this.pushingTeamId === this.leftTeamId) {
+      if (this.cartIndex < this.track.length - 1) {
+        this.shiftCart(1);
+      }
+    } else if (this.pushingTeamId === this.rightTeamId) {
+      if (this.cartIndex > 0) {
+        this.shiftCart(-1);
+      }
     }
   }
 
@@ -379,6 +394,7 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
       cartSize: this.payloadCartSize,
       minPushers: this.payloadRequiredOccupied,
       isContested: this.isContested,
+      pushingTeamId: this.pushingTeamId,
       leftTeamId: this.leftTeamId ?? "",
       rightTeamId: this.rightTeamId ?? "",
     };

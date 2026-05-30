@@ -158,6 +158,7 @@ export class PayloadScoreboard extends BaseScoreboard {
   @type("number") cartSize: number = 3;
   @type("number") minPushers: number = 6;
   @type("boolean") isContested: boolean = false;
+  @type("string") pushingTeamId: string = "";
   @type("string") leftTeamId: string = "";
   @type("string") rightTeamId: string = "";
 }

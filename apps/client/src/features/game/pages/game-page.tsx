@@ -546,14 +546,11 @@ export function GamePage({ connection, source }: GamePageProps) {
         }
 
         if (gameState.mode === GameMode.PAYLOAD) {
-          const payloadScoreboard = gameState.scoreboard as PayloadScoreboard;
           timerProps = {
             currentTick: gameState.tick,
             targetTick: gameState.finishTick > 0 ? gameState.finishTick : 0,
             tickInterval: gameState.tickInterval,
-            label: payloadScoreboard.isContested
-              ? "Contested (Contested)"
-              : "Pushing Cart",
+            label: "Time remaining",
           };
         }
 

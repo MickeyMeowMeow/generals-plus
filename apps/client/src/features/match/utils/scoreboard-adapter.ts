@@ -422,9 +422,16 @@ function createPayloadModel(
     };
   });
 
+  let subtitle = "Stopped";
+  if (payloadScoreboard.isContested) {
+    subtitle = "Stopped (Contested)";
+  } else if (payloadScoreboard.pushingTeamId) {
+    subtitle = `Moving by ${formatTeamLabel(payloadScoreboard.pushingTeamId)}`;
+  }
+
   return {
     title: "Payload",
-    subtitle: payloadScoreboard.isContested ? "CONTESTED" : "PUSHING",
+    subtitle,
     columns: payloadColumns,
     groups: targetGroups.sort(
       (a, b) =>
