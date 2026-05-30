@@ -90,13 +90,6 @@ export function PayloadLayer({
         alpha: 0.85,
       });
 
-      // 2. Draw small glowing node dots along the track
-      for (const p of trackPoints) {
-        g.circle(p.pixelX, p.pixelY, 4.5);
-        g.fill({ color: 0x0284c7, alpha: 0.9 });
-        g.stroke({ width: 1, color: 0x38bdf8 });
-      }
-
       // 3. Draw Checkered/Glowing Gate zones at the start and end of the track
       // Left Base / Start of track (Index 0)
       const pStart = trackPoints[0];
@@ -105,6 +98,7 @@ export function PayloadLayer({
       g.fill({ color: 0xf43f5e, alpha: 0.25 });
       g.circle(pStart.pixelX, pStart.pixelY, 6);
       g.stroke({ width: 1.5, color: 0xf43f5e, alpha: 0.9 });
+      g.fill({ color: 0xf43f5e, alpha: 0.9 });
 
       // Right Base / End of track (Index Length - 1)
       const pEnd = trackPoints[trackPoints.length - 1];
@@ -113,6 +107,7 @@ export function PayloadLayer({
       g.fill({ color: 0x10b981, alpha: 0.25 });
       g.circle(pEnd.pixelX, pEnd.pixelY, 6);
       g.stroke({ width: 1.5, color: 0x10b981, alpha: 0.9 });
+      g.fill({ color: 0x10b981, alpha: 0.9 });
 
       // 4. Highlight KxK Cart Bounding Cells
       for (const coord of cartCoordinates) {
@@ -122,7 +117,7 @@ export function PayloadLayer({
           alpha: 0.15,
         });
         g.stroke({
-          width: 1.5,
+          width: 3,
           color: 0x38bdf8, // Sky light highlight
           alpha: 0.8,
         });
