@@ -53,6 +53,8 @@ export class MatchRoom extends Room<{
       throw new Error("[MatchRoom] Invalid room metadata");
     }
 
+    await this.setMetadata(metadata);
+
     if (!metadata.isPublic) {
       await this.setPrivate(true);
     }
@@ -354,6 +356,10 @@ export class MatchRoom extends Room<{
   private finishMatch(result: IGameResult) {
     this.state.status = GameStatus.FINISHED;
     this.broadcast(MatchServerMessage.GAME_END, result);
+
+    // Skip rating updates for custom rooms
+    if (this.metadata.isCustomRoom) return;
+
     this.updateRatings(result).catch((err) => {
       logger.error(`[MatchRoom] Failed to update ratings: ${err}`);
     });

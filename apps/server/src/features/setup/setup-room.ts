@@ -670,6 +670,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       game,
       playerInit,
       isPublic: false,
+      isCustomRoom: true,
       tickInterval: this.state.tickInterval,
       finishTick: isTimedMode ? this.state.finishTick : undefined,
       targetScore:
