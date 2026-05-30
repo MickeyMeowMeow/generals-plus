@@ -90,6 +90,7 @@ export function updateRenderGrid(
         newVision.item_type !== -1
           ? { id: newVision.item_id, type: newVision.item_type }
           : null,
+      willCollapse: newVision.willCollapse,
     };
   };
 
