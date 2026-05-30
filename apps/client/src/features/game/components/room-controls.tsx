@@ -79,6 +79,22 @@ export function RoomPlayerList({
         ),
     })) ?? [];
 
+  const renderIdentityIcon = (
+    player: RoomPlayer,
+    isCurrent: boolean,
+    className = "ml-[-5px] size-3.5 shrink-0 text-game-text-dim",
+  ) => {
+    if (showHost && player.isHost) {
+      return <Crown className={className} strokeWidth={2.5} />;
+    }
+
+    if (isCurrent) {
+      return <UserRound className={className} strokeWidth={2.5} />;
+    }
+
+    return null;
+  };
+
   const resetDragState = useCallback(() => {
     dragPointerId.current = null;
     dragStartPoint.current = null;
@@ -203,18 +219,7 @@ export function RoomPlayerList({
             style={{ backgroundColor: colorToHex(player.color) }}
           />
           <span className="truncate">{player.displayName}</span>
-          {isCurrent && (!showHost || !player.isHost) ? (
-            <UserRound
-              className="ml-[-5px] size-3.5 shrink-0 text-game-text-dim"
-              strokeWidth={2.5}
-            />
-          ) : null}
-          {showHost && player.isHost ? (
-            <Crown
-              className="ml-[-5px] size-3.5 shrink-0 text-game-text-dim"
-              strokeWidth={2.5}
-            />
-          ) : null}
+          {renderIdentityIcon(player, isCurrent)}
         </span>
         {aside ? (
           <span className="absolute right-0 top-1/2 -translate-y-1/2 shrink-0">
@@ -334,10 +339,11 @@ export function RoomPlayerList({
                 backgroundColor: colorToHex(draggingPlayer.color),
               }}
             />
-            <Crown
-              className="mr-[-5px] size-3.5 shrink-0 text-game-text-dim"
-              strokeWidth={2.5}
-            />
+            {renderIdentityIcon(
+              draggingPlayer,
+              draggingPlayer.id === currentUserId,
+              "mr-[-5px] size-3.5 shrink-0 text-game-text-dim",
+            )}
             <span>{draggingPlayer.displayName}</span>
           </span>
         </div>
