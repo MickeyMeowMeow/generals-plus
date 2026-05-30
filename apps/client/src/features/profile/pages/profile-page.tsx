@@ -8,7 +8,7 @@ import {
   DEFAULT_USER_PREFERENCES,
 } from "@generals-plus/shared-types";
 import { ArrowLeft, Save } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
@@ -26,6 +26,11 @@ type BackgroundValue = BackgroundPresetId | "customUrl";
 export function ProfilePage() {
   const user = useUser();
   const { actions } = useAuth();
+
+  useEffect(() => {
+    void actions.refreshUser();
+  }, [actions]);
+
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
   const [backgroundImage, setBackgroundImage] =
     useState<BackgroundImagePreference>(

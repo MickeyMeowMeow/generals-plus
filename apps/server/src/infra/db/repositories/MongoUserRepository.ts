@@ -26,6 +26,14 @@ export class MongoUserRepository implements IUserRepository {
     };
   }
 
+  async findById(id: string): Promise<IUser | null> {
+    const user = await UserModel.findById(id).exec();
+    if (!user) {
+      return null;
+    }
+    return this.mapToEntity(user);
+  }
+
   async findByEmail(email: string): Promise<IUser | null> {
     const user = await UserModel.findOne({ email }).exec();
     if (!user) {

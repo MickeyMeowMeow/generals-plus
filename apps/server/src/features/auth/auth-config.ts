@@ -83,9 +83,22 @@ auth.settings.onEmailConfirmed = async (email: string) => {
   return await userRepository.verifyEmail(email);
 };
 
-// Filter user data before sending to client (remove password, expose ratings)
+// Return fresh user data from the database instead of stale JWT payload.
+// This ensures fields like ratings are always up-to-date on page load.
 auth.settings.onParseToken = async (data: Record<string, unknown>) => {
-  const { password: _, ...safeData } = data;
+  const userId = data.id as string;
+  if (!userId) {
+    const { password: _, ...safeData } = data;
+    return safeData;
+  }
+
+  const user = await userRepository.findById(userId);
+  if (!user) {
+    const { password: _, ...safeData } = data;
+    return safeData;
+  }
+
+  const { password: _, ...safeData } = user;
   return safeData;
 };
 

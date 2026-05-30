@@ -30,6 +30,7 @@ export interface UserProfileUpdate {
  * Decouples the Auth logic from the specific database implementation (MongoDB).
  */
 export interface IUserRepository {
+  findById(id: string): Promise<IUser | null>;
   findByEmail(email: string): Promise<IUser | null>;
   createWithEmailAndPassword(
     email: string,

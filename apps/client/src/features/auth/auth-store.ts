@@ -85,6 +85,12 @@ export interface AuthActions {
   updateUserProfile(update: Partial<UserProfile>): Promise<void>;
 
   /**
+   * Re-fetches the current user data from the server and updates the auth state.
+   * Useful when navigating to a page that needs fresh data (e.g. ratings).
+   */
+  refreshUser(): Promise<void>;
+
+  /**
    * Manually clears the active error state, returning the status to IDLE.
    */
   clearError(): void;

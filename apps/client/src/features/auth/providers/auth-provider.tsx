@@ -336,16 +336,8 @@ export function AuthProvider({
 
   const updateUserProfile = useCallback(
     async (update: Partial<UserProfile>) => {
-      try {
-        const user = await provider.updateUserProfile(update);
-        dispatch({ type: "PROFILE_UPDATED", user });
-      } catch (error) {
-        dispatch({
-          type: "ERROR",
-          error: normalizeError(error, "Failed to update profile."),
-        });
-        throw error;
-      }
+      const user = await provider.updateUserProfile(update);
+      dispatch({ type: "PROFILE_UPDATED", user });
     },
     [provider],
   );
@@ -353,6 +345,15 @@ export function AuthProvider({
   const clearError = useCallback(() => {
     dispatch({ type: "CLEAR_ERROR" });
   }, []);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const user = await provider.getUserData();
+      dispatch({ type: "PROFILE_UPDATED", user });
+    } catch {
+      // Silently ignore — existing user data remains valid.
+    }
+  }, [provider]);
 
   const actions = useMemo(
     () => ({
@@ -362,6 +363,7 @@ export function AuthProvider({
       signInAnonymously,
       signOut,
       updateUserProfile,
+      refreshUser,
       clearError,
     }),
     [
@@ -371,6 +373,7 @@ export function AuthProvider({
       signInAnonymously,
       signOut,
       updateUserProfile,
+      refreshUser,
       clearError,
     ],
   );
