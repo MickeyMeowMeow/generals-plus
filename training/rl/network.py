@@ -1,24 +1,27 @@
 """
-CNN + LSTM Recurrent Policy-Value Network for Generals Plus.
+U-Net Policy-Value Network for Generals Plus.
 
-Architecture:
-    Spatial obs (9, H, W)  → CNN backbone → spatial features (flat vector)
-                                                              │
-                                                              ├─ concat → LSTM → value head
-                                                              │                  │
-    Scoreboard scalars ──────→ scalar projection ────────────┘                  │
-                                                                                 │
-    LSTM hidden ──→ tanh projection → broadcast-add to CNN feature map           │
-                                                              │                  │
-                                                       policy head               │
-                                                       (action logits)           │
+Architecture (following paper's U-Net design):
+  Input: (16, H, W) — 9 obs channels + 7 memory channels
+    │
+    ├─ Encoder Block 1: Conv(16→64, 3, pad=1) + ReLU → skip_1
+    ├─ MaxPool2d(2)
+    ├─ Encoder Block 2: Conv(64→128, 3, pad=1) + ReLU → skip_2
+    ├─ MaxPool2d(2)
+    │
+    ├─ Bottleneck: Conv(128→256, 3, pad=1) + ReLU
+    │
+    ├─ Upsample + Conv(256→128, 1) + Cat(skip_2) → Conv(256→128, 3) + ReLU
+    ├─ Upsample + Conv(128→64, 1)  + Cat(skip_1) → Conv(128→64, 3)  + ReLU
+    │
+    ├─ Policy head: Conv(64→9, 1) → (H, W, 9) logits
+    └─ Value head: AdaptiveAvgPool(2,2) → FC → FC(1)
 
-    Policy head: uses CNN spatial features MODULATED by LSTM hidden state
-                 (enables memory-aware action selection)
-    Value head:  uses LSTM hidden state (temporal context)
-
-Supports variable grid sizes via adaptive average pooling.
-Processes ONE frame per call — LSTM state is carried externally.
+Variable grid size support:
+  - Conv with padding=1 preserves spatial dims
+  - Bilinear upsample restores spatial dims
+  - AdaptiveAvgPool for grid-size-agnostic value head
+  - Requires H and W divisible by 4 (pad if needed)
 """
 
 from typing import Optional, Tuple
@@ -29,261 +32,259 @@ import jax.random as jrandom
 import equinox as eqx
 
 
-class RecurrentPolicyValueNetwork(eqx.Module):
-    """CNN + LSTM policy-value network for Generals Plus RL agent.
+class UNetPolicyValueNetwork(eqx.Module):
+    """
+    U-Net policy-value network with skip connections.
 
-    Single-frame interface: each call processes one spatial+scalar observation
-    through the CNN backbone and LSTM cell. The caller is responsible for
-    maintaining the LSTM hidden state across timesteps.
+    No LSTM, no scalar projection — memory channels encode temporal info.
+    Fully feedforward: single forward pass per frame, no state to carry.
     """
 
-    # CNN backbone
-    conv1: eqx.nn.Conv2d
-    conv2: eqx.nn.Conv2d
-    conv3: eqx.nn.Conv2d
-    conv4: eqx.nn.Conv2d
-    pool: eqx.nn.AdaptiveAvgPool2d
+    # Encoder block 1
+    enc1_conv: eqx.nn.Conv2d
 
-    # Spatial feature projection
-    spatial_linear: eqx.nn.Linear
+    # Encoder block 2
+    enc2_conv: eqx.nn.Conv2d
 
-    # Scalar projection
-    scalar_linear: eqx.nn.Linear
+    # Bottleneck
+    bot_conv: eqx.nn.Conv2d
 
-    # LSTM
-    lstm_cell: eqx.nn.LSTMCell
+    # Decoder block 2
+    dec2_up_conv: eqx.nn.Conv2d   # 1x1 conv after upsample
+    dec2_conv: eqx.nn.Conv2d
 
-    # LSTM-to-policy modulation: hidden_dim → channels[-1]
-    lstm_to_policy: eqx.nn.Linear
+    # Decoder block 1
+    dec1_up_conv: eqx.nn.Conv2d   # 1x1 conv after upsample
+    dec1_conv: eqx.nn.Conv2d
 
-    # Policy head (spatial — operates on modulated CNN feature maps)
-    policy_conv: eqx.nn.Conv2d  # → 9 channels (4 dirs + 4 split dirs + 1 pass)
+    # Policy head
+    policy_conv: eqx.nn.Conv2d   # 64 → 9
 
-    # Value head (from LSTM hidden state)
-    value_linear1: eqx.nn.Linear
-    value_linear2: eqx.nn.Linear
+    # Value head
+    value_pool: eqx.nn.AdaptiveAvgPool2d
+    value_fc1: eqx.nn.Linear
+    value_fc2: eqx.nn.Linear
 
-    def __init__(
-        self,
-        key: jnp.ndarray,
-        grid_size: int = 10,
-        channels: tuple[int, ...] = (32, 32, 32, 16),
-        hidden_dim: int = 128,
-        scalar_dim: int = 6,
-    ):
-        keys = jrandom.split(key, 11)
-
-        # CNN backbone — 4 conv layers with 3x3 kernels and padding
-        self.conv1 = eqx.nn.Conv2d(9, channels[0], kernel_size=3, padding=1, key=keys[0])
-        self.conv2 = eqx.nn.Conv2d(channels[0], channels[1], kernel_size=3, padding=1, key=keys[1])
-        self.conv3 = eqx.nn.Conv2d(channels[1], channels[2], kernel_size=3, padding=1, key=keys[2])
-        self.conv4 = eqx.nn.Conv2d(channels[2], channels[3], kernel_size=3, padding=1, key=keys[3])
-
-        # Adaptive pooling to a fixed spatial size for variable grid support
-        self.pool = eqx.nn.AdaptiveAvgPool2d((2, 2))
-
-        # Spatial feature projection: channels[3] * 2 * 2 → hidden_dim
-        self.spatial_linear = eqx.nn.Linear(channels[3] * 4, hidden_dim, key=keys[4])
-
-        # Scalar projection
-        self.scalar_linear = eqx.nn.Linear(scalar_dim, hidden_dim, key=keys[5])
-
-        # LSTM cell: input = concat(spatial_features, scalar_features)
-        self.lstm_cell = eqx.nn.LSTMCell(hidden_dim * 2, hidden_dim, key=keys[6])
-
-        # LSTM-to-policy modulation: project hidden state to feature-map channels
-        self.lstm_to_policy = eqx.nn.Linear(hidden_dim, channels[3], key=keys[7])
-
-        # Policy head: from modulated CNN features → 9-channel spatial logits
-        self.policy_conv = eqx.nn.Conv2d(channels[3], 9, kernel_size=1, key=keys[8])
-
-        # Value head: from LSTM hidden → scalar value
-        self.value_linear1 = eqx.nn.Linear(hidden_dim, 64, key=keys[9])
-        self.value_linear2 = eqx.nn.Linear(64, 1, key=keys[10])
-
-    def _cnn_features(self, obs: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    def __init__(self, key: jnp.ndarray, grid_size: int = 10):
         """
-        Run CNN backbone on a single spatial observation.
+        Args:
+            key: JAX random key.
+            grid_size: Hint for buffer sizing (network is grid-size agnostic).
+        """
+        keys = jrandom.split(key, 10)
+
+        # Encoder block 1: 16 → 64
+        self.enc1_conv = eqx.nn.Conv2d(16, 64, kernel_size=3, padding=1, key=keys[0])
+
+        # Encoder block 2: 64 → 128
+        self.enc2_conv = eqx.nn.Conv2d(64, 128, kernel_size=3, padding=1, key=keys[1])
+
+        # Bottleneck: 128 → 256
+        self.bot_conv = eqx.nn.Conv2d(128, 256, kernel_size=3, padding=1, key=keys[2])
+
+        # Decoder block 2: 256 → 128, cat with skip_2 → 256 → 128
+        self.dec2_up_conv = eqx.nn.Conv2d(256, 128, kernel_size=1, key=keys[3])
+        self.dec2_conv = eqx.nn.Conv2d(256, 128, kernel_size=3, padding=1, key=keys[4])
+
+        # Decoder block 1: 128 → 64, cat with skip_1 → 128 → 64
+        self.dec1_up_conv = eqx.nn.Conv2d(128, 64, kernel_size=1, key=keys[5])
+        self.dec1_conv = eqx.nn.Conv2d(128, 64, kernel_size=3, padding=1, key=keys[6])
+
+        # Policy head: 64 → 9
+        self.policy_conv = eqx.nn.Conv2d(64, 9, kernel_size=1, key=keys[7])
+
+        # Value head: adaptive pool → FC
+        self.value_pool = eqx.nn.AdaptiveAvgPool2d((2, 2))
+        self.value_fc1 = eqx.nn.Linear(256 * 4, 128, key=keys[8])
+        self.value_fc2 = eqx.nn.Linear(128, 1, key=keys[9])
+
+    def _downsample(self, x: jnp.ndarray) -> jnp.ndarray:
+        """MaxPool 2x downsampling: (C, H, W) → (C, ceil(H/2), ceil(W/2))."""
+        C, H, W = x.shape
+        # Pad if odd dimensions
+        pad_h = H % 2
+        pad_w = W % 2
+        if pad_h or pad_w:
+            x = jnp.pad(x, ((0, 0), (0, pad_h), (0, pad_w)), mode="constant", constant_values=-jnp.inf)
+            H_new, W_new = H + pad_h, W + pad_w
+        else:
+            H_new, W_new = H, W
+        x = x.reshape(C, H_new // 2, 2, W_new // 2, 2)
+        return x.max(axis=(2, 4))
+
+    def _upsample(self, x: jnp.ndarray, target_h: int, target_w: int) -> jnp.ndarray:
+        """Bilinear 2x upsampling to target size."""
+        return jax.image.resize(x, (x.shape[0], target_h, target_w), method="bilinear")
+
+    def _unet_forward(self, obs: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+        """
+        Run U-Net encoder-decoder.
 
         Args:
-            obs: shape (9, H, W)
+            obs: (16, H, W) input tensor.
 
         Returns:
-            spatial_vector: shape (hidden_dim,) — for LSTM input (no modulation)
-            feature_map: shape (channels[3], H, W) — for policy head (no modulation)
+            features: (64, H, W) decoder output for policy head.
+            value_input: (1024,) bottleneck pooled for value head.
         """
-        x = jax.nn.relu(self.conv1(obs))
-        x = jax.nn.relu(self.conv2(x))
-        x = jax.nn.relu(self.conv3(x))
-        feature_map = jax.nn.relu(self.conv4(x))
+        C_in, H, W = obs.shape
 
-        # Adaptive pool + flatten for LSTM
-        pooled = self.pool(feature_map)
-        flat = pooled.reshape(-1)
-        spatial_vector = jax.nn.relu(self.spatial_linear(flat))
+        # Encoder block 1
+        skip1 = jax.nn.relu(self.enc1_conv(obs))      # (64, H, W)
+        pool1 = self._downsample(skip1)                # (64, H//2, W//2)
 
-        return spatial_vector, feature_map
+        # Encoder block 2
+        skip2 = jax.nn.relu(self.enc2_conv(pool1))     # (128, H//2, W//2)
+        pool2 = self._downsample(skip2)                # (128, H//4, W//4)
 
-    def _modulate_feature_map(
-        self, feature_map: jnp.ndarray, lstm_h: jnp.ndarray
+        # Bottleneck
+        bot = jax.nn.relu(self.bot_conv(pool2))        # (256, H//4, W//4)
+
+        # Value head input from bottleneck
+        value_pooled = self.value_pool(bot).reshape(-1) # (256*4,)
+
+        # Decoder block 2
+        up2 = self._upsample(self.dec2_up_conv(bot), skip2.shape[1], skip2.shape[2])
+        cat2 = jnp.concatenate([up2, skip2], axis=0)   # (256, H//2, W//2)
+        dec2 = jax.nn.relu(self.dec2_conv(cat2))       # (128, H//2, W//2)
+
+        # Decoder block 1
+        up1 = self._upsample(self.dec1_up_conv(dec2), skip1.shape[1], skip1.shape[2])
+        cat1 = jnp.concatenate([up1, skip1], axis=0)   # (128, H, W)
+        features = jax.nn.relu(self.dec1_conv(cat1))   # (64, H, W)
+
+        return features, value_pooled
+
+    def _apply_policy_mask(
+        self, logits: jnp.ndarray, mask: jnp.ndarray
     ) -> jnp.ndarray:
-        """Broadcast-add LSTM hidden context to the CNN feature map.
-
-        Uses tanh to bound the modulation to [-1, 1] so the LSTM can't
-        overwhelm the spatial features.
         """
-        modulation = jax.nn.tanh(self.lstm_to_policy(lstm_h))  # (C,)
-        return feature_map + modulation[:, None, None]  # (C, H, W)
-
-    def forward(
-        self,
-        spatial: jnp.ndarray,
-        scalar: jnp.ndarray,
-        lstm_state: Optional[Tuple[jnp.ndarray, jnp.ndarray]],
-        mask: jnp.ndarray,
-        key: jnp.ndarray,
-        action: Optional[jnp.ndarray] = None,
-    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, Tuple[jnp.ndarray, jnp.ndarray]]:
-        """
-        Single-frame forward pass through CNN + LSTM.
+        Apply valid move mask to logits and return flat logits.
 
         Args:
-            spatial:     (9, H, W) — current spatial observation
-            scalar:      (scalar_dim,) — current scoreboard scalars
-            lstm_state:  ((h,), (c,)) or None — LSTM hidden state from previous step
-            mask:        (H, W, 4) — valid move mask for the current frame
-            key:         JAX random key for action sampling
-            action:      If provided, evaluate this action. Otherwise sample.
+            logits: (9, H, W) raw policy logits.
+            mask: (H, W, 4) valid move mask.
 
         Returns:
-            (action, value, log_prob, entropy, new_lstm_state)
+            logits_flat: (9 * H * W,) masked logits.
         """
-        hidden_dim = self.lstm_cell.hidden_size
-
-        # Initialize LSTM state if not provided
-        if lstm_state is None:
-            h0 = jnp.zeros(hidden_dim)
-            c0 = jnp.zeros(hidden_dim)
-            lstm_state = (h0, c0)
-
-        # CNN backbone on single frame
-        spatial_vec, feature_map = self._cnn_features(spatial)  # no modulation
-
-        # Scalar projection
-        scalar_vec = jax.nn.relu(self.scalar_linear(scalar))
-
-        # LSTM step
-        lstm_input = jnp.concatenate([spatial_vec, scalar_vec])
-        new_lstm_state = self.lstm_cell(lstm_input, lstm_state)
-
-        # Value from new LSTM hidden state
-        new_h = new_lstm_state[0]
-        value_hidden = jax.nn.relu(self.value_linear1(new_h))
-        value = self.value_linear2(value_hidden)[0]
-
-        # Policy from CNN feature map modulated by new LSTM hidden state
-        modulated_feat = self._modulate_feature_map(feature_map, new_h)
-        logits = self.policy_conv(modulated_feat)  # (9, H, W)
-        grid_size = logits.shape[-1]
-
-        # Apply valid move mask
+        H, W = mask.shape[0], mask.shape[1]
         mask_t = jnp.transpose(mask, (2, 0, 1))  # (4, H, W)
         mask_penalty = (1 - mask_t) * -1e9
         combined_mask = jnp.concatenate([
             mask_penalty,  # 4 directions
             mask_penalty,  # 4 split-move directions
-            jnp.zeros((1, grid_size, grid_size)),  # pass action
+            jnp.zeros((1, H, W)),  # pass action
         ], axis=0)
-        logits_flat = (logits + combined_mask).reshape(-1)
+        return (logits + combined_mask).reshape(-1)
 
-        grid_cells = grid_size * grid_size
-
-        if action is None:
-            # Sample action
-            idx = jrandom.categorical(key, logits_flat)
-            direction, position = idx // grid_cells, idx % grid_cells
-            row, col = position // grid_size, position % grid_size
-            is_pass = direction == 8
-            is_half = (direction >= 4) & (direction < 8)
-            actual_dir = jnp.where(is_pass, 0, jnp.where(is_half, direction - 4, direction))
-            action = jnp.array([is_pass, row, col, actual_dir, is_half], dtype=jnp.int32)
-        else:
-            # Compute index from provided action
-            is_pass, row, col, direction, is_half = action
-            encoded_dir = jnp.where(is_pass > 0, 8, jnp.where(is_half > 0, direction + 4, direction))
-            idx = encoded_dir * grid_cells + row * grid_size + col
-
-        # Log probability and entropy
-        log_probs = jax.nn.log_softmax(logits_flat)
-        logprob = log_probs[idx]
-        probs = jax.nn.softmax(logits_flat)
-        entropy = -jnp.sum(probs * log_probs)
-
-        return action, value, logprob, entropy, new_lstm_state
-
-    def inference(
-        self,
-        spatial: jnp.ndarray,
-        scalar: jnp.ndarray,
-        lstm_state: Optional[Tuple[jnp.ndarray, jnp.ndarray]],
-        mask: jnp.ndarray,
-        key: Optional[jnp.ndarray] = None,
-    ) -> Tuple[jnp.ndarray, Tuple[jnp.ndarray, jnp.ndarray]]:
-        """
-        Single-frame inference-only forward pass.
-
-        Args:
-            spatial:     (9, H, W)
-            scalar:      (scalar_dim,)
-            lstm_state:  ((h,), (c,)) or None
-            mask:        (H, W, 4) valid move mask
-            key:         optional JAX key (defaults to deterministic argmax if None)
-
-        Returns:
-            (action, new_lstm_state)
-        """
-        if key is None:
-            key = jrandom.PRNGKey(0)
-
-        hidden_dim = self.lstm_cell.hidden_size
-
-        if lstm_state is None:
-            h0 = jnp.zeros(hidden_dim)
-            c0 = jnp.zeros(hidden_dim)
-            lstm_state = (h0, c0)
-
-        # CNN backbone
-        spatial_vec, feature_map = self._cnn_features(spatial)
-
-        # Scalar projection
-        scalar_vec = jax.nn.relu(self.scalar_linear(scalar))
-
-        # LSTM step
-        lstm_input = jnp.concatenate([spatial_vec, scalar_vec])
-        new_lstm_state = self.lstm_cell(lstm_input, lstm_state)
-
-        # Policy from modulated feature map
-        new_h = new_lstm_state[0]
-        modulated_feat = self._modulate_feature_map(feature_map, new_h)
-        logits = self.policy_conv(modulated_feat)
-
-        grid_size = logits.shape[-1]
-        mask_t = jnp.transpose(mask, (2, 0, 1))
-        mask_penalty = (1 - mask_t) * -1e9
-        combined_mask = jnp.concatenate([
-            mask_penalty,
-            mask_penalty,
-            jnp.zeros((1, grid_size, grid_size)),
-        ], axis=0)
-        logits_flat = (logits + combined_mask).reshape(-1)
-
-        grid_cells = grid_size * grid_size
+    def _sample_action(
+        self, logits_flat: jnp.ndarray, H: int, W: int, key: jnp.ndarray,
+    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+        """Sample action from flat logits. Returns (action, logprob, entropy)."""
+        grid_cells = H * W
         idx = jrandom.categorical(key, logits_flat)
-        direction, position = idx // grid_cells, idx % grid_cells
-        row, col = position // grid_size, position % grid_size
+        direction = idx // grid_cells
+        position = idx % grid_cells
+        row = position // W
+        col = position % W
         is_pass = direction == 8
         is_half = (direction >= 4) & (direction < 8)
         actual_dir = jnp.where(is_pass, 0, jnp.where(is_half, direction - 4, direction))
         action = jnp.array([is_pass, row, col, actual_dir, is_half], dtype=jnp.int32)
 
-        return action, new_lstm_state
+        log_probs = jax.nn.log_softmax(logits_flat)
+        logprob = log_probs[idx]
+        probs = jax.nn.softmax(logits_flat)
+        entropy = -jnp.sum(probs * log_probs)
+
+        return action, logprob, entropy
+
+    def _action_to_idx(self, action: jnp.ndarray, H: int, W: int) -> jnp.ndarray:
+        """Convert action array to flat index for logprob lookup."""
+        grid_cells = H * W
+        is_pass, row, col, direction, is_half = action
+        encoded_dir = jnp.where(is_pass > 0, 8, jnp.where(is_half > 0, direction + 4, direction))
+        return encoded_dir * grid_cells + row * W + col
+
+    def __call__(
+        self,
+        obs_16ch: jnp.ndarray,
+        mask: jnp.ndarray,
+        key: jnp.ndarray,
+        action: Optional[jnp.ndarray] = None,
+    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+        """
+        Forward pass for training: returns (action, value, logprob, entropy).
+
+        Args:
+            obs_16ch: (16, H, W) observation + memory channels.
+            mask: (H, W, 4) valid move mask.
+            key: JAX random key for action sampling.
+            action: If provided, evaluate this action. Otherwise sample.
+
+        Returns:
+            (action, value, logprob, entropy)
+        """
+        features, value_pooled = self._unet_forward(obs_16ch)
+
+        # Policy head
+        logits = self.policy_conv(features)  # (9, H, W)
+        H, W = logits.shape[1], logits.shape[2]
+        logits_flat = self._apply_policy_mask(logits, mask)
+
+        # Sample or evaluate action
+        if action is None:
+            action, logprob, entropy = self._sample_action(logits_flat, H, W, key)
+        else:
+            idx = self._action_to_idx(action, H, W)
+            log_probs = jax.nn.log_softmax(logits_flat)
+            logprob = log_probs[idx]
+            probs = jax.nn.softmax(logits_flat)
+            entropy = -jnp.sum(probs * log_probs)
+
+        # Value head
+        value_hidden = jax.nn.relu(self.value_fc1(value_pooled))
+        value = self.value_fc2(value_hidden)[0]
+
+        return action, value, logprob, entropy
+
+    def inference(
+        self,
+        obs_16ch: jnp.ndarray,
+        mask: jnp.ndarray,
+        key: Optional[jnp.ndarray] = None,
+    ) -> Tuple[jnp.ndarray, jnp.ndarray]:
+        """
+        Inference-only forward pass for deployment.
+
+        Args:
+            obs_16ch: (16, H, W) observation + memory channels.
+            mask: (H, W, 4) valid move mask.
+            key: Optional JAX key (defaults to deterministic argmax).
+
+        Returns:
+            (action, value)
+        """
+        features, value_pooled = self._unet_forward(obs_16ch)
+
+        # Policy: argmax for deterministic deployment
+        logits = self.policy_conv(features)
+        H, W = logits.shape[1], logits.shape[2]
+        logits_flat = self._apply_policy_mask(logits, mask)
+        idx = jnp.argmax(logits_flat)
+        grid_cells = H * W
+        direction = idx // grid_cells
+        position = idx % grid_cells
+        row = position // W
+        col = position % W
+        is_pass = direction == 8
+        is_half = (direction >= 4) & (direction < 8)
+        actual_dir = jnp.where(is_pass, 0, jnp.where(is_half, direction - 4, direction))
+        action = jnp.array([is_pass, row, col, actual_dir, is_half], dtype=jnp.int32)
+
+        # Value
+        value_hidden = jax.nn.relu(self.value_fc1(value_pooled))
+        value = self.value_fc2(value_hidden)[0]
+
+        return action, value

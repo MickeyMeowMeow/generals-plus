@@ -12,5 +12,5 @@ from .types import GameState, GameInfo, Observation
 from .action import compute_valid_move_mask
 from .game import step, get_observation, create_initial_state
 from .env import GeneralsEnv
-from .rewards import composite_reward_fn
+from .rewards import potential_based_reward
 from .grid import generate_grid
