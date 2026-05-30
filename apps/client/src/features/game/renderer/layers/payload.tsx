@@ -1,7 +1,7 @@
 import type { ICoordinate } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 
 import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
@@ -24,19 +24,6 @@ export function PayloadLayer({
   cartIndex,
   cartSize,
 }: PayloadLayerProps) {
-  // Setup smooth float animation for the cart core
-  const [floatOffset, setFloatOffset] = useState(0);
-
-  useEffect(() => {
-    let frameId: number;
-    const animate = () => {
-      setFloatOffset(Math.sin(Date.now() / 250) * 3.5);
-      frameId = requestAnimationFrame(animate);
-    };
-    frameId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frameId);
-  }, []);
-
   // Map track coordinates to pixel coordinates
   const trackPoints = useMemo(() => {
     if (!payloadTrackX || !payloadTrackY || payloadTrackX.length === 0) return [];
@@ -132,12 +119,12 @@ export function PayloadLayer({
         drawCell(g, grid, coord);
         g.fill({
           color: 0x0284c7, // Sky Blue fill
-          alpha: 0.14 + 0.04 * Math.sin(Date.now() / 200),
+          alpha: 0.15,
         });
         g.stroke({
           width: 1.5,
           color: 0x38bdf8, // Sky light highlight
-          alpha: 0.7 + 0.2 * Math.sin(Date.now() / 200),
+          alpha: 0.8,
         });
       }
 
@@ -145,18 +132,18 @@ export function PayloadLayer({
       const centerPoint = trackPoints[cartIndex];
       if (centerPoint) {
         const cx = centerPoint.pixelX;
-        const cy = centerPoint.pixelY + floatOffset;
+        const cy = centerPoint.pixelY;
 
         // Bouncing energy shield ring
         g.circle(cx, cy, 15);
         g.stroke({
           width: 1.5,
           color: 0xffffff,
-          alpha: 0.65 + 0.25 * Math.sin(Date.now() / 150),
+          alpha: 0.7,
         });
         g.fill({
           color: 0x0ea5e9,
-          alpha: 0.18 + 0.08 * Math.sin(Date.now() / 150),
+          alpha: 0.2,
         });
 
         // Glowing Core diamond shape
@@ -174,7 +161,7 @@ export function PayloadLayer({
         g.fill({ color: 0xffffff });
       }
     },
-    [trackPoints, cartCoordinates, cartIndex, grid, floatOffset],
+    [trackPoints, cartCoordinates, cartIndex, grid],
   );
 
   return <pixiGraphics draw={drawPayload} />;

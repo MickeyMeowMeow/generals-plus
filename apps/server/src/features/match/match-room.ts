@@ -218,6 +218,11 @@ export class MatchRoom extends Room<{
     this.game.startGame();
     this.state.status = GameStatus.PLAYING;
 
+    // Immediately synchronize the starting scoreboard and player states
+    // so client subscriptions receive the correct centered cartIndex right away.
+    this.syncPlayerState();
+    this.syncScoreboard();
+
     this.setSimulationInterval(
       (deltaTime) => this.onTick(deltaTime),
       tickInterval,

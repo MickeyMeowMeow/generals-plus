@@ -84,12 +84,13 @@ export abstract class AbstractGridGenerator<
       const height = terrainGrid.gridType === "square" ? (terrainGrid as any).height : (bounds.leftSlant);
       const cy = Math.floor(height / 2);
 
-      const startX = Math.min(3, Math.floor(width / 2));
-      const endX = Math.max(startX, width - 1 - startX);
-
       const K = (config as any).payloadCartSize ?? 3;
       const startOffset = -Math.floor((K - 1) / 2);
       const endOffset = Math.floor(K / 2);
+
+      // Safe track bounds so the KxK cart never overlaps with generals at x = 1 and x = W - 2
+      const startX = Math.min(2 - startOffset, Math.floor(width / 2));
+      const endX = Math.max(startX, width - 1 - (2 - startOffset));
 
       for (let x = startX; x <= endX; x++) {
         for (let dy = startOffset; dy <= endOffset; dy++) {
@@ -123,8 +124,10 @@ export abstract class AbstractGridGenerator<
     if ((config as any).isPayload) {
       const track: ICoordinate[] = [];
       const cy = Math.floor(grid.height / 2);
-      const startX = Math.min(3, Math.floor(grid.width / 2));
-      const endX = Math.max(startX, grid.width - 1 - startX);
+      const K = (config as any).payloadCartSize ?? 3;
+      const startOffset = -Math.floor((K - 1) / 2);
+      const startX = Math.min(2 - startOffset, Math.floor(grid.width / 2));
+      const endX = Math.max(startX, grid.width - 1 - (2 - startOffset));
       for (let x = startX; x <= endX; x++) {
         track.push({ x, y: cy });
       }

@@ -258,6 +258,7 @@ export function createGame(options: CreateGameOptions): IBaseGame {
           gridType: GridType.SQUARE,
           ...options.gridOptions,
           isPayload: true,
+          payloadCartSize: options.payloadCartSize,
         } as any,
         {
           finishTick: options.finishTick,

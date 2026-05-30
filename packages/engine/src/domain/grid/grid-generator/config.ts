@@ -63,6 +63,8 @@ export const DefaultGenOptions: Omit<
 
   flagCount: 0,
   bombSiteCount: 0,
+  isPayload: false,
+  payloadCartSize: 3,
 } as const;
 
 export const DefaultGridBounds: {
