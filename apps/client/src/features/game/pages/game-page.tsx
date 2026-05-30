@@ -179,15 +179,17 @@ export function GamePage({ connection, source }: GamePageProps) {
       }
     }
 
+    // Fallback to any owned cell if no general is found
     if (!startCoord) {
-      // Fallback to any owned cell if no general is found
       for (const cell of renderGrid) {
         if (cell.ownerIndex === currentPlayer.id) {
           startCoord = cell.coordinate;
           break;
         }
       }
-    } else {
+    }
+
+    if (startCoord) {
       initialCoord.current = startCoord;
       setSelection(startCoord);
       hasInitializedRef.current = true;
