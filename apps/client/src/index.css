@@ -121,7 +121,7 @@ body {
 
 .game-stage::before {
   z-index: 0;
-  background-image: var(--stage-background-image, url("/bg.jpg"));
+  background-image: var(--stage-background-image);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;

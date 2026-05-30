@@ -311,7 +311,7 @@ export function ProfilePage() {
                 )}
               >
                 <RadioGroupItem value="customUrl" />
-                Custom
+                Custom URL
               </Label>
             </RadioGroup>
 
