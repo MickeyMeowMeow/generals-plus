@@ -1,21 +1,24 @@
 """
 U-Net Policy-Value Network for Generals Plus.
 
-Architecture (following paper's U-Net design):
+Architecture (following paper's U-Net design, channels configurable):
   Input: (24, H, W) — 9 obs channels + 15 memory channels
     │
-    ├─ Encoder Block 1: Conv(24→64, 3, pad=1) + ReLU → skip_1
+    ├─ Encoder Block 1: Conv(24→ch1, 3, pad=1) + ReLU → skip_1
     ├─ MaxPool2d(2)
-    ├─ Encoder Block 2: Conv(64→128, 3, pad=1) + ReLU → skip_2
+    ├─ Encoder Block 2: Conv(ch1→ch2, 3, pad=1) + ReLU → skip_2
     ├─ MaxPool2d(2)
     │
-    ├─ Bottleneck: Conv(128→256, 3, pad=1) + ReLU
+    ├─ Bottleneck: Conv(ch2→ch_bot, 3, pad=1) + ReLU
     │
-    ├─ Upsample + Conv(256→128, 1) + Cat(skip_2) → Conv(256→128, 3) + ReLU
-    ├─ Upsample + Conv(128→64, 1)  + Cat(skip_1) → Conv(128→64, 3)  + ReLU
+    ├─ Upsample + Conv(ch_bot→ch2, 1) + Cat(skip_2) → Conv(ch2*2→ch2, 3) + ReLU
+    ├─ Upsample + Conv(ch2→ch1, 1)   + Cat(skip_1) → Conv(ch1*2→ch1, 3) + ReLU
     │
-    ├─ Policy head: Conv(64→9, 1) → (H, W, 9) logits
-    └─ Value head: AdaptiveAvgPool(2,2) → FC → FC(1)
+    ├─ Policy head: Conv(ch1→9, 1) → (H, W, 9) logits
+    └─ Value head: AdaptiveAvgPool(2,2) → FC(ch_bot*4→128) → FC(128→1)
+
+  Default: ch1=96, ch2=192, ch_bot=384 (1.5× vs original 64/128/256).
+  Original: ch1=64, ch2=128, ch_bot=256.
 
 Variable grid size support:
   - Conv with padding=1 preserves spatial dims
@@ -38,6 +41,14 @@ class UNetPolicyValueNetwork(eqx.Module):
 
     No LSTM, no scalar projection — memory channels encode temporal info.
     Fully feedforward: single forward pass per frame, no state to carry.
+
+    Channel configuration:
+      enc1:  in_ch → ch1       (default: 24 → 96)
+      enc2:  ch1  → ch2       (default: 96 → 192)
+      bot:   ch2  → ch_bot    (default: 192 → 384)
+      dec2:  ch_bot → ch2 → ch2   (with skip from enc2)
+      dec1:  ch2 → ch1 → ch1      (with skip from enc1)
+      value: ch_bot * 4 → vfc → 1
     """
 
     # Encoder block 1
@@ -58,45 +69,74 @@ class UNetPolicyValueNetwork(eqx.Module):
     dec1_conv: eqx.nn.Conv2d
 
     # Policy head
-    policy_conv: eqx.nn.Conv2d   # 64 → 9
+    policy_conv: eqx.nn.Conv2d   # ch1 → 9
 
     # Value head
     value_pool: eqx.nn.AdaptiveAvgPool2d
     value_fc1: eqx.nn.Linear
     value_fc2: eqx.nn.Linear
 
-    def __init__(self, key: jnp.ndarray, grid_size: int = 10):
+    # Stored channel sizes (for serialization compatibility)
+    ch1: int = eqx.field(static=True)
+    ch2: int = eqx.field(static=True)
+    ch_bot: int = eqx.field(static=True)
+
+    def __init__(
+        self,
+        key: jnp.ndarray,
+        grid_size: int = 10,
+        ch1: int = 96,
+        ch2: int = 192,
+        ch_bot: int = 384,
+    ):
         """
         Args:
             key: JAX random key.
             grid_size: Hint for buffer sizing (network is grid-size agnostic).
+            ch1: Encoder level-1 output channels (default 96).
+            ch2: Encoder level-2 output channels (default 192).
+            ch_bot: Bottleneck channels (default 384).
         """
+        self.ch1 = ch1
+        self.ch2 = ch2
+        self.ch_bot = ch_bot
+        in_ch = 24
+
         keys = jrandom.split(key, 10)
 
-        # Encoder block 1: 24 → 64
-        self.enc1_conv = eqx.nn.Conv2d(24, 64, kernel_size=3, padding=1, key=keys[0])
+        # Encoder block 1: in_ch → ch1
+        self.enc1_conv = eqx.nn.Conv2d(in_ch, ch1, kernel_size=3, padding=1, key=keys[0])
 
-        # Encoder block 2: 64 → 128
-        self.enc2_conv = eqx.nn.Conv2d(64, 128, kernel_size=3, padding=1, key=keys[1])
+        # Encoder block 2: ch1 → ch2
+        self.enc2_conv = eqx.nn.Conv2d(ch1, ch2, kernel_size=3, padding=1, key=keys[1])
 
-        # Bottleneck: 128 → 256
-        self.bot_conv = eqx.nn.Conv2d(128, 256, kernel_size=3, padding=1, key=keys[2])
+        # Bottleneck: ch2 → ch_bot
+        self.bot_conv = eqx.nn.Conv2d(ch2, ch_bot, kernel_size=3, padding=1, key=keys[2])
 
-        # Decoder block 2: 256 → 128, cat with skip_2 → 256 → 128
-        self.dec2_up_conv = eqx.nn.Conv2d(256, 128, kernel_size=1, key=keys[3])
-        self.dec2_conv = eqx.nn.Conv2d(256, 128, kernel_size=3, padding=1, key=keys[4])
+        # Decoder block 2: ch_bot → ch2, cat with skip_2 → ch2*2 → ch2
+        self.dec2_up_conv = eqx.nn.Conv2d(ch_bot, ch2, kernel_size=1, key=keys[3])
+        self.dec2_conv = eqx.nn.Conv2d(ch2 * 2, ch2, kernel_size=3, padding=1, key=keys[4])
 
-        # Decoder block 1: 128 → 64, cat with skip_1 → 128 → 64
-        self.dec1_up_conv = eqx.nn.Conv2d(128, 64, kernel_size=1, key=keys[5])
-        self.dec1_conv = eqx.nn.Conv2d(128, 64, kernel_size=3, padding=1, key=keys[6])
+        # Decoder block 1: ch2 → ch1, cat with skip_1 → ch1*2 → ch1
+        self.dec1_up_conv = eqx.nn.Conv2d(ch2, ch1, kernel_size=1, key=keys[5])
+        self.dec1_conv = eqx.nn.Conv2d(ch1 * 2, ch1, kernel_size=3, padding=1, key=keys[6])
 
-        # Policy head: 64 → 9
-        self.policy_conv = eqx.nn.Conv2d(64, 9, kernel_size=1, key=keys[7])
+        # Policy head: ch1 → 9
+        self.policy_conv = eqx.nn.Conv2d(ch1, 9, kernel_size=1, key=keys[7])
 
         # Value head: adaptive pool → FC
         self.value_pool = eqx.nn.AdaptiveAvgPool2d((2, 2))
-        self.value_fc1 = eqx.nn.Linear(256 * 4, 128, key=keys[8])
+        self.value_fc1 = eqx.nn.Linear(ch_bot * 4, 128, key=keys[8])
         self.value_fc2 = eqx.nn.Linear(128, 1, key=keys[9])
+
+    @staticmethod
+    def _norm(x: jnp.ndarray, eps: float = 1e-5) -> jnp.ndarray:
+        """Instance normalization: per-channel, grid-size agnostic.
+        (C, H, W) → normalized (C, H, W) with zero mean, unit var per channel.
+        """
+        mean = x.mean(axis=(1, 2), keepdims=True)
+        var = x.var(axis=(1, 2), keepdims=True)
+        return (x - mean) / jnp.sqrt(var + eps)
 
     def _downsample(self, x: jnp.ndarray) -> jnp.ndarray:
         """MaxPool 2x downsampling: (C, H, W) → (C, ceil(H/2), ceil(W/2))."""
@@ -130,28 +170,28 @@ class UNetPolicyValueNetwork(eqx.Module):
         C_in, H, W = obs.shape
 
         # Encoder block 1
-        skip1 = jax.nn.relu(self.enc1_conv(obs))      # (64, H, W)
-        pool1 = self._downsample(skip1)                # (64, H//2, W//2)
+        skip1 = self._norm(jax.nn.relu(self.enc1_conv(obs)))   # (ch1, H, W)
+        pool1 = self._downsample(skip1)                         # (ch1, H//2, W//2)
 
         # Encoder block 2
-        skip2 = jax.nn.relu(self.enc2_conv(pool1))     # (128, H//2, W//2)
-        pool2 = self._downsample(skip2)                # (128, H//4, W//4)
+        skip2 = self._norm(jax.nn.relu(self.enc2_conv(pool1)))  # (ch2, H//2, W//2)
+        pool2 = self._downsample(skip2)                         # (ch2, H//4, W//4)
 
         # Bottleneck
-        bot = jax.nn.relu(self.bot_conv(pool2))        # (256, H//4, W//4)
+        bot = self._norm(jax.nn.relu(self.bot_conv(pool2)))     # (ch_bot, H//4, W//4)
 
         # Value head input from bottleneck
         value_pooled = self.value_pool(bot).reshape(-1) # (256*4,)
 
         # Decoder block 2
         up2 = self._upsample(self.dec2_up_conv(bot), skip2.shape[1], skip2.shape[2])
-        cat2 = jnp.concatenate([up2, skip2], axis=0)   # (256, H//2, W//2)
-        dec2 = jax.nn.relu(self.dec2_conv(cat2))       # (128, H//2, W//2)
+        cat2 = jnp.concatenate([up2, skip2], axis=0)   # (ch2*2, H//2, W//2)
+        dec2 = self._norm(jax.nn.relu(self.dec2_conv(cat2)))   # (ch2, H//2, W//2)
 
         # Decoder block 1
         up1 = self._upsample(self.dec1_up_conv(dec2), skip1.shape[1], skip1.shape[2])
-        cat1 = jnp.concatenate([up1, skip1], axis=0)   # (128, H, W)
-        features = jax.nn.relu(self.dec1_conv(cat1))   # (64, H, W)
+        cat1 = jnp.concatenate([up1, skip1], axis=0)   # (ch1*2, H, W)
+        features = self._norm(jax.nn.relu(self.dec1_conv(cat1)))  # (ch1, H, W)
 
         return features, value_pooled
 

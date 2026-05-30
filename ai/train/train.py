@@ -315,6 +315,9 @@ def main():
     parser.add_argument("--opponent", default="random", choices=["random", "self-play"],
                         help="Opponent type")
     parser.add_argument("--pool-size", type=int, default=3, help="Opponent pool size for self-play")
+    parser.add_argument("--ch1", type=int, default=96, help="Encoder level-1 channels (must match --load-path)")
+    parser.add_argument("--ch2", type=int, default=192, help="Encoder level-2 channels (must match --load-path)")
+    parser.add_argument("--ch-bot", type=int, default=384, help="Bottleneck channels (must match --load-path)")
     args = parser.parse_args()
 
     grid_size = args.grid_size
@@ -334,7 +337,7 @@ def main():
 
     if args.resume:
         key, net_key = jrandom.split(key)
-        network = UNetPolicyValueNetwork(net_key, grid_size=grid_size)
+        network = UNetPolicyValueNetwork(net_key, grid_size=grid_size, ch1=args.ch1, ch2=args.ch2, ch_bot=args.ch_bot)
         network = eqx.tree_deserialise_leaves(args.resume, network)
         # Load optimizer state from companion file
         opt_path = args.resume.replace(".eqx", ".opt")
@@ -352,14 +355,14 @@ def main():
         print(f"Resumed from {args.resume} (iteration {start_iter})")
     elif args.load_path:
         key, net_key = jrandom.split(key)
-        network = UNetPolicyValueNetwork(net_key, grid_size=grid_size)
+        network = UNetPolicyValueNetwork(net_key, grid_size=grid_size, ch1=args.ch1, ch2=args.ch2, ch_bot=args.ch_bot)
         network = eqx.tree_deserialise_leaves(args.load_path, network)
         print(f"Loaded pretrained weights from {args.load_path}")
         optimizer = optax.adam(args.lr)
         opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
     else:
         key, net_key = jrandom.split(key)
-        network = UNetPolicyValueNetwork(net_key, grid_size=grid_size)
+        network = UNetPolicyValueNetwork(net_key, grid_size=grid_size, ch1=args.ch1, ch2=args.ch2, ch_bot=args.ch_bot)
         optimizer = optax.adam(args.lr)
         opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
 

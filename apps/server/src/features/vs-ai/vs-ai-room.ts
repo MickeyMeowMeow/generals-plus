@@ -22,8 +22,12 @@ import { createGame, generateSeed } from "#/features/game/utils";
 const BOT_PLAYER_ID = "__bot__";
 const BOT_DISPLAY_NAME = "AI Bot";
 const TICK_INTERVAL = 500;
-const MAP_WIDTH = 10;
-const MAP_HEIGHT = 10;
+
+// Map size must fall within training data range (17–23) so the AI model
+// operates on grid sizes it was trained / pre-trained on.
+// Locked to 18×18 — matches the RL training default and has the most SFT data.
+const MAP_WIDTH = 18;
+const MAP_HEIGHT = 18;
 
 export class VsAiRoom extends Room {
   async onCreate() {

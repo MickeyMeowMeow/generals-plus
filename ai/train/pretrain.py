@@ -9,7 +9,7 @@ No padding needed — the U-Net handles variable grid sizes natively.
 
 Usage:
     cd ai/
-    python -m train.pretrain --data-dir data/ --epochs 50 --lr 1e-3
+    python -m train.pretrain --data-dir data/ --epochs 20 --lr 1e-3 --batch-size 1024
 """
 
 import argparse
@@ -28,9 +28,19 @@ import jax.random as jrandom
 import equinox as eqx
 import optax
 
+# Limit JAX GPU pre-allocation to avoid wasting memory.
+# Default is 75% (~60 GB on 80 GB A800). SFT uses far less.
+os.environ.setdefault("XLA_PYTHON_CLIENT_MEM_FRACTION", "0.25")
+
 jax.config.update("jax_default_matmul_precision", "bfloat16")
 
 from train.network import UNetPolicyValueNetwork
+
+# Lazy import for optional tqdm
+try:
+    from tqdm import tqdm as _tqdm
+except ImportError:
+    _tqdm = None
 
 
 def load_datasets(data_dir: str) -> list:
@@ -128,9 +138,12 @@ def main():
     parser.add_argument("--data", default=None, help="Single .npz file (overrides --data-dir)")
     parser.add_argument("--epochs", type=int, default=50, help="Number of epochs")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
-    parser.add_argument("--batch-size", type=int, default=256, help="Batch size")
+    parser.add_argument("--batch-size", type=int, default=1024, help="Batch size")
     parser.add_argument("--save-path", default="models/sft_pretrained.eqx", help="Model save path")
     parser.add_argument("--eval-every", type=int, default=5, help="Eval every N epochs")
+    parser.add_argument("--ch1", type=int, default=96, help="Encoder level-1 channels (default 96)")
+    parser.add_argument("--ch2", type=int, default=192, help="Encoder level-2 channels (default 192)")
+    parser.add_argument("--ch-bot", type=int, default=384, help="Bottleneck channels (default 384)")
     args = parser.parse_args()
 
     print(f"JAX devices: {jax.devices()}")
@@ -167,12 +180,17 @@ def main():
     # Initialize network (grid-size agnostic)
     key = jrandom.PRNGKey(42)
     key, net_key = jrandom.split(key)
-    network = UNetPolicyValueNetwork(net_key, grid_size=18)
+    network = UNetPolicyValueNetwork(
+        net_key, grid_size=18, ch1=args.ch1, ch2=args.ch2, ch_bot=args.ch_bot,
+    )
 
     params, _ = eqx.partition(network, eqx.is_array)
     print(f"Parameters: {sum(x.size for x in jax.tree.leaves(params)):,}")
 
-    optimizer = optax.adam(args.lr)
+    optimizer = optax.chain(
+        optax.clip_by_global_norm(1.0),
+        optax.adam(args.lr),
+    )
     opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
 
     print(f"Epochs: {args.epochs}, Batch size: {args.batch_size}\n")
@@ -181,6 +199,17 @@ def main():
         t0 = time.time()
         epoch_loss = 0.0
         epoch_batches = 0
+
+        # Count total batches for progress bar
+        total_batches = sum(
+            d[0].shape[0] // args.batch_size
+            for d in labeled_datasets
+            if d[0].shape[0] >= args.batch_size
+        )
+
+        pbar = None
+        if _tqdm is not None:
+            pbar = _tqdm(total=total_batches, desc=f"Epoch {epoch+1}/{args.epochs}", unit="batch")
 
         # Cycle through all grid sizes each epoch
         for obs_all, _, masks_all, labels_all, H, W, name in labeled_datasets:
@@ -208,6 +237,12 @@ def main():
                 )
                 epoch_loss += float(loss)
                 epoch_batches += 1
+                if pbar is not None:
+                    pbar.update(1)
+                    pbar.set_postfix({"loss": f"{float(loss):.4f}", "grid": name.split(".")[0]})
+
+        if pbar is not None:
+            pbar.close()
 
         avg_loss = epoch_loss / max(epoch_batches, 1)
         elapsed = time.time() - t0

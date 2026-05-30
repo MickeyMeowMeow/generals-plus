@@ -45,7 +45,7 @@ python3 -m train.pretrain \
     --data-dir data \
     --epochs 50 \
     --lr 1e-3 \
-    --batch-size 512 \
+    --batch-size 1024 \
     --save-path models/sft_pretrained.eqx
 echo "SFT complete. Model saved to models/sft_pretrained.eqx"
 echo ""
