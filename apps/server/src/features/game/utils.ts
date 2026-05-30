@@ -89,12 +89,16 @@ function getExplicitTeamAssignments({
   });
 }
 
+function getTeamAssignmentLookup(options: BaseCreateGameOptions) {
+  return Object.fromEntries(getExplicitTeamAssignments(options));
+}
+
 function addStandardTeamsAndPlayers(
   game: IBaseGame,
   options: BaseCreateGameOptions,
 ) {
-  const assignments = getExplicitTeamAssignments(options);
-  const teamIds = Array.from(new Set(assignments.map(([, teamId]) => teamId)));
+  const assignmentLookup = getTeamAssignmentLookup(options);
+  const teamIds = Array.from(new Set(Object.values(assignmentLookup)));
 
   for (const teamId of teamIds) {
     const team = new StandardTeam(teamId);
@@ -102,7 +106,7 @@ function addStandardTeamsAndPlayers(
   }
 
   for (const playerId of options.playerIds) {
-    const teamId = assignments.find(([id]) => id === playerId)?.[1];
+    const teamId = assignmentLookup[playerId];
     const team = teamId ? game.teams.get(teamId) : undefined;
     if (!team || !teamId) {
       throw new Error(
@@ -186,14 +190,14 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       game.teams.set("attackers", attackers);
       game.teams.set("defenders", defenders);
 
-      const assignments = options.teamAssignments
-        ? getExplicitTeamAssignments(options)
+      const assignmentLookup = options.teamAssignments
+        ? getTeamAssignmentLookup(options)
         : null;
 
       // Partition playerIds half and half into Attackers and Defenders when no
       // custom-room team choices were supplied.
       for (const [i, playerId] of options.playerIds.entries()) {
-        const teamId = assignments?.find(([id]) => id === playerId)?.[1];
+        const teamId = assignmentLookup?.[playerId];
         const team = teamId
           ? game.teams.get(teamId)
           : i % 2 === 0
