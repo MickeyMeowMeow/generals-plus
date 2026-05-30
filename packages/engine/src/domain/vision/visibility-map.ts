@@ -94,11 +94,9 @@ export class VisibilityMap {
     this.gameGrid.forEach((cell, coord) => {
       // 1. Visible if cell is owned by a player on this team
       // 2. Visible if cell is a FLAG (DOMINATION flag)
-      // 3. Visible if cell is a BOMB_SITE (any site is visible with radius 1 to both teams)
       if (
         (cell.owner && teamPlayerIds.has(cell.owner.playerId)) ||
-        cell.terrain === Terrain.FLAG ||
-        cell.terrain === Terrain.BOMB_SITE
+        cell.terrain === Terrain.FLAG
       ) {
         const radius = cell.vision?.radius ?? 1; // 1 means 3x3 square, 2 means 5x5 square
 
