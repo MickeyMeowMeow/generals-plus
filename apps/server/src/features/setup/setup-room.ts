@@ -67,7 +67,6 @@ const SETTING_LABELS: Record<string, string> = {
   flagCount: "Flag count",
   targetScore: "Target score",
   payloadSpeed: "Cart speed",
-  payloadDuration: "Duration",
   payloadCartSize: "Cart size",
   payloadRequiredOccupied: "Required occupied tiles",
 };
@@ -390,7 +389,6 @@ export class SetupRoom extends Room<{ state: SetupState }> {
 
       const PAYLOAD_FIELDS = [
         "payloadSpeed",
-        "payloadDuration",
         "payloadCartSize",
         "payloadRequiredOccupied",
       ] as const;
@@ -437,15 +435,11 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       if (
         this.state.gameMode === GameMode.TURF_WAR ||
         this.state.gameMode === GameMode.DOMINATION ||
-        this.state.gameMode === GameMode.DEMOLITION
+        this.state.gameMode === GameMode.DEMOLITION ||
+        this.state.gameMode === GameMode.PAYLOAD
       ) {
         this.state.finishTick = calculateFinishTick(
           this.state.duration,
-          this.state.tickInterval,
-        );
-      } else if (this.state.gameMode === GameMode.PAYLOAD) {
-        this.state.finishTick = calculateFinishTick(
-          this.state.payloadDuration,
           this.state.tickInterval,
         );
       }

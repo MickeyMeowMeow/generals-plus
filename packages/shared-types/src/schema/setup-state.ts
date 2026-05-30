@@ -51,7 +51,6 @@ export class SetupState extends Schema {
   @type("string") collapseShape: string = CollapseShape.CIRCLE;
 
   @type("number") payloadSpeed: number = 2;
-  @type("number") payloadDuration: number = 300;
   @type("number") payloadCartSize: number = 3;
   @type("number") payloadRequiredOccupied: number = 6;
 

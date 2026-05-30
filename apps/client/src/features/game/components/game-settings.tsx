@@ -94,7 +94,7 @@ const MODE_SPECIFIC_FIELDS: Partial<
   ],
   [GameMode.PAYLOAD]: [
     { key: "payloadSpeed", label: "Cart Speed (s)" },
-    { key: "payloadDuration", label: "Duration (s)" },
+    { key: "duration", label: "Duration (s)" },
     { key: "payloadCartSize", label: "Cart Size" },
     { key: "payloadRequiredOccupied", label: "Required Occupied Tiles" },
   ],

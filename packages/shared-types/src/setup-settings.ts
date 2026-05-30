@@ -55,8 +55,8 @@ export interface CollapseSetupSettings extends BaseSetupSettings {
 
 export interface PayloadSetupSettings extends BaseSetupSettings {
   gameMode: typeof GameMode.PAYLOAD;
+  duration: number;
   payloadSpeed: number;
-  payloadDuration: number;
   payloadCartSize: number;
   payloadRequiredOccupied: number;
 }
