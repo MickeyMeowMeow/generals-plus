@@ -41,6 +41,9 @@ venv/
 models/
 *.eqx
 *.pt
+*.npz
+*.onnx
+ai/data/
 *.safetensors
 runs/
 wandb/
