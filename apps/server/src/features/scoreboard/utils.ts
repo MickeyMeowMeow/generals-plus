@@ -2,6 +2,7 @@ import type {
   GameMode as GameModeType,
   IBaseScoreboard,
   IClassicScoreboard,
+  ICollapseScoreboard,
   IDemolitionScoreboard,
   IDominationScoreboard,
   ITurfWarScoreboard,
@@ -15,6 +16,8 @@ import type {
 import {
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
+  CollapseScoreboard,
+  CollapseScoreboardPlayerEntry,
   DemolitionScoreboard,
   DemolitionScoreboardPlayerEntry,
   DemolitionScoreboardTeamEntry,
@@ -45,6 +48,9 @@ export function createScoreboard(mode: GameModeType): BaseScoreboard {
     case GameMode.DEMOLITION:
       scoreboard = new DemolitionScoreboard();
       break;
+    case GameMode.COLLAPSE:
+      scoreboard = new CollapseScoreboard();
+      break;
     default:
       scoreboard = new ClassicScoreboard();
       break;
@@ -71,6 +77,26 @@ export function syncScoreboard(
   );
 
   switch (source.mode) {
+    case GameMode.COLLAPSE: {
+      const collapseTarget = target as CollapseScoreboard;
+      const collapseSource = source as ICollapseScoreboard;
+      syncPlayers(
+        collapseTarget,
+        collapseSource.players,
+        metadataByPlayer,
+        () => new CollapseScoreboardPlayerEntry(),
+        (schema, entry) => {
+          schema.troops = entry.troops;
+          schema.land = entry.land;
+          schema.isAlive = entry.isAlive;
+        },
+      );
+      collapseTarget.nextCollapseTick = collapseSource.nextCollapseTick;
+      collapseTarget.currentProgress = collapseSource.currentProgress;
+      collapseTarget.startDelayTicks = collapseSource.startDelayTicks;
+      collapseTarget.shrinkIntervalTicks = collapseSource.shrinkIntervalTicks;
+      break;
+    }
     case GameMode.CLASSIC: {
       const classicTarget = target as ClassicScoreboard;
       const classicSource = source as IClassicScoreboard;

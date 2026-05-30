@@ -32,6 +32,13 @@ export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
           : TerrainTheme[cell.terrain]?.color || 0xffffff;
 
         g.fill(color);
+
+        // Handle collapse warning
+        if (cell.willCollapse) {
+          drawCell(g, grid, cell.coordinate);
+          g.fill({ color: 0x7c3aed, alpha: 0.26 });
+          g.stroke({ width: 2, color: 0xd946ef, alignment: 0.5 });
+        }
       });
     },
     [tick, grid, playerColors],

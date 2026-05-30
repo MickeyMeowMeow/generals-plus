@@ -146,6 +146,20 @@ export interface IDominationScoreboard extends IBaseScoreboard {
   readonly teamScores: Map<string, number>;
 }
 
+export interface ICollapseScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.COLLAPSE;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+    readonly isAlive: boolean;
+  }>;
+  readonly nextCollapseTick: number;
+  readonly currentProgress: number;
+  readonly startDelayTicks: number;
+  readonly shrinkIntervalTicks: number;
+}
+
 /**
  * Classic FFA Mode.
  * Focuses on capital captures.
@@ -224,10 +238,8 @@ export interface IBiohazardGame extends IBaseGame {
  */
 export interface ICollapseGame extends IBaseGame {
   readonly mode: typeof GameMode.COLLAPSE;
-  /** Current progress of the safe zone shrinking. */
-  currentProgress: number;
-  /** Tick count until the next border shrinkage. */
-  nextCollapseTick: number;
+
+  getScoreboard(): ICollapseScoreboard;
 }
 
 /**

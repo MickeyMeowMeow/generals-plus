@@ -1,7 +1,12 @@
-import type { GridInput, IBaseGame } from "@generals-plus/engine";
+import type {
+  CollapseShape,
+  GridInput,
+  IBaseGame,
+} from "@generals-plus/engine";
 import {
   AttackerTeam,
   ClassicGame,
+  CollapseGame,
   DefenderTeam,
   DemolitionGame,
   DominationGame,
@@ -50,8 +55,18 @@ interface DemolitionCreateGameOptions extends BaseCreateGameOptions {
   seed?: number;
 }
 
+interface CollapseCreateGameOptions extends BaseCreateGameOptions {
+  mode: typeof GameMode.COLLAPSE;
+  startDelayTicks?: number;
+  shrinkIntervalTicks?: number;
+  collapseShape?: CollapseShape;
+}
+
 interface OtherCreateGameOptions extends BaseCreateGameOptions {
-  mode: Exclude<GameMode, "classic" | "turf_war" | "domination" | "demolition">;
+  mode: Exclude<
+    GameMode,
+    "classic" | "turf_war" | "domination" | "demolition" | "collapse"
+  >;
 }
 
 export type CreateGameOptions =
@@ -59,6 +74,7 @@ export type CreateGameOptions =
   | TurfWarCreateGameOptions
   | DominationCreateGameOptions
   | DemolitionCreateGameOptions
+  | CollapseCreateGameOptions
   | OtherCreateGameOptions;
 
 function getRoundRobinTeamAssignments(
@@ -128,6 +144,22 @@ function addStandardTeamsAndPlayers(
  */
 export function createGame(options: CreateGameOptions): IBaseGame {
   switch (options.mode) {
+    case GameMode.COLLAPSE: {
+      const game = new CollapseGame(
+        {
+          gridType: GridType.SQUARE,
+          ...options.gridOptions,
+        },
+        {
+          startDelayTicks: options.startDelayTicks,
+          shrinkIntervalTicks: options.shrinkIntervalTicks,
+          collapseShape: options.collapseShape,
+        },
+      );
+
+      addStandardTeamsAndPlayers(game, options);
+      return game;
+    }
     case GameMode.CLASSIC: {
       const game = new ClassicGame({
         gridType: GridType.SQUARE,
@@ -135,7 +167,6 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       });
 
       addStandardTeamsAndPlayers(game, options);
-
       return game;
     }
     case GameMode.TURF_WAR: {
@@ -150,7 +181,6 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       );
 
       addStandardTeamsAndPlayers(game, options);
-
       return game;
     }
     case GameMode.DOMINATION: {
@@ -166,7 +196,6 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       );
 
       addStandardTeamsAndPlayers(game, options);
-
       return game;
     }
     case GameMode.DEMOLITION: {
@@ -194,8 +223,6 @@ export function createGame(options: CreateGameOptions): IBaseGame {
         ? getTeamAssignmentLookup(options)
         : null;
 
-      // Partition playerIds half and half into Attackers and Defenders when no
-      // custom-room team choices were supplied.
       for (const [i, playerId] of options.playerIds.entries()) {
         const teamId = assignmentLookup?.[playerId];
         const team = teamId
