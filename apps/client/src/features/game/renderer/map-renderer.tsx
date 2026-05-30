@@ -3,6 +3,7 @@ import { isSameCoord } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import type { FederatedPointerEvent } from "pixi.js";
 import { Container, Rectangle } from "pixi.js";
+import type { RefObject } from "react";
 import { useCallback, useMemo, useRef } from "react";
 
 import { BombLayer } from "#/features/game/renderer/layers/bomb";
@@ -32,6 +33,7 @@ interface MapRendererProps {
   selection: ICoordinate | null;
   splitMoveSelection: ICoordinate | null;
   moveQueue: MoveIntent[];
+  pointerRef: RefObject<ICoordinate>;
   bombMoveSignal: boolean;
   onCellClick: (coordinate: ICoordinate) => void;
   onSplitMoveCell: (coordinate: ICoordinate) => void;
@@ -48,6 +50,7 @@ export function MapRenderer({
   selection,
   splitMoveSelection,
   moveQueue,
+  pointerRef,
   bombMoveSignal,
   onCellClick,
   onSplitMoveCell,
@@ -70,6 +73,13 @@ export function MapRenderer({
         worldBounds.bottom - worldBounds.top,
       ),
     [worldBounds],
+  );
+
+  const handleGlobalPointerMove = useCallback(
+    (e: FederatedPointerEvent) => {
+      pointerRef.current = e.currentTarget.toLocal(e.global);
+    },
+    [pointerRef],
   );
 
   const onPointerDown = useCallback(
@@ -113,6 +123,7 @@ export function MapRenderer({
     <pixiContainer
       eventMode="static"
       hitArea={hitArea}
+      onGlobalPointerMove={handleGlobalPointerMove}
       onPointerDown={onPointerDown}
     >
       <GridLayer tick={tick} grid={grid} playerColors={playerColors} />

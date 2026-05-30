@@ -5,7 +5,7 @@ import type {
   MoveActionType,
   SurrenderAction,
 } from "@generals-plus/engine";
-import { ActionType, GameStatus, GridType } from "@generals-plus/engine";
+import { ActionType, GameStatus } from "@generals-plus/engine";
 import type {
   ActionData,
   MatchClientMessagePayload,
@@ -25,7 +25,7 @@ import {
   updateRenderGrid,
 } from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
-import { MoveDirection } from "#/features/game/utils/move";
+import { getDirection } from "#/features/game/utils/move";
 import { networkProvider } from "#/infra/network/provider";
 import type { RoomClient } from "#/infra/network/room";
 
@@ -118,34 +118,6 @@ function releaseGameRoom(connection: GameRoomConnection) {
   if (!entry) return;
 
   entry.refs = Math.max(0, entry.refs - 1);
-}
-
-function getDirection(
-  gridType: GridType,
-  from: ICoordinate,
-  to: ICoordinate,
-): MoveDirection {
-  switch (gridType) {
-    case GridType.SQUARE: {
-      if (to.y < from.y) return MoveDirection.UP;
-      if (to.y > from.y) return MoveDirection.DOWN;
-      if (to.x < from.x) return MoveDirection.LEFT;
-      return MoveDirection.RIGHT;
-    }
-    case GridType.HEX: {
-      if (to.x < from.x) {
-        return to.y === from.y
-          ? MoveDirection.TOP_LEFT
-          : MoveDirection.BOTTOM_LEFT;
-      }
-      if (to.x > from.x) {
-        return to.y < from.y
-          ? MoveDirection.TOP_RIGHT
-          : MoveDirection.BOTTOM_RIGHT;
-      }
-      return to.y < from.y ? MoveDirection.TOP : MoveDirection.BOTTOM;
-    }
-  }
 }
 
 function isReadyMatchState(state: MatchState) {

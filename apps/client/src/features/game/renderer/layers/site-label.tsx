@@ -29,7 +29,6 @@ interface SiteLabelLayerProps {
 export function SiteLabelLayer({ grid }: SiteLabelLayerProps) {
   // Assume that site labels remain unchanged across ticks, so only compute once on mount.
   const siteCells = useMemo(() => {
-    console.log("Computing site label cells...");
     const cells: Array<{ cell: RenderGridCell; label: string }> = [];
     grid.forEach((cell) => {
       if (

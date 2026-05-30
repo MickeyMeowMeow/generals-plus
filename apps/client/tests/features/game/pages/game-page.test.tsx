@@ -554,7 +554,7 @@ describe("GamePage", () => {
     );
 
     const event = new KeyboardEvent("keydown", {
-      key: "Escape",
+      code: "Escape",
       cancelable: true,
     });
     window.dispatchEvent(event);
@@ -591,7 +591,7 @@ describe("GamePage", () => {
       />,
     );
 
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(window, { code: "Escape" });
 
     expect(screen.getByText("Surrender match?")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Surrender" }));
@@ -631,7 +631,7 @@ describe("GamePage", () => {
     );
 
     fireEvent.click(screen.getByTitle("Mark Attack (Swords) [1]"));
-    fireEvent.keyDown(window, { key: "c" });
+    fireEvent.keyDown(window, { code: "KeyC" });
     fireEvent.click(screen.getByTestId("select-origin"));
 
     expect(screen.queryByText("Surrender match?")).toBeNull();

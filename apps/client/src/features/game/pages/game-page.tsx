@@ -32,6 +32,12 @@ import { useGameRoom } from "#/features/game/api/use-game-room";
 import { GameHud } from "#/features/game/components/game-hud";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { Ping } from "#/features/game/renderer/layers/ping";
+import {
+  ChoosePingBrushModifier,
+  ClearPingBrushKey,
+  KeyToPing,
+  SurrenderKey,
+} from "#/features/game/utils/hotkey";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 import { formatTeamLabel } from "#/features/match/utils/team-label";
@@ -199,14 +205,20 @@ export function GamePage({ connection, source }: GamePageProps) {
     }
   }, [renderGrid, currentPlayer]);
 
+  const handlePing = useCallback(
+    (coord: ICoordinate, type: "attack" | "defense" | "rally") => {
+      room?.send(MatchClientMessage.PING, {
+        type,
+        ...coord,
+      });
+    },
+    [room],
+  );
+
   const handleSelectCell = useCallback(
     (coord: ICoordinate) => {
       if (activeBrush) {
-        room?.send(MatchClientMessage.PING, {
-          x: coord.x,
-          y: coord.y,
-          type: activeBrush,
-        });
+        handlePing(coord, activeBrush);
         return;
       }
       const cell = renderGrid?.get(coord);
@@ -215,18 +227,14 @@ export function GamePage({ connection, source }: GamePageProps) {
       setSelection(coord);
       setSplitMoveSelection(null);
     },
-    [activeBrush, room, renderGrid],
+    [activeBrush, handlePing, renderGrid],
   );
 
   const handleArmSplitMove = useCallback(
     (coord?: ICoordinate) => {
       if (activeBrush) {
         if (coord) {
-          room?.send(MatchClientMessage.PING, {
-            x: coord.x,
-            y: coord.y,
-            type: activeBrush,
-          });
+          handlePing(coord, activeBrush);
         }
         return;
       }
@@ -238,7 +246,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       setSelection(nextSelection);
       setSplitMoveSelection(nextSelection);
     },
-    [activeBrush, selection, room, renderGrid],
+    [activeBrush, selection, handlePing, renderGrid],
   );
 
   const handleQueueMove = useCallback(
@@ -297,20 +305,27 @@ export function GamePage({ connection, source }: GamePageProps) {
         return;
       }
 
-      if (e.key === "Escape") {
+      if (e.code === SurrenderKey) {
         if (isSurrenderDialogOpen || !canOpenSurrenderDialog) {
           return;
         }
         e.preventDefault();
         setIsSurrenderDialogOpen(true);
-      } else if (e.key === "c" || e.key === "C") {
+        return;
+      }
+
+      if (e.code === ClearPingBrushKey) {
         setActiveBrush(null);
-      } else if (e.key === "1") {
-        setActiveBrush((prev) => (prev === "attack" ? null : "attack"));
-      } else if (e.key === "2") {
-        setActiveBrush((prev) => (prev === "defense" ? null : "defense"));
-      } else if (e.key === "3") {
-        setActiveBrush((prev) => (prev === "rally" ? null : "rally"));
+      }
+
+      console.log(
+        "Key pressed:",
+        e.code,
+        e.getModifierState(ChoosePingBrushModifier),
+      );
+      if (e.getModifierState(ChoosePingBrushModifier) && KeyToPing[e.code]) {
+        const pingType = KeyToPing[e.code];
+        setActiveBrush((prev) => (prev === pingType ? null : pingType));
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -427,6 +442,7 @@ export function GamePage({ connection, source }: GamePageProps) {
         onArmSplitMove={isReadOnly ? () => {} : handleArmSplitMove}
         onQueueMove={isReadOnly ? () => {} : handleQueueMove}
         onClearMoveQueue={isReadOnly ? () => {} : clearMoveQueue}
+        onPing={isReadOnly ? () => {} : handlePing}
         playerColors={playerColors}
         pings={pings}
         isPlanted={

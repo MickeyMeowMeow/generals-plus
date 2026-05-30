@@ -17,8 +17,13 @@ import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 import { Viewport } from "#/features/game/renderer/viewport";
+import {
+  ClearMoveQueueKey,
+  KeyToDirection,
+  KeyToPing,
+  SwitchSplitMoveKey,
+} from "#/features/game/utils/hotkey";
 import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
-import { ClearMoveQueueKey, KeyToDirection } from "#/features/game/utils/move";
 
 interface GameAppProps {
   /** Grid snapshot to render. */
@@ -33,6 +38,10 @@ interface GameAppProps {
   readonly onArmSplitMove: (coord?: ICoordinate) => void;
   readonly onQueueMove: (direction: MoveDirection) => void;
   readonly onClearMoveQueue: () => void;
+  readonly onPing: (
+    coord: ICoordinate,
+    type: "attack" | "defense" | "rally",
+  ) => void;
   readonly playerColors: Map<string, number>;
   readonly pings?: Ping[];
   readonly isPlanted?: boolean;
@@ -57,6 +66,7 @@ export function GameApp({
   onArmSplitMove,
   onQueueMove,
   onClearMoveQueue,
+  onPing,
   playerColors,
   pings = [],
   isPlanted = false,
@@ -64,6 +74,8 @@ export function GameApp({
 }: GameAppProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
+
+  const pointerRef = useRef({ x: 0, y: 0 });
 
   const worldBounds = useMemo(() => {
     switch (grid.gridType) {
@@ -127,26 +139,42 @@ export function GameApp({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (key === "z") {
+      if (e.code === SwitchSplitMoveKey) {
         e.preventDefault();
         onArmSplitMove();
         return;
       }
-      if (key === ClearMoveQueueKey) {
+      if (e.code === ClearMoveQueueKey) {
         e.preventDefault();
         onClearMoveQueue();
         return;
       }
-      if (KeyToDirection[grid.gridType][key]) {
+      if (KeyToDirection[grid.gridType][e.code]) {
         e.preventDefault();
-        onQueueMove(KeyToDirection[grid.gridType][key]);
+        onQueueMove(KeyToDirection[grid.gridType][e.code]);
+      }
+      if (KeyToPing[e.code]) {
+        e.preventDefault();
+        const coord = grid?.fromCartesian({
+          x: pointerRef.current.x / RenderConfig.cellStride,
+          y: pointerRef.current.y / RenderConfig.cellStride,
+        });
+        if (coord) {
+          onPing(coord, KeyToPing[e.code]);
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [grid.gridType, onArmSplitMove, onClearMoveQueue, onQueueMove]);
+  }, [
+    grid.gridType,
+    grid.fromCartesian,
+    onArmSplitMove,
+    onClearMoveQueue,
+    onQueueMove,
+    onPing,
+  ]);
 
   const initialTarget = useMemo(() => {
     if (initialCoord) {
@@ -178,6 +206,7 @@ export function GameApp({
               selection={selection}
               splitMoveSelection={splitMoveSelection}
               moveQueue={moveQueue}
+              pointerRef={pointerRef}
               bombMoveSignal={bombMoveSignal}
               onCellClick={onSelectCell}
               onSplitMoveCell={onArmSplitMove}
