@@ -59,14 +59,18 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
     // Get track from grid
     this.track = this.grid.track;
     if (this.track.length === 0) {
-      // Fallback: horizontal track in the center, away from edges/generals
       const cy = Math.floor(this.grid.height / 2);
       const track: ICoordinate[] = [];
       const startX = Math.min(3, Math.floor(this.grid.width / 2));
       const endX = Math.max(startX, this.grid.width - 1 - startX);
-      for (let x = startX; x <= endX; x++) {
-        track.push({ x, y: cy });
-      }
+
+      const bendOffset = Math.floor(this.grid.height / 5);
+      const leftY = Math.max(1, cy - bendOffset);
+      const rightY = Math.min(this.grid.height - 2, cy + bendOffset);
+
+      for (let y = leftY; y < cy; y++) track.push({ x: startX, y });
+      for (let x = startX; x <= endX; x++) track.push({ x, y: cy });
+      for (let y = cy + 1; y <= rightY; y++) track.push({ x: endX, y });
       this.grid.track = track;
       this.track = track;
     }

@@ -88,14 +88,22 @@ export abstract class AbstractGridGenerator<
       const startOffset = -Math.floor((K - 1) / 2);
       const endOffset = Math.floor(K / 2);
 
-      // Safe track bounds so the KxK cart never overlaps with generals at x = 1 and x = W - 2
       const startX = Math.min(2 - startOffset, Math.floor(width / 2));
       const endX = Math.max(startX, width - 1 - (2 - startOffset));
 
-      for (let x = startX; x <= endX; x++) {
+      const bendOffset = Math.floor(height / 5);
+      const leftY = Math.max(-startOffset, cy - bendOffset);
+      const rightY = Math.min(height - 1 - endOffset, cy + bendOffset);
+
+      const trackPoints: { x: number; y: number }[] = [];
+      for (let y = leftY; y < cy; y++) trackPoints.push({ x: startX, y });
+      for (let x = startX; x <= endX; x++) trackPoints.push({ x, y: cy });
+      for (let y = cy + 1; y <= rightY; y++) trackPoints.push({ x: endX, y });
+
+      for (const pt of trackPoints) {
         for (let dy = startOffset; dy <= endOffset; dy++) {
           for (let dx = startOffset; dx <= endOffset; dx++) {
-            const coord = { x: x + dx, y: cy + dy };
+            const coord = { x: pt.x + dx, y: pt.y + dy };
             if (terrainGrid.isValid(coord)) {
               protectedZone.add(`${coord.x},${coord.y}`);
               if (terrainGrid.get(coord) !== Terrain.GENERAL) {
@@ -126,11 +134,17 @@ export abstract class AbstractGridGenerator<
       const cy = Math.floor(grid.height / 2);
       const K = (config as any).payloadCartSize ?? 3;
       const startOffset = -Math.floor((K - 1) / 2);
+      const endOffset = Math.floor(K / 2);
       const startX = Math.min(2 - startOffset, Math.floor(grid.width / 2));
       const endX = Math.max(startX, grid.width - 1 - (2 - startOffset));
-      for (let x = startX; x <= endX; x++) {
-        track.push({ x, y: cy });
-      }
+
+      const bendOffset = Math.floor(grid.height / 5);
+      const leftY = Math.max(-startOffset, cy - bendOffset);
+      const rightY = Math.min(grid.height - 1 - endOffset, cy + bendOffset);
+
+      for (let y = leftY; y < cy; y++) track.push({ x: startX, y });
+      for (let x = startX; x <= endX; x++) track.push({ x, y: cy });
+      for (let y = cy + 1; y <= rightY; y++) track.push({ x: endX, y });
       grid.track = track;
     }
 
@@ -221,26 +235,29 @@ export abstract class AbstractGridGenerator<
       const height = terrainGrid.gridType === "square" ? (terrainGrid as any).height : (bounds.leftSlant);
       const cy = Math.floor(height / 2);
 
+      const K = (config as any).payloadCartSize ?? 3;
+      const kStart = -Math.floor((K - 1) / 2);
+      const kEnd = Math.floor(K / 2);
+      const startX = Math.min(2 - kStart, Math.floor(width / 2));
+      const endX = Math.max(startX, width - 1 - (2 - kStart));
+      const bendOffset = Math.floor(height / 5);
+      const leftY = Math.max(-kStart, cy - bendOffset);
+      const rightY = Math.min(height - 1 - kEnd, cy + bendOffset);
+
       const selected: ICoordinate[] = [];
       const halfCount = Math.ceil(generalCount / 2);
 
-      // Left side candidates: x = 1, y = cy, cy - 1, cy + 1, ...
+      // Left team: same column as left track endpoint, above
       for (let i = 0; i < halfCount; i++) {
-        const yOffset = i === 0 ? 0 : Math.ceil(i / 2) * (i % 2 === 0 ? 1 : -1);
-        const y = cy + yOffset;
-        if (y >= 1 && y < height - 1) {
-          selected.push({ x: 1, y });
-        }
+        const y = leftY - 2 - i;
+        if (y >= 1) selected.push({ x: startX, y });
       }
 
-      // Right side candidates: x = W - 2, y = cy, cy - 1, cy + 1, ...
+      // Right team: same column as right track endpoint, below
       const rightCount = generalCount - selected.length;
       for (let i = 0; i < rightCount; i++) {
-        const yOffset = i === 0 ? 0 : Math.ceil(i / 2) * (i % 2 === 0 ? 1 : -1);
-        const y = cy + yOffset;
-        if (y >= 1 && y < height - 1) {
-          selected.push({ x: width - 2, y });
-        }
+        const y = rightY + 2 + i;
+        if (y < height - 1) selected.push({ x: endX, y });
       }
 
       for (const g of selected) {
