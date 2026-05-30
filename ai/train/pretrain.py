@@ -7,8 +7,8 @@ the parsed replay dataset (data/sft_dataset.npz).
 Uses cross-entropy loss on action prediction, with valid move masking.
 
 Usage:
-    cd training/
-    python -m rl.pretrain --epochs 50 --lr 1e-3
+    cd ai/
+    python -m train.pretrain --epochs 50 --lr 1e-3
 """
 
 import argparse
@@ -26,7 +26,7 @@ import jax.random as jrandom
 import equinox as eqx
 import optax
 
-from rl.network import UNetPolicyValueNetwork
+from train.network import UNetPolicyValueNetwork
 
 
 def load_dataset(path: str):

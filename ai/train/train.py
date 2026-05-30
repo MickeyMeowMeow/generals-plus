@@ -1,14 +1,14 @@
 """
 PPO training with CNN + LSTM for Generals Plus.
 
-Uses the built-in training/sim JAX environment (matching TS engine rules)
+Uses the built-in ai/sim JAX environment (matching TS engine rules)
 for vectorized self-play.
 
 The recurrent network processes single-frame (spatial, scalar) observations
 through a CNN + LSTM architecture, with LSTM state carried across steps.
 
-Usage (from the training/ directory):
-    python -m rl.train --grid-size 10 --num-envs 64
+Usage (from the ai/ directory):
+    python -m train.train --grid-size 10 --num-envs 64
 """
 
 import argparse
@@ -25,9 +25,10 @@ from ..sim.action import compute_valid_move_mask
 from ..sim.env import GeneralsEnv
 from ..sim import game
 from ..sim.types import Observation
-from ..sim.rewards import composite_reward_fn
+from ..sim.rewards import potential_based_reward
+from ..sim.memory import init_memory, update_memory, memory_to_channels, MemoryState
 
-from .network import RecurrentPolicyValueNetwork
+from .network import UNetPolicyValueNetwork
 
 
 def obs_to_spatial(obs: Observation) -> jnp.ndarray:

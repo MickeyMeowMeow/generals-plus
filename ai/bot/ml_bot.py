@@ -72,7 +72,7 @@ class MLBot:
         import jax.random as jrandom
         import equinox as eqx
 
-        from rl.network import RecurrentPolicyValueNetwork
+        from train.network import UNetPolicyValueNetwork
 
         dummy_key = jrandom.PRNGKey(0)
         network = RecurrentPolicyValueNetwork(dummy_key, grid_size=10)

@@ -21,8 +21,8 @@ Replay data fields:
 Output: data/sft_dataset.npz with arrays suitable for behavior cloning.
 
 Usage:
-    cd training/
-    python -m rl.replay_parser --max-games 1000
+    cd ai/
+    python -m train.replay_parser --max-games 1000
 """
 
 import argparse

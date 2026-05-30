@@ -1,14 +1,11 @@
 """
-Export a trained RecurrentPolicyValueNetwork to ONNX format.
+Export a trained UNetPolicyValueNetwork to ONNX format.
 
-The ONNX model takes single-frame inputs and returns action + updated LSTM state.
-The inference engine should:
-  1. Run CNN on each new spatial frame
-  2. Feed (cnn_features, scalar_features) + previous LSTM state into the LSTM step
-  3. Read the policy logits and updated LSTM state from the outputs
+The ONNX model takes single-frame inputs and returns action + value.
+No LSTM state — memory channels encode temporal information.
 
 Usage:
-    python -m rl.export_onnx --model models/ppo_recurrent.eqx --output models/bot.onnx
+    python -m train.export_onnx --model models/sft_pretrained.eqx --output models/bot.onnx
 """
 
 import argparse
@@ -24,7 +21,7 @@ _repo_root = str(Path(__file__).resolve().parents[2])
 if _repo_root not in sys.path:
     sys.path.insert(0, _repo_root)
 
-from rl.network import RecurrentPolicyValueNetwork
+from train.network import UNetPolicyValueNetwork
 
 
 def export(args):
