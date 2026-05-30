@@ -81,42 +81,8 @@ export abstract class AbstractGridGenerator<
     if (config.isPayload) {
       const bounds = terrainGrid.bounds;
       const isHex = "leftSlant" in bounds;
-      const height = isHex ? bounds.leftSlant : bounds.height;
-      const cy = Math.floor(height / 2);
-
-      const K = config.payloadCartSize;
-      const startOffset = -Math.floor((K - 1) / 2);
-      const endOffset = Math.floor(K / 2);
-
-      let startX: number, endX: number;
-      const bendOffset = Math.floor(height / 5);
-      const leftY = Math.max(-startOffset, cy - bendOffset);
-      const rightY = Math.min(height - 1 - endOffset, cy + bendOffset);
-
-      if (isHex) {
-        const hL = bounds.left,
-          hR = bounds.right,
-          hRS = bounds.rightSlant;
-        const minXAt = (y: number) => Math.max(-hL + 1, -y);
-        const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
-        startX = Math.max(
-          minXAt(leftY) + endOffset,
-          minXAt(Math.max(0, leftY - 2)),
-        );
-        endX = Math.min(
-          maxXAt(rightY) - endOffset,
-          maxXAt(Math.min(height - 1, rightY + 2)),
-        );
-      } else {
-        const w = bounds.width;
-        startX = Math.min(2 - startOffset, Math.floor(w / 2));
-        endX = Math.max(startX, w - 1 - (2 - startOffset));
-      }
-
-      const trackPoints: { x: number; y: number }[] = [];
-      for (let y = leftY; y < cy; y++) trackPoints.push({ x: startX, y });
-      for (let x = startX; x <= endX; x++) trackPoints.push({ x, y: cy });
-      for (let y = cy + 1; y <= rightY; y++) trackPoints.push({ x: endX, y });
+      const { startOffset, endOffset, trackPoints } =
+        this.getPayloadTrackGeometry(bounds, isHex, config.payloadCartSize);
 
       for (const pt of trackPoints) {
         for (let dy = startOffset; dy <= endOffset; dy++) {
@@ -148,51 +114,13 @@ export abstract class AbstractGridGenerator<
     const grid = this.materializeCells(terrainGrid, config);
 
     if (config.isPayload) {
-      const track: ICoordinate[] = [];
       const isHex = grid.gridType !== "square";
-      const bounds = grid.bounds;
-      const height = isHex
-        ? (bounds as { readonly leftSlant: number }).leftSlant
-        : (bounds as { readonly height: number }).height;
-      const cy = Math.floor(height / 2);
-      const K = config.payloadCartSize;
-      const startOffset = -Math.floor((K - 1) / 2);
-      const endOffset = Math.floor(K / 2);
-
-      let startX: number, endX: number;
-      const bendOffset = Math.floor(height / 5);
-      const leftY = Math.max(-startOffset, cy - bendOffset);
-      const rightY = Math.min(height - 1 - endOffset, cy + bendOffset);
-
-      if (isHex) {
-        const hexBounds = bounds as {
-          readonly left: number;
-          readonly right: number;
-          readonly rightSlant: number;
-        };
-        const hL = hexBounds.left;
-        const hR = hexBounds.right;
-        const hRS = hexBounds.rightSlant;
-        const minXAt = (y: number) => Math.max(-hL + 1, -y);
-        const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
-        startX = Math.max(
-          minXAt(leftY) + endOffset,
-          minXAt(Math.max(0, leftY - 2)),
-        );
-        endX = Math.min(
-          maxXAt(rightY) - endOffset,
-          maxXAt(Math.min(height - 1, rightY + 2)),
-        );
-      } else {
-        const sqBounds = bounds as { readonly width: number };
-        startX = Math.min(2 - startOffset, Math.floor(sqBounds.width / 2));
-        endX = Math.max(startX, sqBounds.width - 1 - (2 - startOffset));
-      }
-
-      for (let y = leftY; y < cy; y++) track.push({ x: startX, y });
-      for (let x = startX; x <= endX; x++) track.push({ x, y: cy });
-      for (let y = cy + 1; y <= rightY; y++) track.push({ x: endX, y });
-      grid.track = track;
+      const { trackPoints } = this.getPayloadTrackGeometry(
+        grid.bounds,
+        isHex,
+        config.payloadCartSize,
+      );
+      grid.track = trackPoints;
     }
 
     return grid;
@@ -267,6 +195,74 @@ export abstract class AbstractGridGenerator<
     options: GridGeneratorOptions<T>,
   ): GridBounds[T];
 
+  protected getPayloadTrackGeometry(
+    bounds: {
+      left?: number;
+      right?: number;
+      rightSlant?: number;
+      leftSlant?: number;
+      width?: number;
+      height?: number;
+    },
+    isHex: boolean,
+    cartSize: number,
+  ) {
+    const height = isHex
+      ? (bounds as { readonly leftSlant: number }).leftSlant
+      : (bounds as { readonly height: number }).height;
+    const cy = Math.floor(height / 2);
+
+    const startOffset = -Math.floor((cartSize - 1) / 2);
+    const endOffset = Math.floor(cartSize / 2);
+
+    let startX: number, endX: number;
+    const bendOffset = Math.floor(height / 5);
+    const leftY = Math.max(-startOffset, cy - bendOffset);
+    const rightY = Math.min(height - 1 - endOffset, cy + bendOffset);
+
+    if (isHex) {
+      const hexBounds = bounds as {
+        readonly left: number;
+        readonly right: number;
+        readonly rightSlant: number;
+      };
+      const hL = hexBounds.left;
+      const hR = hexBounds.right;
+      const hRS = hexBounds.rightSlant;
+      const minXAt = (y: number) => Math.max(-hL + 1, -y);
+      const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
+      startX = Math.max(
+        minXAt(leftY) + endOffset,
+        minXAt(Math.max(0, leftY - 2)),
+      );
+      endX = Math.min(
+        maxXAt(rightY) - endOffset,
+        maxXAt(Math.min(height - 1, rightY + 2)),
+      );
+    } else {
+      const sqBounds = bounds as { readonly width: number };
+      startX = Math.min(2 - startOffset, Math.floor(sqBounds.width / 2));
+      endX = Math.max(startX, sqBounds.width - 1 - (2 - startOffset));
+    }
+
+    const trackPoints: ICoordinate[] = [];
+    for (let y = leftY; y < cy; y++) trackPoints.push({ x: startX, y });
+    for (let x = startX; x <= endX; x++) trackPoints.push({ x, y: cy });
+    for (let y = cy + 1; y <= rightY; y++) trackPoints.push({ x: endX, y });
+
+    return {
+      cy,
+      height,
+      startOffset,
+      endOffset,
+      leftY,
+      rightY,
+      startX,
+      endX,
+      trackPoints,
+    };
+  }
+
   // ── Step 1: place generals ───────────────────────────────────────
 
   protected placeGenerals(
@@ -280,33 +276,8 @@ export abstract class AbstractGridGenerator<
     if (config.isPayload) {
       const bounds = terrainGrid.bounds;
       const isHex = "leftSlant" in bounds;
-      const height = isHex ? bounds.leftSlant : bounds.height;
-      const cy = Math.floor(height / 2);
-
-      const K = config.payloadCartSize;
-      const kStart = -Math.floor((K - 1) / 2);
-      const kEnd = Math.floor(K / 2);
-      const bendOffset = Math.floor(height / 5);
-      const leftY = Math.max(-kStart, cy - bendOffset);
-      const rightY = Math.min(height - 1 - kEnd, cy + bendOffset);
-
-      let startX: number, endX: number;
-      if (isHex) {
-        const hL = bounds.left,
-          hR = bounds.right,
-          hRS = bounds.rightSlant;
-        const minXAt = (y: number) => Math.max(-hL + 1, -y);
-        const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
-        startX = Math.max(minXAt(leftY) + kEnd, minXAt(Math.max(0, leftY - 2)));
-        endX = Math.min(
-          maxXAt(rightY) - kEnd,
-          maxXAt(Math.min(height - 1, rightY + 2)),
-        );
-      } else {
-        const w = bounds.width;
-        startX = Math.min(2 - kStart, Math.floor(w / 2));
-        endX = Math.max(startX, w - 1 - (2 - kStart));
-      }
+      const { height, leftY, rightY, startX, endX } =
+        this.getPayloadTrackGeometry(bounds, isHex, config.payloadCartSize);
 
       const selected: ICoordinate[] = [];
       const halfCount = Math.ceil(generalCount / 2);
