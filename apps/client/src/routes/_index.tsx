@@ -71,7 +71,9 @@ export default function Index() {
 
   if (phase === "queue") {
     return (
-      <QueuePage gameMode={selectedMode} onLeave={() => setPhase("lobby")} />
+      <Stage>
+        <QueuePage gameMode={selectedMode} onLeave={() => setPhase("lobby")} />
+      </Stage>
     );
   }
 
