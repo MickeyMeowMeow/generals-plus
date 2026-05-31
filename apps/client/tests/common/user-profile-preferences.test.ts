@@ -10,7 +10,7 @@ describe("UserProfile preferences", () => {
       preferences: {
         backgroundImage: {
           source: "preset",
-          presetId: "classic",
+          presetId: "default",
         },
         avatar: { source: "default" },
         stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
@@ -18,6 +18,6 @@ describe("UserProfile preferences", () => {
     };
 
     expect(profile.preferences?.backgroundImage.source).toBe("preset");
-    expect(profile.preferences?.backgroundImage.presetId).toBe("classic");
+    expect(profile.preferences?.backgroundImage.presetId).toBe("default");
   });
 });

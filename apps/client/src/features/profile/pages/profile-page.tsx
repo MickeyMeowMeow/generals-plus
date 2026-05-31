@@ -276,7 +276,7 @@ export function ProfilePage() {
                   });
                 }
               }}
-              className="grid gap-2 sm:grid-cols-4"
+              className="grid gap-2 sm:grid-cols-3"
             >
               {BACKGROUND_PRESETS.map((preset) => (
                 <Label

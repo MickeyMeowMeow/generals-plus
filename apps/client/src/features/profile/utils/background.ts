@@ -1,7 +1,7 @@
 import type { UserPreferences } from "@generals-plus/shared-types";
 import { BACKGROUND_PRESETS } from "@generals-plus/shared-types";
 
-const DEFAULT_BACKGROUND_URL = "/bg.jpg";
+const DEFAULT_BACKGROUND_URL = "/bg.png";
 const CSS_URL_ESCAPE_MAP: Record<string, string> = {
   '"': '\\"',
   "\\": "\\\\",

@@ -44,7 +44,7 @@ describe("Stage background", () => {
           id: "user-1",
           displayName: "Commander",
           preferences: {
-            backgroundImage: { source: "preset", presetId: "classic" },
+            backgroundImage: { source: "preset", presetId: "default" },
             avatar: { source: "default" },
             stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
           },
@@ -61,7 +61,7 @@ describe("Stage background", () => {
     );
 
     expect(screen.getByRole("main").getAttribute("style")).toContain(
-      '--stage-background-image: url("/bg.jpg")',
+      '--stage-background-image: url("/bg.png")',
     );
   });
 
