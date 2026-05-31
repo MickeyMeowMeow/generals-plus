@@ -66,10 +66,7 @@ export function ModeHelpButton({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
-          className="border-game-border bg-game-surface text-game-text"
-          aria-describedby="mode-help-desc"
-        >
+        <DialogContent className="border-game-border bg-game-surface text-game-text">
           <DialogHeader>
             <DialogTitle className="text-lg">{label}</DialogTitle>
           </DialogHeader>
