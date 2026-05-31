@@ -16,6 +16,7 @@ export interface IUser {
   verified?: boolean;
   ratings?: IPlayerRatings;
   preferences?: UserPreferences;
+  isAdmin?: boolean;
 }
 
 export type UserCreateOptions = Record<string, unknown>;
@@ -113,7 +114,22 @@ export interface IMapRepository {
     authorId: string,
     update: MapUpdateOptions,
   ): Promise<IMap | null>;
-  delete(id: string, authorId: string): Promise<boolean>;
+  delete(id: string, authorId?: string): Promise<boolean>;
   incrementPlays(id: string): Promise<void>;
   toggleLike(id: string, userId: string): Promise<"liked" | "unliked">;
+}
+
+export interface ISystemSettings {
+  allowMapCreation: boolean;
+  allowMapUpdates: boolean;
+  systemBanner: string;
+  maxMapsPerUser: number;
+  maxTotalRooms: number;
+  maxVsAiRooms: number;
+  maintenanceMode: boolean;
+}
+
+export interface ISystemSettingsRepository {
+  getSettings(): Promise<ISystemSettings>;
+  updateSettings(settings: Partial<ISystemSettings>): Promise<ISystemSettings>;
 }

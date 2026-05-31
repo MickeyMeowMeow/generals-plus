@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
 import { Button } from "#/components/ui/button";
+import type { SystemSettings } from "#/features/admin/api/system-settings-api";
+import { systemSettingsApi } from "#/features/admin/api/system-settings-api";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth, useUser } from "#/features/auth/hooks";
 import { mapsApi } from "#/features/map-editor/api/maps-api";
@@ -27,6 +29,20 @@ export function MapEditorPage() {
 
   const { state } = useAuth();
   const user = useUser((u) => u);
+  const isAdmin = useUser((u) => u?.isAdmin ?? false);
+
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
+
+  useEffect(() => {
+    systemSettingsApi
+      .get()
+      .then(setSettings)
+      .catch(() => {});
+  }, []);
+
+  const isCreationDisabled = settings
+    ? !settings.allowMapCreation && !isAdmin
+    : false;
 
   const reset = useEditorStore((s) => s.reset);
   const loadFromMap = useEditorStore((s) => s.loadFromMap);
@@ -143,6 +159,13 @@ export function MapEditorPage() {
 
   return (
     <div className="flex h-screen w-screen flex-col bg-game-bg text-game-text">
+      {isCreationDisabled && (
+        <div className="bg-red-500/10 border-b border-red-500/25 px-4 py-2 text-center text-xs text-red-400 font-semibold flex items-center justify-center gap-2 select-none z-50">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+          Map creation is temporarily disabled by administrator. You will not be
+          able to save or publish this map.
+        </div>
+      )}
       <header className="flex items-center justify-between border-b border-game-border bg-game-surface px-4 py-2">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="sm">
@@ -174,7 +197,7 @@ export function MapEditorPage() {
           <Button
             type="button"
             variant="outline"
-            disabled={saving || !canSave || !user}
+            disabled={saving || !canSave || !user || isCreationDisabled}
             onClick={() => onSave(false)}
             className="border-game-border bg-game-bg text-game-text"
           >
@@ -184,7 +207,11 @@ export function MapEditorPage() {
           <Button
             type="button"
             disabled={
-              saving || !canSave || !user || supportedModes.length === 0
+              saving ||
+              !canSave ||
+              !user ||
+              supportedModes.length === 0 ||
+              isCreationDisabled
             }
             onClick={() => onSave(true)}
           >

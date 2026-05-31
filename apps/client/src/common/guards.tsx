@@ -54,3 +54,43 @@ export function RequireAuthenticated({ children }: { children: ReactElement }) {
 
   return children;
 }
+
+/**
+ * Route guard that only permits authenticated administrators.
+ * Redirects regular players to the lobby root page immediately.
+ */
+export function RequireAdmin({ children }: { children: ReactElement }) {
+  const { state } = useAuth();
+  const user = state.user;
+
+  if (
+    !state.isHydrated ||
+    state.status === AuthStatus.HYDRATING ||
+    state.status === AuthStatus.AUTHENTICATING
+  ) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-5">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle>Checking session</CardTitle>
+            <CardDescription>
+              Loading authenticated player context.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Loader2
+              className="size-5 animate-spin text-muted-foreground"
+              aria-hidden="true"
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (state.status !== AuthStatus.AUTHENTICATED || !user?.isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}

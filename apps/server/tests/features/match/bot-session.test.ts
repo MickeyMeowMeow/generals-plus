@@ -7,9 +7,9 @@
 
 import type { BotBridge, GridInfo } from "@generals-plus/ai";
 import { BotSession } from "@generals-plus/ai";
-import type { IBaseGame, IVisionCell } from "@generals-plus/engine";
-import { PlayerStatus, Visibility } from "@generals-plus/engine";
-import type { ActionData } from "@generals-plus/shared-types";
+import type { IBaseGame, ICellOwner, IVisionCell } from "@generals-plus/engine";
+import { PlayerStatus, Terrain, Visibility } from "@generals-plus/engine";
+import type { ActionData, MatchState } from "@generals-plus/shared-types";
 import { ClientActionQueue, ClientVision } from "@generals-plus/shared-types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -34,7 +34,7 @@ function createMockVisionCell(overrides?: Partial<IVisionCell>): IVisionCell {
   return {
     coordinate: { x: 0, y: 0 },
     visibility: Visibility.VISIBLE,
-    terrain: "PLAIN" as any,
+    terrain: Terrain.PLAIN,
     troopCount: 0,
     owner: null,
     ...overrides,
@@ -54,12 +54,12 @@ function createMockState(overrides?: {
   tick?: number;
   clientVisions?: Map<string, ClientVision>;
   clientActionQueues?: Map<string, ClientActionQueue>;
-}) {
+}): MatchState {
   return {
     tick: overrides?.tick ?? 0,
     clientVisions: overrides?.clientVisions ?? new Map(),
     clientActionQueues: overrides?.clientActionQueues ?? new Map(),
-  } as any;
+  } as unknown as MatchState;
 }
 
 const DEFAULT_GRID: GridInfo = { type: "square", width: 10, height: 10 };
@@ -159,7 +159,7 @@ describe("BotSession", () => {
 
       // Create game with a vision cell owned by this bot
       const cell = createMockVisionCell({
-        owner: { playerId: "bot_1", status: PlayerStatus.ACTIVE } as any,
+        owner: { playerId: "bot_1", status: PlayerStatus.ACTIVE } as ICellOwner,
         troopCount: 10,
       });
       const game = createMockGame([cell]);
@@ -168,7 +168,7 @@ describe("BotSession", () => {
 
       // Should have sent tick
       expect(bridge.sendTickAndWait).toHaveBeenCalledOnce();
-      const tickMsg = (bridge.sendTickAndWait as any).mock.calls[0][1];
+      const tickMsg = bridge.sendTickAndWait.mock.calls[0][1];
       expect(tickMsg.type).toBe("tick");
       expect(tickMsg.player_id).toBe("bot_1");
       expect(tickMsg.tick).toBe(5);
@@ -283,17 +283,26 @@ describe("BotSession", () => {
       const cells = [
         createMockVisionCell({
           coordinate: { x: 0, y: 0 },
-          owner: { playerId: "bot_1", status: PlayerStatus.ACTIVE } as any,
+          owner: {
+            playerId: "bot_1",
+            status: PlayerStatus.ACTIVE,
+          } as ICellOwner,
           troopCount: 5,
         }),
         createMockVisionCell({
           coordinate: { x: 1, y: 0 },
-          owner: { playerId: "bot_1", status: PlayerStatus.ACTIVE } as any,
+          owner: {
+            playerId: "bot_1",
+            status: PlayerStatus.ACTIVE,
+          } as ICellOwner,
           troopCount: 3,
         }),
         createMockVisionCell({
           coordinate: { x: 2, y: 0 },
-          owner: { playerId: "other", status: PlayerStatus.ACTIVE } as any,
+          owner: {
+            playerId: "other",
+            status: PlayerStatus.ACTIVE,
+          } as ICellOwner,
           troopCount: 7,
         }),
       ];
@@ -301,7 +310,7 @@ describe("BotSession", () => {
 
       await session.onTick(game, state, []);
 
-      const tickMsg = (bridge.sendTickAndWait as any).mock.calls[0][1];
+      const tickMsg = bridge.sendTickAndWait.mock.calls[0][1];
       expect(tickMsg.owned_land_count).toBe(2);
       expect(tickMsg.owned_army_count).toBe(8); // 5 + 3
     });
@@ -372,10 +381,10 @@ describe("BotSession", () => {
       });
 
       const cellA = createMockVisionCell({
-        owner: { playerId: "bot_A", status: PlayerStatus.ACTIVE } as any,
+        owner: { playerId: "bot_A", status: PlayerStatus.ACTIVE } as ICellOwner,
       });
       const cellB = createMockVisionCell({
-        owner: { playerId: "bot_B", status: PlayerStatus.ACTIVE } as any,
+        owner: { playerId: "bot_B", status: PlayerStatus.ACTIVE } as ICellOwner,
       });
 
       // Each session uses its own game (separate vision grid)
@@ -383,7 +392,7 @@ describe("BotSession", () => {
       await sessionB.onTick(createMockGame([cellB]), state, []);
 
       // Both tick messages sent with correct player_ids
-      const calls = (bridge.sendTickAndWait as any).mock.calls;
+      const calls = bridge.sendTickAndWait.mock.calls;
       expect(calls[0][0]).toBe("bot_A");
       expect(calls[0][1].player_id).toBe("bot_A");
       expect(calls[1][0]).toBe("bot_B");

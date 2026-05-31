@@ -1,3 +1,4 @@
+/* biome-ignore-all lint/complexity/useLiteralKeys: private member access */
 /**
  * Tests for BotBridge — WebSocket client for bot service communication.
  *
@@ -19,13 +20,13 @@ function injectPending(
   resolve: (action: unknown) => void = vi.fn(),
 ): ReturnType<typeof setTimeout> {
   const timer = setTimeout(() => {}, 30000);
-  (bridge as any).pendingCallbacks.set(playerId, { resolve, timer });
+  bridge["pendingCallbacks"].set(playerId, { resolve, timer });
   return timer;
 }
 
 /** Access the private handleMessage. */
 function callHandleMessage(bridge: BotBridge, msg: unknown): void {
-  (bridge as any).handleMessage(msg);
+  bridge["handleMessage"](msg);
 }
 
 // ---------------------------------------------------------------------------
@@ -69,8 +70,8 @@ describe("BotBridge", () => {
       expect(resolveA).not.toHaveBeenCalled();
 
       // player_B removed from pending, player_A still registered
-      expect((bridge as any).pendingCallbacks.has("player_B")).toBe(false);
-      expect((bridge as any).pendingCallbacks.has("player_A")).toBe(true);
+      expect(bridge["pendingCallbacks"].has("player_B")).toBe(false);
+      expect(bridge["pendingCallbacks"].has("player_A")).toBe(true);
 
       clearTimeout(timerA);
       clearTimeout(timerB);
@@ -102,7 +103,7 @@ describe("BotBridge", () => {
       expect(resolveB).toHaveBeenCalledOnce();
 
       // Both cleaned up
-      expect((bridge as any).pendingCallbacks.size).toBe(0);
+      expect(bridge["pendingCallbacks"].size).toBe(0);
 
       clearTimeout(timerA);
       clearTimeout(timerB);
@@ -187,7 +188,7 @@ describe("BotBridge", () => {
 
       expect(resolveA).toHaveBeenCalledWith(null);
       expect(resolveB).toHaveBeenCalledWith(null);
-      expect((bridge as any).pendingCallbacks.size).toBe(0);
+      expect(bridge["pendingCallbacks"].size).toBe(0);
     });
   });
 });

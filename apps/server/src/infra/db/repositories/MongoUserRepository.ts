@@ -1,5 +1,6 @@
 import type { GameMode } from "@generals-plus/engine";
 
+import { ENV } from "#/env";
 import type {
   IUser,
   IUserRepository,
@@ -14,6 +15,12 @@ import { UserModel } from "#/infra/db/models/user-model";
  */
 export class MongoUserRepository implements IUserRepository {
   private mapToEntity(doc: IUserDocument): IUser {
+    const adminEmails = ENV.ADMIN_EMAILS
+      ? ENV.ADMIN_EMAILS.split(",").map((e) => e.trim().toLowerCase())
+      : [];
+    const emailIsAdmin = doc.email
+      ? adminEmails.includes(doc.email.trim().toLowerCase())
+      : false;
     return {
       id: doc._id.toString(),
       email: doc.email,
@@ -23,6 +30,7 @@ export class MongoUserRepository implements IUserRepository {
       verified: doc.verified,
       ratings: doc.ratings,
       preferences: doc.preferences,
+      isAdmin: doc.isAdmin || emailIsAdmin,
     };
   }
 

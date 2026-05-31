@@ -4,7 +4,7 @@ import {
   CUSTOM_ROOM_KEY_MIN_LENGTH,
   isValidCustomRoomKeyLength,
 } from "@generals-plus/shared-types";
-import { LogOut, Map as MapIcon, Play, Plus, User } from "lucide-react";
+import { LogOut, Map as MapIcon, Play, Plus, Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -131,6 +131,7 @@ export function LobbyPage({
   const { actions } = useAuth();
   const displayName = useUser((user) => user?.displayName ?? "Commander");
   const preferences = useUser((user) => user?.preferences);
+  const isAdmin = useUser((user) => user?.isAdmin ?? false);
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [customRoomId, setCustomRoomId] = useState("");
   const [customError, setCustomError] = useState<string | null>(null);
@@ -218,6 +219,14 @@ export function LobbyPage({
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              {isAdmin && (
+                <Button asChild variant="ghost">
+                  <Link to="/admin">
+                    <Shield className="size-4" />
+                    Admin
+                  </Link>
+                </Button>
+              )}
               <Button asChild variant="ghost">
                 <Link to="/maps">
                   <MapIcon className="size-4" />

@@ -130,6 +130,8 @@ describe("MongoUserRepository and UserModel tests", () => {
           anonymous: false,
           verified: true,
           ratings: { classic: 1200 },
+          preferences: undefined,
+          isAdmin: false,
         });
       });
 
@@ -195,6 +197,8 @@ describe("MongoUserRepository and UserModel tests", () => {
           anonymous: false,
           verified: false,
           ratings: { classic: 1000 },
+          preferences: undefined,
+          isAdmin: false,
         });
       });
 
@@ -252,6 +256,8 @@ describe("MongoUserRepository and UserModel tests", () => {
           anonymous: true,
           verified: false,
           ratings: { classic: 1000 },
+          preferences: undefined,
+          isAdmin: false,
         });
       });
     });

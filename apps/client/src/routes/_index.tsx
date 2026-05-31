@@ -22,7 +22,7 @@ export default function Index() {
   const [selectedMode, setSelectedMode] = useState<GameMode>(DEFAULT_GAME_MODE);
   const [vsAiReservation, setVsAiReservation] =
     useState<SeatReservation | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: Colyseus room any type
   const vsAiRoomRef = useRef<any>(null);
 
   const handleVsAi = async () => {
@@ -38,7 +38,7 @@ export default function Index() {
       .joinOrCreate("vs-ai")
       .then((room) => {
         vsAiRoomRef.current = room;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // biome-ignore lint/suspicious/noExplicitAny: Colyseus room any type
         (room as any).onMessage(
           QueueServerMessage.SEAT_RESERVATION,
           (reservation: SeatReservation) => {
@@ -49,7 +49,14 @@ export default function Index() {
           },
         );
       })
-      .catch(() => {
+      .catch((err) => {
+        const errMsg =
+          err instanceof Error
+            ? err.message
+            : err && typeof err === "object" && "message" in err
+              ? String((err as { message: unknown }).message)
+              : String(err || "Failed to start AI game");
+        toast.error(errMsg);
         setPhase("lobby");
       });
   };
