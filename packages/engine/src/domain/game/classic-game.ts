@@ -23,7 +23,7 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     this.assignStartPositions();
 
     // --- Original generals.io troop generation rules ---
-    // Structures (general + city): +1 every 2 ticks (on odd ticks)
+    // Structures (general + city): +1 every 2 ticks (fires at ticks 2, 4, 6, ...)
     // All owned cells (including structures): +1 every 50 ticks
     //
     // This matches the original game where:
