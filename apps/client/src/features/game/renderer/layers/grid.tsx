@@ -48,11 +48,7 @@ export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
           color: RenderConfig.background,
         });
 
-        const color = cell.ownerIndex
-          ? (playerColors.get(cell.ownerIndex) ?? 0x333333)
-          : TerrainTheme[cell.terrain]?.color || 0xffffff;
-
-        g.fill(color);
+        g.fill(getCellFillColor(cell, playerColors));
 
         // Handle collapse warning
         if (cell.willCollapse) {
