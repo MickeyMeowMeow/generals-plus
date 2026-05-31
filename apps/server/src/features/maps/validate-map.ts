@@ -7,6 +7,27 @@ export interface MapValidationResult {
   errors: string[];
 }
 
+const getMinX = (gridType: string, bounds: any, y: number): number => {
+  if (gridType === "square") return 0;
+  const { left } = bounds as unknown as { left: number };
+  return Math.max(-left + 1, -y);
+};
+
+const getCell = (
+  gridType: string,
+  bounds: any,
+  cells: { terrain: string }[][],
+  x: number,
+  y: number,
+) => {
+  if (y < 0 || y >= cells.length) return null;
+  const row = cells[y];
+  if (!row) return null;
+  const minX = getMinX(gridType, bounds, y);
+  const idx = x - minX;
+  return row[idx] ?? null;
+};
+
 export function validateMapGrid(grid: GridTemplate): MapValidationResult {
   const errors: string[] = [];
   const { gridType, bounds, cells, spawns } = grid;
@@ -42,14 +63,16 @@ export function validateMapGrid(grid: GridTemplate): MapValidationResult {
     }
   }
 
-  // Count generals
+  // Count generals (using absolute coordinates)
   const generalCoords: { x: number; y: number }[] = [];
   let _flagCount = 0;
   let _bombSiteCount = 0;
 
   for (let y = 0; y < cells.length; y++) {
-    for (let x = 0; x < cells[y].length; x++) {
-      const cell = cells[y][x];
+    const minX = getMinX(gridType, bounds, y);
+    for (let idx = 0; idx < cells[y].length; idx++) {
+      const cell = cells[y][idx];
+      const x = minX + idx; // absolute x coordinate
       if (cell.terrain === Terrain.GENERAL) {
         generalCoords.push({ x, y });
       }
@@ -76,10 +99,10 @@ export function validateMapGrid(grid: GridTemplate): MapValidationResult {
     spawnKeys.add(key);
 
     // Check spawn coordinate is a general cell
-    const row = cells[spawn.y];
-    if (!row || spawn.x >= row.length) {
+    const cell = getCell(gridType, bounds, cells, spawn.x, spawn.y);
+    if (!cell) {
       errors.push(`Spawn at (${spawn.x}, ${spawn.y}) is out of bounds`);
-    } else if (row[spawn.x].terrain !== Terrain.GENERAL) {
+    } else if (cell.terrain !== Terrain.GENERAL) {
       errors.push(`Spawn at (${spawn.x}, ${spawn.y}) is not on a general cell`);
     }
   }
@@ -93,7 +116,7 @@ export function validateMapGrid(grid: GridTemplate): MapValidationResult {
 
   // Validate connectivity between generals
   if (generalCoords.length >= 2) {
-    if (!checkGeneralConnectivity(cells, generalCoords)) {
+    if (!checkGeneralConnectivity(gridType, bounds, cells, generalCoords)) {
       errors.push("Not all generals are reachable from each other");
     }
   }
@@ -107,16 +130,15 @@ export function validateMapGrid(grid: GridTemplate): MapValidationResult {
 }
 
 function checkGeneralConnectivity(
+  gridType: string,
+  bounds: any,
   cells: { terrain: string }[][],
   generalCoords: { x: number; y: number }[],
 ): boolean {
-  const height = cells.length;
   const passable = (x: number, y: number): boolean => {
-    if (y < 0 || y >= height) return false;
-    const row = cells[y];
-    if (!row || x < 0 || x >= row.length) return false;
-    const t = row[x].terrain;
-    return t !== Terrain.MOUNTAIN && t !== Terrain.VOID;
+    const cell = getCell(gridType, bounds, cells, x, y);
+    if (!cell) return false;
+    return cell.terrain !== Terrain.MOUNTAIN && cell.terrain !== Terrain.VOID;
   };
 
   // BFS from first general
@@ -125,16 +147,28 @@ function checkGeneralConnectivity(
   const queue = [start];
   visited.add(`${start.x},${start.y}`);
 
+  const offsets =
+    gridType === "square"
+      ? [
+          [0, -1],
+          [1, 0],
+          [0, 1],
+          [-1, 0],
+        ]
+      : [
+          [0, -1],
+          [1, -1],
+          [1, 0],
+          [0, 1],
+          [-1, 1],
+          [-1, 0],
+        ];
+
   while (queue.length > 0) {
     const head = queue.shift();
     if (!head) break;
     const { x, y } = head;
-    for (const [dx, dy] of [
-      [0, 1],
-      [0, -1],
-      [1, 0],
-      [-1, 0],
-    ]) {
+    for (const [dx, dy] of offsets) {
       const nx = x + dx;
       const ny = y + dy;
       const key = `${nx},${ny}`;
