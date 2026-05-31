@@ -266,8 +266,8 @@ export function AdminSettingsPage() {
                 className="border-game-border bg-game-bg text-game-text placeholder:text-game-text-dim focus-visible:ring-white/20"
               />
               <p className="text-[11px] text-game-text-dim">
-                This notice will be rendered at the very top of the app to all
-                players in real-time.
+                Displayed at the top of the main lobby page. Leave empty to
+                hide.
               </p>
             </div>
           </div>
