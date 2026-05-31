@@ -1,31 +1,14 @@
 import { ShieldAlert } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router";
 
 import { Button } from "#/components/ui/button";
-import type { SystemSettings } from "#/features/admin/api/system-settings-api";
-import { systemSettingsApi } from "#/features/admin/api/system-settings-api";
+import { useSystemSettings } from "#/features/admin/api/system-settings-api";
 import { AuthProvider, useUser } from "#/features/auth/hooks";
 
 function AppShell() {
   const user = useUser();
   const location = useLocation();
-  const [settings, setSettings] = useState<SystemSettings | null>(null);
-
-  useEffect(() => {
-    const fetchSettings = () => {
-      systemSettingsApi
-        .get()
-        .then((res) => setSettings(res))
-        .catch(() => {});
-    };
-
-    fetchSettings();
-
-    // Poll settings every 30 seconds to keep announcement banner and maintenance mode fresh
-    const interval = setInterval(fetchSettings, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const settings = useSystemSettings();
 
   const showMaintenance = settings?.maintenanceMode && user && !user.isAdmin;
   const isMainPage = location.pathname === "/";

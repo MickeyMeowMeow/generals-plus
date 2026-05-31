@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 import { resolveColyseusEndpoint } from "#/infra/colyseus/connection";
 import { networkProvider } from "#/infra/network/provider";
 
@@ -52,3 +54,33 @@ export const systemSettingsApi = {
     });
   },
 };
+
+export function useSystemSettings(): SystemSettings | null {
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
+
+  useEffect(() => {
+    const endpoint = getHttpEndpoint();
+    const eventSource = new EventSource(
+      new URL("/system/settings/stream", endpoint).toString(),
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        setSettings(JSON.parse(event.data));
+      } catch {
+        // Ignore malformed data
+      }
+    };
+
+    eventSource.onerror = () => {
+      // EventSource auto-reconnects; close to avoid retry storms on fatal errors
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+
+  return settings;
+}

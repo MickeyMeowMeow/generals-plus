@@ -7,6 +7,15 @@ import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository
 const userRepository = new MongoUserRepository();
 const systemSettingsRepository = new MongoSystemSettingsRepository();
 
+type SettingsListener = (settings: Record<string, unknown>) => void;
+const settingsListeners = new Set<SettingsListener>();
+
+function broadcastSettings(settings: Record<string, unknown>) {
+  for (const listener of settingsListeners) {
+    listener(settings);
+  }
+}
+
 async function getAuthorizedUser(request: Request) {
   const header = request.header("authorization");
   if (!header?.startsWith("Bearer ")) return null;
@@ -34,6 +43,33 @@ export function registerSystemRoutes(app: {
     handler: (req: Request, res: Response) => Promise<void>,
   ) => void;
 }) {
+  // SSE stream for real-time settings updates
+  app.get("/system/settings/stream", async (request, response) => {
+    response.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
+
+    // Send current settings immediately on connect
+    try {
+      const settings = await systemSettingsRepository.getSettings();
+      response.write(`data: ${JSON.stringify(settings)}\n\n`);
+    } catch {
+      // If initial fetch fails, client will retry on reconnect
+    }
+
+    const listener: SettingsListener = (settings) => {
+      response.write(`data: ${JSON.stringify(settings)}\n\n`);
+    };
+
+    settingsListeners.add(listener);
+
+    request.on("close", () => {
+      settingsListeners.delete(listener);
+    });
+  });
+
   // Get global settings (publicly accessible, but filters sensitive fields for non-admins)
   app.get("/system/settings", async (request, response) => {
     try {
@@ -72,6 +108,7 @@ export function registerSystemRoutes(app: {
       const result = await systemSettingsRepository.updateSettings(
         request.body,
       );
+      broadcastSettings(result);
       response.json(result);
     } catch (_error) {
       response.status(500).json({ error: "Failed to update system settings" });
