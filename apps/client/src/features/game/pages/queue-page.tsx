@@ -8,6 +8,7 @@ import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useUser } from "#/features/auth/hooks";
 import { useQueueRoom } from "#/features/game/api/use-queue-room";
 import { ColorPicker } from "#/features/game/components/color-picker";
+import { ModeHelpButton } from "#/features/game/components/mode-help-button";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
 import { Avatar } from "#/features/profile/components/avatar";
@@ -127,7 +128,13 @@ export function QueuePage({
               <p className="text-2xl font-bold">{displayName}</p>
             </div>
           </div>
-          <p className="text-sm text-game-text-dim">Mode: {modeLabel}</p>
+          <div className="flex items-center gap-1">
+            <p className="text-sm text-game-text-dim">Mode: {modeLabel}</p>
+            <ModeHelpButton
+              gameMode={gameMode}
+              className="text-game-text-dim hover:text-game-text"
+            />
+          </div>
         </div>
 
         <div className="grid gap-8 border-t border-game-border pt-8 md:grid-cols-[1fr_20rem]">
