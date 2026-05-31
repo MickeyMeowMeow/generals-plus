@@ -37,6 +37,10 @@ export function getCellFillColor(
     return playerColors.get(cell.ownerIndex) ?? 0x333333;
   }
 
+  if (cell.visibility === Visibility.SHROUDED) {
+    return 0x525356;
+  }
+
   if ((cell.troopCount ?? 0) > 0) {
     return NeutralTroopCellColor;
   }

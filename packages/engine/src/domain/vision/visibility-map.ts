@@ -57,31 +57,36 @@ export function createVisionCell(
         siteIndex: cell.siteIndex,
         willCollapse: cell.willCollapse,
       };
-    case Visibility.SHROUDED:
+    case Visibility.SHROUDED: {
+      const isBombSite = cell.terrain === Terrain.BOMB_SITE;
       return {
         coordinate: cell.coordinate,
         visibility,
-        terrain:
-          cell.terrain === Terrain.MOUNTAIN || cell.terrain === Terrain.CITY
+        terrain: isBombSite
+          ? Terrain.BOMB_SITE
+          : cell.terrain === Terrain.MOUNTAIN || cell.terrain === Terrain.CITY
             ? MaskedTerrain.MAYBE_MOUNTAIN
             : MaskedTerrain.MAYBE_PLAIN,
         troopCount: null,
         owner: null,
         item: attackerItem,
-        siteIndex: null,
+        siteIndex: isBombSite ? cell.siteIndex : null,
         willCollapse: cell.willCollapse,
       };
-    case Visibility.HIDDEN:
+    }
+    case Visibility.HIDDEN: {
+      const isBombSite = cell.terrain === Terrain.BOMB_SITE;
       return {
         coordinate: cell.coordinate,
-        visibility,
-        terrain: HiddenTerrain,
+        visibility: isBombSite ? Visibility.SHROUDED : visibility,
+        terrain: isBombSite ? Terrain.BOMB_SITE : HiddenTerrain,
         troopCount: null,
         owner: null,
         item: attackerItem,
-        siteIndex: null,
+        siteIndex: isBombSite ? cell.siteIndex : null,
         willCollapse: cell.willCollapse,
       };
+    }
   }
 }
 
