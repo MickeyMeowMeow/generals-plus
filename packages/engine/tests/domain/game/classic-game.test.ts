@@ -176,22 +176,44 @@ describe("ClassicGame", () => {
     game.startGame();
     expect(generalCell.owner).toBe(p1);
 
-    game.nextTick(); // tick 1: general +1, city +1, plain +0
+    // Original generals.io rules:
+    //   Structures (general + city): +1 every 2 ticks
+    //   All owned cells (incl. structures): +1 every 50 ticks
+
+    game.nextTick(); // tick 1: no trigger yet (interval=2 first fires at tick 2)
+    expect(generalCell.troopCount).toBe(1);
+    expect(cityCell.troopCount).toBe(0);
+    expect(plainCell.troopCount).toBe(0);
+
+    game.nextTick(); // tick 2: structure trigger (interval=2)
     expect(generalCell.troopCount).toBe(2);
     expect(cityCell.troopCount).toBe(1);
     expect(plainCell.troopCount).toBe(0);
 
     // Run until tick 25
-    for (let i = 2; i <= 25; i++) {
+    for (let i = 3; i <= 25; i++) {
       game.nextTick();
     }
 
     // At tick 25:
-    // General generated 25 times total (1 initial + 25 = 26)
-    // City generated 25 times total (0 initial + 25 = 25)
-    // Plain generated 1 time total (0 initial + 1 = 1)
-    expect(generalCell.troopCount).toBe(26);
-    expect(cityCell.troopCount).toBe(25);
+    // General: 1 (initial) + 12 (interval=2 at ticks 2,4,...,24) = 13
+    // City:    0 (initial) + 12 (interval=2 at ticks 2,4,...,24) = 12
+    // Plain:   0 (interval=50 not reached yet) = 0
+    expect(generalCell.troopCount).toBe(13);
+    expect(cityCell.troopCount).toBe(12);
+    expect(plainCell.troopCount).toBe(0);
+
+    // Run until tick 50
+    for (let i = 26; i <= 50; i++) {
+      game.nextTick();
+    }
+
+    // At tick 50:
+    // General: 1 (initial) + 25 (interval=2: ticks 2,4,...,50) + 1 (interval=50) = 27
+    // City:    0 (initial) + 25 (interval=2) + 1 (interval=50) = 26
+    // Plain:   0 + 1 (interval=50) = 1
+    expect(generalCell.troopCount).toBe(27);
+    expect(cityCell.troopCount).toBe(26);
     expect(plainCell.troopCount).toBe(1);
   });
 

@@ -84,18 +84,17 @@ def action_to_label(action: np.ndarray, H: int, W: int) -> int:
 
 
 @eqx.filter_jit
-def compute_loss(network, obs, mask, label):
-    """Cross-entropy loss for a single sample."""
+def compute_loss(network, obs, _mask, label):
+    """Cross-entropy loss for a single sample.
+
+    No mask applied — SFT labels come from expert replays and are valid by
+    definition.  Applying the -1e9 mask penalty explodes loss (~1e9) when the
+    re-simulated state diverges from the original game (army=1 moves, ownership
+    drift).  Mask is only needed for sampling (PPO), not for supervised CE.
+    """
     features, _ = network._unet_forward(obs)
     logits = network.policy_conv(features)
-    H, W = logits.shape[1], logits.shape[2]
-
-    mask_t = jnp.transpose(mask, (2, 0, 1))
-    mask_penalty = (1 - mask_t) * -1e9
-    combined_mask = jnp.concatenate([
-        mask_penalty, mask_penalty, jnp.zeros((1, H, W)),
-    ], axis=0)
-    logits_flat = (logits + combined_mask).reshape(-1)
+    logits_flat = logits.reshape(-1)
 
     log_probs = jax.nn.log_softmax(logits_flat)
     return -log_probs[label]
@@ -140,7 +139,7 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument("--batch-size", type=int, default=1024, help="Batch size")
     parser.add_argument("--save-path", default="models/sft_pretrained.eqx", help="Model save path")
-    parser.add_argument("--eval-every", type=int, default=5, help="Eval every N epochs")
+    parser.add_argument("--eval-every", type=int, default=1, help="Eval every N epochs")
     parser.add_argument("--ch1", type=int, default=96, help="Encoder level-1 channels (default 96)")
     parser.add_argument("--ch2", type=int, default=192, help="Encoder level-2 channels (default 192)")
     parser.add_argument("--ch-bot", type=int, default=384, help="Bottleneck channels (default 384)")

@@ -20,6 +20,8 @@ import os
 import re
 import sys
 import time
+from threading import Thread
+from tqdm import tqdm as _tqdm
 
 # Support running as `python -m train.train` from the ai/ directory
 if __name__ == "__main__" and __package__ is None:
@@ -113,11 +115,13 @@ class OpponentPool:
         """
         Try to add current model to pool.
         Replaces oldest if win_rate >= 45%.
+        Returns True if pool was updated.
         """
         if len(self.models) < self.pool_size:
             self.models.append(eqx.filter_jit(lambda m: m)(model))
             self.win_rates.append(win_rate)
             self.games_played.append(1)
+            return True
         elif win_rate >= 0.45:
             # Replace oldest
             self.models.pop(0)
@@ -126,14 +130,18 @@ class OpponentPool:
             self.models.append(eqx.filter_jit(lambda m: m)(model))
             self.win_rates.append(win_rate)
             self.games_played.append(1)
+            return True
+        return False
 
 
 # ---------------------------------------------------------------------------
 # Rollout (lax.scan for fused XLA computation)
 # ---------------------------------------------------------------------------
 
-def _make_rollout_body_random(network):
-    """Create scan body for random-opponent rollout."""
+def _make_rollout_body_random(network, reset_pool):
+    """Create scan body for random-opponent rollout with auto-reset."""
+
+    pool_size = reset_pool.armies.shape[0]
 
     def scan_body(carry, _):
         states, memories, key = carry
@@ -167,6 +175,16 @@ def _make_rollout_body_random(network):
         truncated = (new_states.time >= 500) & ~terminated
         dones = terminated | truncated
 
+        # Auto-reset: sample from pre-generated state pool
+        key, reset_key = jrandom.split(key)
+        pool_indices = jrandom.randint(reset_key, (num_envs,), 0, pool_size)
+        reset_states = jax.tree.map(lambda x: x[pool_indices], reset_pool)
+        new_states = jax.tree.map(
+            lambda r, c: jnp.where(
+                dones.reshape((-1,) + (1,) * (c.ndim - 1)), r, c),
+            reset_states, new_states,
+        )
+
         new_memories = jax.vmap(update_memory)(obs_p0, actions_p0, memories)
         new_memories = jax.vmap(reset_memory_on_done)(new_memories, dones)
 
@@ -177,8 +195,10 @@ def _make_rollout_body_random(network):
     return scan_body
 
 
-def _make_rollout_body_selfplay(network, opponent_network):
-    """Create scan body for self-play opponent rollout."""
+def _make_rollout_body_selfplay(network, opponent_network, reset_pool):
+    """Create scan body for self-play opponent rollout with auto-reset."""
+
+    pool_size = reset_pool.armies.shape[0]
 
     def scan_body(carry, _):
         states, memories, key = carry
@@ -215,6 +235,16 @@ def _make_rollout_body_selfplay(network, opponent_network):
         truncated = (new_states.time >= 500) & ~terminated
         dones = terminated | truncated
 
+        # Auto-reset: sample from pre-generated state pool
+        key, reset_key = jrandom.split(key)
+        pool_indices = jrandom.randint(reset_key, (num_envs,), 0, pool_size)
+        reset_states = jax.tree.map(lambda x: x[pool_indices], reset_pool)
+        new_states = jax.tree.map(
+            lambda r, c: jnp.where(
+                dones.reshape((-1,) + (1,) * (c.ndim - 1)), r, c),
+            reset_states, new_states,
+        )
+
         new_memories = jax.vmap(update_memory)(obs_p0, actions_p0, memories)
         new_memories = jax.vmap(reset_memory_on_done)(new_memories, dones)
 
@@ -225,15 +255,16 @@ def _make_rollout_body_selfplay(network, opponent_network):
     return scan_body
 
 
-def run_rollout(states, memories, key, network, opponent_network, num_steps):
+def run_rollout(states, memories, key, network, opponent_network, num_steps, reset_pool):
     """Run a full rollout using lax.scan (single fused XLA computation).
 
     Replaces the old Python for-loop + per-step jit pattern.
+    Includes auto-reset: done games are immediately replaced from reset_pool.
     """
     if opponent_network is not None:
-        body = _make_rollout_body_selfplay(network, opponent_network)
+        body = _make_rollout_body_selfplay(network, opponent_network, reset_pool)
     else:
-        body = _make_rollout_body_random(network)
+        body = _make_rollout_body_random(network, reset_pool)
 
     carry = (states, memories, key)
     carry, data = jax.lax.scan(body, carry, None, length=num_steps)
@@ -241,12 +272,11 @@ def run_rollout(states, memories, key, network, opponent_network, num_steps):
 
 
 # ---------------------------------------------------------------------------
-# PPO loss
+# PPO loss + fused training epoch
 # ---------------------------------------------------------------------------
 
-@eqx.filter_jit
-def ppo_loss(network, obs_24ch, mask, action, old_logprob, advantage, ret, clip=0.2):
-    """PPO loss for a single sample."""
+def ppo_loss_fn(network, obs_24ch, mask, action, old_logprob, advantage, ret, clip=0.2):
+    """PPO loss for a single sample. Pure arithmetic — no branching."""
     _, value, logprob, entropy = network(obs_24ch, mask, jrandom.PRNGKey(0), action)
 
     ratio = jnp.exp(logprob - old_logprob)
@@ -259,21 +289,64 @@ def ppo_loss(network, obs_24ch, mask, action, old_logprob, advantage, ret, clip=
     return policy_loss + value_loss + entropy_loss
 
 
-def train_step(network, opt_state, batch, optimizer):
-    """Single training step on a minibatch."""
-    obs_24ch, masks, actions, old_logprobs, advantages, returns = batch
+def make_train_epoch(optimizer, minibatch_size):
+    """Create a JIT-compiled training function that fuses all minibatch steps
+    into a single XLA program via ``jax.lax.scan``.
 
-    def loss_fn(net):
-        losses = jax.vmap(
-            lambda o, m, a, olp, adv, r: ppo_loss(net, o, m, a, olp, adv, r)
-        )(obs_24ch, masks, actions, old_logprobs, advantages, returns)
-        return jnp.mean(losses)
+    Benefits over a Python for-loop:
+      - No GIL: entire minibatch loop runs on GPU as one XLA program.
+      - No sync points: ``float(loss)`` inside a Python loop forces 256
+        GPU→CPU syncs per iteration; scan has zero.
+      - ``jax.checkpoint`` (remat) on each scan step keeps memory O(1)
+        per step instead of O(num_minibatches).
 
-    loss, grads = eqx.filter_value_and_grad(loss_fn)(network)
-    updates, opt_state = optimizer.update(grads, opt_state, network)
-    network = eqx.apply_updates(network, updates)
+    The scan body is purely arithmetic (conv, element-wise, reduction)
+    with no data-dependent branching — GPU-friendly.
+    """
+    @eqx.filter_jit
+    def train_epoch(network, opt_state, batch):
+        obs_24ch, masks, actions, old_logprobs, advantages, returns = batch
+        bs = obs_24ch.shape[0]
+        num_mb = bs // minibatch_size
+        trim = num_mb * minibatch_size
 
-    return network, opt_state, loss
+        # Reshape batch into (num_mb, mb_size, ...)
+        mb_data = (
+            obs_24ch[:trim].reshape(num_mb, minibatch_size, *obs_24ch.shape[1:]),
+            masks[:trim].reshape(num_mb, minibatch_size, *masks.shape[1:]),
+            actions[:trim].reshape(num_mb, minibatch_size, *actions.shape[1:]),
+            old_logprobs[:trim].reshape(num_mb, minibatch_size),
+            advantages[:trim].reshape(num_mb, minibatch_size),
+            returns[:trim].reshape(num_mb, minibatch_size),
+        )
+
+        # Partition: only array leaves go through scan carry
+        diff, static = eqx.partition(network, eqx.is_array)
+
+        @jax.checkpoint
+        def scan_step(carry, mb):
+            diff, opt_state = carry
+            mb_o, mb_m, mb_a, mb_lp, mb_adv, mb_ret = mb
+
+            def loss_fn(d):
+                net = eqx.combine(d, static)
+                losses = jax.vmap(
+                    lambda o, m, a, olp, adv, r: ppo_loss_fn(net, o, m, a, olp, adv, r)
+                )(mb_o, mb_m, mb_a, mb_lp, mb_adv, mb_ret)
+                return jnp.mean(losses)
+
+            loss, grads = jax.value_and_grad(loss_fn)(diff)
+            updates, opt_state = optimizer.update(grads, opt_state, diff)
+            diff = optax.apply_updates(diff, updates)
+            return (diff, opt_state), loss
+
+        (diff, opt_state), losses = jax.lax.scan(
+            scan_step, (diff, opt_state), mb_data,
+        )
+        network = eqx.combine(diff, static)
+        return network, opt_state, jnp.mean(losses)
+
+    return train_epoch
 
 
 # ---------------------------------------------------------------------------
@@ -372,7 +445,7 @@ def main():
     print()
 
     # Checkpoint config
-    CHECKPOINT_INTERVAL = 50
+    CHECKPOINT_INTERVAL = 25
     CHECKPOINT_KEEP = 3
     best_win_rate = -1.0
     saved_checkpoints = []
@@ -394,15 +467,40 @@ def main():
     _single_mem = init_memory(H, W)
     memories = jax.tree.map(lambda x: jnp.stack([x] * num_envs), _single_mem)
 
-    # Warmup — run a short rollout to trigger JIT compilation
-    print("Warming up...")
+    # Pre-generate state pool for auto-reset (avoids calling generate_grid
+    # inside lax.scan, which would run every step even for non-done envs).
+    POOL_SIZE = num_envs * 20  # generous pool
+    key, pool_key = jrandom.split(key)
+    pool_keys = jrandom.split(pool_key, POOL_SIZE)
+    reset_pool = jax.vmap(env.init_state)(pool_keys)  # shape: (POOL_SIZE, ...)
+    _pool_idx = jnp.zeros(num_envs, dtype=jnp.int32)   # per-env pool cursor
+
+    # Warmup — compile rollout + train_epoch (first-run JIT compilation)
+    print("Warming up (JIT compilation)...")
     opponent = pool.get_opponent(key) if args.opponent == "self-play" else None
-    carry, _ = run_rollout(states, memories, key, network, opponent, num_steps=3)
+    carry, _ = run_rollout(states, memories, key, network, opponent, num_steps=3, reset_pool=reset_pool)
     jax.block_until_ready(carry[0])
+
+    train_epoch = make_train_epoch(optimizer, args.minibatch_size)
     print("Training...\n")
 
-    for iteration in range(start_iter, args.num_iterations):
+    pbar = _tqdm(range(start_iter, args.num_iterations),
+                  desc="PPO", unit="iter", dynamic_ncols=True)
+
+    # Background thread handle for async checkpoint saves
+    _save_thread = None
+
+    # Sliding window for pool update decisions (reduce noisy per-iter updates)
+    WIN_WINDOW = 10
+    _win_history = []
+
+    for iteration in pbar:
         t0 = time.time()
+
+        # Wait for previous async checkpoint to finish before modifying model
+        if _save_thread is not None:
+            _save_thread.join()
+            _save_thread = None
 
         # Get opponent for this iteration
         if args.opponent == "self-play" and pool.models:
@@ -414,7 +512,7 @@ def main():
         # Run full rollout via lax.scan (single fused XLA computation)
         carry = (states, memories, key)
         carry, rollout_data = run_rollout(
-            states, memories, key, network, opponent, num_steps,
+            states, memories, key, network, opponent, num_steps, reset_pool=reset_pool,
         )
         states, memories, key = carry
 
@@ -444,47 +542,63 @@ def main():
             returns.reshape(-1),
         )
 
-        # Shuffle and train
+        # Shuffle
         key, shuffle_key = jrandom.split(key)
         perm = jrandom.permutation(shuffle_key, bs)
         batch = tuple(x[perm] for x in batch)
 
-        num_complete = bs // args.minibatch_size
-        total_loss = 0.0
-        for i in range(num_complete):
-            start = i * args.minibatch_size
-            end = start + args.minibatch_size
-            minibatch = tuple(x[start:end] for x in batch)
-            network, opt_state, loss = train_step(network, opt_state, minibatch, optimizer)
-            total_loss += float(loss)
+        # --- Fused training: all minibatches in one XLA program (no GIL) ---
+        network, opt_state, avg_loss_jax = train_epoch(network, opt_state, batch)
+
+        # --- Batch all metrics into a single GPU→CPU transfer ---
+        metrics_jax = jax.device_get((
+            avg_loss_jax,
+            rewards_all.mean(),
+            dones_all.sum().astype(jnp.float32),
+            jnp.sum(dones_all & (infos_all.winner == 0)).astype(jnp.float32),
+        ))
 
         elapsed = time.time() - t0
+        avg_loss = float(metrics_jax[0])
+        avg_reward = float(metrics_jax[1])
+        num_episodes = max(int(metrics_jax[2]), 0)
+        wins = max(int(metrics_jax[3]), 0) if num_episodes > 0 else 0
+        win_rate = wins / max(num_episodes, 1) * 100
+        sps = (num_envs * num_steps) / elapsed
 
-        if iteration % 10 == 0:
-            avg_reward = float(rewards_all.mean())
-            num_episodes = int(dones_all.sum())
-            # infos_all already pre-stacked by lax.scan: (num_steps, num_envs, ...)
-            wins = int(jnp.sum(dones_all & (infos_all.winner == 0))) if num_episodes > 0 else 0
-            win_rate = wins / max(num_episodes, 1) * 100
-            sps = (num_envs * num_steps) / elapsed
-            print(
-                f"Iter {iteration:4d} | Loss: {total_loss / max(num_complete, 1):.4f} | "
-                f"Reward: {avg_reward:+.4f} | Episodes: {num_episodes:3d} | "
-                f"Wins: {wins:2d}/{num_episodes} ({win_rate:.0f}%) | "
-                f"SPS: {sps:7.0f} | Time: {elapsed:.2f}s"
-            )
+        pbar.set_postfix(
+            loss=f"{avg_loss:.4f}",
+            reward=f"{avg_reward:+.3f}",
+            win=f"{win_rate:.0f}%({wins}/{num_episodes})",
+            sps=f"{sps:.0f}",
+            t=f"{elapsed:.1f}s",
+        )
 
-            # Update opponent pool
-            if args.opponent == "self-play" and num_episodes > 0:
-                pool.update(network, win_rate / 100.0)
+        # Update opponent pool (smoothed: use sliding-window avg to reduce noise)
+        if args.opponent == "self-play" and num_episodes > 0:
+            _win_history.append(win_rate / 100.0)
+            if len(_win_history) > WIN_WINDOW:
+                _win_history.pop(0)
+            avg_win = sum(_win_history) / len(_win_history)
+            if pool.update(network, avg_win):
+                _win_history.clear()  # reset window after pool update
 
-        # Checkpoint
+        # Checkpoint (async file I/O — doesn't block GPU)
         if (iteration + 1) % CHECKPOINT_INTERVAL == 0:
             ckpt_path = f"models/checkpoint_{iteration + 1}.eqx"
             opt_ckpt_path = ckpt_path.replace(".eqx", ".opt")
-            eqx.tree_serialise_leaves(ckpt_path, network)
-            eqx.tree_serialise_leaves(opt_ckpt_path, opt_state)
+            # Copy to CPU numpy arrays, then save in background thread
+            net_cpu = jax.device_get(network)
+            opt_cpu = jax.device_get(opt_state)
+
+            def _async_save():
+                eqx.tree_serialise_leaves(ckpt_path, net_cpu)
+                eqx.tree_serialise_leaves(opt_ckpt_path, opt_cpu)
+
+            _save_thread = Thread(target=_async_save, daemon=True)
+            _save_thread.start()
             saved_checkpoints.append(ckpt_path)
+            pbar.write(f"  ↗ Checkpoint: {ckpt_path}")
             # Rotate: keep only N most recent
             while len(saved_checkpoints) > CHECKPOINT_KEEP:
                 old = saved_checkpoints.pop(0)
@@ -499,8 +613,13 @@ def main():
             best_win_rate = win_rate
             eqx.tree_serialise_leaves("models/best.eqx", network)
 
+    # Wait for final checkpoint to finish saving
+    if _save_thread is not None:
+        _save_thread.join()
+
+    pbar.close()
+
     # Save final model
-    import os
     os.makedirs(os.path.dirname(args.save_path) or ".", exist_ok=True)
     eqx.tree_serialise_leaves(args.save_path, network)
     print(f"\nModel saved to: {args.save_path}")

@@ -80,25 +80,30 @@ def create_initial_state(grid: jnp.ndarray) -> GameState:
 @jax.jit
 def _army_increment(state: GameState) -> GameState:
     """
-    Increment armies according to generals-plus TS engine rules:
-      - General & city: +1 every tick
-      - Plain (owned, not structure): +1 every 25 ticks
+    Increment armies matching original generals.io rules:
+      - All owned cells (including structures): +1 every 50 ticks
+      - Owned structures (generals + cities):   +1 every 2 ticks (odd ticks)
     """
     time = state.time
     armies = state.armies
 
-    # Owned structures (generals + cities) get +1 every tick
-    structures = state.generals | state.cities
-    owned_structures = structures & (state.ownership[0] | state.ownership[1])
-    armies = armies + owned_structures.astype(jnp.int32)
-
-    # Owned plains get +1 every 25 ticks
-    increment_plains = (time % 25 == 0)
-    plains = state.passable & ~structures
-    owned_plains = plains & (state.ownership[0] | state.ownership[1])
+    # All owned cells get +1 every 50 ticks
+    increment_all = time % 50 == 0
+    all_owned = state.ownership[0] | state.ownership[1]
     armies = lax.cond(
-        increment_plains,
-        lambda a: a + owned_plains.astype(jnp.int32),
+        increment_all,
+        lambda a: a + all_owned.astype(jnp.int32),
+        lambda a: a,
+        armies,
+    )
+
+    # Owned structures get +1 every 2 ticks (on odd ticks)
+    increment_structures = time % 2 == 1
+    structures = state.generals | state.cities
+    owned_structures = structures & all_owned
+    armies = lax.cond(
+        increment_structures,
+        lambda a: a + owned_structures.astype(jnp.int32),
         lambda a: a,
         armies,
     )
@@ -287,6 +292,53 @@ def _apply_move(
 
 
 # ---------------------------------------------------------------------------
+# Move order (original generals.io rules)
+# ---------------------------------------------------------------------------
+
+@jax.jit
+def _determine_move_order(state: GameState, actions: jnp.ndarray) -> jnp.ndarray:
+    """Determine which player moves first (original generals.io rules).
+
+    Priority: chasing > reinforcing > bigger army > P0 first.
+    Returns 0 or 1.
+    """
+    pass_0, row_0, col_0, dir_0, _ = actions[0]
+    pass_1, row_1, col_1, dir_1, _ = actions[1]
+
+    # Only P0 passes → P1 goes first
+    only_p0_passes = (pass_0 == 1) & (pass_1 == 0)
+
+    # Destination coords
+    di_0 = row_0 + DIRECTIONS[dir_0, 0]
+    dj_0 = col_0 + DIRECTIONS[dir_0, 1]
+    di_1 = row_1 + DIRECTIONS[dir_1, 0]
+    dj_1 = col_1 + DIRECTIONS[dir_1, 1]
+
+    # Chasing: P0 moves to P1's source or vice versa
+    p0_chasing = (di_0 == row_1) & (dj_0 == col_1)
+    p1_chasing = (di_1 == row_0) & (dj_1 == col_0)
+
+    # Reinforcing: moving to own cell
+    p0_reinforcing = state.ownership[0, di_0, dj_0]
+    p1_reinforcing = state.ownership[1, di_1, dj_1]
+
+    # Army comparison at source cells
+    army_0 = state.armies[row_0, col_0]
+    army_1 = state.armies[row_1, col_1]
+
+    # P1 goes first if:
+    p1_wins_by_chase = p1_chasing & ~p0_chasing
+    tie_on_chase = p0_chasing == p1_chasing
+    p1_wins_by_reinforce = tie_on_chase & p1_reinforcing & ~p0_reinforcing
+    tie_on_reinforce = p0_reinforcing == p1_reinforcing
+    p1_wins_by_army = tie_on_chase & tie_on_reinforce & (army_1 > army_0)
+
+    p1_goes_first = p1_wins_by_chase | p1_wins_by_reinforce | p1_wins_by_army | only_p0_passes
+
+    return lax.cond(p1_goes_first, lambda: jnp.int32(1), lambda: jnp.int32(0))
+
+
+# ---------------------------------------------------------------------------
 # Main step
 # ---------------------------------------------------------------------------
 
@@ -295,7 +347,12 @@ def step(state: GameState, actions: jnp.ndarray) -> tuple[GameState, GameInfo]:
     """
     Execute one game tick with actions from both players.
 
-    Order: P0 acts first, then P1. Matches TS sequential action processing.
+    Move order follows original generals.io rules:
+      - If one player passes, the other goes first
+      - If P0 is chasing P1 (moving to P1's source) and P1 is not: P1 goes first
+      - If chasing is tied, the reinforcing player goes first
+      - If still tied, the player with more troops on the source goes first
+      - Otherwise P0 goes first
 
     Args:
         state: Current GameState.
@@ -306,23 +363,31 @@ def step(state: GameState, actions: jnp.ndarray) -> tuple[GameState, GameInfo]:
     """
     done_before = state.winner >= 0
 
-    # Extract actions
-    action_p0 = actions[0]  # [pass, row, col, direction, split]
-    action_p1 = actions[1]
+    # Determine move order (original generals.io rules)
+    first_player = _determine_move_order(state, actions)
+    second_player = 1 - first_player
 
-    # Execute P0 action (skip if pass)
+    # Execute first player's action (skip if pass)
     state = lax.cond(
-        action_p0[0] == 1,
+        actions[first_player][0] == 1,
         lambda s: s,
-        lambda s: _execute_move(s, 0, action_p0[1], action_p0[2], action_p0[3], action_p0[4]),
+        lambda s: _execute_move(
+            s, first_player,
+            actions[first_player][1], actions[first_player][2],
+            actions[first_player][3], actions[first_player][4],
+        ),
         state,
     )
 
-    # Execute P1 action (skip if pass)
+    # Execute second player's action (skip if pass)
     state = lax.cond(
-        action_p1[0] == 1,
+        actions[second_player][0] == 1,
         lambda s: s,
-        lambda s: _execute_move(s, 1, action_p1[1], action_p1[2], action_p1[3], action_p1[4]),
+        lambda s: _execute_move(
+            s, second_player,
+            actions[second_player][1], actions[second_player][2],
+            actions[second_player][3], actions[second_player][4],
+        ),
         state,
     )
 
