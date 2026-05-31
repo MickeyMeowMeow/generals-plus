@@ -55,7 +55,9 @@ export class VsAiRoom extends Room {
       }
 
       const vsAiRoomsCount = matchRooms.filter((room) =>
-        room.metadata?.playerInit?.some((player: any) => player.isBot),
+        room.metadata?.playerInit?.some(
+          (player: { isBot?: boolean }) => player.isBot,
+        ),
       ).length;
 
       if (vsAiRoomsCount >= settings.maxVsAiRooms) {
