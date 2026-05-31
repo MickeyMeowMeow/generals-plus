@@ -1,5 +1,6 @@
 import type { GameMode } from "@generals-plus/engine";
 import { QueueClientMessage } from "@generals-plus/shared-types";
+import { User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
@@ -10,7 +11,8 @@ import { useQueueRoom } from "#/features/game/api/use-queue-room";
 import { ColorPicker } from "#/features/game/components/color-picker";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
-import { getInitial, resolveAvatarUrl } from "#/features/profile/utils/avatar";
+import { Avatar } from "#/features/profile/components/avatar";
+import { resolveAvatarUrl } from "#/features/profile/utils/avatar";
 import { RoomStatus } from "#/infra/network/room";
 
 function getModeOption(mode: GameMode) {
@@ -44,7 +46,6 @@ export function QueuePage({
   const userId = useUser((user) => user?.id);
   const displayName = useUser((user) => user?.displayName ?? "Commander");
   const preferences = useUser((user) => user?.preferences);
-  const avatarUrl = resolveAvatarUrl(preferences);
   const modeLabel = getModeOption(gameMode)?.label ?? gameMode;
   const [queueSeconds, setQueueSeconds] = useState(0);
   const queueStartedAtRef = useRef<number | null>(null);
@@ -122,17 +123,7 @@ export function QueuePage({
       <div className="mx-auto grid w-full max-w-5xl gap-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt=""
-                className="size-10 shrink-0 rounded-none object-cover"
-              />
-            ) : (
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-none bg-game-surface text-lg font-bold">
-                {getInitial(displayName)}
-              </div>
-            )}
+            <Avatar preferences={preferences?.avatar} />
             <div>
               <p className="text-sm text-game-text-dim">Hello,</p>
               <p className="text-2xl font-bold">{displayName}</p>

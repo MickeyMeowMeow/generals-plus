@@ -19,7 +19,7 @@ import {
 import { Input } from "#/components/ui/input";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
-import { getInitial, resolveAvatarUrl } from "#/features/profile/utils/avatar";
+import { Avatar } from "#/features/profile/components/avatar";
 import { networkProvider } from "#/infra/network/provider";
 import { HttpRequestError } from "#/infra/network/provider/colyseus";
 
@@ -90,7 +90,6 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
   const { actions } = useAuth();
   const displayName = useUser((user) => user?.displayName ?? "Commander");
   const preferences = useUser((user) => user?.preferences);
-  const avatarUrl = resolveAvatarUrl(preferences);
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [customRoomId, setCustomRoomId] = useState("");
   const [customError, setCustomError] = useState<string | null>(null);
@@ -147,17 +146,7 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
 
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  className="size-10 shrink-0 rounded-none object-cover"
-                />
-              ) : (
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-none bg-game-surface text-lg font-bold">
-                  {getInitial(displayName)}
-                </div>
-              )}
+              <Avatar preferences={preferences?.avatar} />
               <div>
                 <p className="text-sm text-game-text-dim">Hello,</p>
                 <p className="text-2xl font-bold">{displayName}</p>

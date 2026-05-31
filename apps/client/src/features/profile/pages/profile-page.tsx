@@ -22,7 +22,8 @@ import { Slider } from "#/components/ui/slider";
 import { Switch } from "#/components/ui/switch";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
-import { getInitial, resolveAvatarUrl } from "#/features/profile/utils/avatar";
+import { Avatar } from "#/features/profile/components/avatar";
+import { resolveAvatarUrl } from "#/features/profile/utils/avatar";
 import { cn } from "#/lib/utils";
 
 type BackgroundValue = BackgroundPresetId | "customUrl";
@@ -99,8 +100,6 @@ export function ProfilePage() {
     backgroundImage.source === "preset"
       ? backgroundImage.presetId
       : "customUrl";
-
-  const avatarUrl = resolveAvatarUrl({ avatar } as UserPreferences);
 
   const handlePreferencesSave = async () => {
     const preferences: UserPreferences = {
@@ -203,17 +202,7 @@ export function ProfilePage() {
         <section className="grid gap-3 border-t border-game-border pt-5">
           <h2 className="text-base font-semibold">Avatar</h2>
           <div className="flex items-start gap-4">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt="Avatar preview"
-                className="size-16 shrink-0 rounded-none border border-game-border object-cover"
-              />
-            ) : (
-              <div className="flex size-16 shrink-0 items-center justify-center rounded-none border border-game-border bg-game-surface text-2xl font-bold">
-                {getInitial(user.displayName)}
-              </div>
-            )}
+            <Avatar preferences={avatar} size="lg" />
             <div className="flex-1 grid gap-2">
               <RadioGroup
                 value={avatar.source}

@@ -1,6 +1,6 @@
 import { GameMode } from "@generals-plus/engine";
 import { SetupClientMessage } from "@generals-plus/shared-types";
-import { LogOut, Play } from "lucide-react";
+import { LogOut, Play, User } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -13,7 +13,8 @@ import { ColorPicker } from "#/features/game/components/color-picker";
 import { GameSettings } from "#/features/game/components/game-settings";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
-import { getInitial, resolveAvatarUrl } from "#/features/profile/utils/avatar";
+import { Avatar } from "#/features/profile/components/avatar";
+import { resolveAvatarUrl } from "#/features/profile/utils/avatar";
 import { networkProvider } from "#/infra/network/provider";
 
 const DEMOLITION_TEAM_GROUPS = [
@@ -43,7 +44,6 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
   const userId = useUser((user) => user?.id);
   const displayName = useUser((user) => user?.displayName ?? "Commander");
   const preferences = useUser((user) => user?.preferences);
-  const avatarUrl = resolveAvatarUrl(preferences);
   const [resolvedRoomId, setResolvedRoomId] = useState<string | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [isResolvingRoom, setIsResolvingRoom] = useState(true);
@@ -210,17 +210,7 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
       <div className="mx-auto grid w-full max-w-5xl gap-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt=""
-                className="size-10 shrink-0 rounded-none object-cover"
-              />
-            ) : (
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-none bg-game-surface text-lg font-bold">
-                {getInitial(displayName)}
-              </div>
-            )}
+            <Avatar preferences={preferences?.avatar} />
             <div>
               <p className="text-sm text-game-text-dim">Hello,</p>
               <p className="text-2xl font-bold">{displayName}</p>
