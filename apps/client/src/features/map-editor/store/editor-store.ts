@@ -183,8 +183,8 @@ function recomputeBombSiteIndices(cells: CellTemplate[][]): CellTemplate[][] {
     return i;
   };
 
-  return cells.map((row, y) =>
-    row.map((cell, x) => {
+  return cells.map((row, _y) =>
+    row.map((cell, _x) => {
       if (cell.terrain !== T.BOMB_SITE) return cell;
       if (cell.siteIndex !== null) return cell;
       // Newly placed or stripped site: assign smallest available index
