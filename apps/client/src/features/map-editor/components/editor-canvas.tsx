@@ -1,15 +1,17 @@
 import type { ICoordinate } from "@generals-plus/engine";
-import {
-  GridType,
-  HexGrid2D,
-  Terrain,
-  Visibility,
-} from "@generals-plus/engine";
+import { GridType, Visibility } from "@generals-plus/engine";
 import type { CellTemplate, SpawnPoint } from "@generals-plus/shared-types";
 import { Application, extend } from "@pixi/react";
 import type { FederatedPointerEvent } from "pixi.js";
-import { Assets, Container, Graphics, Rectangle, Text } from "pixi.js";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Assets,
+  Container,
+  Graphics,
+  Rectangle,
+  Text,
+  TextStyle,
+} from "pixi.js";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   cityIcon,
@@ -19,18 +21,29 @@ import {
   mountainIcon,
   swampIcon,
 } from "#/features/game/assets";
+import { GridLayer } from "#/features/game/renderer/layers/grid";
+import { IconLayer } from "#/features/game/renderer/layers/icon";
+import { PayloadLayer } from "#/features/game/renderer/layers/payload";
+import { SiteLabelLayer } from "#/features/game/renderer/layers/site-label";
+import { TroopLayer } from "#/features/game/renderer/layers/troop";
 import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import {
   HexRenderGrid,
   SquareRenderGrid,
 } from "#/features/game/renderer/render-grid";
-import { TerrainTheme } from "#/features/game/renderer/theme";
 import { Viewport } from "#/features/game/renderer/viewport";
-import { drawCell } from "#/features/game/utils/renderer";
 import { useEditorStore } from "#/features/map-editor/store/editor-store";
 
 extend({ Container, Graphics, Text });
+
+const SPAWN_TEXT_STYLE = new TextStyle({
+  fontFamily: "Oxanium Variable, sans-serif",
+  fontSize: 22,
+  fill: 0xffffff,
+  stroke: { color: 0x111111, width: 4 },
+  fontWeight: "900",
+});
 
 function buildRenderGrid(
   gridType: GridType,
@@ -93,18 +106,66 @@ interface EditorCanvasProps {
   playerColorByTeam: Map<string, number>;
 }
 
-function EditorScene({
+interface EditorSpawnLayerProps {
+  grid: RenderGrid;
+  spawns: SpawnPoint[];
+}
+
+// Memoized to prevent Pixi display object reconciliation flickering on mouse move
+const EditorSpawnLayer = memo(function EditorSpawnLayer({
+  grid,
+  spawns,
+}: EditorSpawnLayerProps) {
+  const drawSpawns = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      // Draw small ring for each spawn
+      for (const s of spawns) {
+        const c = grid.toCartesian({ x: s.x, y: s.y });
+        const x = c.x * RenderConfig.cellStride;
+        const y = c.y * RenderConfig.cellStride;
+        g.circle(x, y, RenderConfig.cellStride * 0.4);
+        g.stroke({ width: 3, color: 0xffffff, alpha: 0.85 });
+      }
+    },
+    [grid, spawns],
+  );
+
+  return (
+    <pixiContainer>
+      <pixiGraphics draw={drawSpawns} />
+      {spawns.map((s) => {
+        const c = grid.toCartesian({ x: s.x, y: s.y });
+        const x = c.x * RenderConfig.cellStride;
+        const y =
+          c.y * RenderConfig.cellStride + RenderConfig.cellStride * 0.45;
+        const text = `${s.teamId}/${s.slot}`;
+        return (
+          <pixiText
+            key={`spawn-label-${s.x},${s.y}`}
+            text={text}
+            anchor={0.5}
+            x={x}
+            y={y}
+            style={SPAWN_TEXT_STYLE}
+          />
+        );
+      })}
+    </pixiContainer>
+  );
+});
+
+// Memoized to completely isolate Pixi sublayers from parent re-renders when mouse moves/drags
+const EditorScene = memo(function EditorScene({
   grid,
   spawns,
   track,
-  cells,
   playerColorByTeam,
   onCellClick,
 }: {
   grid: RenderGrid;
   spawns: SpawnPoint[];
   track: ICoordinate[];
-  cells: CellTemplate[][];
   playerColorByTeam: Map<string, number>;
   onCellClick: (coord: ICoordinate) => void;
 }) {
@@ -120,66 +181,6 @@ function EditorScene({
     return new Rectangle(-10000, -10000, 20000, 20000);
   }, [grid]);
 
-  const drawBase = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      grid.forEach((cell, coord) => {
-        drawCell(g, grid, coord);
-        const theme = TerrainTheme[cell.terrain];
-        let color = theme?.color ?? 0xffffff;
-        if (cell.ownerIndex) {
-          color = playerColorByTeam.get(cell.ownerIndex) ?? color;
-        }
-        g.stroke({
-          width: RenderConfig.cellStroke,
-          color: RenderConfig.background,
-        });
-        g.fill(color);
-      });
-    },
-    [grid, playerColorByTeam],
-  );
-
-  const drawTrack = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      if (track.length === 0) return;
-      for (let i = 0; i < track.length; i++) {
-        const p = track[i];
-        const c = grid.toCartesian(p);
-        const x = c.x * RenderConfig.cellStride;
-        const y = c.y * RenderConfig.cellStride;
-        g.circle(x, y, RenderConfig.cellStride * 0.15);
-        g.fill({ color: 0x3498db, alpha: 0.85 });
-        if (i > 0) {
-          const prev = grid.toCartesian(track[i - 1]);
-          g.moveTo(
-            prev.x * RenderConfig.cellStride,
-            prev.y * RenderConfig.cellStride,
-          );
-          g.lineTo(x, y);
-          g.stroke({ width: 8, color: 0x3498db, alpha: 0.5 });
-        }
-      }
-    },
-    [grid, track],
-  );
-
-  const drawSpawnLabels = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      // Draw small ring for each spawn
-      for (const s of spawns) {
-        const c = grid.toCartesian({ x: s.x, y: s.y });
-        const x = c.x * RenderConfig.cellStride;
-        const y = c.y * RenderConfig.cellStride;
-        g.circle(x, y, RenderConfig.cellStride * 0.4);
-        g.stroke({ width: 3, color: 0xffffff, alpha: 0.85 });
-      }
-    },
-    [grid, spawns],
-  );
-
   const onPointerDown = useCallback(
     (e: FederatedPointerEvent) => {
       const localPos = e.currentTarget.toLocal(e.global);
@@ -192,44 +193,8 @@ function EditorScene({
     [grid, onCellClick],
   );
 
-  // Render bombsite labels and general icons via Text elements
-  const labels = useMemo(() => {
-    const items: {
-      x: number;
-      y: number;
-      text: string;
-      kind: "bomb" | "spawn";
-    }[] = [];
-    for (let y = 0; y < cells.length; y++) {
-      for (let x = 0; x < cells[y].length; x++) {
-        const cell = cells[y][x];
-        const offset =
-          grid.gridType === GridType.HEX
-            ? HexGrid2D.getMinX(y, (grid as HexRenderGrid).bounds.left)
-            : 0;
-        const realX = offset + x;
-        if (cell.terrain === Terrain.BOMB_SITE && cell.siteIndex !== null) {
-          const c = grid.toCartesian({ x: realX, y });
-          items.push({
-            x: c.x * RenderConfig.cellStride,
-            y: c.y * RenderConfig.cellStride,
-            text: String.fromCharCode(65 + cell.siteIndex),
-            kind: "bomb",
-          });
-        }
-      }
-    }
-    for (const s of spawns) {
-      const c = grid.toCartesian({ x: s.x, y: s.y });
-      items.push({
-        x: c.x * RenderConfig.cellStride,
-        y: c.y * RenderConfig.cellStride + RenderConfig.cellStride * 0.45,
-        text: `${s.teamId}/${s.slot}`,
-        kind: "spawn",
-      });
-    }
-    return items;
-  }, [cells, spawns, grid]);
+  const payloadTrackX = useMemo(() => track.map((t) => t.x), [track]);
+  const payloadTrackY = useMemo(() => track.map((t) => t.y), [track]);
 
   return (
     <pixiContainer
@@ -237,28 +202,34 @@ function EditorScene({
       hitArea={hitArea}
       onPointerDown={onPointerDown}
     >
-      <pixiGraphics draw={drawBase} />
-      <pixiGraphics draw={drawTrack} />
-      <pixiGraphics draw={drawSpawnLabels} />
-      {labels.map((l) => (
-        <pixiText
-          key={`${l.kind}-${l.x.toFixed(1)}-${l.y.toFixed(1)}-${l.text}`}
-          text={l.text}
-          x={l.x}
-          y={l.y}
-          anchor={0.5}
-          style={{
-            fontFamily: "Oxanium Variable, sans-serif",
-            fontSize: l.kind === "bomb" ? 60 : 22,
-            fill: 0xffffff,
-            stroke: { color: 0x111111, width: 4 },
-            fontWeight: "900",
-          }}
+      {/* 1. Base cell rendering with correct player colors */}
+      <GridLayer tick={0} grid={grid} playerColors={playerColorByTeam} />
+
+      {/* 2. Terrain icons (Mountain, Swamp, Desert, City, Flag, Crown/General) */}
+      <IconLayer tick={0} grid={grid} />
+
+      {/* 3. Payload railroad route track */}
+      {payloadTrackX.length > 0 && (
+        <PayloadLayer
+          grid={grid}
+          payloadTrackX={payloadTrackX}
+          payloadTrackY={payloadTrackY}
+          cartIndex={-1}
+          cartSize={0}
         />
-      ))}
+      )}
+
+      {/* 4. Demolition bomb site labels (A, B, C...) */}
+      <SiteLabelLayer grid={grid} />
+
+      {/* 5. City and cell troop numbers */}
+      <TroopLayer tick={0} grid={grid} splitMoveSelection={null} />
+
+      {/* 6. Editor-specific player general spawn points & rings */}
+      <EditorSpawnLayer grid={grid} spawns={spawns} />
     </pixiContainer>
   );
-}
+});
 
 export function EditorCanvas({ playerColorByTeam }: EditorCanvasProps) {
   const gridType = useEditorStore((s) => s.gridType);
@@ -334,7 +305,6 @@ export function EditorCanvas({ playerColorByTeam }: EditorCanvasProps) {
           <Viewport worldBounds={worldBounds}>
             <EditorScene
               grid={grid}
-              cells={cells}
               spawns={spawns}
               track={track}
               playerColorByTeam={playerColorByTeam}
@@ -346,3 +316,6 @@ export function EditorCanvas({ playerColorByTeam }: EditorCanvasProps) {
     </div>
   );
 }
+
+export function default_canvas_export() {}
+export default EditorCanvas;

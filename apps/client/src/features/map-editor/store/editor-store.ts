@@ -378,7 +378,17 @@ export const useEditorStore = create<EditorState & EditorActions>(
             ];
             if (cell.terrain === T.BOMB_SITE)
               newCells = recomputeBombSiteIndices(newCells);
-            break;
+
+            // Auto increment slot for next placement
+            return pushHistory(state, {
+              cells: newCells,
+              spawns: newSpawns,
+              track: newTrack,
+              tool: {
+                ...tool,
+                slot: tool.slot + 1,
+              },
+            });
           }
           case "bombSite": {
             newCells = setCellAt(state, coord, {
