@@ -6,6 +6,8 @@ export interface ISystemSettings {
   allowMapUpdates: boolean;
   systemBanner: string;
   maxMapsPerUser: number;
+  maxTotalRooms: number;
+  maxVsAiRooms: number;
   maintenanceMode: boolean;
 }
 
@@ -17,6 +19,8 @@ const SystemSettingsSchema = new Schema<ISystemSettingsDocument>(
     allowMapUpdates: { type: Boolean, default: true },
     systemBanner: { type: String, default: "" },
     maxMapsPerUser: { type: Number, default: 50 },
+    maxTotalRooms: { type: Number, default: 50 },
+    maxVsAiRooms: { type: Number, default: 20 },
     maintenanceMode: { type: Boolean, default: false },
   },
   { timestamps: true },

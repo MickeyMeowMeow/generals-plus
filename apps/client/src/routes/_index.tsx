@@ -49,7 +49,14 @@ export default function Index() {
           },
         );
       })
-      .catch(() => {
+      .catch((err) => {
+        const errMsg =
+          err instanceof Error
+            ? err.message
+            : err && typeof err === "object" && "message" in err
+              ? String((err as { message: unknown }).message)
+              : String(err || "Failed to start AI game");
+        toast.error(errMsg);
         setPhase("lobby");
       });
   };

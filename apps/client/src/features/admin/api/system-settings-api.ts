@@ -35,6 +35,8 @@ export interface SystemSettings {
   allowMapUpdates: boolean;
   systemBanner: string;
   maxMapsPerUser: number;
+  maxTotalRooms: number;
+  maxVsAiRooms: number;
   maintenanceMode: boolean;
 }
 

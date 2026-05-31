@@ -48,6 +48,7 @@ import {
 } from "#/features/setup/custom-room-registry";
 import { setupSettingsUpdateSchema } from "#/features/setup/schemas";
 import { MongoMapRepository } from "#/infra/db/repositories/MongoMapRepository";
+import { MongoSystemSettingsRepository } from "#/infra/db/repositories/MongoSystemSettingsRepository";
 
 const DEFAULT_MAX_PLAYERS = 8;
 const SETUP_TEAM_PREFIX = "setup_team_";
@@ -513,6 +514,27 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           message: "Move players until every team is within the limit.",
         });
         return;
+      }
+
+      // Check total rooms limit before starting the game
+      if (process.env.NODE_ENV !== "test") {
+        try {
+          const systemSettingsRepository = new MongoSystemSettingsRepository();
+          const settings = await systemSettingsRepository.getSettings();
+
+          const matchRooms = await matchMaker.query({ name: ROOM_NAMES.MATCH });
+          const totalRoomsCount = matchRooms.length;
+
+          if (totalRoomsCount >= settings.maxTotalRooms) {
+            this.sendValidationFailed(client, {
+              severity: "warning",
+              message: `Server rooms limit reached (${settings.maxTotalRooms}). Cannot start game.`,
+            });
+            return;
+          }
+        } catch (err) {
+          logger.error(`[SetupRoom] Failed to check room limits: ${err}`);
+        }
       }
 
       try {

@@ -138,7 +138,7 @@ export function AdminSettingsPage() {
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* Section: Feature Access */}
-          <div className="border border-game-border bg-[rgb(27_27_27/0.76)] backdrop-blur-md p-5 shadow-xl shadow-black/25 space-y-4">
+          <div className="border border-game-border bg-[rgb(27_27_27/0.85)] p-5 shadow-xl shadow-black/25 space-y-4">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-game-text-dim mb-3 flex items-center gap-1.5">
               <Sparkles className="size-3.5 text-game-accent" />
               Feature Controls
@@ -186,7 +186,7 @@ export function AdminSettingsPage() {
           </div>
 
           {/* Section: Limitations & Messaging */}
-          <div className="border border-game-border bg-[rgb(27_27_27/0.76)] backdrop-blur-md p-5 shadow-xl shadow-black/25 space-y-4">
+          <div className="border border-game-border bg-[rgb(27_27_27/0.85)] p-5 shadow-xl shadow-black/25 space-y-4">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-game-text-dim mb-3">
               Limitations & Announcements
             </h2>
@@ -210,6 +210,48 @@ export function AdminSettingsPage() {
               </p>
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-game-border/30">
+              <div className="grid gap-1.5">
+                <Label htmlFor="maxTotalRooms" className="text-sm">
+                  Maximum Total Rooms Limit
+                </Label>
+                <Input
+                  id="maxTotalRooms"
+                  type="number"
+                  value={settings.maxTotalRooms}
+                  onChange={(e) =>
+                    handleNumberChange("maxTotalRooms", e.target.value)
+                  }
+                  min={1}
+                  className="border-game-border bg-game-bg text-game-text focus-visible:ring-white/20 w-32"
+                />
+                <p className="text-[11px] text-game-text-dim">
+                  Limits the maximum number of simultaneous game/setup rooms
+                  (Default: 50).
+                </p>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="maxVsAiRooms" className="text-sm">
+                  Maximum VS AI Rooms Limit
+                </Label>
+                <Input
+                  id="maxVsAiRooms"
+                  type="number"
+                  value={settings.maxVsAiRooms}
+                  onChange={(e) =>
+                    handleNumberChange("maxVsAiRooms", e.target.value)
+                  }
+                  min={0}
+                  className="border-game-border bg-game-bg text-game-text focus-visible:ring-white/20 w-32"
+                />
+                <p className="text-[11px] text-game-text-dim">
+                  Limits the maximum number of simultaneous rooms vs AI bots
+                  (Default: 20).
+                </p>
+              </div>
+            </div>
+
             <div className="grid gap-1.5 pt-2">
               <Label htmlFor="systemBanner" className="text-sm">
                 Global System Announcement Banner
@@ -231,7 +273,7 @@ export function AdminSettingsPage() {
           </div>
 
           {/* Section: System Integrations */}
-          <div className="border border-game-border bg-[rgb(27_27_27/0.76)] backdrop-blur-md p-5 shadow-xl shadow-black/25 space-y-4">
+          <div className="border border-game-border bg-[rgb(27_27_27/0.85)] p-5 shadow-xl shadow-black/25 space-y-4">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-game-text-dim mb-3">
               System Integrations
             </h2>

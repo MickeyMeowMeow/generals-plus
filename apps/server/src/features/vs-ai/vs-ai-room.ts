@@ -18,6 +18,7 @@ import {
 } from "@generals-plus/shared-types";
 
 import { createGame, generateSeed } from "#/features/game/utils";
+import { MongoSystemSettingsRepository } from "#/infra/db/repositories/MongoSystemSettingsRepository";
 
 const BOT_PLAYER_ID = "__bot__";
 const BOT_DISPLAY_NAME = "AI Bot";
@@ -40,6 +41,30 @@ export class VsAiRoom extends Room {
   }
 
   async onJoin(client: Client) {
+    if (process.env.NODE_ENV !== "test") {
+      const systemSettingsRepository = new MongoSystemSettingsRepository();
+      const settings = await systemSettingsRepository.getSettings();
+
+      const matchRooms = await matchMaker.query({ name: ROOM_NAMES.MATCH });
+      const totalRoomsCount = matchRooms.length;
+
+      if (totalRoomsCount >= settings.maxTotalRooms) {
+        throw new Error(
+          `Server rooms limit reached (${settings.maxTotalRooms}). Cannot start AI game.`,
+        );
+      }
+
+      const vsAiRoomsCount = matchRooms.filter((room) =>
+        room.metadata?.playerInit?.some((player: any) => player.isBot),
+      ).length;
+
+      if (vsAiRoomsCount >= settings.maxVsAiRooms) {
+        throw new Error(
+          `AI rooms limit reached (${settings.maxVsAiRooms}). Cannot start AI game.`,
+        );
+      }
+    }
+
     const auth = client.auth as ClientAuth;
     const userId = auth.id;
     const displayName = auth.displayName ?? "Player";

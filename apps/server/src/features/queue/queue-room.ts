@@ -22,6 +22,7 @@ import {
   MODE_SETTINGS,
 } from "#/features/match/utils";
 import { createPlayerInit } from "#/features/player/utils";
+import { MongoSystemSettingsRepository } from "#/infra/db/repositories/MongoSystemSettingsRepository";
 import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
 const DEFAULT_MAX_PLAYERS = 8;
@@ -294,6 +295,20 @@ export class MatchQueueRoom extends QueueRoom {
    * information needed by the lobby UI before a real match room exists.
    */
   async onJoin(client: Client) {
+    if (process.env.NODE_ENV !== "test") {
+      const systemSettingsRepository = new MongoSystemSettingsRepository();
+      const settings = await systemSettingsRepository.getSettings();
+
+      const matchRooms = await matchMaker.query({ name: ROOM_NAMES.MATCH });
+      const totalRoomsCount = matchRooms.length;
+
+      if (totalRoomsCount >= settings.maxTotalRooms) {
+        throw new Error(
+          `Server rooms limit reached (${settings.maxTotalRooms}). Cannot queue.`,
+        );
+      }
+    }
+
     const auth = client.auth as ClientAuth;
     const existingClient = this.clients.find(
       (c) =>

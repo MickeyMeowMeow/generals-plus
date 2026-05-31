@@ -15,6 +15,8 @@ export class MongoSystemSettingsRepository
         allowMapUpdates: true,
         systemBanner: "",
         maxMapsPerUser: 50,
+        maxTotalRooms: 50,
+        maxVsAiRooms: 20,
         maintenanceMode: false,
       });
     }
@@ -23,6 +25,8 @@ export class MongoSystemSettingsRepository
       allowMapUpdates: settings.allowMapUpdates,
       systemBanner: settings.systemBanner,
       maxMapsPerUser: settings.maxMapsPerUser,
+      maxTotalRooms: settings.maxTotalRooms,
+      maxVsAiRooms: settings.maxVsAiRooms,
       maintenanceMode: settings.maintenanceMode,
     };
   }
@@ -41,6 +45,8 @@ export class MongoSystemSettingsRepository
       allowMapUpdates: saved.allowMapUpdates,
       systemBanner: saved.systemBanner,
       maxMapsPerUser: saved.maxMapsPerUser,
+      maxTotalRooms: saved.maxTotalRooms,
+      maxVsAiRooms: saved.maxVsAiRooms,
       maintenanceMode: saved.maintenanceMode,
     };
   }
