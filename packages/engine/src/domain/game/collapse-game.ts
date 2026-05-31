@@ -349,7 +349,9 @@ export class CollapseGame extends BaseGame implements ICollapseGame {
         playerId,
         troops: score.troops,
         land: score.land,
-        isAlive: generals.has(playerId),
+        isAlive:
+          this.players.get(playerId)?.status === PlayerStatus.ACTIVE &&
+          generals.has(playerId),
       }),
     );
 

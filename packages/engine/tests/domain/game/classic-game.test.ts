@@ -488,6 +488,10 @@ describe("ClassicGame", () => {
       mode: GameMode.CLASSIC,
       winnerTeamId: "t2",
     });
+    const p1Entry = game
+      .getScoreboard()
+      .players.find((entry) => entry.playerId === "p1");
+    expect(p1Entry?.isAlive).toBe(false);
   });
 
   test("surrender neutralizes cells when other teams still remain", () => {
