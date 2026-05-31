@@ -92,14 +92,18 @@ auth.settings.onParseToken = async (data: Record<string, unknown>) => {
     return safeData;
   }
 
-  const user = await userRepository.findById(userId);
-  if (!user) {
+  try {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      const { password: _, ...safeData } = data;
+      return safeData;
+    }
+    const { password: _, ...safeData } = user;
+    return safeData;
+  } catch {
     const { password: _, ...safeData } = data;
     return safeData;
   }
-
-  const { password: _, ...safeData } = user;
-  return safeData;
 };
 
 export { auth };

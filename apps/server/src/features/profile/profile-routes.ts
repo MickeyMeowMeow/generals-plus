@@ -89,6 +89,10 @@ function parseProfileUpdate(
       return { ok: false, error: "Display name cannot be empty." };
     }
 
+    if (displayName.length > 32) {
+      return { ok: false, error: "Display name is too long." };
+    }
+
     update.displayName = displayName;
   }
 
