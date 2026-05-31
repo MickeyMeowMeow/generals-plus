@@ -2,6 +2,7 @@ import type { CustomMap } from "@generals-plus/shared-types";
 import { ArrowLeft, Heart, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { toast } from "sonner";
 
 import { Button } from "#/components/ui/button";
 import {
@@ -11,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/components/ui/select";
+import type { SystemSettings } from "#/features/admin/api/system-settings-api";
+import { systemSettingsApi } from "#/features/admin/api/system-settings-api";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth, useUser } from "#/features/auth/hooks";
 import { mapsApi } from "#/features/map-editor/api/maps-api";
@@ -21,8 +24,17 @@ export function MapBrowserPage() {
   const navigate = useNavigate();
   const { state } = useAuth();
   const userId = useUser((u) => u?.id);
+  const isAdmin = useUser((u) => u?.isAdmin ?? false);
 
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [maps, setMaps] = useState<CustomMap[]>([]);
+
+  useEffect(() => {
+    systemSettingsApi
+      .get()
+      .then(setSettings)
+      .catch(() => {});
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -101,11 +113,33 @@ export function MapBrowserPage() {
             </SelectContent>
           </Select>
           {state.status === AuthStatus.AUTHENTICATED && (
-            <Button asChild>
-              <Link to="/map-editor">
-                <Plus className="size-4" />
-                New Map
-              </Link>
+            <Button
+              asChild={settings ? settings.allowMapCreation || isAdmin : true}
+              onClick={(e) => {
+                if (settings && !settings.allowMapCreation && !isAdmin) {
+                  e.preventDefault();
+                  toast.error(
+                    "Map creation is temporarily disabled by administrator.",
+                  );
+                }
+              }}
+              className={
+                settings && !settings.allowMapCreation && !isAdmin
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }
+            >
+              {settings && !settings.allowMapCreation && !isAdmin ? (
+                <span className="flex items-center gap-1.5 cursor-not-allowed">
+                  <Plus className="size-4" />
+                  New Map
+                </span>
+              ) : (
+                <Link to="/map-editor">
+                  <Plus className="size-4" />
+                  New Map
+                </Link>
+              )}
             </Button>
           )}
         </div>
@@ -128,9 +162,19 @@ export function MapBrowserPage() {
               key={map.id}
               map={map}
               isOwner={userId === map.authorId}
-              onEdit={() =>
-                navigate(`/map-editor?id=${encodeURIComponent(map.id)}`)
+              isAdmin={isAdmin}
+              isEditDisabled={
+                settings ? !settings.allowMapUpdates && !isAdmin : false
               }
+              onEdit={() => {
+                if (settings && !settings.allowMapUpdates && !isAdmin) {
+                  toast.error(
+                    "Map editing is temporarily disabled by administrator.",
+                  );
+                  return;
+                }
+                navigate(`/map-editor?id=${encodeURIComponent(map.id)}`);
+              }}
               onDelete={() => onDelete(map.id)}
               onLike={() => onLike(map.id)}
             />
@@ -168,12 +212,16 @@ export function MapBrowserPage() {
 function MapCard({
   map,
   isOwner,
+  isAdmin,
+  isEditDisabled,
   onEdit,
   onDelete,
   onLike,
 }: {
   map: CustomMap;
   isOwner: boolean;
+  isAdmin: boolean;
+  isEditDisabled: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onLike: () => void;
@@ -210,23 +258,30 @@ function MapCard({
           </button>
         </div>
         <div className="flex items-center gap-1">
-          {isOwner && (
+          {(isOwner || isAdmin) && (
             <>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={onEdit}
-                className="h-7 px-2"
-              >
-                <Pencil className="size-3" />
-              </Button>
+              {isOwner && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={onEdit}
+                  className={`h-7 px-2 ${isEditDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <Pencil className="size-3" />
+                </Button>
+              )}
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
                 onClick={onDelete}
                 className="h-7 px-2 text-red-400 hover:text-red-300"
+                title={
+                  isAdmin && !isOwner
+                    ? "Delete map as Administrator"
+                    : "Delete map"
+                }
               >
                 <Trash2 className="size-3" />
               </Button>

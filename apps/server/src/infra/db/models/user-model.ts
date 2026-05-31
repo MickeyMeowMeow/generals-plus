@@ -29,6 +29,7 @@ export interface IUserDocument extends Document {
   verified: boolean;
   ratings: IPlayerRatings;
   preferences: UserPreferences;
+  isAdmin: boolean;
 }
 
 const ratingField = { type: Number, default: 1000 };
@@ -150,6 +151,7 @@ const StageAppearancePreferenceSchema =
 const UserSchema = new Schema<IUserDocument>(
   {
     email: { type: String, unique: true, sparse: true, trim: true },
+    isAdmin: { type: Boolean, default: false },
     password: { type: String },
     displayName: { type: String, trim: true },
     anonymous: { type: Boolean, default: false },

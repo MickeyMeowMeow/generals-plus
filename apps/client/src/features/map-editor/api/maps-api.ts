@@ -56,16 +56,18 @@ export interface ListMapsParams {
   limit?: number;
   mode?: string;
   sort?: "plays" | "likes" | "date";
+  search?: string;
 }
 
 export const mapsApi = {
   async list(params: ListMapsParams = {}): Promise<CustomMapListResponse> {
-    const search = new URLSearchParams();
-    if (params.page) search.set("page", String(params.page));
-    if (params.limit) search.set("limit", String(params.limit));
-    if (params.mode) search.set("mode", params.mode);
-    if (params.sort) search.set("sort", params.sort);
-    const qs = search.toString();
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", String(params.page));
+    if (params.limit) query.set("limit", String(params.limit));
+    if (params.mode) query.set("mode", params.mode);
+    if (params.sort) query.set("sort", params.sort);
+    if (params.search) query.set("search", params.search);
+    const qs = query.toString();
     return request<CustomMapListResponse>(`maps${qs ? `?${qs}` : ""}`);
   },
 

@@ -9,4 +9,5 @@ export interface UserProfile {
   readonly ratings?: PlayerRatings;
   readonly preferences?: UserPreferences;
   readonly metadata?: Record<string, unknown>;
+  readonly isAdmin?: boolean;
 }

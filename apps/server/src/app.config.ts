@@ -4,6 +4,7 @@
  */
 import "dotenv/config";
 
+import { JWT } from "@colyseus/auth";
 import { defineRoom, LobbyRoom, logger } from "@colyseus/core";
 import { monitor } from "@colyseus/monitor";
 import { Encoder } from "@colyseus/schema";
@@ -19,6 +20,93 @@ import { registerProfileRoutes } from "#/features/profile/profile-routes";
 import { MatchQueueRoom } from "#/features/queue/queue-room";
 import { registerCustomRoomRoutes } from "#/features/setup/custom-room-routes";
 import { SetupRoom } from "#/features/setup/setup-room";
+import { registerSystemRoutes } from "#/features/system/system-routes";
+import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
+
+const userRepository = new MongoUserRepository();
+
+function getCookie(
+  cookieString: string | undefined,
+  name: string,
+): string | null {
+  if (!cookieString) return null;
+  const match = cookieString.match(new RegExp(`(^| )${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+async function colyseusAdminAuthMiddleware(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) {
+  // 1. Force trailing slash redirect for /colyseus to ensure relative browser assets resolve correctly
+  const originalUrl = req.originalUrl || "";
+  const [pathname, search] = originalUrl.split("?");
+  if (pathname === "/colyseus") {
+    res.redirect(301, `/colyseus/${search ? `?${search}` : ""}`);
+    return;
+  }
+
+  // 1.5. Bypass authentication for public static assets requested by the Colyseus Monitor client UI.
+  // The monitor UI bundle uses 'crossorigin' script tags which omit credentials (cookies).
+  // Enforcing authentication on the static bundles is unnecessary since they contain no sensitive data;
+  // security is strictly enforced on all actual API endpoints (/colyseus/api/*) below.
+  if (
+    req.path.startsWith("/assets/") ||
+    req.path.startsWith("/ext/") ||
+    req.path === "/favicon.ico"
+  ) {
+    next();
+    return;
+  }
+
+  const cookieToken = getCookie(req.headers.cookie, "colyseus_auth_token");
+  const token =
+    (req.query.token as string) ||
+    cookieToken ||
+    req.header("authorization")?.replace("Bearer ", "");
+
+  if (!token) {
+    res
+      .status(401)
+      .send(
+        "<h1>Unauthorized</h1><p>Missing authentication token. Click 'Open Colyseus Monitor' from the admin panel to view.</p>",
+      );
+    return;
+  }
+  try {
+    const decoded = (await JWT.verify(token)) as { id?: string } | null;
+    if (!decoded?.id) {
+      res
+        .status(401)
+        .send("<h1>Unauthorized</h1><p>Invalid authentication token.</p>");
+      return;
+    }
+    const user = await userRepository.findById(decoded.id);
+    if (!user?.isAdmin) {
+      res
+        .status(403)
+        .send(
+          "<h1>Forbidden</h1><p>Only administrators can access this monitoring page.</p>",
+        );
+      return;
+    }
+
+    // Set cookie if authenticated via query param to persist nested requests
+    if (req.query.token) {
+      res.cookie("colyseus_auth_token", req.query.token as string, {
+        path: "/colyseus",
+        httpOnly: true,
+        sameSite: "lax",
+        secure: req.secure || req.headers["x-forwarded-proto"] === "https",
+      });
+    }
+
+    next();
+  } catch {
+    res.status(401).send("<h1>Unauthorized</h1><p>Authentication failed.</p>");
+  }
+}
 
 Encoder.BUFFER_SIZE = 1024 * 1024;
 
@@ -95,14 +183,14 @@ export default defineServer({
 
     registerProfileRoutes(app);
 
-    // 4. (Optional) Bind Colyseus Monitor for development debugging
-    if (process.env.NODE_ENV !== "production") {
-      app.use("/colyseus", monitor());
-    }
+    // 4. Bind Colyseus Monitor (secured for admins in all envs)
+    app.use("/colyseus", colyseusAdminAuthMiddleware, monitor());
 
     registerCustomRoomRoutes(app);
 
     registerMapRoutes(app);
+
+    registerSystemRoutes(app);
 
     // Health check endpoint
     app.get("/health", (_req, res) => {

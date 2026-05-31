@@ -5,8 +5,12 @@ import type { Request, Response } from "express";
 import { createMapSchema, updateMapSchema } from "#/features/maps/schemas";
 import { validateMapGrid } from "#/features/maps/validate-map";
 import { MongoMapRepository } from "#/infra/db/repositories/MongoMapRepository";
+import { MongoSystemSettingsRepository } from "#/infra/db/repositories/MongoSystemSettingsRepository";
+import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
 const mapRepository = new MongoMapRepository();
+const userRepository = new MongoUserRepository();
+const systemSettingsRepository = new MongoSystemSettingsRepository();
 
 function getParam(
   params: Record<string, string | string[]>,
@@ -72,6 +76,7 @@ export function registerMapRoutes(app: {
     const limit = Math.min(50, Math.max(1, Number(request.query.limit) || 20));
     const mode = request.query.mode as GameMode | undefined;
     const sort = request.query.sort as "plays" | "likes" | "date" | undefined;
+    const search = request.query.search as string | undefined;
 
     try {
       const result = await mapRepository.findPublished({
@@ -79,6 +84,7 @@ export function registerMapRoutes(app: {
         limit,
         mode,
         sort,
+        search,
       });
       response.json(result);
     } catch (_error) {
@@ -101,6 +107,27 @@ export function registerMapRoutes(app: {
     const user = await getAuthorizedUser(request);
     if (!user) {
       response.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const fullUser = await userRepository.findById(user.id);
+    const isAdmin = fullUser?.isAdmin || false;
+
+    // Check system settings
+    const settings = await systemSettingsRepository.getSettings();
+    if (!settings.allowMapCreation && !isAdmin) {
+      response.status(403).json({
+        error: "Map creation is temporarily disabled by the administrator",
+      });
+      return;
+    }
+
+    // Check map limit
+    const userMaps = await mapRepository.findByAuthor(user.id);
+    if (userMaps.length >= settings.maxMapsPerUser && !isAdmin) {
+      response.status(400).json({
+        error: `You have reached the maximum limit of ${settings.maxMapsPerUser} maps. Please delete some maps before creating a new one.`,
+      });
       return;
     }
 
@@ -136,6 +163,18 @@ export function registerMapRoutes(app: {
     const userId = await getAuthorizedUserId(request);
     if (!userId) {
       response.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const fullUser = await userRepository.findById(userId);
+    const isAdmin = fullUser?.isAdmin || false;
+
+    // Check system settings
+    const settings = await systemSettingsRepository.getSettings();
+    if (!settings.allowMapUpdates && !isAdmin) {
+      response.status(403).json({
+        error: "Map updates are temporarily disabled by the administrator",
+      });
       return;
     }
 
@@ -182,9 +221,12 @@ export function registerMapRoutes(app: {
       return;
     }
 
+    const fullUser = await userRepository.findById(userId);
+    const isAdmin = fullUser?.isAdmin || false;
+
     const deleted = await mapRepository.delete(
       getParam(request.params, "id"),
-      userId,
+      isAdmin ? undefined : userId,
     );
     if (!deleted) {
       response.status(404).json({ error: "Map not found or not authorized" });

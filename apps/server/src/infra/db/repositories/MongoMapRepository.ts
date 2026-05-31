@@ -65,6 +65,7 @@ export class MongoMapRepository implements IMapRepository {
     limit?: number;
     mode?: GameMode;
     sort?: "plays" | "likes" | "date";
+    search?: string;
   }): Promise<{ maps: IMap[]; total: number }> {
     const page = Math.max(1, options.page ?? 1);
     const limit = Math.min(50, Math.max(1, options.limit ?? 20));
@@ -73,6 +74,18 @@ export class MongoMapRepository implements IMapRepository {
     const filter: Record<string, unknown> = { status: "published" };
     if (options.mode) {
       filter.supportedModes = options.mode;
+    }
+
+    if (options.search) {
+      const escapedSearch = options.search.replace(
+        /[-/\\^$*+?.()|[\]{}]/g,
+        "\\$&",
+      );
+      filter.$or = [
+        { name: { $regex: escapedSearch, $options: "i" } },
+        { authorName: { $regex: escapedSearch, $options: "i" } },
+        { description: { $regex: escapedSearch, $options: "i" } },
+      ];
     }
 
     const sortOptions: Record<string, 1 | -1> =
@@ -103,8 +116,12 @@ export class MongoMapRepository implements IMapRepository {
     return map ? this.mapToEntity(map) : null;
   }
 
-  async delete(id: string, authorId: string): Promise<boolean> {
-    const result = await MapModel.deleteOne({ _id: id, authorId }).exec();
+  async delete(id: string, authorId?: string): Promise<boolean> {
+    const filter: Record<string, unknown> = { _id: id };
+    if (authorId) {
+      filter.authorId = authorId;
+    }
+    const result = await MapModel.deleteOne(filter).exec();
     return result.deletedCount > 0;
   }
 
