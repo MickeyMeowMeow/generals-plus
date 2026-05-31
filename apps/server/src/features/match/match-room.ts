@@ -1,4 +1,3 @@
-import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, Room } from "@colyseus/core";
 import { StateView } from "@colyseus/schema";
@@ -30,6 +29,7 @@ import {
 } from "@generals-plus/shared-types";
 import * as z from "zod";
 
+import { resolveAuthUser } from "#/features/auth/auth-config";
 import { createPlayer } from "#/features/player/utils";
 import { calculateNewRatings } from "#/features/rating/rating-service";
 import { parseRoomData } from "#/features/room-data";
@@ -242,7 +242,7 @@ export class MatchRoom extends Room<{
   }
 
   static async onAuth(token: string, _options: unknown, _context: unknown) {
-    return JWT.verify(token);
+    return resolveAuthUser(token);
   }
 
   onJoin(client: Client, _options: unknown) {

@@ -83,10 +83,13 @@ auth.settings.onEmailConfirmed = async (email: string) => {
   return await userRepository.verifyEmail(email);
 };
 
+const FALLBACK_DISPLAY_NAME = "Player";
+
 /**
  * Fetch fresh user data from the database, falling back to the provided
  * decoded payload when the user ID is missing, the lookup fails, or the
- * user record is gone. The password field is always stripped.
+ * user record is gone. The password field is always stripped and
+ * displayName is guaranteed to be a non-empty string.
  */
 async function freshUserFromDB(
   data: Record<string, unknown>,
@@ -102,14 +105,20 @@ async function freshUserFromDB(
     const user = await userRepository.findById(userId);
     if (user) {
       const { password: _, ...safeData } = user;
-      return safeData;
+      return {
+        ...safeData,
+        displayName: safeData.displayName || FALLBACK_DISPLAY_NAME,
+      };
     }
   } catch {
     // Fall through to decoded token data
   }
 
   const { password: _, ...safeData } = data;
-  return safeData;
+  return {
+    ...safeData,
+    displayName: safeData.displayName || FALLBACK_DISPLAY_NAME,
+  };
 }
 
 /**
