@@ -44,6 +44,8 @@ export interface GridGeneratorOptions<T extends GridType> {
   readonly bombSiteCount?: number;
   readonly isPayload?: boolean;
   readonly payloadCartSize?: number;
+  readonly payloadLeftCount?: number;
+  readonly payloadRightCount?: number;
 }
 
 /** Default options exposed for external reference. */
@@ -65,6 +67,8 @@ export const DefaultGenOptions: Omit<
   bombSiteCount: 0,
   isPayload: false,
   payloadCartSize: 3,
+  payloadLeftCount: 0,
+  payloadRightCount: 0,
 } as const;
 
 export const DefaultGridBounds: {

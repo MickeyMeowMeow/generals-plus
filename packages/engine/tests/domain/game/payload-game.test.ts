@@ -351,4 +351,92 @@ describe("PayloadGame", () => {
       }
     }
   });
+
+  it("assigns Team 1 players to left generals and Team 2 players to right generals", () => {
+    const grid = create7x3GridWithTrack();
+    const game = new PayloadGame({ grid });
+
+    // Left team: team_0, Right team: team_1
+    const t1 = new StandardTeam("team_0");
+    const t2 = new StandardTeam("team_1");
+
+    // Multiple players per team
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    const p3 = new Player(t1, "p3", PlayerStatus.ACTIVE);
+    const p4 = new Player(t2, "p4", PlayerStatus.ACTIVE);
+
+    game.teams.set(t1.teamId, t1);
+    game.teams.set(t2.teamId, t2);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+    game.players.set(p3.playerId, p3);
+    game.players.set(p4.playerId, p4);
+
+    // Setup 4 general positions (2 on the left side, 2 on the right side)
+    getCell(grid, { x: 0, y: 0 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 1, y: 0 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 5, y: 2 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 6, y: 2 }).terrain = Terrain.GENERAL;
+
+    game.startGame();
+
+    // leftmost generals (x=0, x=1) should be owned by team_0 (p1, p3)
+    const leftGen1 = getCell(grid, { x: 0, y: 0 });
+    const leftGen2 = getCell(grid, { x: 1, y: 0 });
+    expect(leftGen1.owner?.team.teamId).toBe("team_0");
+    expect(leftGen2.owner?.team.teamId).toBe("team_0");
+
+    // rightmost generals (x=5, x=6) should be owned by team_1 (p2, p4)
+    const rightGen1 = getCell(grid, { x: 5, y: 2 });
+    const rightGen2 = getCell(grid, { x: 6, y: 2 });
+    expect(rightGen1.owner?.team.teamId).toBe("team_1");
+    expect(rightGen2.owner?.team.teamId).toBe("team_1");
+  });
+
+  it("converts unused general cells to neutral plains when player counts are uneven", () => {
+    const grid = create7x3GridWithTrack();
+    const game = new PayloadGame({ grid });
+
+    // Left team: team_0 (1 player), Right team: team_1 (2 players)
+    const t1 = new StandardTeam("team_0");
+    const t2 = new StandardTeam("team_1");
+
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    const p3 = new Player(t2, "p3", PlayerStatus.ACTIVE);
+
+    game.teams.set(t1.teamId, t1);
+    game.teams.set(t2.teamId, t2);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+    game.players.set(p3.playerId, p3);
+
+    // Setup 4 general positions (2 on left side, 2 on right side)
+    getCell(grid, { x: 0, y: 0 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 1, y: 0 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 5, y: 2 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 6, y: 2 }).terrain = Terrain.GENERAL;
+
+    game.startGame();
+
+    // leftmost general 1 should be owned by p1 (Team 1)
+    const leftGen1 = getCell(grid, { x: 0, y: 0 });
+    expect(leftGen1.terrain).toBe(Terrain.GENERAL);
+    expect(leftGen1.owner?.playerId).toBe("p1");
+
+    // leftmost general 2 (unused by Team 1) should be converted to a neutral plain
+    const leftGen2 = getCell(grid, { x: 1, y: 0 });
+    expect(leftGen2.terrain).toBe(Terrain.PLAIN);
+    expect(leftGen2.owner).toBeNull();
+    expect(leftGen2.troopCount).toBeNull();
+
+    // rightmost generals should be owned by p2 and p3 (Team 2)
+    const rightGen1 = getCell(grid, { x: 5, y: 2 });
+    const rightGen2 = getCell(grid, { x: 6, y: 2 });
+    expect(rightGen1.terrain).toBe(Terrain.GENERAL);
+    expect(rightGen1.owner?.playerId).toBe("p2");
+    expect(rightGen2.terrain).toBe(Terrain.GENERAL);
+    expect(rightGen2.owner?.playerId).toBe("p3");
+  });
 });
