@@ -317,5 +317,4 @@ export function EditorCanvas({ playerColorByTeam }: EditorCanvasProps) {
   );
 }
 
-export function default_canvas_export() {}
 export default EditorCanvas;
