@@ -140,14 +140,23 @@ function setCellAt(
 }
 
 function pushHistory<S extends EditorState>(state: S, next: Partial<S>): S {
-  const snapshot = {
-    cells: state.cells,
-    spawns: state.spawns,
-    track: state.track,
-  };
   const history = state.history.slice(0, state.historyIndex + 1);
-  history.push(snapshot);
-  if (history.length > 50) history.shift();
+
+  const nextCells = next.cells !== undefined ? next.cells : state.cells;
+  const nextSpawns = next.spawns !== undefined ? next.spawns : state.spawns;
+  const nextTrack = next.track !== undefined ? next.track : state.track;
+
+  const nextSnapshot = {
+    cells: nextCells,
+    spawns: nextSpawns,
+    track: nextTrack,
+  };
+
+  history.push(nextSnapshot);
+  if (history.length > 50) {
+    history.shift();
+  }
+
   return {
     ...state,
     ...next,
@@ -171,6 +180,7 @@ function recomputeBombSiteIndices(cells: CellTemplate[][]): CellTemplate[][] {
 function buildInitialState(): EditorState {
   const gridType = GT.SQUARE as GridType;
   const bounds = DEFAULT_SQUARE_BOUNDS;
+  const cells = createEmptyCells(gridType, bounds);
   return {
     mapId: null,
     name: "Untitled Map",
@@ -178,12 +188,12 @@ function buildInitialState(): EditorState {
     supportedModes: [] as GameMode[],
     gridType,
     bounds,
-    cells: createEmptyCells(gridType, bounds),
+    cells,
     spawns: [],
     track: [],
     tool: { kind: "terrain", terrain: T.PLAIN as Terrain },
-    history: [],
-    historyIndex: -1,
+    history: [{ cells, spawns: [], track: [] }],
+    historyIndex: 0,
     saving: false,
     lastSavedAt: null,
     saveError: null,
@@ -199,6 +209,11 @@ export const useEditorStore = create<EditorState & EditorActions>(
     },
 
     loadFromMap(map) {
+      const initialSnapshot = {
+        cells: map.grid.cells,
+        spawns: map.grid.spawns,
+        track: map.grid.track ?? [],
+      };
       set({
         mapId: map.id,
         name: map.name,
@@ -209,8 +224,8 @@ export const useEditorStore = create<EditorState & EditorActions>(
         cells: map.grid.cells,
         spawns: map.grid.spawns,
         track: map.grid.track ?? [],
-        history: [],
-        historyIndex: -1,
+        history: [initialSnapshot],
+        historyIndex: 0,
         saving: false,
         lastSavedAt: null,
         saveError: null,
@@ -237,14 +252,15 @@ export const useEditorStore = create<EditorState & EditorActions>(
     setGridType(gridType) {
       const bounds =
         gridType === GT.SQUARE ? DEFAULT_SQUARE_BOUNDS : DEFAULT_HEX_BOUNDS;
+      const cells = createEmptyCells(gridType, bounds);
       set({
         gridType,
         bounds,
-        cells: createEmptyCells(gridType, bounds),
+        cells,
         spawns: [],
         track: [],
-        history: [],
-        historyIndex: -1,
+        history: [{ cells, spawns: [], track: [] }],
+        historyIndex: 0,
       });
     },
 
@@ -439,31 +455,32 @@ export const useEditorStore = create<EditorState & EditorActions>(
 
     undo() {
       set((state) => {
-        if (state.historyIndex < 0) return state;
-        const snapshot = state.history[state.historyIndex];
+        if (state.historyIndex <= 0) return state;
+        const nextIndex = state.historyIndex - 1;
+        const snapshot = state.history[nextIndex];
         if (!snapshot) return state;
         return {
           ...state,
           cells: snapshot.cells,
           spawns: snapshot.spawns,
           track: snapshot.track,
-          historyIndex: state.historyIndex - 1,
+          historyIndex: nextIndex,
         };
       });
     },
 
     redo() {
       set((state) => {
-        const next = state.historyIndex + 1;
-        const snapshot = state.history[next];
+        const nextIndex = state.historyIndex + 1;
+        if (nextIndex >= state.history.length) return state;
+        const snapshot = state.history[nextIndex];
         if (!snapshot) return state;
-        // Note: simple impl — redo replays the next snapshot
         return {
           ...state,
           cells: snapshot.cells,
           spawns: snapshot.spawns,
           track: snapshot.track,
-          historyIndex: next,
+          historyIndex: nextIndex,
         };
       });
     },

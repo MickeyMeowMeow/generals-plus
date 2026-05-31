@@ -97,7 +97,7 @@ export function ToolPalette() {
         variant="outline"
         onClick={() => setTool(target)}
         className={cn(
-          "h-8 justify-start gap-2 border-game-border bg-game-bg text-game-text hover:bg-game-surface hover:text-white transition-all text-xs px-2.5",
+          "h-8 justify-start gap-2 border-game-border bg-game-bg text-game-text hover:bg-game-surface hover:text-white transition-colors text-xs px-2.5",
           isSelected &&
             "ring-2 ring-white/60 bg-white/10 text-white font-medium border-white/30",
           className,
@@ -129,14 +129,14 @@ export function ToolPalette() {
   const showModeObjectivesSection = showFlag || showBomb || showTrack;
 
   return (
-    <div className="flex flex-col gap-5 p-4 bg-game-surface/60 backdrop-blur-md h-full">
+    <div className="flex flex-col gap-5 p-4 bg-game-surface h-full">
       {/* Undo/Redo Header - Left Aligned */}
       <div className="flex gap-2 border-b border-game-border/30 pb-3">
         <Button
           type="button"
           variant="outline"
           onClick={undo}
-          className="flex-1 h-8 justify-start px-2.5 gap-2 border-game-border bg-game-bg text-game-text hover:bg-game-surface hover:text-white transition-all text-xs"
+          className="flex-1 h-8 justify-start px-2.5 gap-2 border-game-border bg-game-bg text-game-text hover:bg-game-surface hover:text-white transition-colors text-xs"
         >
           <Undo className="size-3.5" /> Undo
         </Button>
@@ -144,7 +144,7 @@ export function ToolPalette() {
           type="button"
           variant="outline"
           onClick={redo}
-          className="flex-1 h-8 justify-start px-2.5 gap-2 border-game-border bg-game-bg text-game-text hover:bg-game-surface hover:text-white transition-all text-xs"
+          className="flex-1 h-8 justify-start px-2.5 gap-2 border-game-border bg-game-bg text-game-text hover:bg-game-surface hover:text-white transition-colors text-xs"
         >
           <Redo className="size-3.5" /> Redo
         </Button>

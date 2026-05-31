@@ -194,13 +194,13 @@ export function MapEditorPage() {
       </header>
 
       <div className="grid flex-1 grid-cols-[280px_1fr_280px] overflow-hidden">
-        <aside className="overflow-y-auto border-r border-game-border bg-game-surface">
+        <aside className="w-[280px] min-w-[280px] max-w-[280px] overflow-y-auto border-r border-game-border bg-game-surface">
           <ToolPalette />
         </aside>
-        <main className="relative">
+        <main className="relative overflow-hidden">
           <EditorCanvas playerColorByTeam={playerColorByTeam} />
         </main>
-        <aside className="overflow-y-auto border-l border-game-border bg-game-surface">
+        <aside className="w-[280px] min-w-[280px] max-w-[280px] overflow-y-auto border-l border-game-border bg-game-surface">
           <MapMetadataPanel />
         </aside>
       </div>

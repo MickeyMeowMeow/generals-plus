@@ -231,7 +231,9 @@ const EditorScene = memo(function EditorScene({
   );
 });
 
-export function EditorCanvas({ playerColorByTeam }: EditorCanvasProps) {
+export const EditorCanvas = memo(function EditorCanvas({
+  playerColorByTeam,
+}: EditorCanvasProps) {
   const gridType = useEditorStore((s) => s.gridType);
   const bounds = useEditorStore((s) => s.bounds);
   const cells = useEditorStore((s) => s.cells);
@@ -288,7 +290,7 @@ export function EditorCanvas({ playerColorByTeam }: EditorCanvasProps) {
   }, []);
 
   return (
-    <div ref={containerRef} className="h-full w-full">
+    <div ref={containerRef} className="h-full w-full overflow-hidden">
       {!isReady ? (
         <div className="grid h-full place-items-center text-sm text-game-text-dim">
           Loading editor
@@ -315,6 +317,6 @@ export function EditorCanvas({ playerColorByTeam }: EditorCanvasProps) {
       )}
     </div>
   );
-}
+});
 
 export default EditorCanvas;
