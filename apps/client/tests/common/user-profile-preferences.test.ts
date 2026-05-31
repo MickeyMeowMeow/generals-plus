@@ -12,6 +12,8 @@ describe("UserProfile preferences", () => {
           source: "preset",
           presetId: "classic",
         },
+        avatar: { source: "default" },
+        stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
       },
     };
 

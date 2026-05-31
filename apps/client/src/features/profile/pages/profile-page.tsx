@@ -23,7 +23,6 @@ import { Switch } from "#/components/ui/switch";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
 import { Avatar } from "#/features/profile/components/avatar";
-import { resolveAvatarUrl } from "#/features/profile/utils/avatar";
 import { cn } from "#/lib/utils";
 
 type BackgroundValue = BackgroundPresetId | "customUrl";

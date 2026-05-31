@@ -45,6 +45,8 @@ describe("Stage background", () => {
           displayName: "Commander",
           preferences: {
             backgroundImage: { source: "preset", presetId: "classic" },
+            avatar: { source: "default" },
+            stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
           },
         },
       }),
@@ -75,6 +77,8 @@ describe("Stage background", () => {
               source: "customUrl",
               customUrl: "https://cdn.example.com/custom.jpg",
             },
+            avatar: { source: "default" },
+            stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
           },
         },
       }),

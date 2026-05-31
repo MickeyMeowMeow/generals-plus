@@ -1,6 +1,6 @@
 import { GameMode } from "@generals-plus/engine";
 import { SetupClientMessage } from "@generals-plus/shared-types";
-import { LogOut, Play, User } from "lucide-react";
+import { LogOut, Play } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -14,7 +14,6 @@ import { GameSettings } from "#/features/game/components/game-settings";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
 import { Avatar } from "#/features/profile/components/avatar";
-import { resolveAvatarUrl } from "#/features/profile/utils/avatar";
 import { networkProvider } from "#/infra/network/provider";
 
 const DEMOLITION_TEAM_GROUPS = [

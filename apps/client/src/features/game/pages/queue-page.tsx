@@ -1,6 +1,5 @@
 import type { GameMode } from "@generals-plus/engine";
 import { QueueClientMessage } from "@generals-plus/shared-types";
-import { User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
@@ -12,7 +11,6 @@ import { ColorPicker } from "#/features/game/components/color-picker";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
 import { Avatar } from "#/features/profile/components/avatar";
-import { resolveAvatarUrl } from "#/features/profile/utils/avatar";
 import { RoomStatus } from "#/infra/network/room";
 
 function getModeOption(mode: GameMode) {
