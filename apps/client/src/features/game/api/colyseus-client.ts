@@ -1,5 +1,5 @@
 import { Client } from "@colyseus/sdk";
 
-const ENDPOINT = "http://localhost:2567";
+import { resolveColyseusEndpoint } from "#/infra/colyseus/connection";
 
-export const colyseusClient = new Client(ENDPOINT);
+export const colyseusClient = new Client(resolveColyseusEndpoint());

@@ -2,7 +2,7 @@ import { Callbacks, Client } from "@colyseus/sdk";
 
 export { Callbacks };
 
-export const DEFAULT_COLYSEUS_ENDPOINT = "ws://localhost:2567";
+export const DEFAULT_COLYSEUS_ENDPOINT = "http://localhost:2567";
 
 export interface ColyseusAuthData<User = unknown> {
   user: User | null;

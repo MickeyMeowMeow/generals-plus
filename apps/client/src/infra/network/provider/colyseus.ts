@@ -261,7 +261,7 @@ export class ColyseusNetworkProvider<User = unknown>
     if (customRoomKey?.trim()) {
       payload.customRoomKey = customRoomKey.trim();
     }
-    return this.requestJson<CustomRoomCreation>("/custom-rooms", {
+    return this.requestJson<CustomRoomCreation>("custom-rooms", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -271,7 +271,7 @@ export class ColyseusNetworkProvider<User = unknown>
     customRoomKey: string,
   ): Promise<CustomRoomResolution> {
     return this.requestJson<CustomRoomResolution>(
-      `/custom-rooms/${encodeURIComponent(customRoomKey)}/resolve`,
+      `custom-rooms/${encodeURIComponent(customRoomKey)}/resolve`,
       {
         method: "POST",
         body: JSON.stringify({}),
