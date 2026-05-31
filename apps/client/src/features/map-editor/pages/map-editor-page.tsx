@@ -85,6 +85,7 @@ export function MapEditorPage() {
 
   const canSave =
     name.trim().length > 0 &&
+    supportedModes.length > 0 &&
     spawns.length >= 2 &&
     spawns.length === generalCount;
 
