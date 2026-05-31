@@ -27,7 +27,8 @@ export interface ModeHelpData {
 }
 
 /** Detailed rules for each game mode, shown in the mode help dialog. */
-export const GAME_MODE_HELP: Record<GameMode, ModeHelpData> = {
+export const GAME_MODE_HELP: Record<GameMode, ModeHelpData> &
+  Record<string, ModeHelpData> = {
   [GameMode.CLASSIC]: {
     summary: "Classic generals.io rules. Capture the enemy general to win.",
     rules: [
@@ -119,16 +120,39 @@ export const GAME_MODE_HELP: Record<GameMode, ModeHelpData> = {
       "Operate under heavy fog of war with limited vision.",
     ],
   },
+  "vs-ai": {
+    summary:
+      "Battle against AI opponents. Practice your strategy and improve your skills.",
+    rules: [
+      "You play against an AI-controlled opponent using the Classic ruleset.",
+      "AI difficulty adapts to provide a challenging experience.",
+      "Capture the AI's general to win.",
+      "No matchmaking queue — start instantly.",
+    ],
+  },
 };
 
 /** Mode options presented by lobby and setup controls. */
-export const GAME_MODE_OPTIONS = Object.values(GameMode).map((mode) => ({
-  id: mode,
-  label: formatGameMode(mode),
-  help: GAME_MODE_HELP[mode],
-  minPlayers: 2,
-  isEnabled: SUPPORTED_GAME_MODES.has(mode),
-}));
+export const GAME_MODE_OPTIONS = [
+  ...Object.values(GameMode)
+    .filter((mode) => mode !== GameMode.ESPIONAGE)
+    .map((mode) => ({
+      id: mode as GameMode,
+      label: formatGameMode(mode),
+      help: GAME_MODE_HELP[mode],
+      minPlayers: 2,
+      isEnabled: SUPPORTED_GAME_MODES.has(mode),
+      isVsAi: false as const,
+    })),
+  {
+    id: "vs-ai" as const,
+    label: "AI Arena",
+    minPlayers: 2,
+    help: GAME_MODE_HELP["vs-ai"],
+    isEnabled: false,
+    isVsAi: true as const,
+  },
+];
 
 /** Playable official modes for queue creation. */
 export const OFFICIAL_GAME_MODES = GAME_MODE_OPTIONS.filter(

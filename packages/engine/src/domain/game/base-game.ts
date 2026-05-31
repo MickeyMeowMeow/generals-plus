@@ -256,14 +256,27 @@ export abstract class BaseGame implements IBaseGame {
     targetTerrain: Terrain = Terrain.GENERAL,
   ): void {
     if (this.spawnPositions) {
+      const assignedCoords = new Set<string>();
       for (const [playerId, coord] of this.spawnPositions) {
         const cell = this.grid.get(coord);
         const player = this.players.get(playerId);
         if (cell && player) {
           cell.owner = player;
           cell.terrain = targetTerrain;
+          assignedCoords.add(`${coord.x},${coord.y}`);
         }
       }
+
+      this.grid.forEach((cell) => {
+        if (cell.terrain === Terrain.GENERAL) {
+          const coordKey = `${cell.coordinate.x},${cell.coordinate.y}`;
+          if (!assignedCoords.has(coordKey)) {
+            cell.terrain = Terrain.PLAIN;
+            cell.owner = null;
+            cell.troopCount = null;
+          }
+        }
+      });
       return;
     }
 
@@ -271,9 +284,16 @@ export abstract class BaseGame implements IBaseGame {
     const playersArray = Array.from(this.players.values());
     this.grid.forEach((cell) => {
       if (cell.terrain === Terrain.GENERAL) {
-        cell.terrain = targetTerrain;
-        cell.owner = playersArray[index] ?? null;
-        index += 1;
+        const player = playersArray[index];
+        if (player) {
+          cell.terrain = targetTerrain;
+          cell.owner = player;
+          index += 1;
+        } else {
+          cell.terrain = Terrain.PLAIN;
+          cell.owner = null;
+          cell.troopCount = null;
+        }
       }
     });
   }

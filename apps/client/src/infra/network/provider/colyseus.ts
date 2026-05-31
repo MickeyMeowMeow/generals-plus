@@ -278,4 +278,15 @@ export class ColyseusNetworkProvider<User = unknown>
       },
     );
   }
+
+  async checkAiHealth(): Promise<boolean> {
+    try {
+      const result = await this.requestJson<{ available: boolean }>(
+        "/ai/health",
+      );
+      return result.available === true;
+    } catch {
+      return false;
+    }
+  }
 }

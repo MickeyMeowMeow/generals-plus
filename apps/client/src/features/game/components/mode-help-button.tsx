@@ -1,4 +1,3 @@
-import type { GameMode } from "@generals-plus/engine";
 import { CircleHelp } from "lucide-react";
 import { useState } from "react";
 
@@ -41,7 +40,7 @@ export function ModeHelpButton({
   gameMode,
   className,
 }: {
-  gameMode: GameMode;
+  gameMode: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);

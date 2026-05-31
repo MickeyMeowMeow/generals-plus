@@ -335,7 +335,9 @@ export function GameSettings({
             disabled={!isHost}
             value={currentSettings.gameMode ?? GameMode.CLASSIC}
             onValueChange={(val) => {
-              const mode = GAME_MODE_OPTIONS.find((o) => o.id === val)?.id;
+              const mode = GAME_MODE_OPTIONS.find(
+                (o) => o.id === val && !o.isVsAi,
+              )?.id as GameMode | undefined;
               if (mode) onChangeSettings({ gameMode: mode });
             }}
           >
@@ -347,7 +349,7 @@ export function GameSettings({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="border border-game-border bg-game-surface text-game-text">
-              {GAME_MODE_OPTIONS.map((mode) => {
+              {GAME_MODE_OPTIONS.filter((m) => !m.isVsAi).map((mode) => {
                 const supportedByMap =
                   !isCustomMap ||
                   !selectedMap ||

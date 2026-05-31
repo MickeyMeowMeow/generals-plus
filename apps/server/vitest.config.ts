@@ -18,6 +18,7 @@ export default defineConfig({
         monorepoRoot,
         "packages/shared-types/src/index.ts",
       ),
+      "@generals-plus/ai": path.join(monorepoRoot, "packages/ai/src/index.ts"),
     },
   },
   test: {
