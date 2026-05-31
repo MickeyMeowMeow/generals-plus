@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { ActionType } from "#/domain/action/action-type";
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import { GameMode } from "#/domain/game/game-mode";
@@ -317,6 +318,39 @@ describe("PayloadGame", () => {
     game.nextTick(); // tick 3 reached!
 
     expect(game.status).toBe(GameStatus.FINISHED);
+    expect(game.checkGameEnd()).toEqual({
+      mode: GameMode.PAYLOAD,
+      winnerTeamId: "left-team",
+    });
+  });
+
+  it("wins immediately when only one team remains active", () => {
+    const grid = create7x3GridWithTrack();
+    const game = new PayloadGame({ grid });
+
+    const t1 = new StandardTeam("left-team");
+    const t2 = new StandardTeam("right-team");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    game.teams.set(t1.teamId, t1);
+    game.teams.set(t2.teamId, t2);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+
+    getCell(grid, { x: 0, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 0, y: 1 }).owner = p1;
+    getCell(grid, { x: 6, y: 1 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 6, y: 1 }).owner = p2;
+
+    game.startGame();
+    expect(game.status).toBe(GameStatus.PLAYING);
+
+    const rightGeneral = getCell(grid, { x: 6, y: 1 });
+    game.handleAction({ playerId: "p2", type: ActionType.SURRENDER });
+
+    expect(game.status).toBe(GameStatus.FINISHED);
+    expect(rightGeneral.owner).toBe(p2);
+    expect(rightGeneral.terrain).toBe(Terrain.GENERAL);
     expect(game.checkGameEnd()).toEqual({
       mode: GameMode.PAYLOAD,
       winnerTeamId: "left-team",

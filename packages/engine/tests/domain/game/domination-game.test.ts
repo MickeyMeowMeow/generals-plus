@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { ActionType } from "#/domain/action/action-type";
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import { DominationGame } from "#/domain/game/domination-game";
@@ -25,13 +26,20 @@ describe("DominationGame", () => {
     const grid = createGridWithFlag();
     const game = new DominationGame({ grid });
     const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);
+    game.teams.set(t2.teamId, t2);
     game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
 
     const flagCell = grid.get({ x: 0, y: 0 });
+    const plainCell = grid.get({ x: 1, y: 0 });
     if (!flagCell) throw new Error("Missing flag cell");
     flagCell.owner = p1;
+    if (!plainCell) throw new Error("Missing plain cell");
+    plainCell.owner = p2;
 
     game.startGame();
 
@@ -51,13 +59,20 @@ describe("DominationGame", () => {
     const grid = createGridWithFlag();
     const game = new DominationGame({ grid });
     const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);
+    game.teams.set(t2.teamId, t2);
     game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
 
     const flagCell = grid.get({ x: 0, y: 0 });
+    const plainCell = grid.get({ x: 1, y: 0 });
     if (!flagCell) throw new Error("Missing flag cell");
     flagCell.owner = p1;
+    if (!plainCell) throw new Error("Missing plain cell");
+    plainCell.owner = p2;
 
     game.startGame();
 
@@ -77,13 +92,20 @@ describe("DominationGame", () => {
     const grid = createGridWithFlag();
     const game = new DominationGame({ grid });
     const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);
+    game.teams.set(t2.teamId, t2);
     game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
 
     const flagCell = grid.get({ x: 0, y: 0 });
+    const plainCell = grid.get({ x: 1, y: 0 });
     if (!flagCell) throw new Error("Missing flag cell");
     flagCell.owner = p1;
+    if (!plainCell) throw new Error("Missing plain cell");
+    plainCell.owner = p2;
 
     game.startGame();
 
@@ -159,13 +181,20 @@ describe("DominationGame", () => {
     const grid = createGridWithFlag();
     const game = new DominationGame({ grid }, { targetScore: 5 });
     const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);
+    game.teams.set(t2.teamId, t2);
     game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
 
     const flagCell = grid.get({ x: 0, y: 0 });
+    const plainCell = grid.get({ x: 1, y: 0 });
     if (!flagCell) throw new Error("Missing flag cell");
     flagCell.owner = p1;
+    if (!plainCell) throw new Error("Missing plain cell");
+    plainCell.owner = p2;
 
     game.startGame();
 
@@ -180,13 +209,20 @@ describe("DominationGame", () => {
     const grid = createGridWithFlag();
     const game = new DominationGame({ grid }, { finishTick: 3 });
     const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
     const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
     game.teams.set(t1.teamId, t1);
+    game.teams.set(t2.teamId, t2);
     game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
 
     const flagCell = grid.get({ x: 0, y: 0 });
+    const plainCell = grid.get({ x: 1, y: 0 });
     if (!flagCell) throw new Error("Missing flag cell");
     flagCell.owner = p1;
+    if (!plainCell) throw new Error("Missing plain cell");
+    plainCell.owner = p2;
 
     game.startGame();
 
@@ -195,5 +231,44 @@ describe("DominationGame", () => {
     game.nextTick();
 
     expect(game.status).toBe(GameStatus.FINISHED);
+  });
+
+  it("wins immediately when only one team remains active", () => {
+    const grid = new SquareGrid(2, 1, [
+      [
+        new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.FLAG }),
+        new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.PLAIN }),
+      ],
+    ]);
+    const game = new DominationGame({ grid });
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    game.teams.set(t1.teamId, t1);
+    game.teams.set(t2.teamId, t2);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+
+    const flagCell = grid.get({ x: 0, y: 0 });
+    const plainCell = grid.get({ x: 1, y: 0 });
+    if (!flagCell || !plainCell) throw new Error("Missing test cells");
+    flagCell.owner = p1;
+    plainCell.owner = p2;
+
+    game.startGame();
+    expect(game.status).toBe(GameStatus.PLAYING);
+
+    const surrenderedFlagCell = flagCell;
+    const surrenderedPlainCell = plainCell;
+    game.handleAction({ playerId: "p2", type: ActionType.SURRENDER });
+
+    expect(game.status).toBe(GameStatus.FINISHED);
+    expect(surrenderedPlainCell.owner).toBe(p2);
+    expect(surrenderedFlagCell.owner).toBe(p1);
+    expect(game.checkGameEnd()).toEqual({
+      mode: GameMode.DOMINATION,
+      winnerTeamId: "t1",
+    });
   });
 });

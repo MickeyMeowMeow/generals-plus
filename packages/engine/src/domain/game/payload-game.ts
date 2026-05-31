@@ -395,6 +395,14 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
   }
 
   protected evaluateGameEnd(): IGameResult | null {
+    const aliveTeams = this.getAliveTeams();
+    if (aliveTeams.size <= 1) {
+      return {
+        mode: this.mode,
+        winnerTeamId: aliveTeams.values().next().value ?? null,
+      };
+    }
+
     if (this.cartIndex === 0) {
       // Right team pushed to Left base
       return {

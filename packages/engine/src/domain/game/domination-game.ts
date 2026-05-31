@@ -164,6 +164,14 @@ export class DominationGame extends BaseGame implements IDominationGame {
   }
 
   protected evaluateGameEnd(): IGameResult | null {
+    const aliveTeams = this.getAliveTeams();
+    if (aliveTeams.size <= 1) {
+      return {
+        mode: this.mode,
+        winnerTeamId: aliveTeams.values().next().value ?? null,
+      };
+    }
+
     let maxScore = -1;
     let winnerTeamId: string | null = null;
     let targetReached = false;

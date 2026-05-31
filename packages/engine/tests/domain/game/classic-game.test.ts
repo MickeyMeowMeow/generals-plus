@@ -446,7 +446,7 @@ describe("ClassicGame", () => {
     });
   });
 
-  test("surrender neutralizes all owned troops and can end the game", () => {
+  test("surrender preserves board state when it immediately ends the game", () => {
     const grid = new SquareGrid(3, 1, [
       [
         new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),
@@ -477,16 +477,62 @@ describe("ClassicGame", () => {
     const success = game.handleAction(createSurrenderAction("p1"));
 
     expect(success).toBe(true);
-    expect(c1.owner).toBeNull();
-    expect(c2.owner).toBeNull();
+    expect(c1.owner).toBe(p1);
+    expect(c2.owner).toBe(p1);
     expect(c1.troopCount).toBe(9);
     expect(c2.troopCount).toBe(4);
+    expect(c2.terrain).toBe(Terrain.CITY);
     expect(p1.status).toBe(PlayerStatus.ELIMINATED);
     expect(game.status).toBe(GameStatus.FINISHED);
     expect(game.checkGameEnd()).toEqual({
       mode: GameMode.CLASSIC,
       winnerTeamId: "t2",
     });
+  });
+
+  test("surrender neutralizes cells when other teams still remain", () => {
+    const grid = new SquareGrid(3, 1, [
+      [
+        new Cell({ coordinate: { x: 0, y: 0 }, terrain: Terrain.PLAIN }),
+        new Cell({ coordinate: { x: 1, y: 0 }, terrain: Terrain.CITY }),
+        new Cell({ coordinate: { x: 2, y: 0 }, terrain: Terrain.PLAIN }),
+      ],
+    ]);
+    const game = new ClassicGame({ grid });
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const t3 = new StandardTeam("t3");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    const p3 = new Player(t3, "p3", PlayerStatus.ACTIVE);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+    game.players.set(p3.playerId, p3);
+
+    const c1 = grid.get({ x: 0, y: 0 });
+    const c2 = grid.get({ x: 1, y: 0 });
+    const c3 = grid.get({ x: 2, y: 0 });
+    if (!c1 || !c2 || !c3) {
+      throw new Error("cells should exist");
+    }
+
+    c1.owner = p1;
+    c1.troopCount = 9;
+    c2.owner = p1;
+    c2.troopCount = 4;
+    c3.owner = p3;
+    c3.troopCount = 2;
+
+    game.startGame();
+    const success = game.handleAction(createSurrenderAction("p1"));
+
+    expect(success).toBe(true);
+    expect(c1.owner).toBeNull();
+    expect(c2.owner).toBeNull();
+    expect(c1.troopCount).toBe(9);
+    expect(c2.troopCount).toBe(4);
+    expect(p1.status).toBe(PlayerStatus.ELIMINATED);
+    expect(game.status).toBe(GameStatus.PLAYING);
   });
 
   test("surrender converts general to city so capturer does not gain a second general", () => {
