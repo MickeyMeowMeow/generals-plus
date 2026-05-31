@@ -2,6 +2,7 @@ import { CollapseShape, GameMode, GridType } from "@generals-plus/engine";
 import type {
   ClassicSetupSettings,
   CollapseSetupSettings,
+  CustomMap,
   DemolitionSetupSettings,
   DominationSetupSettings,
   PayloadSetupSettings,
@@ -9,8 +10,9 @@ import type {
   SetupState,
   TurfWarSetupSettings,
 } from "@generals-plus/shared-types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import {
@@ -22,6 +24,8 @@ import {
 } from "#/components/ui/select";
 import { Switch } from "#/components/ui/switch";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
+import { mapsApi } from "#/features/map-editor/api/maps-api";
+import { MapPickerDialog } from "#/features/map-editor/components/map-picker-dialog";
 import { cn } from "#/lib/utils";
 
 interface GameSettingsProps {
@@ -131,6 +135,31 @@ export function GameSettings({
       ? Math.ceil(currentSettings.maxPlayers / 2)
       : 1;
 
+  const isCustomMap = currentSettings.mapSource === "custom";
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedMap, setSelectedMap] = useState<CustomMap | null>(null);
+
+  // Load the selected custom map details when customMapId changes
+  useEffect(() => {
+    if (!currentSettings.customMapId) {
+      setSelectedMap(null);
+      return;
+    }
+    if (selectedMap?.id === currentSettings.customMapId) return;
+    let cancelled = false;
+    mapsApi
+      .get(currentSettings.customMapId)
+      .then((map) => {
+        if (!cancelled) setSelectedMap(map);
+      })
+      .catch(() => {
+        if (!cancelled) setSelectedMap(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentSettings.customMapId, selectedMap?.id]);
+
   // Tracks the field currently being edited and its intermediate string value
   const [editing, setEditing] = useState<{
     key: NumberKeys;
@@ -178,32 +207,71 @@ export function GameSettings({
   }: {
     key: NumberKeys;
     label: string;
-  }) => (
-    <div key={key} className={fieldClassName}>
-      <Label htmlFor={key} className={labelClassName}>
-        {label}
-      </Label>
-      <Input
-        id={key}
-        type="number"
-        disabled={!isHost}
-        min={key === "playersPerTeam" ? demolitionPlayersPerTeamMin : undefined}
-        value={
-          editing?.key === key ? editing.value : round(currentSettings[key])
-        }
-        onFocus={() => handleFocus(key, currentSettings[key])}
-        onBlur={handleSubmit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") handleSubmit();
-        }}
-        onChange={(e) => handleNumberChange(e.target.value)}
-        className={inputClassName}
-      />
-    </div>
-  );
+  }) => {
+    const isMapField =
+      key === "mapWidth" ||
+      key === "mapHeight" ||
+      key === "mapLeft" ||
+      key === "mapRight" ||
+      key === "mapLeftSlant" ||
+      key === "mapRightSlant" ||
+      key === "seed" ||
+      key === "mountainRate" ||
+      key === "cityRate" ||
+      key === "minGeneralDistanceFactor" ||
+      key === "generalInitialTroops" ||
+      key === "cityInitialTroops" ||
+      key === "bombSiteCount" ||
+      key === "flagCount" ||
+      key === "maxPlayers";
+    const disabled = !isHost || (isCustomMap && isMapField);
+    return (
+      <div key={key} className={fieldClassName}>
+        <Label htmlFor={key} className={labelClassName}>
+          {label}
+        </Label>
+        <Input
+          id={key}
+          type="number"
+          disabled={disabled}
+          min={
+            key === "playersPerTeam" ? demolitionPlayersPerTeamMin : undefined
+          }
+          value={
+            editing?.key === key ? editing.value : round(currentSettings[key])
+          }
+          onFocus={() => handleFocus(key, currentSettings[key])}
+          onBlur={handleSubmit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSubmit();
+          }}
+          onChange={(e) => handleNumberChange(e.target.value)}
+          className={inputClassName}
+        />
+      </div>
+    );
+  };
 
   return (
     <section aria-labelledby="game-settings-title" className="space-y-4">
+      <MapPickerDialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(map) => {
+          // Pick a compatible mode if current one is unsupported
+          const modeOk = map.supportedModes.includes(currentSettings.gameMode);
+          const nextMode = modeOk
+            ? currentSettings.gameMode
+            : map.supportedModes[0];
+          onChangeSettings({
+            mapSource: "custom",
+            customMapId: map.id,
+            mapType: map.grid.gridType,
+            maxPlayers: map.maxPlayers,
+            ...(nextMode && !modeOk ? { gameMode: nextMode } : {}),
+          });
+        }}
+      />
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="game-settings-title" className="text-xl font-semibold">
           Game Settings
@@ -216,6 +284,42 @@ export function GameSettings({
       </div>
 
       <div className="grid gap-3 text-left sm:grid-cols-2 lg:grid-cols-3">
+        <div className={cn(fieldClassName, "sm:col-span-2 lg:col-span-3")}>
+          <Label className={labelClassName}>Map Source</Label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant={isCustomMap ? "outline" : "default"}
+              size="sm"
+              disabled={!isHost}
+              onClick={() =>
+                onChangeSettings({ mapSource: "generated", customMapId: "" })
+              }
+            >
+              Generated
+            </Button>
+            <Button
+              type="button"
+              variant={isCustomMap ? "default" : "outline"}
+              size="sm"
+              disabled={!isHost}
+              onClick={() => setPickerOpen(true)}
+            >
+              {isCustomMap && selectedMap
+                ? `Custom: ${selectedMap.name}`
+                : "Choose Custom..."}
+            </Button>
+            {isCustomMap && selectedMap && (
+              <span className="text-xs text-game-text-dim">
+                by {selectedMap.authorName} ·{" "}
+                {selectedMap.minPlayers === selectedMap.maxPlayers
+                  ? `${selectedMap.minPlayers} players`
+                  : `${selectedMap.minPlayers}-${selectedMap.maxPlayers} players`}
+              </span>
+            )}
+          </div>
+        </div>
+
         <div className={fieldClassName}>
           <Label id="game-mode-label" className={labelClassName}>
             Game Mode
@@ -236,16 +340,23 @@ export function GameSettings({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="border border-game-border bg-game-surface text-game-text">
-              {GAME_MODE_OPTIONS.map((mode) => (
-                <SelectItem
-                  key={mode.id}
-                  value={mode.id}
-                  disabled={!mode.isEnabled}
-                >
-                  {mode.label}
-                  {mode.isEnabled ? "" : " (coming soon)"}
-                </SelectItem>
-              ))}
+              {GAME_MODE_OPTIONS.map((mode) => {
+                const supportedByMap =
+                  !isCustomMap ||
+                  !selectedMap ||
+                  selectedMap.supportedModes.includes(mode.id);
+                return (
+                  <SelectItem
+                    key={mode.id}
+                    value={mode.id}
+                    disabled={!mode.isEnabled || !supportedByMap}
+                  >
+                    {mode.label}
+                    {mode.isEnabled ? "" : " (coming soon)"}
+                    {!supportedByMap ? " (not supported by map)" : ""}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -311,7 +422,7 @@ export function GameSettings({
             Map Type
           </Label>
           <Select
-            disabled={!isHost}
+            disabled={!isHost || isCustomMap}
             value={currentSettings.mapType ?? GridType.SQUARE}
             onValueChange={(val) => {
               const type = MAP_TYPE_OPTIONS.find((o) => o.id === val)?.id;

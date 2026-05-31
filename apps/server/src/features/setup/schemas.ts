@@ -9,6 +9,8 @@ export const setupSettingsUpdateSchema = z
     isPublic: z.boolean(),
     playersPerTeam: z.number().int().min(1),
     mapType: z.enum(GridType),
+    mapSource: z.enum(["generated", "custom"]),
+    customMapId: z.string(),
     mapWidth: z.number().int().min(5).max(100),
     mapHeight: z.number().int().min(5).max(100),
     mapLeft: z.number().int().min(5).max(100),

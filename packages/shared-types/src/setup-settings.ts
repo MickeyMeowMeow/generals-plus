@@ -6,6 +6,8 @@ interface BaseSetupSettings {
   maxPlayers: number;
   playersPerTeam: number;
   mapType: GridType;
+  mapSource: "generated" | "custom";
+  customMapId: string;
   mapWidth: number;
   mapHeight: number;
   mapLeft: number;

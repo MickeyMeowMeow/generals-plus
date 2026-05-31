@@ -7,6 +7,7 @@ import type { Grid } from "#/domain/grid/grid";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
+import type { ICoordinate } from "#/math/coordinate";
 
 /**
  * The root state of the Game Engine.
@@ -32,6 +33,9 @@ export interface IBaseGame {
 
   /** Map of all teams (ID -> State). */
   readonly teams: Map<string, Team>;
+
+  /** Explicit player→coordinate mapping for custom maps. */
+  spawnPositions?: Map<string, ICoordinate>;
 
   /**
    * Starts the internal tick counter and troop growth timers.

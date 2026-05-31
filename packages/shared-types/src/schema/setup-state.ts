@@ -20,6 +20,9 @@ export class SetupState extends Schema {
 
   @type("string") mapType: GridType = GridType.SQUARE;
 
+  @type("string") mapSource: "generated" | "custom" = "generated";
+  @type("string") customMapId: string = "";
+
   // Map dimensions for square maps
   @type("number") mapWidth: number = 24;
   @type("number") mapHeight: number = 16;
