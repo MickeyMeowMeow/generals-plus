@@ -1,5 +1,5 @@
 import { Terrain } from "@generals-plus/engine";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Globe, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
@@ -187,7 +187,7 @@ export function MapEditorPage() {
             }
             onClick={() => onSave(true)}
           >
-            <Save className="size-4" />
+            <Globe className="size-4" />
             Publish
           </Button>
         </div>

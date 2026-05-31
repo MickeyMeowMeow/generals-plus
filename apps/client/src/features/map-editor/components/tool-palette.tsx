@@ -275,7 +275,7 @@ export function ToolPalette() {
           <div className="flex flex-col gap-2">
             {/* Flag Card */}
             {showFlag && (
-              <div className="bg-game-bg/40 border border-game-border/40 rounded-lg p-2.5 flex flex-col gap-2">
+              <div className="bg-game-bg/40 border border-game-border/40 rounded-none p-2.5 flex flex-col gap-2">
                 <span className="text-[10px] font-bold text-game-text flex items-center gap-1.5 uppercase tracking-wide">
                   <img
                     src={flagIcon}
@@ -296,7 +296,7 @@ export function ToolPalette() {
 
             {/* Bomb Site Card */}
             {showBomb && (
-              <div className="bg-game-bg/40 border border-game-border/40 rounded-lg p-2.5 flex flex-col gap-2">
+              <div className="bg-game-bg/40 border border-game-border/40 rounded-none p-2.5 flex flex-col gap-2">
                 <span className="text-[10px] font-bold text-game-text flex items-center gap-1.5 uppercase tracking-wide">
                   <img
                     src={bombNormalIcon}
@@ -317,7 +317,7 @@ export function ToolPalette() {
 
             {/* Payload Track Card */}
             {showTrack && (
-              <div className="bg-game-bg/40 border border-game-border/40 rounded-lg p-2.5 flex flex-col gap-2">
+              <div className="bg-game-bg/40 border border-game-border/40 rounded-none p-2.5 flex flex-col gap-2">
                 <span className="text-[10px] font-bold text-game-text flex items-center gap-1.5 uppercase tracking-wide">
                   <Route className="size-3.5 text-white/80" />
                   Payload Track Route

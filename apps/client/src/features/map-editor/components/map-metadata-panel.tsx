@@ -1,5 +1,6 @@
 import { GridType } from "@generals-plus/engine";
 
+import { Checkbox } from "#/components/ui/checkbox";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import {
@@ -136,13 +137,14 @@ export function MapMetadataPanel() {
             return (
               <label
                 key={mode.id}
-                className="flex cursor-pointer items-center gap-2 border border-game-border bg-game-bg px-2 py-1 text-xs text-game-text"
+                htmlFor={`mode-chk-${mode.id}`}
+                className="flex cursor-pointer items-center gap-2 border border-game-border bg-game-bg px-2 py-1.5 text-xs text-game-text transition-colors hover:bg-game-surface"
               >
-                <input
-                  type="checkbox"
+                <Checkbox
+                  id={`mode-chk-${mode.id}`}
                   checked={active}
-                  onChange={(e) => {
-                    if (e.target.checked) {
+                  onCheckedChange={(checked) => {
+                    if (checked === true) {
                       setSupportedModes([...supportedModes, mode.id]);
                     } else {
                       setSupportedModes(
@@ -151,7 +153,7 @@ export function MapMetadataPanel() {
                     }
                   }}
                 />
-                {mode.label}
+                <span className="select-none">{mode.label}</span>
               </label>
             );
           })}
