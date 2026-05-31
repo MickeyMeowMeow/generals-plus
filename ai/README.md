@@ -5,17 +5,20 @@ Python bot service and RL training pipeline for Generals Plus.
 ## Directory Structure
 
 ```
-training/
+ai/
 ├── bot/                # Bot service (runs alongside the TS server)
 │   ├── server.py       # FastAPI WebSocket server (entry point)
 │   ├── heuristic.py    # Rule-based heuristic bot
 │   ├── ml_bot.py       # ML bot (auto-detects .eqx or .onnx backend)
-│   ├── observation.py  # Vision → tensor conversion, ObservationBuffer
+│   ├── observation.py  # Vision → tensor conversion
 │   └── action.py       # Action format conversion
-├── rl/                 # Reinforcement learning
-│   ├── network.py      # CNN + LSTM network architecture
-│   ├── train.py        # PPO training pipeline
-│   └── export_onnx.py  # Export .eqx → .onnx for CPU deployment
+├── sim/                # Game simulation environment
+├── train/              # Training pipeline
+│   ├── network.py      # U-Net policy-value network
+│   ├── train.py        # PPO training
+│   └── export_onnx.py  # Export .eqx → .onnx
+├── models/             # Trained model checkpoints
+│   └── sft_pretrained.eqx
 └── tests/
 ```
 
@@ -24,30 +27,34 @@ training/
 ### 1. Install Dependencies
 
 ```bash
-# Core dependencies — bot service + CPU inference (lightweight, ~50MB)
-pip install -e .
+cd ai/
 
-# With training support (CUDA JAX, ~2GB+)
+# Core dependencies — bot service + JAX inference (~2GB)
 pip install -e ".[train]"
+
+# Minimal dependencies — bot service only, heuristic bot (~50MB)
+pip install -e .
 ```
 
 ### 2. Run Bot Service
 
 ```bash
-# Heuristic bot (no ML model needed)
+cd ai/
+
+# ML bot with .eqx model (JAX CPU, ~11s warmup then 17ms/tick)
+python -m bot.server --model models/sft_pretrained.eqx
+
+# Heuristic bot (no model needed)
 python -m bot.server
 
-# With a trained model (.onnx — CPU deployment, lightweight)
-python -m bot.server --model models/bot.onnx
-
-# With a trained model (.eqx — requires JAX, for dev/training machines)
-python -m bot.server --model models/ppo_recurrent.eqx
-
 # Custom host/port
-python -m bot.server --host 0.0.0.0 --port 8765
+python -m bot.server --model models/sft_pretrained.eqx --host 0.0.0.0 --port 8765
 ```
 
 The service listens on `ws://localhost:8765/ws` by default.
+
+Startup with `--model` takes ~11 seconds for JAX warmup (model load + JIT compilation).
+After warmup, each tick is ~17ms — well within the 200ms budget.
 
 ### 3. Configure TS Server
 
@@ -58,56 +65,49 @@ Set the `BOT_SERVICE_URL` environment variable in the TS server:
 BOT_SERVICE_URL=ws://localhost:8765/ws
 ```
 
-The TS server exposes `GET /ai/health` which pings the bot service. The frontend uses this to show a warning when the bot service is unreachable.
+The TS server exposes `GET /ai/health` which pings the bot service.
+The frontend uses this to show a warning when the bot service is unreachable.
 
 ## Deployment
 
-### CPU-Only Deployment (recommended for production)
-
-The bot can run on CPU-only machines using the ONNX backend:
-
-1. **Train** on a GPU machine (see Training section below)
-2. **Export** the trained model to ONNX:
+### JAX CPU Deployment (recommended for now)
 
 ```bash
-# Requires: pip install -e ".[train]"
-python -m rl.export_onnx --model models/ppo_recurrent.eqx --output models/bot.onnx
+# On the deployment machine
+cd ai/
+pip install -e ".[train]"
+python -m bot.server --model models/sft_pretrained.eqx
 ```
 
-3. **Deploy** with only core dependencies:
+Requirements:
+- Python ≥ 3.11
+- ~2GB disk (JAX + Equinox dependencies)
+- CPU only, no GPU needed
 
-```bash
-# On the deployment machine (no GPU needed)
-pip install -e .
-python -m bot.server --model models/bot.onnx
-```
+Performance (single-core CPU, macOS, Python 3.13):
+| Stage | Time |
+|-------|------|
+| Startup warmup (one-time) | ~18s |
+| Per-game model load (warm) | ~27ms |
+| Per-tick inference (10×10) | ~23ms |
+| Per-tick inference (18×18) | ~19ms |
 
-The ONNX Runtime dependency (`onnxruntime`) is ~30MB and runs efficiently on CPU — well within the 500ms tick budget for 10x10 grids.
+### ONNX CPU Deployment (planned)
 
-### JAX Deployment (for development)
+Lighter deployment (~30MB onnxruntime), but blocked by jax2onnx converter
+limitations (`jax.image.resize` antialias, `AdaptiveAvgPool2d` non-divisible dims).
 
-If you have JAX installed (e.g., on the training machine), you can deploy directly with `.eqx` files. JAX will use CPU if no GPU is available.
+See `train/export_onnx.py` for the export script (needs updating for JAX 0.10+).
 
 ## Training
 
-### PPO with CNN + LSTM
+### PPO with U-Net
 
-Train a bot using PPO with self-play in the JAX environment:
+Train a bot using PPO with self-play:
 
 ```bash
-# From the training/ directory
-python -m rl.train --grid-size 10 --num-envs 64
-
-# Full options
-python -m rl.train \
-  --grid-size 10 \
-  --num-envs 128 \
-  --num-steps 256 \
-  --num-iterations 500 \
-  --lr 3e-4 \
-  --stack-size 4 \
-  --minibatch-size 64 \
-  --save-path models/ppo_recurrent.eqx
+cd ai/
+python -m train.train --grid-size 10 --num-envs 64
 ```
 
 **Requirements:** `pip install -e ".[train]"`. GPU (CUDA) recommended.
@@ -115,33 +115,26 @@ python -m rl.train \
 ### Architecture
 
 ```
-Spatial obs (9, H, W) ──→ CNN ──→ spatial_features
-                                        │
-Scoreboard scalars ──→ linear proj ────┤
-                                        ↓
-                                    LSTM (memory across ticks)
-                                        │
-                              ┌─────────┴─────────┐
-                        policy head          value head
-                     (action logits)      (state value)
+Input: (24, H, W) — 9 obs channels + 15 memory channels
+  │
+  ├─ Encoder Block 1: Conv(24→96, 3×3) + ReLU → skip_1
+  ├─ MaxPool(2)
+  ├─ Encoder Block 2: Conv(96→192, 3×3) + ReLU → skip_2
+  ├─ MaxPool(2)
+  │
+  ├─ Bottleneck: Conv(192→384, 3×3) + ReLU
+  │
+  ├─ Upsample + Conv(384→192, 1×1) + Cat(skip_2) → Conv(384→192, 3×3) + ReLU
+  ├─ Upsample + Conv(192→96, 1×1) + Cat(skip_1) → Conv(192→96, 3×3) + ReLU
+  │
+  ├─ Policy head: Conv(96→9, 1×1) → (9, H, W) logits
+  └─ Value head: AdaptiveAvgPool(2,2) → FC(1536→128) → FC(128→1)
 ```
 
-- **CNN**: 4-layer conv backbone extracts spatial features from the 9-channel vision grid
-- **Scalar projection**: Projects public scoreboard data (troops, land, alive) into the feature space
-- **LSTM**: Processes the sequence of (CNN features, scalar features) for temporal memory
-- **Policy head**: Uses CNN spatial features with valid-move masking for action selection
-- **Value head**: Uses LSTM hidden state for value estimation
-
-### Export to ONNX
-
-After training, export for CPU deployment:
-
-```bash
-python -m rl.export_onnx --model models/ppo_recurrent.eqx --output models/bot.onnx
-
-# Requires tensorflow + tf2onnx for ONNX conversion:
-pip install -e ".[export]"
-```
+- No LSTM — memory channels (15ch) encode temporal info
+- Fully feedforward: single forward pass per frame
+- Variable grid sizes (H, W must be divisible by 4)
+- 9 actions: 4 cardinal directions + 4 split-move directions + pass
 
 ## Communication Protocol
 
@@ -161,5 +154,3 @@ The TS server communicates with the Python bot service via WebSocket JSON messag
 |---------|--------|
 | `action` | `action: {pass, row, col, direction, split}` |
 | `error` | `message` |
-
-The `scoreboard` field contains public per-player data (same data all players see): `playerId`, `troops`, `land`, `isAlive`.

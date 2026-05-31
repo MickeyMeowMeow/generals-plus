@@ -36,6 +36,10 @@ class BotFactory:
     def __init__(self, model_path: Optional[str] = None):
         self.model_path = model_path
         self._bots: dict[str, object] = {}
+        self._warmed_up = False
+
+        if model_path and os.path.exists(model_path):
+            self._warmup()
 
     def get_bot(self, player_id: str):
         """Return (or lazily create) the bot instance for *player_id*."""
@@ -57,6 +61,33 @@ class BotFactory:
                 self._bots[player_id] = HeuristicBot()
                 logger.info(f"Heuristic bot created for player {player_id}")
         return self._bots[player_id]
+
+    def _warmup(self) -> None:
+        """Eagerly load model and trigger JIT compilation at startup."""
+        try:
+            from .ml_bot import MLBot
+
+            logger.info(f"Warming up model: {self.model_path}")
+            bot = MLBot(self.model_path)
+
+            # Use a real-shaped dummy tick to force the full inference path
+            # and trigger XLA JIT compilation. 10x10 is the smallest grid.
+            H, W = 10, 10
+            dummy_vision = [
+                {"visibility": "fog", "terrain": "empty", "troop_count": 0}
+                for _ in range(H * W)
+            ]
+            dummy_tick = {
+                "vision": dummy_vision,
+                "grid": {"width": W, "height": H},
+                "player_id": "__warmup__",
+                "tick": 0,
+            }
+            bot.decide(dummy_tick)
+            self._warmed_up = True
+            logger.info("Model warmup complete (JIT compiled)")
+        except Exception as e:
+            logger.warning(f"Model warmup failed: {e}. Will fall back to heuristic.")
 
     def remove_bot(self, player_id: str) -> None:
         """Remove and reset the bot for *player_id*."""

@@ -135,28 +135,46 @@ class MLBot:
         # Compute valid move mask
         mask = compute_valid_move_mask(spatial)  # (H, W, 4)
 
+        # If no valid moves at all, skip inference and pass immediately
+        if not np.any(mask):
+            return {"pass": 1, "row": 0, "col": 0, "direction": 0, "split": 0}
+
+        # Run model inference (returns raw action without memory update)
         if self._backend == "jax":
-            return self._infer_jax(obs_24ch, mask, spatial)
+            action = self._infer_jax(obs_24ch, mask)
         elif self._backend == "onnx":
-            return self._infer_onnx(obs_24ch, mask, spatial)
+            action = self._infer_onnx(obs_24ch, mask)
         else:
             return {"pass": 1, "row": 0, "col": 0, "direction": 0, "split": 0}
+
+        # Hard legality check: override to pass if model output is invalid
+        if not action.get("pass"):
+            r, c, d = action["row"], action["col"], action["direction"]
+            H, W = mask.shape[0], mask.shape[1]
+            if r < 0 or r >= H or c < 0 or c >= W or d < 0 or d >= 4:
+                action = {"pass": 1, "row": 0, "col": 0, "direction": 0, "split": 0}
+            elif mask[r, c, d] == 0:
+                action = {"pass": 1, "row": 0, "col": 0, "direction": 0, "split": 0}
+
+        # Update memory with the validated action
+        action_arr = np.array([
+            action["pass"], action["row"], action["col"],
+            action["direction"], action["split"],
+        ], dtype=np.int32)
+        self._update_memory(spatial, action_arr)
+
+        return action
 
     # ------------------------------------------------------------------
     # Inference backends
     # ------------------------------------------------------------------
 
-    def _infer_jax(self, obs_24ch: np.ndarray, mask: np.ndarray, spatial: np.ndarray) -> dict:
-        """Run inference using JAX/Equinox backend."""
-        obs_jax = self._jnp.array(obs_24ch)  # (24, H, W)
+    def _infer_jax(self, obs_24ch: np.ndarray, mask: np.ndarray) -> dict:
+        """Run inference using JAX/Equinox backend. Returns raw action dict."""
+        obs_jax = self._jnp.array(obs_24ch)
         mask_jax = self._jnp.array(mask)
 
-        action_jax, value = self._network.inference(obs_jax, mask_jax)
-
-        # Update memory with the action
-        action_np = np.array(action_jax)
-        # Build a minimal obs-like dict for memory update
-        self._update_memory(spatial, action_np)
+        action_jax, _value = self._network.inference(obs_jax, mask_jax)
 
         return {
             "pass": int(action_jax[0]),
@@ -166,21 +184,17 @@ class MLBot:
             "split": int(action_jax[4]),
         }
 
-    def _infer_onnx(self, obs_24ch: np.ndarray, mask: np.ndarray, spatial: np.ndarray) -> dict:
-        """Run inference using ONNX Runtime backend (CPU)."""
+    def _infer_onnx(self, obs_24ch: np.ndarray, mask: np.ndarray) -> dict:
+        """Run inference using ONNX Runtime backend. Returns raw action dict."""
         input_names = [inp.name for inp in self._session.get_inputs()]
         arrays = [
-            obs_24ch.astype(np.float32),   # (24, H, W)
-            mask.astype(np.float32),        # (H, W, 4)
+            obs_24ch.astype(np.float32),
+            mask.astype(np.float32),
         ]
-        input_feed = {}
-        for name, arr in zip(input_names, arrays):
-            input_feed[name] = arr
+        input_feed = dict(zip(input_names, arrays))
 
         outputs = self._session.run(None, input_feed)
         action = outputs[0].flatten()
-
-        self._update_memory(spatial, action)
 
         return {
             "pass": int(action[0]),
