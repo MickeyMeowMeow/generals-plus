@@ -6,3 +6,4 @@ export * from "#/room-data";
 export * from "#/schema";
 export * from "#/seat";
 export * from "#/setup-settings";
+export * from "#/user-preferences";

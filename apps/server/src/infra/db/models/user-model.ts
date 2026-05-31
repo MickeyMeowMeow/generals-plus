@@ -1,3 +1,11 @@
+import type {
+  BackgroundImagePreference,
+  UserPreferences,
+} from "@generals-plus/shared-types";
+import {
+  BACKGROUND_PRESETS,
+  DEFAULT_USER_PREFERENCES,
+} from "@generals-plus/shared-types";
 import type { Document } from "mongoose";
 import mongoose, { Schema } from "mongoose";
 
@@ -20,9 +28,124 @@ export interface IUserDocument extends Document {
   anonymous: boolean;
   verified: boolean;
   ratings: IPlayerRatings;
+  preferences: UserPreferences;
 }
 
 const ratingField = { type: Number, default: 1000 };
+
+const defaultUserPreferences = (): UserPreferences =>
+  structuredClone(DEFAULT_USER_PREFERENCES);
+
+const backgroundPresetIds = BACKGROUND_PRESETS.map((preset) => preset.id);
+const backgroundSources = ["preset", "customUrl"] as const;
+const avatarSources = ["default", "customUrl"] as const;
+
+interface BackgroundImagePreferenceDocument {
+  source: BackgroundImagePreference["source"];
+  presetId?: string;
+  customUrl?: string;
+}
+
+interface AvatarPreferenceDocument {
+  source: "default" | "customUrl";
+  customUrl?: string;
+}
+
+interface StageAppearancePreferenceDocument {
+  backdropBlur: boolean;
+  backdropOpacity: number;
+}
+
+const isValidBackgroundImagePreference = (
+  value: BackgroundImagePreferenceDocument | null | undefined,
+) => {
+  if (!value) {
+    return false;
+  }
+
+  const hasPresetId = value.presetId !== undefined && value.presetId !== null;
+  const hasCustomUrl =
+    value.customUrl !== undefined && value.customUrl !== null;
+
+  if (value.source === "preset") {
+    return hasPresetId && !hasCustomUrl;
+  }
+
+  if (value.source === "customUrl") {
+    return hasCustomUrl && !hasPresetId;
+  }
+
+  return false;
+};
+
+const isValidAvatarPreference = (
+  value: AvatarPreferenceDocument | null | undefined,
+) => {
+  if (!value) {
+    return false;
+  }
+
+  const hasCustomUrl =
+    value.customUrl !== undefined && value.customUrl !== null;
+
+  if (value.source === "default") {
+    return !hasCustomUrl;
+  }
+
+  if (value.source === "customUrl") {
+    return hasCustomUrl;
+  }
+
+  return false;
+};
+
+const BackgroundImagePreferenceSchema =
+  new Schema<BackgroundImagePreferenceDocument>(
+    {
+      source: {
+        type: String,
+        enum: backgroundSources,
+        required: true,
+        default: DEFAULT_USER_PREFERENCES.backgroundImage.source,
+      },
+      presetId: {
+        type: String,
+        enum: backgroundPresetIds,
+      },
+      customUrl: { type: String },
+    },
+    { _id: false },
+  );
+
+const AvatarPreferenceSchema = new Schema<AvatarPreferenceDocument>(
+  {
+    source: {
+      type: String,
+      enum: avatarSources,
+      required: true,
+      default: DEFAULT_USER_PREFERENCES.avatar.source,
+    },
+    customUrl: { type: String },
+  },
+  { _id: false },
+);
+
+const StageAppearancePreferenceSchema =
+  new Schema<StageAppearancePreferenceDocument>(
+    {
+      backdropBlur: {
+        type: Boolean,
+        default: DEFAULT_USER_PREFERENCES.stageAppearance.backdropBlur,
+      },
+      backdropOpacity: {
+        type: Number,
+        default: DEFAULT_USER_PREFERENCES.stageAppearance.backdropOpacity,
+        min: 0,
+        max: 100,
+      },
+    },
+    { _id: false },
+  );
 
 const UserSchema = new Schema<IUserDocument>(
   {
@@ -41,6 +164,36 @@ const UserSchema = new Schema<IUserDocument>(
       collapse: ratingField,
       domination: ratingField,
       espionage: ratingField,
+    },
+    preferences: {
+      type: {
+        backgroundImage: {
+          type: BackgroundImagePreferenceSchema,
+          required: true,
+          default: () =>
+            structuredClone(DEFAULT_USER_PREFERENCES.backgroundImage),
+          validate: {
+            validator: isValidBackgroundImagePreference,
+            message: "Invalid background image preference.",
+          },
+        },
+        avatar: {
+          type: AvatarPreferenceSchema,
+          required: true,
+          default: () => structuredClone(DEFAULT_USER_PREFERENCES.avatar),
+          validate: {
+            validator: isValidAvatarPreference,
+            message: "Invalid avatar preference.",
+          },
+        },
+        stageAppearance: {
+          type: StageAppearancePreferenceSchema,
+          required: true,
+          default: () =>
+            structuredClone(DEFAULT_USER_PREFERENCES.stageAppearance),
+        },
+      },
+      default: defaultUserPreferences,
     },
   },
   {

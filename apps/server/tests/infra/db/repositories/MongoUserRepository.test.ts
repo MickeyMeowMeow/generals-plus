@@ -46,6 +46,58 @@ describe("MongoUserRepository and UserModel tests", () => {
       expect(user.email).toBe("test@example.com");
       expect(user.displayName).toBe("Test User");
     });
+
+    it("should populate default profile preferences", async () => {
+      const user = new UserModel({
+        email: "prefs@example.com",
+        displayName: "Prefs User",
+      });
+
+      await user.validate();
+
+      expect(user.preferences.backgroundImage.source).toBe("preset");
+      expect(user.preferences.backgroundImage.presetId).toBe("classic");
+    });
+
+    it.each([
+      [
+        "unknown background source",
+        { backgroundImage: { source: "uploaded", presetId: "classic" } },
+      ],
+      ["preset without presetId", { backgroundImage: { source: "preset" } }],
+      [
+        "preset with customUrl",
+        {
+          backgroundImage: {
+            source: "preset",
+            presetId: "classic",
+            customUrl: "https://example.com/bg.jpg",
+          },
+        },
+      ],
+      [
+        "customUrl without customUrl",
+        { backgroundImage: { source: "customUrl" } },
+      ],
+      [
+        "customUrl with presetId",
+        {
+          backgroundImage: {
+            source: "customUrl",
+            customUrl: "https://example.com/bg.jpg",
+            presetId: "classic",
+          },
+        },
+      ],
+    ])("should reject invalid profile preferences: %s", async (_, preferences) => {
+      const user = new UserModel({
+        email: "invalid-prefs@example.com",
+        displayName: "Invalid Prefs",
+        preferences,
+      });
+
+      await expect(user.validate()).rejects.toThrow();
+    });
   });
 
   describe("MongoUserRepository Operations", () => {
@@ -363,6 +415,60 @@ describe("MongoUserRepository and UserModel tests", () => {
             },
           },
         ]);
+      });
+    });
+
+    describe("updateProfile", () => {
+      it("should update display name and preferences by id", async () => {
+        const repository = new MongoUserRepository();
+        const mockDoc = {
+          _id: { toString: () => "u1" },
+          email: "u1@example.com",
+          displayName: "Nova Prime",
+          anonymous: false,
+          verified: true,
+          ratings: { classic: 1200 },
+          preferences: {
+            backgroundImage: {
+              source: "customUrl",
+              customUrl: "https://example.com/bg.jpg",
+            },
+          },
+        };
+
+        const findByIdAndUpdateSpy = vi
+          .spyOn(UserModel, "findByIdAndUpdate")
+          .mockReturnValue({
+            exec: vi.fn().mockResolvedValue(mockDoc),
+          } as unknown as never);
+
+        const result = await repository.updateProfile("u1", {
+          displayName: "Nova Prime",
+          preferences: {
+            backgroundImage: {
+              source: "customUrl",
+              customUrl: "https://example.com/bg.jpg",
+            },
+          },
+        });
+
+        expect(findByIdAndUpdateSpy).toHaveBeenCalledWith(
+          "u1",
+          {
+            $set: {
+              displayName: "Nova Prime",
+              preferences: {
+                backgroundImage: {
+                  source: "customUrl",
+                  customUrl: "https://example.com/bg.jpg",
+                },
+              },
+            },
+          },
+          { new: true, runValidators: true },
+        );
+        expect(result?.displayName).toBe("Nova Prime");
+        expect(result?.preferences?.backgroundImage.source).toBe("customUrl");
       });
     });
   });

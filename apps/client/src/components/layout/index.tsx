@@ -1,9 +1,26 @@
 import { AlertTriangle, Loader2 } from "lucide-react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useContext } from "react";
 
 import { Toaster } from "#/components/ui/sonner";
 import { APP_TITLE } from "#/config/ui-constants";
+import { AuthContext } from "#/features/auth/providers/auth-provider";
+import {
+  resolveStageBackgroundUrl,
+  toStageBackgroundImageValue,
+} from "#/features/profile/utils/background";
 import { cn } from "#/lib/utils";
+
+interface StageProps {
+  children: ReactNode;
+  backgroundUrl?: string;
+}
+
+interface StageStyle extends CSSProperties {
+  "--stage-background-image"?: string;
+  "--stage-backdrop-opacity"?: string;
+  "--stage-backdrop-filter"?: string;
+}
 
 /**
  * Full-screen shell shared by route scenes.
@@ -11,9 +28,32 @@ import { cn } from "#/lib/utils";
  * The stage keeps the no-header app shape while deliberately avoiding decorative
  * chrome so lobby, setup, and match screens can own the visible hierarchy.
  */
-export function Stage({ children }: { children: ReactNode }) {
+export function Stage({ children, backgroundUrl }: StageProps) {
+  const auth = useContext(AuthContext);
+  const preferences = auth?.state.user?.preferences;
+  const resolvedBackgroundUrl =
+    backgroundUrl ?? resolveStageBackgroundUrl(preferences);
+  const stageAppearance = preferences?.stageAppearance;
+
+  const style: StageStyle = {
+    ...(resolvedBackgroundUrl && {
+      "--stage-background-image": toStageBackgroundImageValue(
+        resolvedBackgroundUrl,
+      ),
+    }),
+    "--stage-backdrop-opacity": String(
+      (stageAppearance?.backdropOpacity ?? 58) / 100,
+    ),
+    ...(stageAppearance?.backdropBlur === false && {
+      "--stage-backdrop-filter": "none",
+    }),
+  };
+
   return (
-    <main className="game-stage h-svh overflow-x-hidden overflow-y-auto text-game-text">
+    <main
+      className="game-stage h-svh overflow-x-hidden overflow-y-auto text-game-text"
+      style={style}
+    >
       <div className="relative flex min-h-svh flex-col px-2 sm:px-6 lg:px-8">
         {children}
       </div>

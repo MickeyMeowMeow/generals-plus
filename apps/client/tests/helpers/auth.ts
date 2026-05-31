@@ -21,6 +21,8 @@ export function createMockAuth(
       registerWithEmailAndPassword: vi.fn().mockResolvedValue(undefined),
       signInAnonymously: vi.fn().mockResolvedValue(undefined),
       signOut: vi.fn().mockResolvedValue(undefined),
+      updateUserProfile: vi.fn().mockResolvedValue(undefined),
+      refreshUser: vi.fn().mockResolvedValue(undefined),
       clearError: vi.fn(),
     },
   };

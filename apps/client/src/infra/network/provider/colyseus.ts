@@ -179,6 +179,13 @@ export class ColyseusNetworkProvider<User = unknown>
     return this.client.auth.getUserData().then((response) => response.user);
   }
 
+  async updateUserProfile(update: Partial<User>): Promise<User> {
+    return this.requestJson<User>("/profile", {
+      method: "PATCH",
+      body: JSON.stringify(update),
+    });
+  }
+
   getAuthToken(): string | null {
     return this.client.auth.token ?? null;
   }

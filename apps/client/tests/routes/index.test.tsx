@@ -63,6 +63,20 @@ describe("index route", () => {
     ).toBeTruthy();
   });
 
+  it("shows a profile entry beside sign out", () => {
+    renderRoute(
+      "/",
+      createMockAuth({
+        status: AuthStatus.AUTHENTICATED,
+        user: { id: "nova", displayName: "Nova" },
+        token: "tok",
+      }),
+    );
+
+    expect(screen.getByRole("link", { name: "Profile" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
+  });
+
   it("opens the mode picker with compact three-column cards", async () => {
     renderRoute(
       "/",
