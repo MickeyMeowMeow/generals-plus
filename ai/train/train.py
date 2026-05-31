@@ -579,9 +579,11 @@ def main():
             _win_history.append(win_rate / 100.0)
             if len(_win_history) > WIN_WINDOW:
                 _win_history.pop(0)
-            avg_win = sum(_win_history) / len(_win_history)
-            if pool.update(network, avg_win):
-                _win_history.clear()  # reset window after pool update
+            if len(_win_history) >= WIN_WINDOW:
+                avg_win = sum(_win_history) / len(_win_history)
+                if pool.update(network, avg_win):
+                    pbar.write(f"  ★ Pool updated at iter {iteration}: avg_win={avg_win:.1%} (pool size={len(pool.models)})")
+                    _win_history.clear()
 
         # Checkpoint (async file I/O — doesn't block GPU)
         if (iteration + 1) % CHECKPOINT_INTERVAL == 0:

@@ -27,3 +27,6 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
 ]
+
+[tool.setuptools.packages.find]
+include = ["bot*", "sim*", "train*"]
