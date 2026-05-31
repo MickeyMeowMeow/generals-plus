@@ -276,7 +276,7 @@ def run_rollout(states, memories, key, network, opponent_network, num_steps, res
 # ---------------------------------------------------------------------------
 
 def ppo_loss_fn(network, obs_24ch, mask, action, old_logprob, advantage, ret, clip=0.2):
-    """PPO loss for a single sample. Pure arithmetic — no branching."""
+    """PPO loss for a single sample. Returns (total, policy, value, entropy) parts."""
     _, value, logprob, entropy = network(obs_24ch, mask, jrandom.PRNGKey(0), action)
 
     ratio = jnp.exp(logprob - old_logprob)
@@ -286,7 +286,7 @@ def ppo_loss_fn(network, obs_24ch, mask, action, old_logprob, advantage, ret, cl
     value_loss = 0.5 * (value - ret) ** 2
     entropy_loss = -0.01 * entropy
 
-    return policy_loss + value_loss + entropy_loss
+    return policy_loss + value_loss + entropy_loss, policy_loss, value_loss, entropy_loss
 
 
 def make_train_epoch(optimizer, minibatch_size):
@@ -330,21 +330,23 @@ def make_train_epoch(optimizer, minibatch_size):
 
             def loss_fn(d):
                 net = eqx.combine(d, static)
-                losses = jax.vmap(
+                tot, pol, val, ent = jax.vmap(
                     lambda o, m, a, olp, adv, r: ppo_loss_fn(net, o, m, a, olp, adv, r)
                 )(mb_o, mb_m, mb_a, mb_lp, mb_adv, mb_ret)
-                return jnp.mean(losses)
+                return jnp.mean(tot), (jnp.mean(pol), jnp.mean(val), jnp.mean(ent))
 
-            loss, grads = jax.value_and_grad(loss_fn)(diff)
+            (total, (policy_l, value_l, entropy_l)), grads = jax.value_and_grad(
+                loss_fn, has_aux=True,
+            )(diff)
             updates, opt_state = optimizer.update(grads, opt_state, diff)
             diff = optax.apply_updates(diff, updates)
-            return (diff, opt_state), loss
+            return (diff, opt_state), (total, policy_l, value_l, entropy_l)
 
-        (diff, opt_state), losses = jax.lax.scan(
+        (diff, opt_state), (totals, pol_losses, val_losses, ent_losses) = jax.lax.scan(
             scan_step, (diff, opt_state), mb_data,
         )
         network = eqx.combine(diff, static)
-        return network, opt_state, jnp.mean(losses)
+        return network, opt_state, jnp.mean(totals), jnp.mean(pol_losses), jnp.mean(val_losses), jnp.mean(ent_losses)
 
     return train_epoch
 
@@ -548,26 +550,38 @@ def main():
         batch = tuple(x[perm] for x in batch)
 
         # --- Fused training: all minibatches in one XLA program (no GIL) ---
-        network, opt_state, avg_loss_jax = train_epoch(network, opt_state, batch)
+        network, opt_state, avg_loss_jax, pol_loss_jax, val_loss_jax, ent_loss_jax = train_epoch(network, opt_state, batch)
 
         # --- Batch all metrics into a single GPU→CPU transfer ---
         metrics_jax = jax.device_get((
             avg_loss_jax,
+            pol_loss_jax,
+            val_loss_jax,
+            ent_loss_jax,
             rewards_all.mean(),
             dones_all.sum().astype(jnp.float32),
             jnp.sum(dones_all & (infos_all.winner == 0)).astype(jnp.float32),
+            advantages.mean(),
         ))
 
         elapsed = time.time() - t0
         avg_loss = float(metrics_jax[0])
-        avg_reward = float(metrics_jax[1])
-        num_episodes = max(int(metrics_jax[2]), 0)
-        wins = max(int(metrics_jax[3]), 0) if num_episodes > 0 else 0
+        pol_loss = float(metrics_jax[1])
+        val_loss = float(metrics_jax[2])
+        ent_loss = float(metrics_jax[3])
+        avg_reward = float(metrics_jax[4])
+        num_episodes = max(int(metrics_jax[5]), 0)
+        wins = max(int(metrics_jax[6]), 0) if num_episodes > 0 else 0
+        avg_adv = float(metrics_jax[7])
         win_rate = wins / max(num_episodes, 1) * 100
         sps = (num_envs * num_steps) / elapsed
 
         pbar.set_postfix(
-            loss=f"{avg_loss:.4f}",
+            loss=f"{avg_loss:.3f}",
+            p=f"{pol_loss:.3f}",
+            v=f"{val_loss:.3f}",
+            e=f"{ent_loss:.3f}",
+            adv=f"{avg_adv:+.3f}",
             reward=f"{avg_reward:+.3f}",
             win=f"{win_rate:.0f}%({wins}/{num_episodes})",
             sps=f"{sps:.0f}",
@@ -583,6 +597,7 @@ def main():
                 avg_win = sum(_win_history) / len(_win_history)
                 if pool.update(network, avg_win):
                     pbar.write(f"  ★ Pool updated at iter {iteration}: avg_win={avg_win:.1%} (pool size={len(pool.models)})")
+                    sys.stdout.flush()
                     _win_history.clear()
 
         # Checkpoint (async file I/O — doesn't block GPU)

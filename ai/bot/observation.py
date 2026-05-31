@@ -170,8 +170,8 @@ class ObservationBuffer:
 
     def __init__(
         self,
-        stack_size: int = 8,
         spatial_shape: tuple[int, int, int],  # required: (C, H, W) for actual grid
+        stack_size: int = 8,
         scalar_dim: int = SCALAR_DIM,
     ):
         self.stack_size = stack_size
