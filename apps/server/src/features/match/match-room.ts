@@ -561,8 +561,7 @@ export class MatchRoom extends Room<{
       cell.visibility = vc.visibility;
       cell.terrain = vc.terrain;
       cell.troopCount = vc.troopCount ?? -1;
-      cell.ownerIndex =
-        vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "";
+      cell.ownerIndex = vc.owner?.playerId ?? "";
       cell.siteIndex = vc.siteIndex ?? -1;
       cell.willCollapse = vc.willCollapse ?? false;
 

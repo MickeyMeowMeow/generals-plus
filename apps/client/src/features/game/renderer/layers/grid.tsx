@@ -1,4 +1,4 @@
-import { Visibility } from "@generals-plus/engine";
+import { Terrain, Visibility } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import { useCallback } from "react";
@@ -26,6 +26,13 @@ export function getCellFillColor(
   cell: RenderGridCell,
   playerColors: Map<string, number>,
 ) {
+  if (
+    cell.visibility === Visibility.SHROUDED &&
+    cell.terrain === Terrain.BOMB_SITE
+  ) {
+    return 0x525356;
+  }
+
   if (cell.ownerIndex) {
     return playerColors.get(cell.ownerIndex) ?? 0x333333;
   }
@@ -53,13 +60,7 @@ export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
           color: RenderConfig.background,
         });
 
-        const color = cell.ownerIndex
-          ? (playerColors.get(cell.ownerIndex) ?? 0x333333)
-          : cell.visibility === Visibility.SHROUDED
-            ? 0x525356
-            : TerrainTheme[cell.terrain]?.color || 0xffffff;
-
-        g.fill(color);
+        g.fill(getCellFillColor(cell, playerColors));
 
         // Handle collapse warning
         if (cell.willCollapse) {

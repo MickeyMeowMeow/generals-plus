@@ -42,30 +42,13 @@ describe("getCellFillColor", () => {
     expect(color).toBe(TerrainTheme[Terrain.PLAIN].color);
   });
 
-  it("returns shroud color for SHROUDED cells regardless of terrain", () => {
+  it("uses shrouded color for unseen bomb sites", () => {
     const color = getCellFillColor(
       {
         coordinate: { x: 0, y: 0 },
         visibility: Visibility.SHROUDED,
         terrain: Terrain.BOMB_SITE,
         troopCount: null,
-        ownerIndex: null,
-        siteIndex: 0,
-        item: null,
-      },
-      new Map(),
-    );
-
-    expect(color).toBe(0x525356);
-  });
-
-  it("returns shroud color for SHROUDED cells even with troops present", () => {
-    const color = getCellFillColor(
-      {
-        coordinate: { x: 0, y: 0 },
-        visibility: Visibility.SHROUDED,
-        terrain: Terrain.PLAIN,
-        troopCount: 10,
         ownerIndex: null,
         siteIndex: null,
         item: null,

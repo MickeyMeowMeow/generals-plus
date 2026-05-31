@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { ActionType } from "#/domain/action/action-type";
 import { Cell } from "#/domain/cell/cell";
 import { Terrain } from "#/domain/cell/terrain";
 import { CollapseGame } from "#/domain/game/collapse-game";
@@ -258,6 +259,37 @@ describe("CollapseGame", () => {
     // P1 had no other tiles inside the circle, so P1 is eliminated
     expect(p1.status).toBe(PlayerStatus.ELIMINATED);
     expect(game.status).toBe(GameStatus.FINISHED);
+  });
+
+  it("marks a surrendered final general owner as not alive in the scoreboard", () => {
+    const grid = createGrid(2, 1);
+    const game = new CollapseGame({ grid });
+
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+
+    const c0 = getCell(grid, 0, 0);
+    const c1 = getCell(grid, 1, 0);
+    c0.terrain = Terrain.GENERAL;
+    c0.owner = p1;
+    c0.troopCount = 5;
+    c1.owner = p2;
+    c1.troopCount = 2;
+
+    game.startGame();
+    game.handleAction({ playerId: "p1", type: ActionType.SURRENDER });
+
+    expect(game.status).toBe(GameStatus.FINISHED);
+    expect(c0.owner).toBe(p1);
+
+    const p1Entry = game
+      .getScoreboard()
+      .players.find((entry) => entry.playerId === "p1");
+    expect(p1Entry?.isAlive).toBe(false);
   });
 
   it("supports square collapse shape correctly", () => {

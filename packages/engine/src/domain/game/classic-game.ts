@@ -13,6 +13,7 @@ import type {
   IClassicGame,
   IClassicScoreboard,
 } from "#/domain/game/interfaces";
+import { PlayerStatus } from "#/domain/player/player-status";
 
 export class ClassicGame extends BaseGame implements IClassicGame {
   readonly mode = GameMode.CLASSIC;
@@ -127,7 +128,9 @@ export class ClassicGame extends BaseGame implements IClassicGame {
         playerId,
         troops: score.troops,
         land: score.land,
-        isAlive: generals.has(playerId),
+        isAlive:
+          this.players.get(playerId)?.status === PlayerStatus.ACTIVE &&
+          generals.has(playerId),
       }),
     );
 

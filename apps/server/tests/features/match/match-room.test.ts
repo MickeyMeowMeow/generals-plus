@@ -1043,7 +1043,7 @@ describe("MatchRoom", () => {
       }
     });
 
-    it("updateClientViews pushes empty ownerIndex when owner not ACTIVE", async () => {
+    it("updateClientViews keeps ownerIndex even when owner is eliminated", async () => {
       const getVisionGrid = vi.fn((playerId: string) =>
         createMockGrid2D(
           16,
@@ -1075,8 +1075,9 @@ describe("MatchRoom", () => {
       const vision = room.state.clientVisions.get(client.sessionId);
       expect(vision).toBeDefined();
       if (vision) {
-        // ownerIndex entries should be empty strings when owner not ACTIVE
-        expect(vision.cells.every((cell) => cell.ownerIndex === "")).toBe(true);
+        expect(vision.cells.every((cell) => cell.ownerIndex === "p1")).toBe(
+          true,
+        );
       }
     });
 

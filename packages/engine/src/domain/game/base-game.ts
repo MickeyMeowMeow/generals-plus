@@ -110,8 +110,15 @@ export abstract class BaseGame implements IBaseGame {
       return false;
     }
 
-    const surrenderBeneficiary = this.pickSurrenderBeneficiary(playerId);
+    const endsGameImmediately = this.shouldPreserveBoardOnSurrender(player);
     player.status = PlayerStatus.ELIMINATED;
+
+    if (endsGameImmediately) {
+      this.checkGameEnd();
+      return true;
+    }
+
+    const surrenderBeneficiary = this.pickSurrenderBeneficiary(playerId);
     this.grid.forEach((cell) => {
       if (cell.owner?.playerId === playerId) {
         if (surrenderBeneficiary) {
@@ -129,6 +136,20 @@ export abstract class BaseGame implements IBaseGame {
 
     this.checkGameEnd();
     return true;
+  }
+
+  private shouldPreserveBoardOnSurrender(player: IPlayer): boolean {
+    const remainingAliveTeams = new Set<string>();
+    for (const candidate of this.players.values()) {
+      if (
+        candidate.playerId !== player.playerId &&
+        candidate.status === PlayerStatus.ACTIVE
+      ) {
+        remainingAliveTeams.add(candidate.team.teamId);
+      }
+    }
+
+    return remainingAliveTeams.size <= 1;
   }
 
   private pickSurrenderBeneficiary(playerId: string): IPlayer | null {
