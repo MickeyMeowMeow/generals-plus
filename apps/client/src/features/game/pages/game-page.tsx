@@ -2,6 +2,7 @@ import type { ICoordinate } from "@generals-plus/engine";
 import {
   ActionType,
   GameMode,
+  GridType,
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
@@ -133,6 +134,7 @@ export function GamePage({ connection, source }: GamePageProps) {
     "attack" | "defense" | "rally" | null
   >(null);
   const [isSurrenderDialogOpen, setIsSurrenderDialogOpen] = useState(false);
+  const [isHotkeysOpen, setIsHotkeysOpen] = useState(false);
 
   useEffect(() => {
     if (!room) return;
@@ -289,6 +291,11 @@ export function GamePage({ connection, source }: GamePageProps) {
         document.activeElement?.tagName === "TEXTAREA" ||
         document.activeElement?.hasAttribute("contenteditable")
       ) {
+        return;
+      }
+
+      if (e.key === "?") {
+        setIsHotkeysOpen((prev) => !prev);
         return;
       }
 
@@ -564,6 +571,51 @@ export function GamePage({ connection, source }: GamePageProps) {
           />
         );
       })()}
+
+      {/* Hotkey Panel */}
+      <div className="pointer-events-none fixed bottom-4 left-4 z-30 flex flex-col gap-1.5 rounded-none border border-game-border/80 bg-[rgb(27_27_27/0.76)] p-3 text-xs text-game-text-dim shadow-xl shadow-black/25 backdrop-blur-sm">
+        {isHotkeysOpen ? (
+          <>
+            <h3 className="mb-1 font-semibold text-game-text">Hotkeys</h3>
+            <p>
+              <span className="font-mono text-game-text">
+                {renderGrid.gridType === GridType.HEX ? "QWEASD" : "WASD"}
+              </span>{" "}
+              to move
+            </p>
+            <p>
+              <span className="font-mono text-game-text">Shift</span> + move to
+              split move
+            </p>
+            <p>
+              <span className="font-mono text-game-text">Double click</span> or{" "}
+              <span className="font-mono text-game-text">right click</span> to
+              toggle split move
+            </p>
+            <p>
+              <span className="font-mono text-game-text">Space</span> to clear
+              move queue
+            </p>
+            <p>
+              <span className="font-mono text-game-text">1/2/3</span> to ping
+              attack / defense / rally
+            </p>
+            <p>
+              <span className="font-mono text-game-text">Shift + 1/2/3</span> to
+              change ping brush (click to ping)
+            </p>
+            <p>
+              <span className="font-mono text-game-text">Escape</span> to
+              surrender
+            </p>
+          </>
+        ) : (
+          <p>
+            Press <span className="font-mono text-game-text">?</span> for
+            hotkeys
+          </p>
+        )}
+      </div>
 
       {/* Floating Brush Tool Panel */}
       <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2 rounded-none border border-game-border/80 bg-[rgb(27_27_27/0.76)] p-2 shadow-xl shadow-black/25 backdrop-blur-sm">
