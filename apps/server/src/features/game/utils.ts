@@ -179,6 +179,8 @@ export function createGame(options: CreateGameOptions): IBaseGame {
       const game = new ClassicGame({
         gridType: GridType.SQUARE,
         ...options.gridOptions,
+        // Original generals.io: generals start with 1 troop (not 50)
+        generalInitialTroops: 1,
       });
 
       addStandardTeamsAndPlayers(game, options);

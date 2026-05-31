@@ -50,4 +50,5 @@ export const networkProvider: NetworkProvider<UserProfile> = {
   createCustomRoom: (...args) => getNetworkProvider().createCustomRoom(...args),
   resolveCustomRoom: (...args) =>
     getNetworkProvider().resolveCustomRoom(...args),
+  checkAiHealth: () => getNetworkProvider().checkAiHealth(),
 };

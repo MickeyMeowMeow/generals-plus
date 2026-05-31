@@ -23,6 +23,16 @@ export class ClassicGame extends BaseGame implements IClassicGame {
     super.startGame();
     this.assignStartPositions();
 
+    // --- Original generals.io troop generation rules ---
+    // Structures (general + city): +1 every 2 ticks (fires at ticks 2, 4, 6, ...)
+    // All owned cells (including structures): +1 every 50 ticks
+    //
+    // This matches the original game where:
+    //   - 1 tick = 500ms, both players act once per tick
+    //   - Structures generate every 2 ticks (~1/sec)
+    //   - All owned land generates every 50 ticks (~25sec)
+
+    // Structure troop generation: every 2 ticks
     this.effectRegistry.register(
       this.tick,
       new TroopModifierEffect(this.tick, {
@@ -31,7 +41,7 @@ export class ClassicGame extends BaseGame implements IClassicGame {
         target: this.grid,
         terrain: Terrain.GENERAL,
         delta: 1,
-        interval: 1,
+        interval: 2,
       }),
     );
 
@@ -43,19 +53,44 @@ export class ClassicGame extends BaseGame implements IClassicGame {
         target: this.grid,
         terrain: Terrain.CITY,
         delta: 1,
-        interval: 1,
+        interval: 2,
+      }),
+    );
+
+    // All-owned troop generation: every 50 ticks (one effect per terrain type)
+    this.effectRegistry.register(
+      this.tick,
+      new TroopModifierEffect(this.tick, {
+        id: "classic-all-plain-troop-gen",
+        type: EffectType.TROOP_GENERATION,
+        target: this.grid,
+        terrain: Terrain.PLAIN,
+        delta: 1,
+        interval: 50,
       }),
     );
 
     this.effectRegistry.register(
       this.tick,
       new TroopModifierEffect(this.tick, {
-        id: "classic-plain-troop-gen",
+        id: "classic-all-general-troop-gen",
         type: EffectType.TROOP_GENERATION,
         target: this.grid,
-        terrain: Terrain.PLAIN,
+        terrain: Terrain.GENERAL,
         delta: 1,
-        interval: 25,
+        interval: 50,
+      }),
+    );
+
+    this.effectRegistry.register(
+      this.tick,
+      new TroopModifierEffect(this.tick, {
+        id: "classic-all-city-troop-gen",
+        type: EffectType.TROOP_GENERATION,
+        target: this.grid,
+        terrain: Terrain.CITY,
+        delta: 1,
+        interval: 50,
       }),
     );
   }

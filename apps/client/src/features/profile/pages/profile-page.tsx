@@ -180,19 +180,19 @@ export function ProfilePage() {
           <section className="grid gap-3 border-t border-game-border pt-5">
             <h2 className="text-base font-semibold">Ratings</h2>
             <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {GAME_MODE_OPTIONS.filter(
-                (mode) => user.ratings?.[mode.id] !== undefined,
-              ).map((mode) => (
-                <div
-                  key={mode.id}
-                  className="flex min-h-10 items-center justify-between gap-4 border border-game-border bg-transparent px-3 py-2"
-                >
-                  <dt className="text-sm text-game-text-dim">{mode.label}</dt>
-                  <dd className="text-sm font-semibold">
-                    {user.ratings?.[mode.id]}
-                  </dd>
-                </div>
-              ))}
+              {GAME_MODE_OPTIONS.filter((m) => !m.isVsAi)
+                .filter((mode) => user.ratings?.[mode.id] !== undefined)
+                .map((mode) => (
+                  <div
+                    key={mode.id}
+                    className="flex min-h-10 items-center justify-between gap-4 border border-game-border bg-transparent px-3 py-2"
+                  >
+                    <dt className="text-sm text-game-text-dim">{mode.label}</dt>
+                    <dd className="text-sm font-semibold">
+                      {user.ratings?.[mode.id]}
+                    </dd>
+                  </div>
+                ))}
             </dl>
           </section>
         ) : null}
@@ -276,7 +276,7 @@ export function ProfilePage() {
                   });
                 }
               }}
-              className="grid gap-2 sm:grid-cols-4"
+              className="grid gap-2 sm:grid-cols-3"
             >
               {BACKGROUND_PRESETS.map((preset) => (
                 <Label

@@ -12,4 +12,5 @@ export const ENV = {
     "mongodb://user:pass@localhost:27017/generals_hub?authSource=admin&directConnection=true",
   JWT_SECRET: jwtSecret || "your_jwt_secret_key_here",
   ADMIN_EMAILS: process.env.ADMIN_EMAILS || "",
+  BOT_SERVICE_URL: process.env.BOT_SERVICE_URL || "ws://localhost:8765/ws",
 };

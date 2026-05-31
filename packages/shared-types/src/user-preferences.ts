@@ -1,7 +1,6 @@
 export const BACKGROUND_PRESETS = [
-  { id: "classic", label: "Classic", url: "/bg.jpg" },
-  { id: "dark-grid", label: "Dark Grid", url: "/bg.jpg" },
-  { id: "frontier", label: "Frontier", url: "/bg.jpg" },
+  { id: "default", label: "Default", url: "/bg.png" },
+  { id: "touhou", label: "Touhou", url: "/bg-touhou.jpg" },
 ] as const;
 
 export type BackgroundPresetId = (typeof BACKGROUND_PRESETS)[number]["id"];
@@ -61,7 +60,7 @@ export interface UserPreferences {
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   backgroundImage: {
     source: "preset",
-    presetId: "classic",
+    presetId: "default",
   },
   avatar: {
     source: "default",

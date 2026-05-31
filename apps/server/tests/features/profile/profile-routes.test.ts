@@ -75,7 +75,7 @@ describe("registerProfileRoutes", () => {
       id: "user-1",
       displayName: "New Name",
       preferences: {
-        backgroundImage: { source: "preset", presetId: "frontier" },
+        backgroundImage: { source: "preset", presetId: "touhou" },
       },
     };
     mocks.verify.mockResolvedValue({ id: "user-1" });
@@ -88,7 +88,7 @@ describe("registerProfileRoutes", () => {
         body: {
           displayName: "  New Name  ",
           preferences: {
-            backgroundImage: { source: "preset", presetId: "frontier" },
+            backgroundImage: { source: "preset", presetId: "touhou" },
             avatar: { source: "default" },
             stageAppearance: { backdropBlur: true, backdropOpacity: 42 },
           },
@@ -101,7 +101,7 @@ describe("registerProfileRoutes", () => {
     expect(mocks.updateProfile).toHaveBeenCalledWith("user-1", {
       displayName: "New Name",
       preferences: {
-        backgroundImage: { source: "preset", presetId: "frontier" },
+        backgroundImage: { source: "preset", presetId: "touhou" },
         avatar: { source: "default" },
         stageAppearance: { backdropBlur: true, backdropOpacity: 42 },
       },
@@ -122,7 +122,7 @@ describe("registerProfileRoutes", () => {
       verified: true,
       ratings: { classic: 1200 },
       preferences: {
-        backgroundImage: { source: "preset", presetId: "classic" },
+        backgroundImage: { source: "preset", presetId: "default" },
       },
     });
 
@@ -144,7 +144,7 @@ describe("registerProfileRoutes", () => {
       verified: true,
       ratings: { classic: 1200 },
       preferences: {
-        backgroundImage: { source: "preset", presetId: "classic" },
+        backgroundImage: { source: "preset", presetId: "default" },
       },
     });
     expect(response.json.mock.calls[0]?.[0]).not.toHaveProperty("password");
@@ -189,7 +189,7 @@ describe("registerProfileRoutes", () => {
           preferences: {
             backgroundImage: {
               source: "preset",
-              presetId: "classic",
+              presetId: "default",
               customUrl: "https://example.com/bg.jpg",
             },
           },
@@ -215,7 +215,7 @@ describe("registerProfileRoutes", () => {
             backgroundImage: {
               source: "customUrl",
               customUrl: "https://example.com/bg.jpg",
-              presetId: "classic",
+              presetId: "default",
             },
           },
         },
@@ -239,7 +239,7 @@ describe("registerProfileRoutes", () => {
           preferences: {
             backgroundImage: {
               source: "preset",
-              presetId: "classic",
+              presetId: "default",
               extra: "not-allowed",
             },
           },

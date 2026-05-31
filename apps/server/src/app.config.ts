@@ -21,6 +21,7 @@ import { MatchQueueRoom } from "#/features/queue/queue-room";
 import { registerCustomRoomRoutes } from "#/features/setup/custom-room-routes";
 import { SetupRoom } from "#/features/setup/setup-room";
 import { registerSystemRoutes } from "#/features/system/system-routes";
+import { VsAiRoom } from "#/features/vs-ai/vs-ai-room";
 import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
 const userRepository = new MongoUserRepository();
@@ -166,6 +167,7 @@ export default defineServer({
     queue: defineRoom(MatchQueueRoom).filterBy(["gameMode"]),
     setup: defineRoom(SetupRoom).filterBy(["gameMode"]).enableRealtimeListing(),
     match: defineRoom(MatchRoom),
+    "vs-ai": defineRoom(VsAiRoom),
   },
 
   /**
@@ -195,6 +197,30 @@ export default defineServer({
     // Health check endpoint
     app.get("/health", (_req, res) => {
       res.status(200).json({ status: "ok", uptime: process.uptime() });
+    });
+
+    // AI bot service health check — pings the Python bot service
+    app.get("/ai/health", async (_req, res) => {
+      try {
+        const healthUrl = ENV.BOT_SERVICE_URL.replace(/^ws/i, "http").replace(
+          /\/ws$/,
+          "/health",
+        );
+        const response = await fetch(healthUrl, {
+          signal: AbortSignal.timeout(3000),
+        });
+        if (response.ok) {
+          res.status(200).json({ available: true });
+        } else {
+          res
+            .status(503)
+            .json({ available: false, error: "Bot service unhealthy" });
+        }
+      } catch {
+        res
+          .status(503)
+          .json({ available: false, error: "Bot service unreachable" });
+      }
     });
   },
 });
