@@ -592,17 +592,22 @@ export class MatchRoom extends Room<{
     const players = Array.from(this.state.players.values());
     if (players.length < 2) return;
 
-    // Skip rating updates for bot players
-    const humanPlayers = players.filter((p) => !p.id.startsWith("__bot__"));
-    if (humanPlayers.length < 2) {
-      logger.info("[MatchRoom] Skipping rating update for bot match");
+    // Skip rating updates when bots are present
+    const humanPlayers = players.filter(
+      (p) => !this.metadata.playerInit.some((pi) => pi.id === p.id && pi.isBot),
+    );
+    if (humanPlayers.length < players.length) {
+      logger.info(
+        "[MatchRoom] Skipping rating update: room contains bot players",
+      );
       return;
     }
+    if (humanPlayers.length < 2) return;
 
     const mode = result.mode;
 
     const inputs = await Promise.all(
-      players.map(async (player) => {
+      humanPlayers.map(async (player) => {
         const currentRating = await userRepository.getRating(player.id, mode);
         const teamId = player.teamId;
         const placement = teamId === result.winnerTeamId ? 1 : 2;

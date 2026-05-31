@@ -8,6 +8,7 @@ const playerInitSchema = z.object({
   displayName: z.string().trim().min(1),
   teamId: z.string().min(1),
   color: z.number().int().positive(),
+  isBot: z.boolean().optional(),
 });
 
 const roomDataSchema = z.object({
