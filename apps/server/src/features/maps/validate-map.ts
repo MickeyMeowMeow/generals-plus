@@ -1,4 +1,9 @@
 import { Terrain } from "@generals-plus/engine";
+import type {
+  CellTemplate,
+  HexGridBounds,
+  SquareGridBounds,
+} from "@generals-plus/shared-types";
 
 import type { GridTemplate } from "#/infra/db/models/map-model";
 
@@ -7,16 +12,20 @@ export interface MapValidationResult {
   errors: string[];
 }
 
-const getMinX = (gridType: string, bounds: any, y: number): number => {
+const getMinX = (
+  gridType: string,
+  bounds: SquareGridBounds | HexGridBounds,
+  y: number,
+): number => {
   if (gridType === "square") return 0;
-  const { left } = bounds as unknown as { left: number };
+  const { left } = bounds as HexGridBounds;
   return Math.max(-left + 1, -y);
 };
 
 const getCell = (
   gridType: string,
-  bounds: any,
-  cells: { terrain: string }[][],
+  bounds: SquareGridBounds | HexGridBounds,
+  cells: CellTemplate[][],
   x: number,
   y: number,
 ) => {
@@ -131,8 +140,8 @@ export function validateMapGrid(grid: GridTemplate): MapValidationResult {
 
 function checkGeneralConnectivity(
   gridType: string,
-  bounds: any,
-  cells: { terrain: string }[][],
+  bounds: SquareGridBounds | HexGridBounds,
+  cells: CellTemplate[][],
   generalCoords: { x: number; y: number }[],
 ): boolean {
   const passable = (x: number, y: number): boolean => {
