@@ -12,13 +12,13 @@ import type {
 extend({ Container, Text });
 
 const SITE_TEXT_STYLE = new TextStyle({
-  fontFamily: "Oxanium Variable, sans-serif",
-  fontSize: RenderConfig.cellStride * 0.48,
-  fontWeight: "900",
-  fill: 0xffffff,
+  fontFamily: RenderConfig.siteLabelFontFamily,
+  fontSize: RenderConfig.cellStride * RenderConfig.siteLabelFontSizeRatio,
+  fontWeight: RenderConfig.siteLabelFontWeight,
+  fill: RenderConfig.siteLabelColor,
   stroke: {
-    color: 0x111111,
-    width: 6,
+    color: RenderConfig.siteLabelStrokeColor,
+    width: RenderConfig.siteLabelStrokeWidth,
   },
 });
 
@@ -29,7 +29,6 @@ interface SiteLabelLayerProps {
 export function SiteLabelLayer({ grid }: SiteLabelLayerProps) {
   // Assume that site labels remain unchanged across ticks, so only compute once on mount.
   const siteCells = useMemo(() => {
-    console.log("Computing site label cells...");
     const cells: Array<{ cell: RenderGridCell; label: string }> = [];
     grid.forEach((cell) => {
       if (

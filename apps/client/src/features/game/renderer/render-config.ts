@@ -49,4 +49,12 @@ export const RenderConfig = {
   arrowLength: 35,
   arrowThickness: 3,
   arrowHeadSize: 10,
+
+  // Demolition site labels
+  siteLabelFontFamily: "Oxanium Variable, sans-serif",
+  siteLabelFontSizeRatio: 0.78, // Relative to cell size
+  siteLabelFontWeight: "900",
+  siteLabelColor: 0xffffff,
+  siteLabelStrokeColor: 0x111111,
+  siteLabelStrokeWidth: 6,
 } as const;

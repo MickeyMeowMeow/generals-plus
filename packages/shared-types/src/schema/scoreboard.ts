@@ -127,3 +127,38 @@ export class DemolitionScoreboard extends BaseScoreboard {
   @type("number") defuseDurationTicks: number = 10;
   @type("number") detonateDurationTicks: number = 90;
 }
+
+export class CollapseScoreboardPlayerEntry extends TroopLandScoreboardPlayerEntry {
+  @type("boolean") isAlive: boolean = false;
+}
+
+export class CollapseScoreboard extends BaseScoreboard {
+  @type([CollapseScoreboardPlayerEntry]) players =
+    new ArraySchema<CollapseScoreboardPlayerEntry>();
+
+  @type("number") nextCollapseTick: number = -1;
+  @type("number") currentProgress: number = 0;
+  @type("number") startDelayTicks: number = 0;
+  @type("number") shrinkIntervalTicks: number = 0;
+}
+
+export class PayloadScoreboardPlayerEntry extends TroopLandScoreboardPlayerEntry {
+  @type("boolean") isAlive: boolean = false;
+}
+
+export class PayloadScoreboard extends BaseScoreboard {
+  @type([PayloadScoreboardPlayerEntry]) players =
+    new ArraySchema<PayloadScoreboardPlayerEntry>();
+
+  @type("number") cartProgress: number = 0;
+  @type("number") cartIndex: number = 0;
+  @type("number") trackLength: number = 0;
+  @type("number") totalTime: number = 300;
+  @type("number") speedSeconds: number = 2;
+  @type("number") cartSize: number = 3;
+  @type("number") minPushers: number = 6;
+  @type("boolean") isContested: boolean = false;
+  @type("string") pushingTeamId: string = "";
+  @type("string") leftTeamId: string = "";
+  @type("string") rightTeamId: string = "";
+}

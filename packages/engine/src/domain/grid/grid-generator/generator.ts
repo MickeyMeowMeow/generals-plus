@@ -78,6 +78,27 @@ export abstract class AbstractGridGenerator<
 
     const protectedZone = this.buildProtectedZones(generals, terrainGrid);
 
+    if (config.isPayload) {
+      const bounds = terrainGrid.bounds;
+      const isHex = "leftSlant" in bounds;
+      const { startOffset, endOffset, trackPoints } =
+        this.getPayloadTrackGeometry(bounds, isHex, config.payloadCartSize);
+
+      for (const pt of trackPoints) {
+        for (let dy = startOffset; dy <= endOffset; dy++) {
+          for (let dx = startOffset; dx <= endOffset; dx++) {
+            const coord = { x: pt.x + dx, y: pt.y + dy };
+            if (terrainGrid.isValid(coord)) {
+              protectedZone.add(`${coord.x},${coord.y}`);
+              if (terrainGrid.get(coord) !== Terrain.GENERAL) {
+                terrainGrid.set(coord, Terrain.PLAIN);
+              }
+            }
+          }
+        }
+      }
+    }
+
     this.paintMountains(config, rng, terrainGrid, protectedZone);
 
     this.placeCities(config, rng, terrainGrid, protectedZone, generals);
@@ -91,6 +112,16 @@ export abstract class AbstractGridGenerator<
     }
 
     const grid = this.materializeCells(terrainGrid, config);
+
+    if (config.isPayload) {
+      const isHex = grid.gridType !== "square";
+      const { trackPoints } = this.getPayloadTrackGeometry(
+        grid.bounds,
+        isHex,
+        config.payloadCartSize,
+      );
+      grid.track = trackPoints;
+    }
 
     return grid;
   }
@@ -111,6 +142,9 @@ export abstract class AbstractGridGenerator<
     const flagCount = "flagCount" in options ? (options.flagCount ?? 0) : 0;
     const bombSiteCount =
       "bombSiteCount" in options ? (options.bombSiteCount ?? 0) : 0;
+    const isPayload = "isPayload" in options ? !!options.isPayload : false;
+    const payloadCartSize =
+      "payloadCartSize" in options ? (options.payloadCartSize ?? 3) : 3;
     const generalCount = options.generalCount ?? DefaultGenOptions.generalCount;
     const minGeneralDistanceFactor =
       options.minGeneralDistanceFactor ??
@@ -119,6 +153,11 @@ export abstract class AbstractGridGenerator<
       options.generalInitialTroops ?? DefaultGenOptions.generalInitialTroops;
     const cityInitialTroops =
       options.cityInitialTroops ?? DefaultGenOptions.cityInitialTroops;
+
+    const payloadLeftCount =
+      "payloadLeftCount" in options ? (options.payloadLeftCount ?? 0) : 0;
+    const payloadRightCount =
+      "payloadRightCount" in options ? (options.payloadRightCount ?? 0) : 0;
 
     if (
       mountainRate < MIN_RATE ||
@@ -152,12 +191,84 @@ export abstract class AbstractGridGenerator<
       minGeneralDistanceFactor,
       generalInitialTroops,
       cityInitialTroops,
+      isPayload,
+      payloadCartSize,
+      payloadLeftCount,
+      payloadRightCount,
     };
   }
 
   protected abstract resolveGridBounds(
     options: GridGeneratorOptions<T>,
   ): GridBounds[T];
+
+  protected getPayloadTrackGeometry(
+    bounds: {
+      left?: number;
+      right?: number;
+      rightSlant?: number;
+      leftSlant?: number;
+      width?: number;
+      height?: number;
+    },
+    isHex: boolean,
+    cartSize: number,
+  ) {
+    const height = isHex
+      ? (bounds as { readonly leftSlant: number }).leftSlant
+      : (bounds as { readonly height: number }).height;
+    const cy = Math.floor(height / 2);
+
+    const startOffset = -Math.floor((cartSize - 1) / 2);
+    const endOffset = Math.floor(cartSize / 2);
+
+    let startX: number, endX: number;
+    const bendOffset = Math.floor(height / 5);
+    const leftY = Math.max(-startOffset, cy - bendOffset);
+    const rightY = Math.min(height - 1 - endOffset, cy + bendOffset);
+
+    if (isHex) {
+      const hexBounds = bounds as {
+        readonly left: number;
+        readonly right: number;
+        readonly rightSlant: number;
+      };
+      const hL = hexBounds.left;
+      const hR = hexBounds.right;
+      const hRS = hexBounds.rightSlant;
+      const minXAt = (y: number) => Math.max(-hL + 1, -y);
+      const maxXAt = (y: number) => Math.min(hR - 1, hRS - y - 1);
+      startX = Math.max(
+        minXAt(leftY) + endOffset,
+        minXAt(Math.max(0, leftY - 2)),
+      );
+      endX = Math.min(
+        maxXAt(rightY) - endOffset,
+        maxXAt(Math.min(height - 1, rightY + 2)),
+      );
+    } else {
+      const sqBounds = bounds as { readonly width: number };
+      startX = Math.min(2 - startOffset, Math.floor(sqBounds.width / 2));
+      endX = Math.max(startX, sqBounds.width - 1 - (2 - startOffset));
+    }
+
+    const trackPoints: ICoordinate[] = [];
+    for (let y = leftY; y < cy; y++) trackPoints.push({ x: startX, y });
+    for (let x = startX; x <= endX; x++) trackPoints.push({ x, y: cy });
+    for (let y = cy + 1; y <= rightY; y++) trackPoints.push({ x: endX, y });
+
+    return {
+      cy,
+      height,
+      startOffset,
+      endOffset,
+      leftY,
+      rightY,
+      startX,
+      endX,
+      trackPoints,
+    };
+  }
 
   // ── Step 1: place generals ───────────────────────────────────────
 
@@ -168,6 +279,58 @@ export abstract class AbstractGridGenerator<
   ): ICoordinate[] | null {
     const { generalCount } = config;
     const minDistance = this.calculateMinGeneralDistance(config);
+
+    if (config.isPayload) {
+      const bounds = terrainGrid.bounds;
+      const isHex = "leftSlant" in bounds;
+      const { height, leftY, rightY, startX, endX } =
+        this.getPayloadTrackGeometry(bounds, isHex, config.payloadCartSize);
+
+      const selected: ICoordinate[] = [];
+      const leftCount =
+        typeof config.payloadLeftCount === "number" &&
+        config.payloadLeftCount > 0
+          ? config.payloadLeftCount
+          : Math.ceil(generalCount / 2);
+      const rightCount =
+        typeof config.payloadRightCount === "number" &&
+        config.payloadRightCount > 0
+          ? config.payloadRightCount
+          : generalCount - leftCount;
+
+      if (isHex) {
+        // Hex: spread horizontally at same y (hex narrows at top/bottom)
+        const genYL = leftY - 2;
+        for (let i = 0; i < leftCount; i++) {
+          const x = startX + i;
+          if (genYL >= 0 && terrainGrid.isValid({ x, y: genYL })) {
+            selected.push({ x, y: genYL });
+          }
+        }
+        const genYR = rightY + 2;
+        for (let i = 0; i < rightCount; i++) {
+          const x = endX - i;
+          if (genYR < height && terrainGrid.isValid({ x, y: genYR })) {
+            selected.push({ x, y: genYR });
+          }
+        }
+      } else {
+        // Square: stack vertically at same x
+        for (let i = 0; i < leftCount; i++) {
+          const y = leftY - 2 - i;
+          if (y >= 1) selected.push({ x: startX, y });
+        }
+        for (let i = 0; i < rightCount; i++) {
+          const y = rightY + 2 + i;
+          if (y < height - 1) selected.push({ x: endX, y });
+        }
+      }
+
+      for (const g of selected) {
+        terrainGrid.set(g, Terrain.GENERAL);
+      }
+      return selected;
+    }
 
     // Build shuffled candidate pool (interior cells only)
     const candidates: ICoordinate[] =

@@ -2,11 +2,14 @@ import type { ICoordinate } from "@generals-plus/engine";
 import {
   ActionType,
   GameMode,
-  isSameCoord,
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
-import type { DemolitionScoreboard } from "@generals-plus/shared-types";
+import type {
+  CollapseScoreboard,
+  DemolitionScoreboard,
+  PayloadScoreboard,
+} from "@generals-plus/shared-types";
 import {
   MatchClientMessage,
   MatchServerMessage,
@@ -29,6 +32,12 @@ import { useGameRoom } from "#/features/game/api/use-game-room";
 import { GameHud } from "#/features/game/components/game-hud";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { Ping } from "#/features/game/renderer/layers/ping";
+import {
+  ChoosePingBrushModifier,
+  ClearPingBrushKey,
+  KeyToPing,
+  SurrenderKey,
+} from "#/features/game/utils/hotkey";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 import { formatTeamLabel } from "#/features/match/utils/team-label";
@@ -152,8 +161,10 @@ export function GamePage({ connection, source }: GamePageProps) {
   }, [room]);
 
   const [selection, setSelection] = useState<ICoordinate | null>(null);
-  const [splitMoveSelection, setSplitMoveSelection] =
-    useState<ICoordinate | null>(null);
+  const [isStickySplitMove, setIsStickySplitMove] = useState(false);
+  const [isActiveSplitMove, setIsActiveSplitMove] = useState(false);
+  const isSplitMove = isStickySplitMove || isActiveSplitMove;
+
   const [isViewingAsSpectator, setIsViewingAsSpectator] = useState(false);
   const [spectatorSource, setSpectatorSource] = useState<
     "eliminated" | "game-end" | null
@@ -179,56 +190,53 @@ export function GamePage({ connection, source }: GamePageProps) {
       }
     }
 
+    // Fallback to any owned cell if no general is found
     if (!startCoord) {
-      // Fallback to any owned cell if no general is found
       for (const cell of renderGrid) {
         if (cell.ownerIndex === currentPlayer.id) {
           startCoord = cell.coordinate;
           break;
         }
       }
-    } else {
+    }
+
+    if (startCoord) {
       initialCoord.current = startCoord;
       setSelection(startCoord);
       hasInitializedRef.current = true;
     }
   }, [renderGrid, currentPlayer]);
 
+  const handlePing = useCallback(
+    (coord: ICoordinate, type: "attack" | "defense" | "rally") => {
+      room?.send(MatchClientMessage.PING, {
+        type,
+        ...coord,
+      });
+    },
+    [room],
+  );
+
   const handleSelectCell = useCallback(
     (coord: ICoordinate) => {
       if (activeBrush) {
-        room?.send(MatchClientMessage.PING, {
-          x: coord.x,
-          y: coord.y,
-          type: activeBrush,
-        });
+        handlePing(coord, activeBrush);
         return;
       }
+      const cell = renderGrid?.get(coord);
+      if (!cell || cell.terrain === Terrain.VOID) return;
+
       setSelection(coord);
-      setSplitMoveSelection(null);
+      setIsStickySplitMove(false);
     },
-    [activeBrush, room],
+    [activeBrush, handlePing, renderGrid],
   );
 
-  const handleArmSplitMove = useCallback(
-    (coord?: ICoordinate) => {
-      if (activeBrush) {
-        if (coord) {
-          room?.send(MatchClientMessage.PING, {
-            x: coord.x,
-            y: coord.y,
-            type: activeBrush,
-          });
-        }
-        return;
-      }
-      const nextSelection = coord ?? selection;
-      if (!nextSelection) return;
-      setSelection(nextSelection);
-      setSplitMoveSelection(nextSelection);
-    },
-    [activeBrush, selection, room],
-  );
+  const handleToggleStickySplitMove = useCallback(() => {
+    if (!isActiveSplitMove) {
+      setIsStickySplitMove((prev) => !prev);
+    }
+  }, [isActiveSplitMove]);
 
   const handleQueueMove = useCallback(
     (direction: MoveDirection) => {
@@ -238,6 +246,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       if (!renderGrid.isValid(to)) {
         return;
       }
+
       const targetCell = renderGrid.get(to);
       if (
         !targetCell ||
@@ -246,16 +255,13 @@ export function GamePage({ connection, source }: GamePageProps) {
       ) {
         return;
       }
-      const moveType =
-        splitMoveSelection && isSameCoord(splitMoveSelection, from)
-          ? ActionType.SPLIT_MOVE
-          : ActionType.MOVE;
 
+      const moveType = isSplitMove ? ActionType.SPLIT_MOVE : ActionType.MOVE;
       setSelection(to);
-      setSplitMoveSelection(null);
+      setIsStickySplitMove(false);
       sendMove(from, to, moveType);
     },
-    [renderGrid, selection, room, sendMove, splitMoveSelection],
+    [renderGrid, selection, room, sendMove, isSplitMove],
   );
 
   const handleReturn = () => {
@@ -286,20 +292,22 @@ export function GamePage({ connection, source }: GamePageProps) {
         return;
       }
 
-      if (e.key === "Escape") {
+      if (e.code === SurrenderKey) {
         if (isSurrenderDialogOpen || !canOpenSurrenderDialog) {
           return;
         }
         e.preventDefault();
         setIsSurrenderDialogOpen(true);
-      } else if (e.key === "c" || e.key === "C") {
+        return;
+      }
+
+      if (e.code === ClearPingBrushKey) {
         setActiveBrush(null);
-      } else if (e.key === "1") {
-        setActiveBrush((prev) => (prev === "attack" ? null : "attack"));
-      } else if (e.key === "2") {
-        setActiveBrush((prev) => (prev === "defense" ? null : "defense"));
-      } else if (e.key === "3") {
-        setActiveBrush((prev) => (prev === "rally" ? null : "rally"));
+      }
+
+      if (e.getModifierState(ChoosePingBrushModifier) && KeyToPing[e.code]) {
+        const pingType = KeyToPing[e.code];
+        setActiveBrush((prev) => (prev === pingType ? null : pingType));
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -409,13 +417,17 @@ export function GamePage({ connection, source }: GamePageProps) {
         grid={renderGrid}
         initialCoord={initialCoord.current ?? undefined}
         selection={isReadOnly ? null : selection}
-        splitMoveSelection={isReadOnly ? null : splitMoveSelection}
+        isSplitMove={isSplitMove}
         moveQueue={moveQueue}
         bombMoveSignal={bombMoveSignal}
         onSelectCell={isReadOnly ? () => {} : handleSelectCell}
-        onArmSplitMove={isReadOnly ? () => {} : handleArmSplitMove}
+        onToggleStickySplitMove={
+          isReadOnly ? () => {} : handleToggleStickySplitMove
+        }
+        onUpdateActiveSplitMove={isReadOnly ? () => {} : setIsActiveSplitMove}
         onQueueMove={isReadOnly ? () => {} : handleQueueMove}
         onClearMoveQueue={isReadOnly ? () => {} : clearMoveQueue}
+        onPing={isReadOnly ? () => {} : handlePing}
         playerColors={playerColors}
         pings={pings}
         isPlanted={
@@ -432,10 +444,32 @@ export function GamePage({ connection, source }: GamePageProps) {
               )
             : -1
         }
+        payloadTrackX={
+          gameState.payloadTrackX ? Array.from(gameState.payloadTrackX) : []
+        }
+        payloadTrackY={
+          gameState.payloadTrackY ? Array.from(gameState.payloadTrackY) : []
+        }
+        cartIndex={
+          gameState.mode === GameMode.PAYLOAD
+            ? ((gameState.scoreboard as PayloadScoreboard).cartIndex ?? -1)
+            : -1
+        }
+        cartSize={
+          gameState.mode === GameMode.PAYLOAD
+            ? ((gameState.scoreboard as PayloadScoreboard).cartSize ?? 0)
+            : 0
+        }
       />
 
       {(() => {
-        let timerProps = {
+        let timerProps: {
+          currentTick: number;
+          targetTick: number;
+          tickInterval: number;
+          label?: string;
+          startTick?: number;
+        } = {
           currentTick: gameState.tick,
           targetTick:
             gameState.mode === GameMode.TURF_WAR ||
@@ -493,6 +527,33 @@ export function GamePage({ connection, source }: GamePageProps) {
               label: "Time remaining",
             };
           }
+        }
+
+        if (gameState.mode === GameMode.COLLAPSE) {
+          const collapseScoreboard = gameState.scoreboard as CollapseScoreboard;
+          const startDelay = collapseScoreboard.startDelayTicks ?? 120;
+          const shrinkInterval = collapseScoreboard.shrinkIntervalTicks ?? 60;
+          const startTick =
+            gameState.tick < startDelay
+              ? 0
+              : collapseScoreboard.nextCollapseTick - shrinkInterval;
+
+          timerProps = {
+            currentTick: gameState.tick,
+            targetTick: collapseScoreboard.nextCollapseTick,
+            tickInterval: gameState.tickInterval,
+            label: "Void Collapse",
+            startTick,
+          };
+        }
+
+        if (gameState.mode === GameMode.PAYLOAD) {
+          timerProps = {
+            currentTick: gameState.tick,
+            targetTick: gameState.finishTick > 0 ? gameState.finishTick : 0,
+            tickInterval: gameState.tickInterval,
+            label: "Time remaining",
+          };
         }
 
         return (
@@ -628,7 +689,7 @@ export function GamePage({ connection, source }: GamePageProps) {
                   setIsSurrenderDialogOpen(false);
                   setActiveBrush(null);
                   setSelection(null);
-                  setSplitMoveSelection(null);
+                  setIsStickySplitMove(false);
                   surrender();
                 }}
               >
@@ -692,7 +753,7 @@ export function GamePage({ connection, source }: GamePageProps) {
                     activeModal === "eliminated" ? "eliminated" : "game-end",
                   );
                   setSelection(null);
-                  setSplitMoveSelection(null);
+                  setIsStickySplitMove(false);
                 }}
               >
                 View as spectator

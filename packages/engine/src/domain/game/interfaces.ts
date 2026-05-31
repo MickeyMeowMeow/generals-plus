@@ -7,6 +7,7 @@ import type { Grid } from "#/domain/grid/grid";
 import type { IPlayer, IPlayerState } from "#/domain/player/interfaces";
 import type { Team } from "#/domain/team/interfaces";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
+import type { ICoordinate } from "#/math/coordinate";
 
 /**
  * The root state of the Game Engine.
@@ -32,6 +33,9 @@ export interface IBaseGame {
 
   /** Map of all teams (ID -> State). */
   readonly teams: Map<string, Team>;
+
+  /** Explicit player→coordinate mapping for custom maps. */
+  spawnPositions?: Map<string, ICoordinate>;
 
   /**
    * Starts the internal tick counter and troop growth timers.
@@ -146,6 +150,20 @@ export interface IDominationScoreboard extends IBaseScoreboard {
   readonly teamScores: Map<string, number>;
 }
 
+export interface ICollapseScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.COLLAPSE;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+    readonly isAlive: boolean;
+  }>;
+  readonly nextCollapseTick: number;
+  readonly currentProgress: number;
+  readonly startDelayTicks: number;
+  readonly shrinkIntervalTicks: number;
+}
+
 /**
  * Classic FFA Mode.
  * Focuses on capital captures.
@@ -197,6 +215,27 @@ export interface IDemolitionGame extends IBaseGame {
   getScoreboard(): IDemolitionScoreboard;
 }
 
+export interface IPayloadScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.PAYLOAD;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+    readonly isAlive: boolean;
+  }>;
+  readonly cartProgress: number; // 0.0 to 1.0
+  readonly cartIndex: number;
+  readonly trackLength: number;
+  readonly totalTimeTicks: number;
+  readonly speedTicks: number;
+  readonly cartSize: number;
+  readonly minPushers: number;
+  readonly isContested: boolean;
+  readonly pushingTeamId: string | null;
+  readonly leftTeamId: string;
+  readonly rightTeamId: string;
+}
+
 /**
  * Payload Mode.
  * Tracks the movement of the cart along a designated track.
@@ -205,6 +244,8 @@ export interface IPayloadGame extends IBaseGame {
   readonly mode: typeof GameMode.PAYLOAD;
   /** Progress of the cart from 0.0 (Start) to 1.0 (End). */
   payloadProgress: number;
+
+  getScoreboard(): IPayloadScoreboard;
 }
 
 /**
@@ -224,10 +265,8 @@ export interface IBiohazardGame extends IBaseGame {
  */
 export interface ICollapseGame extends IBaseGame {
   readonly mode: typeof GameMode.COLLAPSE;
-  /** Current progress of the safe zone shrinking. */
-  currentProgress: number;
-  /** Tick count until the next border shrinkage. */
-  nextCollapseTick: number;
+
+  getScoreboard(): ICollapseScoreboard;
 }
 
 /**

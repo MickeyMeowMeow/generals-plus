@@ -6,13 +6,20 @@ import type { SetupSettings } from "#/setup-settings";
 export type SetupValidationField =
   | keyof SetupSettings
   | "color"
+  | "team"
   | "players"
   | "flagCount"
   | "targetScore"
   | "bombSiteCount"
   | "plantDuration"
   | "defuseDuration"
-  | "detonateDuration";
+  | "detonateDuration"
+  | "collapseInterval"
+  | "startDelay"
+  | "collapseShape"
+  | "payloadSpeed"
+  | "payloadCartSize"
+  | "payloadRequiredOccupied";
 
 export interface SetupValidationFailedMessage extends ToastMessage {
   field?: SetupValidationField;
@@ -20,6 +27,7 @@ export interface SetupValidationFailedMessage extends ToastMessage {
 
 export const SetupClientMessage = {
   PICK_COLOR: "pickColor",
+  PICK_TEAM: "pickTeam",
   UPDATE_SETTINGS: "updateSettings",
   START_GAME: "start",
 } as const;
@@ -30,6 +38,10 @@ export type SetupClientMessage =
 export interface SetupClientMessagePayload extends MessagePayload {
   [SetupClientMessage.PICK_COLOR]: {
     color: number;
+  };
+  [SetupClientMessage.PICK_TEAM]: {
+    teamId?: string;
+    createNew?: boolean;
   };
   [SetupClientMessage.UPDATE_SETTINGS]: Partial<SetupSettings>;
   [SetupClientMessage.START_GAME]: never;

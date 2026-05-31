@@ -1,4 +1,3 @@
-import { JWT } from "@colyseus/auth";
 import type { Client, QueueOptions } from "@colyseus/core";
 import { logger, matchMaker, QueueRoom } from "@colyseus/core";
 import {
@@ -15,6 +14,7 @@ import {
   ROOM_NAMES,
 } from "@generals-plus/shared-types";
 
+import { resolveAuthUser } from "#/features/auth/auth-config";
 import { createGame, generateSeed } from "#/features/game/utils";
 import {
   BASE_TICK_INTERVAL,
@@ -143,6 +143,35 @@ export class MatchQueueRoom extends QueueRoom {
                 bombSiteCount: modeSettings?.bombSiteCount ?? 2,
                 seed: base.gridOptions.seed,
               };
+            case GameMode.COLLAPSE:
+              return {
+                ...base,
+                mode: GameMode.COLLAPSE,
+                startDelayTicks: calculateFinishTick(
+                  modeSettings?.startDelay ?? 60,
+                  BASE_TICK_INTERVAL,
+                ),
+                shrinkIntervalTicks: calculateFinishTick(
+                  modeSettings?.collapseInterval ?? 30,
+                  BASE_TICK_INTERVAL,
+                ),
+                collapseShape: (modeSettings?.collapseShape ?? "circle") as
+                  | "circle"
+                  | "square",
+              };
+            case GameMode.PAYLOAD:
+              return {
+                ...base,
+                mode: GameMode.PAYLOAD,
+                finishTick,
+                payloadSpeedTicks: calculateFinishTick(
+                  modeSettings?.payloadSpeed ?? 2,
+                  BASE_TICK_INTERVAL,
+                ),
+                payloadCartSize: modeSettings?.payloadCartSize ?? 3,
+                payloadRequiredOccupied:
+                  modeSettings?.payloadRequiredOccupied ?? 6,
+              };
             default:
               return { ...base, mode: this.gameMode };
           }
@@ -155,7 +184,8 @@ export class MatchQueueRoom extends QueueRoom {
         const isTimedMode =
           this.gameMode === GameMode.TURF_WAR ||
           this.gameMode === GameMode.DOMINATION ||
-          this.gameMode === GameMode.DEMOLITION;
+          this.gameMode === GameMode.DEMOLITION ||
+          this.gameMode === GameMode.PAYLOAD;
 
         const metadata: RoomData = {
           mode: this.gameMode,
@@ -252,9 +282,9 @@ export class MatchQueueRoom extends QueueRoom {
     }
   }
 
-  /** Verify the client auth token before allowing queue participation. */
+  /** Verify the client auth token and return fresh user data from the database. */
   static async onAuth(token: string) {
-    return JWT.verify(token);
+    return resolveAuthUser(token);
   }
 
   /**

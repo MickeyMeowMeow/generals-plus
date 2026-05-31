@@ -73,10 +73,12 @@ describe("SetupRoom", () => {
 
     expect(room.state.players.length).toBe(1);
     expect(room.state.players.at(0)?.isHost).toBe(true);
+    expect(room.state.players.at(0)?.teamId).toMatch(/^setup_team_\d+$/);
     expect(room.state.hostId).toBe("p1");
   });
 
   it("subsequent players are not host", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
     room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
 
     await connectClient(room, {
@@ -90,6 +92,7 @@ describe("SetupRoom", () => {
 
     expect(room.state.players.length).toBe(2);
     expect(room.state.players.at(1)?.isHost).toBe(false);
+    expect(room.state.players.at(1)?.teamId).toBe("setup_team_1");
   });
 
   it("transfers host when host leaves", async () => {
@@ -379,6 +382,87 @@ describe("SetupRoom", () => {
       );
     });
 
+    it("rejects demolition playersPerTeam below half of maxPlayers", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DEMOLITION,
+        maxPlayers: 6,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      const sent = captureErrors(room.clients[0]);
+
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        playersPerTeam: 2,
+      });
+
+      expect(sent).toContain(
+        "Players per team must be at least half of max players in Demolition.",
+      );
+    });
+
+    it("rejects payload playersPerTeam below half of maxPlayers", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.PAYLOAD,
+        maxPlayers: 6,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      const sent = captureErrors(room.clients[0]);
+
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        playersPerTeam: 2,
+      });
+
+      expect(sent).toContain(
+        "Players per team must be at least half of max players in Payload.",
+      );
+    });
+
+    it("keeps the larger demolition playersPerTeam when maxPlayers changes", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DEMOLITION,
+        maxPlayers: 6,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      let msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        playersPerTeam: 5,
+      });
+      await msgPromise;
+
+      msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        maxPlayers: 8,
+      });
+      await msgPromise;
+
+      expect(room.state.playersPerTeam).toBe(5);
+    });
+
+    it("auto-bumps demolition playersPerTeam when maxPlayers increases", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DEMOLITION,
+        maxPlayers: 6,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+
+      expect(room.state.playersPerTeam).toBe(3);
+
+      const sent = captureErrors(room.clients[0]);
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        maxPlayers: 8,
+      });
+      await msgPromise;
+
+      expect(sent).not.toContain(
+        "Players per team must be at least half of max players in Demolition.",
+      );
+      expect(room.state.maxPlayers).toBe(8);
+      expect(room.state.playersPerTeam).toBe(4);
+    });
+
     it("rejects invalid settings update", async () => {
       room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
       await connectClient(room, { id: "p1", email: "p1@test.com" });
@@ -501,6 +585,242 @@ describe("SetupRoom", () => {
     });
   });
 
+  // ── pickTeam ───────────────────────────────────────────────
+
+  describe("pickTeam", () => {
+    it("updates the current player's team when there is capacity", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        playersPerTeam: 2,
+      });
+      await msgPromise;
+
+      const targetTeamId = room.state.players.at(0)?.teamId;
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        teamId: targetTeamId,
+      });
+
+      expect(room.state.players.at(1)?.teamId).toBe(targetTeamId);
+    });
+
+    it("allows players to join an already full team", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      const targetTeamId = room.state.players.at(0)?.teamId;
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        teamId: targetTeamId,
+      });
+
+      expect(room.state.players.at(1)?.teamId).toBe(targetTeamId);
+    });
+
+    it("starts demolition rooms by balancing attackers and defenders", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DEMOLITION,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      expect(room.state.players.at(0)?.teamId).toBe("attackers");
+      expect(room.state.players.at(1)?.teamId).toBe("defenders");
+    });
+
+    it("normalizes selected teams when team settings change", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+      await connectClient(room, { id: "p3", email: "p3@test.com" });
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        maxPlayers: 4,
+        playersPerTeam: 2,
+      });
+      await msgPromise;
+
+      expect(room.state.players.map((player) => player.teamId)).toEqual([
+        "setup_team_0",
+        "setup_team_0",
+        "setup_team_1",
+      ]);
+    });
+
+    it("rebalances teams only when the current layout becomes invalid", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+      await connectClient(room, { id: "p3", email: "p3@test.com" });
+
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        teamId: room.state.players.at(0)?.teamId,
+      });
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        playersPerTeam: 1,
+      });
+      await msgPromise;
+
+      expect(room.state.players.map((player) => player.teamId)).toEqual([
+        "setup_team_0",
+        "setup_team_1",
+        "setup_team_2",
+      ]);
+    });
+
+    it("keeps the current grouping when team settings change and it remains valid", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+      await connectClient(room, { id: "p3", email: "p3@test.com" });
+
+      let msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        playersPerTeam: 2,
+      });
+      await msgPromise;
+
+      expect(room.state.players.map((player) => player.teamId)).toEqual([
+        "setup_team_0",
+        "setup_team_0",
+        "setup_team_1",
+      ]);
+
+      msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        playersPerTeam: 3,
+      });
+      await msgPromise;
+
+      expect(room.state.players.map((player) => player.teamId)).toEqual([
+        "setup_team_0",
+        "setup_team_0",
+        "setup_team_1",
+      ]);
+    });
+
+    it("creates a new team on request", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        createNew: true,
+      });
+
+      expect(room.state.players.at(1)?.teamId).toBe("setup_team_2");
+    });
+
+    it("allows players to move into defenders in demolition", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DEMOLITION,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        teamId: "defenders",
+      });
+
+      expect(room.state.players.at(1)?.teamId).toBe("defenders");
+    });
+
+    it("rejects creating new teams in demolition", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DEMOLITION,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      const sent = captureErrors(room.clients[1]);
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        createNew: true,
+      });
+
+      expect(sent).toContain(
+        "Demolition teams are fixed to Attackers and Defenders.",
+      );
+    });
+
+    it("starts payload rooms by balancing team_0 and team_1", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.PAYLOAD,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      expect(room.state.players.at(0)?.teamId).toBe("team_0");
+      expect(room.state.players.at(1)?.teamId).toBe("team_1");
+    });
+
+    it("allows players to move into team_1 in payload", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.PAYLOAD,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        teamId: "team_1",
+      });
+
+      expect(room.state.players.at(1)?.teamId).toBe("team_1");
+    });
+
+    it("rejects creating new teams in payload", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.PAYLOAD,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+
+      const sent = captureErrors(room.clients[1]);
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        createNew: true,
+      });
+
+      expect(sent).toContain("Payload teams are fixed to Team 1 and Team 2.");
+    });
+
+    it("provides correct payloadLeftCount and payloadRightCount based on team player counts", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.PAYLOAD,
+      });
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+      await connectClient(room, { id: "p3", email: "p3@test.com" });
+
+      // Move player 2 and player 3 to team_1 (so team_0 has 1 player, team_1 has 2 players)
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, { teamId: "team_1" });
+      room.clients[2].send(SetupClientMessage.PICK_TEAM, { teamId: "team_1" });
+
+      const options = (
+        room as unknown as { getGridOptions(): Record<string, unknown> }
+      ).getGridOptions();
+      expect(options.payloadLeftCount).toBe(1);
+      expect(options.payloadRightCount).toBe(2);
+    });
+  });
+
   // ── kick ───────────────────────────────────────────────────
 
   describe("kick", () => {
@@ -602,7 +922,8 @@ describe("SetupRoom", () => {
       room = null as unknown as SetupRoom;
     });
 
-    it("rejects start when players per team results in fewer than 2 teams", async () => {
+    it("rejects start when players are assigned to fewer than 2 teams", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
       room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
       await connectClient(room, { id: "p1", email: "p1@test.com" });
       await connectClient(room, { id: "p2", email: "p2@test.com" });
@@ -613,12 +934,86 @@ describe("SetupRoom", () => {
       });
       await msgPromise;
 
+      const targetTeamId = room.state.players.at(0)?.teamId;
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        teamId: targetTeamId,
+      });
+
       const sent = captureErrors(room.clients[0]);
       room.clients[0].send(SetupClientMessage.START_GAME);
 
       expect(sent).toContain(
-        "Players per team is too high; the room needs at least two teams to start.",
+        "The room needs players on at least two teams to start.",
       );
+    });
+
+    it("rejects start when any team exceeds capacity", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {});
+      await connectClient(room, { id: "p1", email: "p1@test.com" });
+      await connectClient(room, { id: "p2", email: "p2@test.com" });
+      await connectClient(room, { id: "p3", email: "p3@test.com" });
+
+      const targetTeamId = room.state.players.at(0)?.teamId;
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        teamId: targetTeamId,
+      });
+
+      const sent = captureErrors(room.clients[0]);
+      room.clients[0].send(SetupClientMessage.START_GAME);
+
+      expect(sent).toContain(
+        "Move players until every team is within the limit.",
+      );
+    });
+
+    it("uses playersPerTeam as demolition team capacity when starting", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DEMOLITION,
+        maxPlayers: 6,
+      });
+
+      for (let i = 1; i <= 6; i++) {
+        await connectClient(room, {
+          id: `p${i}`,
+          email: `p${i}@test.com`,
+        });
+      }
+
+      const msgPromise = room.waitForMessage("updateSettings");
+      room.clients[0].send(SetupClientMessage.UPDATE_SETTINGS, {
+        playersPerTeam: 4,
+      });
+      await msgPromise;
+
+      room.clients[1].send(SetupClientMessage.PICK_TEAM, {
+        teamId: "attackers",
+      });
+
+      const sent = captureErrors(room.clients[0]);
+      const seats: unknown[] = [];
+      for (const client of room.clients) {
+        const originalSend = client.send.bind(client);
+        client.send = (type: string, data?: unknown) => {
+          if (type === "seat") seats.push(data);
+          originalSend(type, data);
+        };
+      }
+
+      room.clients[0].send(SetupClientMessage.START_GAME);
+
+      await vi.waitFor(
+        () => {
+          expect(seats).toHaveLength(6);
+        },
+        { timeout: 5000 },
+      );
+      expect(sent).not.toContain(
+        "Move players until every team is within the limit.",
+      );
+
+      room = null as unknown as SetupRoom;
     });
 
     it("sends validation failed when game creation throws", async () => {
@@ -738,6 +1133,15 @@ describe("SetupRoom", () => {
       expect(room.state.playersPerTeam).toBe(
         getDefaultPlayersPerTeam(GameMode.TURF_WAR),
       );
+    });
+
+    it("sets demolition playersPerTeam to half of maxPlayers rounded up", async () => {
+      room = await createRoom<SetupRoom>(ROOM_NAMES.SETUP, {
+        gameMode: GameMode.DEMOLITION,
+        maxPlayers: 5,
+      });
+
+      expect(room.state.playersPerTeam).toBe(3);
     });
   });
 

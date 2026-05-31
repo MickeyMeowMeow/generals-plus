@@ -1,4 +1,8 @@
-import { describe, expect, it, test } from "vitest";
+import { afterEach, describe, expect, it, test, vi } from "vitest";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 import type { MoveActionType } from "#/domain/action/action-type";
 import { ActionType } from "#/domain/action/action-type";
@@ -573,5 +577,73 @@ describe("ClassicGame", () => {
     // p2 should own the captured cell and it should STILL be a CITY
     expect(generalCell.owner?.playerId).toBe("p2");
     expect(generalCell.terrain).toBe(Terrain.CITY);
+  });
+
+  test("team surrender transfers castles to a random active teammate", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    const grid = new SquareGrid(4, 1, [
+      [
+        new Cell({
+          coordinate: { x: 0, y: 0 },
+          terrain: Terrain.GENERAL,
+          troopCount: 5,
+        }),
+        new Cell({
+          coordinate: { x: 1, y: 0 },
+          terrain: Terrain.CITY,
+          troopCount: 7,
+        }),
+        new Cell({
+          coordinate: { x: 2, y: 0 },
+          terrain: Terrain.PLAIN,
+          troopCount: 9,
+        }),
+        new Cell({
+          coordinate: { x: 3, y: 0 },
+          terrain: Terrain.PLAIN,
+          troopCount: 3,
+        }),
+      ],
+    ]);
+    const game = new ClassicGame({ grid });
+    const t1 = new StandardTeam("t1");
+    const t2 = new StandardTeam("t2");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t1, "p2", PlayerStatus.ACTIVE);
+    const p3 = new Player(t2, "p3", PlayerStatus.ACTIVE);
+    t1.addPlayer(p1);
+    t1.addPlayer(p2);
+    t2.addPlayer(p3);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+    game.players.set(p3.playerId, p3);
+
+    const generalCell = grid.get({ x: 0, y: 0 });
+    const cityCell = grid.get({ x: 1, y: 0 });
+    const plainCell = grid.get({ x: 2, y: 0 });
+    const enemyCell = grid.get({ x: 3, y: 0 });
+    if (!generalCell || !cityCell || !plainCell || !enemyCell) {
+      throw new Error("cells should exist");
+    }
+
+    generalCell.owner = p1;
+    cityCell.owner = p1;
+    plainCell.owner = p1;
+    enemyCell.owner = p3;
+
+    game.startGame();
+
+    const success = game.handleAction(createSurrenderAction("p1"));
+
+    expect(success).toBe(true);
+    expect(p1.status).toBe(PlayerStatus.ELIMINATED);
+    expect(generalCell.owner?.playerId).toBe("p2");
+    expect(generalCell.terrain).toBe(Terrain.CITY);
+    expect(cityCell.owner?.playerId).toBe("p2");
+    expect(cityCell.terrain).toBe(Terrain.CITY);
+    expect(plainCell.owner?.playerId).toBe("p2");
+    expect(enemyCell.owner?.playerId).toBe("p3");
+    expect(game.status).toBe(GameStatus.PLAYING);
   });
 });

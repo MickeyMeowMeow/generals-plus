@@ -16,6 +16,7 @@ import { PlayerStatus } from "#/domain/player/player-status";
 import type { Team } from "#/domain/team/interfaces";
 import { VisibilityMap } from "#/domain/vision/visibility-map";
 import type { IVisionGrid } from "#/domain/vision/vision-grid";
+import type { ICoordinate } from "#/math/coordinate";
 import { GridType } from "#/math/grid-2d";
 
 /**
@@ -33,6 +34,9 @@ export abstract class BaseGame implements IBaseGame {
   readonly teams: Map<string, Team> = new Map();
   readonly effectRegistry = new EffectRegistry();
   protected readonly visibilityMap: VisibilityMap;
+
+  /** Explicit player→coordinate mapping for custom maps. Set before calling startGame(). */
+  spawnPositions?: Map<string, ICoordinate>;
 
   constructor(input: GridInput) {
     if ("grid" in input) {
@@ -106,9 +110,18 @@ export abstract class BaseGame implements IBaseGame {
       return false;
     }
 
+    const surrenderBeneficiary = this.pickSurrenderBeneficiary(playerId);
     player.status = PlayerStatus.ELIMINATED;
     this.grid.forEach((cell) => {
       if (cell.owner?.playerId === playerId) {
+        if (surrenderBeneficiary) {
+          cell.owner = surrenderBeneficiary;
+          if (cell.terrain === Terrain.GENERAL) {
+            cell.terrain = Terrain.CITY;
+          }
+          return;
+        }
+
         cell.owner = null;
         this.onCellNeutralized(cell);
       }
@@ -116,6 +129,23 @@ export abstract class BaseGame implements IBaseGame {
 
     this.checkGameEnd();
     return true;
+  }
+
+  private pickSurrenderBeneficiary(playerId: string): IPlayer | null {
+    const player = this.players.get(playerId);
+    if (!player) return null;
+
+    const teammates = player.team.players.filter(
+      (teammate) =>
+        teammate.playerId !== playerId &&
+        teammate.status === PlayerStatus.ACTIVE,
+    );
+    if (teammates.length === 0) {
+      return null;
+    }
+
+    const index = Math.floor(Math.random() * teammates.length);
+    return teammates[index] ?? null;
   }
 
   /**
@@ -204,6 +234,18 @@ export abstract class BaseGame implements IBaseGame {
   protected assignStartPositions(
     targetTerrain: Terrain = Terrain.GENERAL,
   ): void {
+    if (this.spawnPositions) {
+      for (const [playerId, coord] of this.spawnPositions) {
+        const cell = this.grid.get(coord);
+        const player = this.players.get(playerId);
+        if (cell && player) {
+          cell.owner = player;
+          cell.terrain = targetTerrain;
+        }
+      }
+      return;
+    }
+
     let index = 0;
     const playersArray = Array.from(this.players.values());
     this.grid.forEach((cell) => {

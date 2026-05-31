@@ -18,6 +18,8 @@ interface CellTheme {
   icon?: string;
 }
 
+export const NeutralTroopCellColor = 0x8aa4c8;
+
 /**
  * Theme configuration for each terrain type, combining both color and icon information.
  */

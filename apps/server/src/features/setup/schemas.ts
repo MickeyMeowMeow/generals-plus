@@ -9,6 +9,8 @@ export const setupSettingsUpdateSchema = z
     isPublic: z.boolean(),
     playersPerTeam: z.number().int().min(1),
     mapType: z.enum(GridType),
+    mapSource: z.enum(["generated", "custom"]),
+    customMapId: z.string(),
     mapWidth: z.number().int().min(5).max(100),
     mapHeight: z.number().int().min(5).max(100),
     mapLeft: z.number().int().min(5).max(100),
@@ -29,6 +31,12 @@ export const setupSettingsUpdateSchema = z
     plantDuration: z.number().min(1).max(30),
     defuseDuration: z.number().min(1).max(30),
     detonateDuration: z.number().min(10).max(300),
+    collapseInterval: z.number().min(5).max(300),
+    startDelay: z.number().min(5).max(600),
+    collapseShape: z.enum(["circle", "square"]),
+    payloadSpeed: z.number().min(0.5).max(10),
+    payloadCartSize: z.number().int().min(1).max(5),
+    payloadRequiredOccupied: z.number().int().min(1).max(25),
   })
   .partial()
   .strict();

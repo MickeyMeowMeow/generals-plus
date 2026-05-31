@@ -4,9 +4,9 @@ import {
   CUSTOM_ROOM_KEY_MIN_LENGTH,
   isValidCustomRoomKeyLength,
 } from "@generals-plus/shared-types";
-import { LogOut, Play, Plus } from "lucide-react";
+import { LogOut, Map as MapIcon, Play, Plus, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { BrandTitle, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
@@ -19,6 +19,7 @@ import {
 import { Input } from "#/components/ui/input";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
+import { Avatar } from "#/features/profile/components/avatar";
 import { networkProvider } from "#/infra/network/provider";
 import { HttpRequestError } from "#/infra/network/provider/colyseus";
 
@@ -94,6 +95,7 @@ export function LobbyPage({
   const navigate = useNavigate();
   const { actions } = useAuth();
   const displayName = useUser((user) => user?.displayName ?? "Commander");
+  const preferences = useUser((user) => user?.preferences);
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [customRoomId, setCustomRoomId] = useState("");
   const [customError, setCustomError] = useState<string | null>(null);
@@ -168,14 +170,31 @@ export function LobbyPage({
           <BrandTitle compact />
 
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm text-game-text-dim">Hello,</p>
-              <p className="text-2xl font-bold">{displayName}</p>
+            <div className="flex items-center gap-3">
+              <Avatar preferences={preferences?.avatar} />
+              <div>
+                <p className="text-sm text-game-text-dim">Hello,</p>
+                <p className="text-2xl font-bold">{displayName}</p>
+              </div>
             </div>
-            <Button type="button" variant="ghost" onClick={signOut}>
-              <LogOut className="size-4" />
-              Sign out
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button asChild variant="ghost">
+                <Link to="/maps">
+                  <MapIcon className="size-4" />
+                  Maps
+                </Link>
+              </Button>
+              <Button asChild variant="ghost">
+                <Link to="/profile">
+                  <User className="size-4" />
+                  Profile
+                </Link>
+              </Button>
+              <Button type="button" variant="ghost" onClick={signOut}>
+                <LogOut className="size-4" />
+                Sign out
+              </Button>
+            </div>
           </div>
 
           <section className="grid min-h-40 place-items-center gap-3 border-t border-game-border pt-5 sm:min-h-44">

@@ -65,6 +65,15 @@ export interface NetworkProvider<User = unknown> {
   getUserData(): Promise<User>;
 
   /**
+   * Persists profile changes for the authenticated user.
+   *
+   * @param update Partial user fields to update on the server.
+   *
+   * @returns A promise that resolves to the updated user data.
+   */
+  updateUserProfile(update: Partial<User>): Promise<User>;
+
+  /**
    * Retrieves the current authentication token, if available.
    *
    * @returns The authentication token or null if not authenticated.

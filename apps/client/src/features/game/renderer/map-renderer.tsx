@@ -3,6 +3,7 @@ import { isSameCoord } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import type { FederatedPointerEvent } from "pixi.js";
 import { Container, Rectangle } from "pixi.js";
+import type { RefObject } from "react";
 import { useCallback, useMemo, useRef } from "react";
 
 import { BombLayer } from "#/features/game/renderer/layers/bomb";
@@ -10,6 +11,7 @@ import { GridLayer } from "#/features/game/renderer/layers/grid";
 import { HighlightLayer } from "#/features/game/renderer/layers/highlight";
 import { IconLayer } from "#/features/game/renderer/layers/icon";
 import { MoveQueueLayer } from "#/features/game/renderer/layers/move-queue";
+import { PayloadLayer } from "#/features/game/renderer/layers/payload";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { PingLayer } from "#/features/game/renderer/layers/ping";
 import { SiteLabelLayer } from "#/features/game/renderer/layers/site-label";
@@ -30,15 +32,20 @@ interface MapRendererProps {
   };
   grid: RenderGrid;
   selection: ICoordinate | null;
-  splitMoveSelection: ICoordinate | null;
+  isSplitMove: boolean;
   moveQueue: MoveIntent[];
+  pointerRef: RefObject<ICoordinate>;
   bombMoveSignal: boolean;
   onCellClick: (coordinate: ICoordinate) => void;
-  onSplitMoveCell: (coordinate: ICoordinate) => void;
+  onToggleStickySplitMove: () => void;
   playerColors: Map<string, number>;
   pings: Ping[];
   isPlanted?: boolean;
   ticksRemaining?: number;
+  payloadTrackX?: number[];
+  payloadTrackY?: number[];
+  cartIndex?: number;
+  cartSize?: number;
 }
 
 export function MapRenderer({
@@ -46,15 +53,20 @@ export function MapRenderer({
   worldBounds,
   grid,
   selection,
-  splitMoveSelection,
+  isSplitMove,
   moveQueue,
+  pointerRef,
   bombMoveSignal,
   onCellClick,
-  onSplitMoveCell,
+  onToggleStickySplitMove,
   playerColors,
   pings,
   isPlanted = false,
   ticksRemaining = -1,
+  payloadTrackX = [],
+  payloadTrackY = [],
+  cartIndex = -1,
+  cartSize = 0,
 }: MapRendererProps) {
   const lastPrimaryClickRef = useRef<{
     coord: ICoordinate;
@@ -72,6 +84,13 @@ export function MapRenderer({
     [worldBounds],
   );
 
+  const handleGlobalPointerMove = useCallback(
+    (e: FederatedPointerEvent) => {
+      pointerRef.current = e.currentTarget.toLocal(e.global);
+    },
+    [pointerRef],
+  );
+
   const onPointerDown = useCallback(
     (e: FederatedPointerEvent) => {
       const localPos = e.currentTarget.toLocal(e.global);
@@ -82,7 +101,7 @@ export function MapRenderer({
       if (!coord) return;
 
       if (e.button === 2) {
-        onSplitMoveCell(coord);
+        onToggleStickySplitMove();
         lastPrimaryClickRef.current = null;
         return;
       }
@@ -96,7 +115,7 @@ export function MapRenderer({
         now - lastPrimaryClick.time <= 300;
 
       if (isDoubleClick) {
-        onSplitMoveCell(coord);
+        onToggleStickySplitMove();
         lastPrimaryClickRef.current = null;
         return;
       }
@@ -106,23 +125,33 @@ export function MapRenderer({
         lastPrimaryClickRef.current = { coord, time: now };
       }
     },
-    [grid, onCellClick, onSplitMoveCell],
+    [grid, onCellClick, onToggleStickySplitMove],
   );
 
   return (
     <pixiContainer
       eventMode="static"
       hitArea={hitArea}
+      onGlobalPointerMove={handleGlobalPointerMove}
       onPointerDown={onPointerDown}
     >
       <GridLayer tick={tick} grid={grid} playerColors={playerColors} />
       <IconLayer tick={tick} grid={grid} />
+      {payloadTrackX && payloadTrackX.length > 0 && (
+        <PayloadLayer
+          grid={grid}
+          payloadTrackX={payloadTrackX}
+          payloadTrackY={payloadTrackY}
+          cartIndex={cartIndex}
+          cartSize={cartSize}
+        />
+      )}
       <SiteLabelLayer grid={grid} />
       <MoveQueueLayer grid={grid} moveQueue={moveQueue} />
       <TroopLayer
         tick={tick}
         grid={grid}
-        splitMoveSelection={splitMoveSelection}
+        splitMoveSelection={isSplitMove ? selection : null}
       />
       <BombLayer
         bombMoveSignal={bombMoveSignal}

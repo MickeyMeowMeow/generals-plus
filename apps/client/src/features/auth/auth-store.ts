@@ -80,6 +80,17 @@ export interface AuthActions {
   signOut(): Promise<void>;
 
   /**
+   * Saves profile changes and updates the local authenticated user snapshot.
+   */
+  updateUserProfile(update: Partial<UserProfile>): Promise<void>;
+
+  /**
+   * Re-fetches the current user data from the server and updates the auth state.
+   * Useful when navigating to a page that needs fresh data (e.g. ratings).
+   */
+  refreshUser(): Promise<void>;
+
+  /**
    * Manually clears the active error state, returning the status to IDLE.
    */
   clearError(): void;
@@ -109,6 +120,7 @@ export type AuthAction =
   | { type: "AUTHENTICATING" }
   | { type: "AUTHENTICATED"; user: UserProfile | null; token: string | null }
   | { type: "HYDRATED"; user: UserProfile | null; token: string | null }
+  | { type: "PROFILE_UPDATED"; user: UserProfile }
   | { type: "SIGN_OUT" }
   | { type: "ERROR"; error: string }
   | { type: "CLEAR_ERROR" };
@@ -146,6 +158,9 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         token: action.token,
         error: null,
       };
+
+    case "PROFILE_UPDATED":
+      return { ...state, user: action.user, error: null };
 
     case "SIGN_OUT":
       return { ...initialAuthState, isHydrated: true };

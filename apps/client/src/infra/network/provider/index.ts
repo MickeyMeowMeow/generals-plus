@@ -37,6 +37,8 @@ export const networkProvider: NetworkProvider<UserProfile> = {
     getNetworkProvider().signInAnonymously(...args),
   signOut: () => getNetworkProvider().signOut(),
   getUserData: () => getNetworkProvider().getUserData(),
+  updateUserProfile: (...args) =>
+    getNetworkProvider().updateUserProfile(...args),
   getAuthToken: () => getNetworkProvider().getAuthToken(),
   onAuthChange: (...args) => getNetworkProvider().onAuthChange(...args),
   joinOrCreate: (...args) => getNetworkProvider().joinOrCreate(...args),

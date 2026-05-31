@@ -1,4 +1,5 @@
 export * from "#/color-palette";
+export * from "#/custom-map";
 export * from "#/custom-room";
 export * from "#/messages";
 export * from "#/player-ratings";
@@ -6,3 +7,4 @@ export * from "#/room-data";
 export * from "#/schema";
 export * from "#/seat";
 export * from "#/setup-settings";
+export * from "#/user-preferences";

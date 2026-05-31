@@ -334,9 +334,26 @@ export function AuthProvider({
     }
   }, [provider]);
 
+  const updateUserProfile = useCallback(
+    async (update: Partial<UserProfile>) => {
+      const user = await provider.updateUserProfile(update);
+      dispatch({ type: "PROFILE_UPDATED", user });
+    },
+    [provider],
+  );
+
   const clearError = useCallback(() => {
     dispatch({ type: "CLEAR_ERROR" });
   }, []);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const user = await provider.getUserData();
+      dispatch({ type: "PROFILE_UPDATED", user });
+    } catch {
+      // Silently ignore — existing user data remains valid.
+    }
+  }, [provider]);
 
   const actions = useMemo(
     () => ({
@@ -345,6 +362,8 @@ export function AuthProvider({
       registerWithEmailAndPassword,
       signInAnonymously,
       signOut,
+      updateUserProfile,
+      refreshUser,
       clearError,
     }),
     [
@@ -353,6 +372,8 @@ export function AuthProvider({
       registerWithEmailAndPassword,
       signInAnonymously,
       signOut,
+      updateUserProfile,
+      refreshUser,
       clearError,
     ],
   );

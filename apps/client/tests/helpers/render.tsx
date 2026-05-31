@@ -6,6 +6,7 @@ import AppLayout from "#/routes/_app";
 import IndexRoute from "#/routes/_index";
 import MatchRoute from "#/routes/match.$roomId";
 import NotFoundRoute from "#/routes/not-found";
+import ProfileRoute from "#/routes/profile";
 import { setTestAuthValue } from "./test-auth-state";
 
 export { setTestAuthValue as setAuthValue } from "./test-auth-state";
@@ -16,6 +17,7 @@ export const defaultRoutes = [
     element: <AppLayout />,
     children: [
       { index: true, element: <IndexRoute /> },
+      { path: "profile", element: <ProfileRoute /> },
       { path: "match/:roomId", element: <MatchRoute /> },
       { path: "*", element: <NotFoundRoute /> },
     ],

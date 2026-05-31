@@ -74,6 +74,41 @@ describe("createGame", () => {
     expect(team1?.players.length).toBe(2);
   });
 
+  it("uses explicit team assignments for standard team modes", () => {
+    const game = createGame({
+      mode: GameMode.CLASSIC,
+      playerIds: ["p1", "p2", "p3"],
+      playerPerTeam: 1,
+      teamAssignments: {
+        p1: "team_0",
+        p2: "team_0",
+        p3: "team_1",
+      },
+    });
+
+    expect(game.teams.size).toBe(2);
+    expect(game.teams.get("team_0")?.players.map((p) => p.playerId)).toEqual([
+      "p1",
+      "p2",
+    ]);
+    expect(game.teams.get("team_1")?.players.map((p) => p.playerId)).toEqual([
+      "p3",
+    ]);
+  });
+
+  it("throws when an explicit team assignment is missing", () => {
+    expect(() =>
+      createGame({
+        mode: GameMode.CLASSIC,
+        playerIds: ["p1", "p2"],
+        playerPerTeam: 1,
+        teamAssignments: {
+          p1: "team_0",
+        },
+      }),
+    ).toThrow('Missing team assignment for player "p2".');
+  });
+
   it("creates a TurfWarGame with custom finishTick", () => {
     const game = createGame({
       mode: GameMode.TURF_WAR,
@@ -253,6 +288,26 @@ describe("createGame", () => {
       expect(demo.detonateDurationTicks).toBe(60);
       expect(demo.bombSiteCount).toBe(3);
       expect(demo.seed).toBe(12345);
+    });
+
+    it("uses explicit attackers and defenders assignments", () => {
+      const game = createGame({
+        mode: GameMode.DEMOLITION,
+        playerIds: ["p1", "p2", "p3"],
+        playerPerTeam: 1,
+        teamAssignments: {
+          p1: "defenders",
+          p2: "attackers",
+          p3: "defenders",
+        },
+      });
+
+      expect(
+        game.teams.get("attackers")?.players.map((p) => p.playerId),
+      ).toEqual(["p2"]);
+      expect(
+        game.teams.get("defenders")?.players.map((p) => p.playerId),
+      ).toEqual(["p1", "p3"]);
     });
   });
 });

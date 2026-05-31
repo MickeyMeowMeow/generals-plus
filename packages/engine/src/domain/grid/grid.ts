@@ -14,6 +14,7 @@ export class SquareGrid
   extends SquareGrid2D<ICell>
   implements EffectTarget, IGrid
 {
+  public track: ICoordinate[] = [];
   private readonly terrainMap: Map<Terrain, Set<ICell>> = new Map();
 
   constructor(width: number, height: number, cells: ICell[][]) {
@@ -50,6 +51,7 @@ export class SquareGrid
 }
 
 export class HexGrid extends HexGrid2D<ICell> implements EffectTarget, IGrid {
+  public track: ICoordinate[] = [];
   private readonly terrainMap: Map<Terrain, Set<ICell>> = new Map();
 
   constructor(

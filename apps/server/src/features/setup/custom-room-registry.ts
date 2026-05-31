@@ -1,5 +1,6 @@
 import { matchMaker } from "@colyseus/core";
 import { GameMode } from "@generals-plus/engine";
+import type { SetupPlayer } from "@generals-plus/shared-types";
 import { ROOM_NAMES } from "@generals-plus/shared-types";
 
 interface CustomRoomResolution {
@@ -17,6 +18,13 @@ export class CustomRoomAlreadyExistsError extends Error {
   }
 }
 
+export class CustomRoomFullError extends Error {
+  constructor(customRoomKey: string) {
+    super(`custom room is full: ${customRoomKey}`);
+    this.name = "CustomRoomFullError";
+  }
+}
+
 interface CustomRoomRecord {
   key: string;
   activeSetupRoomId: string | null;
@@ -24,6 +32,32 @@ interface CustomRoomRecord {
   status: "setup" | "match" | "idle";
   version: number;
   ownerUserId: string | null;
+}
+
+function getSetupRoomForRecord(roomId: string) {
+  return matchMaker.getLocalRoomById(roomId) as
+    | {
+        maxClients: number;
+        state: { players: SetupPlayer[] };
+      }
+    | undefined;
+}
+
+function ensureRoomHasCapacity(
+  record: CustomRoomRecord,
+  requesterUserId: string | null,
+) {
+  if (!record.activeSetupRoomId) return;
+
+  const room = getSetupRoomForRecord(record.activeSetupRoomId);
+  if (!room) return;
+
+  const isExistingPlayer = room.state.players.some(
+    (player) => player.id === requesterUserId,
+  );
+  if (!isExistingPlayer && room.state.players.length >= room.maxClients) {
+    throw new CustomRoomFullError(record.key);
+  }
 }
 
 const customRooms = new Map<string, CustomRoomRecord>();
@@ -43,11 +77,26 @@ async function createSetupRoomForKey(customRoomKey: string) {
 
 let createSetupRoomForKeyImpl = createSetupRoomForKey;
 
+function createCustomRoomRecord(
+  key: string,
+  ownerUserId: string | null,
+): CustomRoomRecord {
+  return {
+    key,
+    activeSetupRoomId: null,
+    pendingSetupRoomId: null,
+    status: "idle",
+    version: 0,
+    ownerUserId,
+  };
+}
+
 async function createOrJoinPendingSetupRoom(
   record: CustomRoomRecord,
   ownerUserId: string | null,
 ): Promise<CustomRoomResolution> {
   if (record.activeSetupRoomId) {
+    ensureRoomHasCapacity(record, ownerUserId);
     return {
       customRoomKey: record.key,
       setupRoomId: record.activeSetupRoomId,
@@ -99,14 +148,7 @@ export async function createCustomRoom(
     }
   }
 
-  const record: CustomRoomRecord = {
-    key,
-    activeSetupRoomId: null,
-    pendingSetupRoomId: null,
-    status: "idle",
-    version: 0,
-    ownerUserId,
-  };
+  const record = createCustomRoomRecord(key, ownerUserId);
   customRooms.set(key, record);
 
   const pendingSetupRoomId = createSetupRoomForKeyImpl(key)
@@ -135,9 +177,14 @@ export async function createCustomRoom(
 export async function resolveCustomRoom(
   customRoomKey: string,
   ownerUserId: string | null,
-): Promise<CustomRoomResolution | null> {
-  const record = customRooms.get(customRoomKey);
-  if (!record) return null;
+): Promise<CustomRoomResolution> {
+  const record =
+    customRooms.get(customRoomKey) ??
+    (() => {
+      const newRecord = createCustomRoomRecord(customRoomKey, ownerUserId);
+      customRooms.set(customRoomKey, newRecord);
+      return newRecord;
+    })();
 
   return createOrJoinPendingSetupRoom(record, ownerUserId);
 }

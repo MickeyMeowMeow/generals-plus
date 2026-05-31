@@ -13,7 +13,9 @@ import mongoose from "mongoose";
 
 import { ENV } from "#/env";
 import { auth } from "#/features/auth/auth-config";
+import { registerMapRoutes } from "#/features/maps/map-routes";
 import { MatchRoom } from "#/features/match/match-room";
+import { registerProfileRoutes } from "#/features/profile/profile-routes";
 import { MatchQueueRoom } from "#/features/queue/queue-room";
 import { registerCustomRoomRoutes } from "#/features/setup/custom-room-routes";
 import { SetupRoom } from "#/features/setup/setup-room";
@@ -93,12 +95,16 @@ export default defineServer({
     // 3. Bind Authentication module routes (/auth/register, /auth/login, etc.)
     app.use(auth.prefix, auth.routes());
 
+    registerProfileRoutes(app);
+
     // 4. (Optional) Bind Colyseus Monitor for development debugging
     if (process.env.NODE_ENV !== "production") {
       app.use("/colyseus", monitor());
     }
 
     registerCustomRoomRoutes(app);
+
+    registerMapRoutes(app);
 
     // Health check endpoint
     app.get("/health", (_req, res) => {

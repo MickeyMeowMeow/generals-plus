@@ -1,4 +1,3 @@
-import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, Room } from "@colyseus/core";
 import { StateView } from "@colyseus/schema";
@@ -13,6 +12,7 @@ import type {
 } from "@generals-plus/engine";
 import {
   ActionType,
+  GameMode,
   GameStatus,
   GridType,
   PlayerStatus,
@@ -32,6 +32,7 @@ import {
 import * as z from "zod";
 
 import { ENV } from "#/env";
+import { resolveAuthUser } from "#/features/auth/auth-config";
 import { createPlayer } from "#/features/player/utils";
 import { calculateNewRatings } from "#/features/rating/rating-service";
 import { parseRoomData } from "#/features/room-data";
@@ -46,6 +47,7 @@ export class MatchRoom extends Room<{
   metadata: RoomData;
 }> {
   private game: IBaseGame | undefined;
+  private isRatedMatch = true;
   private sessionToPlayerId = new Map<string, string>();
   private playerToSessionId = new Map<string, string>();
   private botBridge: BotBridge | null = null;
@@ -57,9 +59,12 @@ export class MatchRoom extends Room<{
       throw new Error("[MatchRoom] Invalid room metadata");
     }
 
+    await this.setMetadata(metadata);
+
     if (!metadata.isPublic) {
       await this.setPrivate(true);
     }
+    this.isRatedMatch = metadata.isPublic !== false;
 
     // Count human players for maxClients (bots don't need real connections)
     const humanPlayers = metadata.playerInit.filter((p) => !p.isBot);
@@ -86,6 +91,13 @@ export class MatchRoom extends Room<{
       state.right = this.game.grid.right;
       state.leftSlant = this.game.grid.leftSlant;
       state.rightSlant = this.game.grid.rightSlant;
+    }
+
+    if (metadata.mode === GameMode.PAYLOAD) {
+      for (const coord of this.game.grid.track) {
+        state.payloadTrackX.push(coord.x);
+        state.payloadTrackY.push(coord.y);
+      }
     }
 
     for (const playerInit of metadata.playerInit) {
@@ -252,6 +264,11 @@ export class MatchRoom extends Room<{
     this.game.startGame();
     this.state.status = GameStatus.PLAYING;
 
+    // Immediately synchronize the starting scoreboard and player states
+    // so client subscriptions receive the correct centered cartIndex right away.
+    this.syncPlayerState();
+    this.syncScoreboard();
+
     this.setSimulationInterval(
       (deltaTime) => this.onTick(deltaTime),
       tickInterval,
@@ -267,7 +284,7 @@ export class MatchRoom extends Room<{
   }
 
   static async onAuth(token: string, _options: unknown, _context: unknown) {
-    return JWT.verify(token);
+    return resolveAuthUser(token);
   }
 
   onJoin(client: Client, _options: unknown) {
@@ -436,6 +453,10 @@ export class MatchRoom extends Room<{
   private finishMatch(result: IGameResult) {
     this.state.status = GameStatus.FINISHED;
     this.broadcast(MatchServerMessage.GAME_END, result);
+
+    // Skip rating updates for custom rooms
+    if (this.metadata.isCustomRoom) return;
+
     this.updateRatings(result).catch((err) => {
       logger.error(`[MatchRoom] Failed to update ratings: ${err}`);
     });
@@ -514,12 +535,15 @@ export class MatchRoom extends Room<{
       const state = this.game.getPlayerState(playerId);
       if (!state) continue;
 
-      player.teamId = state.teamId;
       const publicPlayer = this.state.publicPlayers.get(playerId);
-      // Keep the public projection in lockstep with the authoritative engine
-      // state so the scoreboard stays accurate for every connected client.
-      if (publicPlayer) {
-        publicPlayer.teamId = state.teamId;
+
+      if (state.teamId) {
+        player.teamId = state.teamId;
+        // Keep the public projection in lockstep with the authoritative engine
+        // state so the scoreboard stays accurate for every connected client.
+        if (publicPlayer) {
+          publicPlayer.teamId = state.teamId;
+        }
       }
 
       const prevStatus = player.status;
@@ -556,10 +580,15 @@ export class MatchRoom extends Room<{
       this.state.scoreboard,
       this.game.getScoreboard(),
       this.state.publicPlayers.values(),
+      this.state.tickInterval,
     );
   }
 
   private async updateRatings(result: IGameResult) {
+    if (!this.isRatedMatch) {
+      return;
+    }
+
     const players = Array.from(this.state.players.values());
     if (players.length < 2) return;
 
@@ -626,6 +655,7 @@ export class MatchRoom extends Room<{
       cell.ownerIndex =
         vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "";
       cell.siteIndex = vc.siteIndex ?? -1;
+      cell.willCollapse = vc.willCollapse ?? false;
 
       if (vc.item) {
         cell.item_id = vc.item.id;

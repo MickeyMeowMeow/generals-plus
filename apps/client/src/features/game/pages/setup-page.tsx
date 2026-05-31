@@ -1,3 +1,4 @@
+import { GameMode } from "@generals-plus/engine";
 import { SetupClientMessage } from "@generals-plus/shared-types";
 import { LogOut, Play } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -12,18 +13,27 @@ import { ColorPicker } from "#/features/game/components/color-picker";
 import { GameSettings } from "#/features/game/components/game-settings";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
+import { Avatar } from "#/features/profile/components/avatar";
 import { networkProvider } from "#/infra/network/provider";
+import { HttpRequestError } from "#/infra/network/provider/colyseus";
 
-/**
- * Computes how many teams the current setup settings will produce.
- *
- * The engine ends a classic match as soon as only one team is alive, so a room
- * that starts with every player on the same team immediately resolves as a win.
- * Keeping this check in the setup UI prevents custom rooms from starting in
- * that invalid one-team shape.
- */
-function getConfiguredTeamCount(playerCount: number, playersPerTeam: number) {
-  return Math.ceil(playerCount / playersPerTeam);
+const DEMOLITION_TEAM_GROUPS = [
+  { id: "attackers", label: "Attackers" },
+  { id: "defenders", label: "Defenders" },
+] as const;
+
+const PAYLOAD_TEAM_GROUPS = [
+  { id: "team_0", label: "Team 1" },
+  { id: "team_1", label: "Team 2" },
+] as const;
+
+function getTeamCapacity({ playersPerTeam }: { playersPerTeam: number }) {
+  return playersPerTeam;
+}
+
+function getSetupTeamOrder(teamId: string) {
+  const match = /^setup_team_(\d+)$/.exec(teamId);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
 }
 
 /**
@@ -38,8 +48,12 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
   const navigate = useNavigate();
   const userId = useUser((user) => user?.id);
   const displayName = useUser((user) => user?.displayName ?? "Commander");
+  const preferences = useUser((user) => user?.preferences);
   const [resolvedRoomId, setResolvedRoomId] = useState<string | null>(null);
-  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [resolveError, setResolveError] = useState<{
+    message: string;
+    status: number | null;
+  } | null>(null);
   const [isResolvingRoom, setIsResolvingRoom] = useState(true);
   const [resolveRequestId, setResolveRequestId] = useState(0);
   const latestResolveRequestId = useRef(resolveRequestId);
@@ -63,9 +77,15 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
       } catch (error) {
         if (!isCurrent || latestResolveRequestId.current !== requestId) return;
         setResolveError(
-          error instanceof Error
-            ? error.message
-            : "Failed to resolve custom room",
+          error instanceof HttpRequestError
+            ? { message: error.message, status: error.status }
+            : {
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to resolve custom room",
+                status: null,
+              },
         );
       } finally {
         if (isCurrent) {
@@ -131,7 +151,11 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
       <StageCenter>
         <ErrorPanel
           title="Room unavailable"
-          message={`${resolveError ?? error}. Check the shared URL or ask the host for a fresh room link.`}
+          message={
+            resolveError?.status === 409
+              ? resolveError.message
+              : `${resolveError?.message ?? error}. Check the shared URL or ask the host for a fresh room link.`
+          }
           action={
             <Button type="button" onClick={() => navigate("/")}>
               Return to lobby
@@ -156,86 +180,156 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
     );
   }
 
-  const myPlayer = setupState.players.find((player) => player.id === userId);
+  const playersWithTeams = setupState.players.map((player) => ({
+    ...player,
+    teamId: player.teamId,
+  }));
+  const myPlayer = playersWithTeams.find((player) => player.id === userId);
   const takenColors = setupState.players.map((player) => player.color);
   const isHost = Boolean(myPlayer?.isHost);
-  const teamCount = getConfiguredTeamCount(
-    setupState.players.length,
-    setupState.playersPerTeam,
+  const shouldShowTeamControls =
+    setupState.gameMode === GameMode.DEMOLITION ||
+    setupState.gameMode === GameMode.PAYLOAD ||
+    setupState.playersPerTeam > 1;
+  const occupiedTeamIds = Array.from(
+    new Set(
+      playersWithTeams
+        .map((player) => player.teamId)
+        .filter((teamId): teamId is string => Boolean(teamId)),
+    ),
+  ).sort((left, right) => getSetupTeamOrder(left) - getSetupTeamOrder(right));
+  const teamCapacity = getTeamCapacity(setupState);
+  const teamGroups =
+    setupState.gameMode === GameMode.DEMOLITION
+      ? DEMOLITION_TEAM_GROUPS.map((team) => ({
+          ...team,
+          count: playersWithTeams.filter((player) => player.teamId === team.id)
+            .length,
+          capacity: teamCapacity,
+        }))
+      : setupState.gameMode === GameMode.PAYLOAD
+        ? PAYLOAD_TEAM_GROUPS.map((team) => ({
+            ...team,
+            count: playersWithTeams.filter(
+              (player) => player.teamId === team.id,
+            ).length,
+            capacity: teamCapacity,
+          }))
+        : occupiedTeamIds.map((teamId) => ({
+            id: teamId,
+            label: "",
+            count: playersWithTeams.filter((player) => player.teamId === teamId)
+              .length,
+            capacity: teamCapacity,
+          }));
+  const hasOversizedTeams = teamGroups.some(
+    (team) => team.count > team.capacity,
   );
-  const hasEnoughTeams = teamCount >= 2;
-  const canStart = isHost && setupState.players.length >= 2 && hasEnoughTeams;
+  const hasEnoughTeams = occupiedTeamIds.length >= 2;
+  const canStart =
+    isHost &&
+    setupState.players.length >= 2 &&
+    hasEnoughTeams &&
+    !hasOversizedTeams;
 
   return (
     <StageCenter>
       <div className="mx-auto grid w-full max-w-5xl gap-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+          <div className="flex items-center gap-3">
+            <Avatar preferences={preferences?.avatar} />
             <div>
               <p className="text-sm text-game-text-dim">Hello,</p>
               <p className="text-2xl font-bold">{displayName}</p>
             </div>
-            <p className="text-sm text-game-text-dim">
-              {isHost ? "You are host" : "You are guest"}
-            </p>
           </div>
+          <p className="text-sm text-game-text-dim">
+            {isHost ? "You are host" : "You are guest"}
+          </p>
         </div>
+      </div>
 
-        <div className="grid gap-8 border-t border-game-border pt-8 md:grid-cols-[1fr_20rem]">
-          <div className="space-y-8">
-            <GameSettings
-              isHost={isHost}
-              currentSettings={setupState}
-              onChangeSettings={updateSettings}
-            />
-
-            <section className="space-y-4">
-              <h2 className="text-xl font-semibold">Pick Your Color</h2>
-              {myPlayer ? (
-                <ColorPicker
-                  takenColors={takenColors}
-                  currentColor={myPlayer.color}
-                  onSelect={(color) =>
-                    room?.send(SetupClientMessage.PICK_COLOR, { color })
-                  }
-                />
-              ) : (
-                <p className="text-sm text-game-text-dim">
-                  Waiting for player assignment.
-                </p>
-              )}
-
-              <div className="flex flex-wrap gap-3 pt-2">
-                {canStart ? (
-                  <Button type="button" onClick={startGame}>
-                    <Play className="size-4" />
-                    Force start game
-                  </Button>
-                ) : null}
-                {isHost && setupState.players.length >= 2 && !hasEnoughTeams ? (
-                  <p className="basis-full text-sm text-game-text-dim">
-                    Set Players Per Team lower to create at least two teams.
-                  </p>
-                ) : null}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => navigate("/")}
-                >
-                  <LogOut className="size-4" />
-                  Leave room
-                </Button>
-              </div>
-            </section>
-          </div>
-
-          <RoomPlayerList
-            players={setupState.players}
-            currentUserId={userId}
-            maxPlayers={setupState.maxPlayers}
-            showHost
+      <div className="grid gap-8 border-t border-game-border pt-8 md:grid-cols-[1fr_20rem]">
+        <div className="space-y-8">
+          <GameSettings
+            isHost={isHost}
+            currentSettings={setupState}
+            onChangeSettings={updateSettings}
           />
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">Pick Your Color</h2>
+            {myPlayer ? (
+              <ColorPicker
+                takenColors={takenColors}
+                currentColor={myPlayer.color}
+                onSelect={(color) =>
+                  room?.send(SetupClientMessage.PICK_COLOR, { color })
+                }
+              />
+            ) : (
+              <p className="text-sm text-game-text-dim">
+                Waiting for player assignment.
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              {canStart ? (
+                <Button type="button" onClick={startGame}>
+                  <Play className="size-4" />
+                  Force start game
+                </Button>
+              ) : null}
+              {!hasOversizedTeams &&
+              setupState.players.length >= 2 &&
+              !hasEnoughTeams ? (
+                <p className="basis-full text-sm text-amber-300">
+                  {setupState.gameMode === GameMode.DEMOLITION ||
+                  setupState.gameMode === GameMode.PAYLOAD
+                    ? "Members on both teams are required to start the game."
+                    : "At least two teams are required to start the game."}
+                </p>
+              ) : null}
+              {hasOversizedTeams ? (
+                <p className="basis-full text-sm text-amber-300">
+                  Each team must have no more than {teamCapacity} players to
+                  start the game.
+                </p>
+              ) : null}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => navigate("/")}
+              >
+                <LogOut className="size-4" />
+                Leave room
+              </Button>
+            </div>
+          </section>
         </div>
+
+        <RoomPlayerList
+          players={playersWithTeams}
+          currentUserId={userId}
+          maxPlayers={setupState.maxPlayers}
+          showHost
+          teamGroups={shouldShowTeamControls ? teamGroups : undefined}
+          onJoinTeam={
+            shouldShowTeamControls
+              ? (teamId) => room?.send(SetupClientMessage.PICK_TEAM, { teamId })
+              : undefined
+          }
+          onCreateTeam={
+            shouldShowTeamControls &&
+            setupState.gameMode !== GameMode.DEMOLITION &&
+            setupState.gameMode !== GameMode.PAYLOAD
+              ? () =>
+                  room?.send(SetupClientMessage.PICK_TEAM, {
+                    createNew: true,
+                  })
+              : undefined
+          }
+        />
       </div>
     </StageCenter>
   );

@@ -1,12 +1,13 @@
 import { ArraySchema, Schema, type } from "@colyseus/schema";
 import type { GameMode } from "@generals-plus/engine";
-import { GridType } from "@generals-plus/engine";
+import { CollapseShape, GridType } from "@generals-plus/engine";
 
 export class SetupPlayer extends Schema {
   @type("string") id: string = "";
   @type("string") displayName: string = "";
   @type("boolean") isHost: boolean = false;
   @type("number") color: number = 0;
+  @type("string") teamId: string = "";
 }
 
 export class SetupState extends Schema {
@@ -18,6 +19,9 @@ export class SetupState extends Schema {
   @type("number") playersPerTeam: number = 2;
 
   @type("string") mapType: GridType = GridType.SQUARE;
+
+  @type("string") mapSource: "generated" | "custom" = "generated";
+  @type("string") customMapId: string = "";
 
   // Map dimensions for square maps
   @type("number") mapWidth: number = 24;
@@ -44,6 +48,14 @@ export class SetupState extends Schema {
   @type("number") plantDuration: number = 3;
   @type("number") defuseDuration: number = 5;
   @type("number") detonateDuration: number = 45;
+
+  @type("number") collapseInterval: number = 30;
+  @type("number") startDelay: number = 60;
+  @type("string") collapseShape: string = CollapseShape.CIRCLE;
+
+  @type("number") payloadSpeed: number = 2;
+  @type("number") payloadCartSize: number = 3;
+  @type("number") payloadRequiredOccupied: number = 6;
 
   @type("number") tickInterval: number = 500;
   @type("number") finishTick: number = 360;

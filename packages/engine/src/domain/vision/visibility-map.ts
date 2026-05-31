@@ -17,6 +17,19 @@ export function createVisionCell(
   visibility: Visibility,
   teamType?: TeamType,
 ): IVisionCell {
+  if (cell.terrain === Terrain.VOID) {
+    return {
+      coordinate: cell.coordinate,
+      visibility: Visibility.VISIBLE,
+      terrain: Terrain.VOID,
+      troopCount: null,
+      owner: null,
+      item: null,
+      siteIndex: null,
+      willCollapse: false,
+    };
+  }
+
   const hasBomb = cell.item?.type === ItemType.BOMB;
   const showBombForAttackers = hasBomb && teamType === TeamType.ATTACKER;
   const attackerItem = showBombForAttackers ? cell.item : null;
@@ -31,6 +44,7 @@ export function createVisionCell(
         owner: cell.owner,
         item: cell.item,
         siteIndex: cell.siteIndex,
+        willCollapse: cell.willCollapse,
       };
     case Visibility.TERRAIN:
       return {
@@ -41,6 +55,7 @@ export function createVisionCell(
         owner: null,
         item: attackerItem,
         siteIndex: cell.siteIndex,
+        willCollapse: cell.willCollapse,
       };
     case Visibility.SHROUDED:
       return {
@@ -54,6 +69,7 @@ export function createVisionCell(
         owner: null,
         item: attackerItem,
         siteIndex: null,
+        willCollapse: cell.willCollapse,
       };
     case Visibility.HIDDEN:
       return {
@@ -64,6 +80,7 @@ export function createVisionCell(
         owner: null,
         item: attackerItem,
         siteIndex: null,
+        willCollapse: cell.willCollapse,
       };
   }
 }
@@ -94,11 +111,9 @@ export class VisibilityMap {
     this.gameGrid.forEach((cell, coord) => {
       // 1. Visible if cell is owned by a player on this team
       // 2. Visible if cell is a FLAG (DOMINATION flag)
-      // 3. Visible if cell is a BOMB_SITE (any site is visible with radius 1 to both teams)
       if (
         (cell.owner && teamPlayerIds.has(cell.owner.playerId)) ||
-        cell.terrain === Terrain.FLAG ||
-        cell.terrain === Terrain.BOMB_SITE
+        cell.terrain === Terrain.FLAG
       ) {
         const radius = cell.vision?.radius ?? 1; // 1 means 3x3 square, 2 means 5x5 square
 
