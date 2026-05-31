@@ -4,7 +4,8 @@ import { resolveColyseusEndpoint } from "#/infra/colyseus/connection";
 import { networkProvider } from "#/infra/network/provider";
 
 function getHttpEndpoint(): string {
-  return resolveColyseusEndpoint().replace(/^ws/i, "http");
+  const endpoint = resolveColyseusEndpoint().replace(/^ws/i, "http");
+  return endpoint.endsWith("/") ? endpoint : `${endpoint}/`;
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -61,7 +62,7 @@ export function useSystemSettings(): SystemSettings | null {
   useEffect(() => {
     const endpoint = getHttpEndpoint();
     const eventSource = new EventSource(
-      new URL("/system/settings/stream", endpoint).toString(),
+      new URL("system/settings/stream", endpoint).toString(),
     );
 
     eventSource.onmessage = (event) => {

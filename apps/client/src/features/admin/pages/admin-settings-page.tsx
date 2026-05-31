@@ -1,6 +1,6 @@
 import { Activity, ArrowLeft, Shield, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { toast } from "sonner";
 
 import { BrandTitle, StageCenter } from "#/components/layout";
@@ -10,29 +10,20 @@ import { Label } from "#/components/ui/label";
 import { Switch } from "#/components/ui/switch";
 import type { SystemSettings } from "#/features/admin/api/system-settings-api";
 import { systemSettingsApi } from "#/features/admin/api/system-settings-api";
-import { useAuth, useUser } from "#/features/auth/hooks";
+import { useAuth } from "#/features/auth/hooks";
 import { resolveColyseusEndpoint } from "#/infra/colyseus/connection";
 
 export function AdminSettingsPage() {
-  const navigate = useNavigate();
   const { state: authState } = useAuth();
-  const user = useUser();
 
   const colyseusEndpoint = resolveColyseusEndpoint().replace(/^ws/i, "http");
   const colyseusUrl = `${colyseusEndpoint}/colyseus`;
+  const proxyBasePath = new URL(colyseusEndpoint).pathname.replace(/\/$/, "");
 
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Safeguard: redirect if user is loaded and not an admin
-  useEffect(() => {
-    if (user && !user.isAdmin) {
-      toast.error("Access denied: Administrators only.");
-      navigate("/");
-    }
-  }, [user, navigate]);
 
   useEffect(() => {
     systemSettingsApi
@@ -297,6 +288,7 @@ export function AdminSettingsPage() {
                   rel="noopener"
                 >
                   <input type="hidden" name="token" value={authState.token} />
+                  <input type="hidden" name="basePath" value={proxyBasePath} />
                   <button
                     type="submit"
                     className="inline-flex items-center gap-1.5 border border-game-border bg-game-bg px-3.5 py-1.5 text-xs font-semibold hover:bg-game-surface transition-colors select-none text-game-text cursor-pointer"

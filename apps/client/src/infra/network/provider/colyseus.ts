@@ -112,9 +112,10 @@ export class ColyseusNetworkProvider<User = unknown>
   static fromEndpoint<User = unknown>(
     endpoint: string,
   ): ColyseusNetworkProvider<User> {
+    const httpEndpoint = endpoint.replace(/^ws/i, "http");
     return new ColyseusNetworkProvider<User>(
       new Client<never, User>(endpoint),
-      endpoint.replace(/^ws/i, "http"),
+      httpEndpoint.endsWith("/") ? httpEndpoint : `${httpEndpoint}/`,
     );
   }
 
@@ -180,7 +181,7 @@ export class ColyseusNetworkProvider<User = unknown>
   }
 
   async updateUserProfile(update: Partial<User>): Promise<User> {
-    return this.requestJson<User>("/profile", {
+    return this.requestJson<User>("profile", {
       method: "PATCH",
       body: JSON.stringify(update),
     });
@@ -282,7 +283,7 @@ export class ColyseusNetworkProvider<User = unknown>
   async checkAiHealth(): Promise<boolean> {
     try {
       const result = await this.requestJson<{ available: boolean }>(
-        "/ai/health",
+        "ai/health",
       );
       return result.available === true;
     } catch {
