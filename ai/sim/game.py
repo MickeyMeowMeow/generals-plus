@@ -2,7 +2,7 @@
 JAX game logic for Generals Plus 1v1.
 
 Matches the generals-plus TypeScript engine rules:
-  - Army increment: general/city +1 every tick, plain +1 every 25 ticks
+  - Army increment: structures (general/city) +1 every 2 ticks, all owned +1 every 50 ticks
   - Combat: move all-but-1 (or half for split), reinforce own, attack enemy/neutral
   - General capture: captured general → city, loser cells → winner
   - Vision: 3x3 Chebyshev radius around owned cells
@@ -82,7 +82,7 @@ def _army_increment(state: GameState) -> GameState:
     """
     Increment armies matching original generals.io rules:
       - All owned cells (including structures): +1 every 50 ticks
-      - Owned structures (generals + cities):   +1 every 2 ticks (odd ticks)
+      - Owned structures (generals + cities):   +1 every 2 ticks (even ticks)
     """
     time = state.time
     armies = state.armies
@@ -97,8 +97,8 @@ def _army_increment(state: GameState) -> GameState:
         armies,
     )
 
-    # Owned structures get +1 every 2 ticks (on odd ticks)
-    increment_structures = time % 2 == 1
+    # Owned structures get +1 every 2 ticks (on even ticks, matching TS engine)
+    increment_structures = time % 2 == 0
     structures = state.generals | state.cities
     owned_structures = structures & all_owned
     armies = lax.cond(

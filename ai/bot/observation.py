@@ -58,12 +58,12 @@ def vision_to_observation(
         if terrain in ("mountain", "void"):
             obs[3, row, col] = 1.0  # mountains
 
-        if visibility in ("hidden", "shrouded"):
+        if visibility in ("hidden", "shrouded", "terrain"):
             # TS engine has 4 visibility levels: visible, terrain, shrouded, hidden.
             # We map these to 2 channels:
-            #   structures_in_fog: shrouded/hidden cells on mountain/void (static map features
+            #   structures_in_fog: terrain/shrouded/hidden cells on mountain/void (static map features
             #     that can be remembered — terrain won't change under fog)
-            #   fog_cells: shrouded/hidden cells on passable terrain (may contain troops,
+            #   fog_cells: terrain/shrouded/hidden cells on passable terrain (may contain troops,
             #     ownership changes — dynamic information hidden by fog)
             if terrain in ("mountain", "void"):
                 obs[8, row, col] = 1.0  # structures_in_fog
