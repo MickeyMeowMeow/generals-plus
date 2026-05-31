@@ -25,6 +25,7 @@ function captureErrors(client: {
 
 const mocks = vi.hoisted(() => ({
   getRating: vi.fn().mockResolvedValue(1000),
+  findById: vi.fn().mockResolvedValue(null),
   createGame: vi.fn(),
   generateSeed: vi.fn(() => 12345),
 }));
@@ -32,6 +33,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("#/infra/db/repositories/MongoUserRepository", () => ({
   MongoUserRepository: class {
     getRating = mocks.getRating;
+    findById = mocks.findById;
   },
 }));
 
@@ -445,6 +447,27 @@ describe("MatchQueueRoom", () => {
       await expect(
         MatchQueueRoom.onAuth("invalid.token.here"),
       ).rejects.toThrow();
+    });
+
+    it("returns fresh displayName from DB when user has updated profile", async () => {
+      const token = await JWT.sign({
+        id: "u1",
+        displayName: "OldName",
+      });
+
+      mocks.findById.mockResolvedValueOnce({
+        id: "u1",
+        displayName: "UpdatedName",
+        password: "secret",
+      });
+
+      const result = (await MatchQueueRoom.onAuth(token)) as Record<
+        string,
+        unknown
+      >;
+
+      expect(result.displayName).toBe("UpdatedName");
+      expect(result).not.toHaveProperty("password");
     });
   });
 });

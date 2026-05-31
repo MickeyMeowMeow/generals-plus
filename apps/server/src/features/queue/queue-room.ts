@@ -1,4 +1,3 @@
-import { JWT } from "@colyseus/auth";
 import type { Client, QueueOptions } from "@colyseus/core";
 import { logger, matchMaker, QueueRoom } from "@colyseus/core";
 import {
@@ -15,6 +14,7 @@ import {
   ROOM_NAMES,
 } from "@generals-plus/shared-types";
 
+import { resolveAuthUser } from "#/features/auth/auth-config";
 import { createGame, generateSeed } from "#/features/game/utils";
 import {
   BASE_TICK_INTERVAL,
@@ -282,9 +282,9 @@ export class MatchQueueRoom extends QueueRoom {
     }
   }
 
-  /** Verify the client auth token before allowing queue participation. */
+  /** Verify the client auth token and return fresh user data from the database. */
   static async onAuth(token: string) {
-    return JWT.verify(token);
+    return resolveAuthUser(token);
   }
 
   /**

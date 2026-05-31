@@ -865,13 +865,14 @@ describe("MatchRoom", () => {
   // ── Error branches and edge cases ─────────────────────────────
 
   describe("error branches and edge cases", () => {
-    it("onAuth delegates to JWT.verify", async () => {
+    it("onAuth returns fresh user data via resolveAuthUser", async () => {
       const verifySpy = vi
         .spyOn(JWT, "verify")
-        .mockResolvedValue({ sub: "u1" });
+        .mockResolvedValue({ id: "u1", displayName: "OldName" });
       const res = await MatchRoom.onAuth("token", undefined, undefined);
       expect(verifySpy).toHaveBeenCalledWith("token");
-      expect(res).toEqual({ sub: "u1" });
+      // No DB mock → falls back to decoded token payload (password stripped)
+      expect(res).toEqual({ id: "u1", displayName: "OldName" });
       verifySpy.mockRestore();
     });
 

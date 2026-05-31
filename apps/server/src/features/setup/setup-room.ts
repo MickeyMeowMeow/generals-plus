@@ -1,4 +1,3 @@
-import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, matchMaker, Room } from "@colyseus/core";
 import type {
@@ -30,6 +29,7 @@ import {
   SetupState,
 } from "@generals-plus/shared-types";
 
+import { resolveAuthUser } from "#/features/auth/auth-config";
 import type { CreateGameOptions } from "#/features/game/utils";
 import { createGame, generateSeed } from "#/features/game/utils";
 import {
@@ -159,7 +159,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   static async onAuth(token: string) {
-    return JWT.verify(token);
+    return resolveAuthUser(token);
   }
 
   async onJoin(client: Client) {
