@@ -1,16 +1,17 @@
 import { JWT } from "@colyseus/auth";
 import type { Request, Response } from "express";
 
+import type { ISystemSettings } from "#/infra/db/interfaces";
 import { MongoSystemSettingsRepository } from "#/infra/db/repositories/MongoSystemSettingsRepository";
 import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
 const userRepository = new MongoUserRepository();
 const systemSettingsRepository = new MongoSystemSettingsRepository();
 
-type SettingsListener = (settings: Record<string, unknown>) => void;
+type SettingsListener = (settings: ISystemSettings) => void;
 const settingsListeners = new Set<SettingsListener>();
 
-function broadcastSettings(settings: Record<string, unknown>) {
+function broadcastSettings(settings: ISystemSettings) {
   for (const listener of settingsListeners) {
     listener(settings);
   }

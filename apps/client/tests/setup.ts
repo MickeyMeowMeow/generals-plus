@@ -7,6 +7,22 @@ Element.prototype.hasPointerCapture ??= vi.fn(() => false);
 Element.prototype.setPointerCapture ??= vi.fn();
 Element.prototype.releasePointerCapture ??= vi.fn();
 
+// jsdom doesn't provide EventSource — stub it out so useSystemSettings doesn't throw in tests
+if (!("EventSource" in globalThis)) {
+  Object.defineProperty(globalThis, "EventSource", {
+    value: class EventSource {
+      onmessage: ((e: MessageEvent) => void) | null = null;
+      onerror: ((e: Event) => void) | null = null;
+      onopen: ((e: Event) => void) | null = null;
+      constructor(_url: string | URL) {}
+      close() {}
+      addEventListener() {}
+      removeEventListener() {}
+    },
+    writable: true,
+  });
+}
+
 afterEach(() => {
   localStorage.clear();
   sessionStorage.clear();
