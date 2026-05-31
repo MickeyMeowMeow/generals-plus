@@ -37,7 +37,7 @@ interface SiteLabelLayerProps {
 }
 
 export function SiteLabelLayer({ grid, tick }: SiteLabelLayerProps) {
-  // Assume that site labels remain unchanged across ticks, but we recompute when tick changes to handle in-place grid mutation on initialization.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tick is intentionally included to force a refresh each tick, since cell visibility changes across ticks
   const siteCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; label: string }> = [];
     grid.forEach((cell) => {
@@ -68,7 +68,11 @@ export function SiteLabelLayer({ grid, tick }: SiteLabelLayerProps) {
             anchor={0.5}
             x={x * RenderConfig.cellStride}
             y={y * RenderConfig.cellStride}
-            style={cell.visibility === Visibility.SHROUDED ? SHROUDED_SITE_TEXT_STYLE : SITE_TEXT_STYLE}
+            style={
+              cell.visibility === Visibility.SHROUDED
+                ? SHROUDED_SITE_TEXT_STYLE
+                : SITE_TEXT_STYLE
+            }
           />
         );
       })}
