@@ -832,6 +832,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         throw new Error(`Custom map "${this.state.customMapId}" not found`);
       }
 
+      await mapRepository.incrementPlays(this.state.customMapId);
+
       const grid = createGridFromDoc(mapDoc.grid);
       const teamAssignments = this.buildFinalTeamAssignments();
       const spawnMap = buildSpawnMap(

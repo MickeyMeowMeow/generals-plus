@@ -4,6 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { Button } from "#/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth, useUser } from "#/features/auth/hooks";
 import { mapsApi } from "#/features/map-editor/api/maps-api";
@@ -74,15 +81,25 @@ export function MapBrowserPage() {
           <h1 className="text-lg font-semibold">Custom Maps</h1>
         </div>
         <div className="flex items-center gap-2">
-          <select
+          <Select
             value={sort}
-            onChange={(e) => setSort(e.target.value as SortOption)}
-            className="h-8 border border-game-border bg-game-bg px-2 text-sm text-game-text"
+            onValueChange={(val) => setSort(val as SortOption)}
           >
-            <option value="date">Newest</option>
-            <option value="plays">Most plays</option>
-            <option value="likes">Most likes</option>
-          </select>
+            <SelectTrigger className="h-8 border-game-border bg-game-bg px-2.5 text-xs text-game-text focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 w-[120px] py-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-game-border bg-game-surface text-game-text">
+              <SelectItem value="date" className="text-xs">
+                Newest
+              </SelectItem>
+              <SelectItem value="plays" className="text-xs">
+                Most plays
+              </SelectItem>
+              <SelectItem value="likes" className="text-xs">
+                Most likes
+              </SelectItem>
+            </SelectContent>
+          </Select>
           {state.status === AuthStatus.AUTHENTICATED && (
             <Button asChild>
               <Link to="/map-editor">
