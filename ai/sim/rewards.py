@@ -1,16 +1,13 @@
 """
 Reward functions for Generals Plus RL training.
 
-Implements potential-based reward shaping (Ng et al. 1999):
+Implements potential-based reward shaping (Ng et al. 1999, Straka & Schmid 2025):
   r_shaped(s,a,s') = r_original + γ·φ(s') - φ(s)
   φ(s) = 0.3·φ_army + 0.3·φ_land + 0.4·φ_castle
-  φ_x(s) = log(x_mine / x_enemy) / log(max_ratio)
+  φ_x(s) = log(x_mine / x_enemy) / log(max_ratio)  for x ∈ {army, land, castle}
 
 This is provably optimal-policy-preserving: the shaping does not change
 the set of optimal policies, only provides denser learning signal.
-
-Key difference from generals-bots: we include the γ factor in the shaping,
-which is mathematically required for the guarantee to hold.
 """
 
 import jax
@@ -38,6 +35,11 @@ def _compute_owned_cities(obs: Observation) -> jnp.ndarray:
     return jnp.sum(jnp.logical_and(obs.cities, obs.owned_cells)).astype(jnp.float32)
 
 
+def _compute_enemy_cities(obs: Observation) -> jnp.ndarray:
+    """Count cities owned by the opponent."""
+    return jnp.sum(jnp.logical_and(obs.cities, obs.opponent_cells)).astype(jnp.float32)
+
+
 def _compute_owned_generals(obs: Observation) -> jnp.ndarray:
     """Count generals owned by the observing player."""
     return jnp.sum(jnp.logical_and(obs.generals, obs.owned_cells)).astype(jnp.float32)
@@ -53,7 +55,8 @@ def potential_fn(
     """
     Compute potential function φ(s) = 0.3·φ_army + 0.3·φ_land + 0.4·φ_castle.
 
-    Each sub-potential uses log-ratio normalization.
+    All three sub-potentials use log-ratio normalization, matching the paper:
+      φ_x(s) = log(x_agent / x_enemy) / log(max_ratio)  for x ∈ {army, land, castle}
     """
     phi_army = _log_ratio(
         obs.owned_army_count.astype(jnp.float32),
@@ -65,12 +68,11 @@ def potential_fn(
         obs.opponent_land_count.astype(jnp.float32),
         max_land_ratio,
     )
-
-    # For cities, we compare owned city count vs opponent city count
-    # Need opponent's city count — infer from visible cities owned by opponent
-    opp_cities = jnp.sum(jnp.logical_and(obs.cities, obs.opponent_cells)).astype(jnp.float32)
-    my_cities = _compute_owned_cities(obs)
-    phi_castle = _log_ratio(my_cities, jnp.maximum(opp_cities, 1.0), max_castle_ratio)
+    phi_castle = _log_ratio(
+        _compute_owned_cities(obs),
+        _compute_enemy_cities(obs),
+        max_castle_ratio,
+    )
 
     return 0.3 * phi_army + 0.3 * phi_land + 0.4 * phi_castle
 
@@ -83,21 +85,14 @@ def potential_based_reward(
     gamma: float = 0.99,
 ) -> jnp.ndarray:
     """
-    Potential-based reward shaping (Ng et al. 1999).
+    Potential-based reward shaping (Ng et al. 1999, Straka & Schmid 2025).
 
     r_shaped = r_original + γ·φ(s') - φ(s)
 
-    The γ factor is critical for the optimality guarantee.
+    This is provably optimal-policy-preserving: the shaping does not change
+    the set of optimal policies.
+
     On game end, only the original sparse reward is returned.
-
-    Args:
-        prior_obs: Observation before action.
-        prior_action: Action taken [pass, row, col, direction, split].
-        obs: Observation after action.
-        gamma: Discount factor for shaping (default 0.99).
-
-    Returns:
-        Scalar reward.
     """
     # Original reward: generals capture change (+1 win, -1 lose)
     original_reward = _compute_owned_generals(obs) - _compute_owned_generals(prior_obs)
@@ -105,7 +100,7 @@ def potential_based_reward(
     # On game end, only use original reward (no shaping)
     game_done = (obs.owned_army_count == 0) | (obs.opponent_army_count == 0)
 
-    # Potential-based shaping with γ
+    # Potential-based shaping with γ factor (matching paper Eq. 1)
     phi_new = potential_fn(obs)
     phi_old = potential_fn(prior_obs)
     shaped = original_reward + gamma * phi_new - phi_old

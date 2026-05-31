@@ -30,7 +30,9 @@ GRID_SIZE=18
 NUM_ENVS=2048
 NUM_STEPS=256
 MINIBATCH=2048
-LR=4e-5
+LR=1e-4
+CLIP=0.3
+POOL_SIZE=3
 
 PIPELINE_START=$(date +%s)
 
@@ -80,7 +82,8 @@ XLA_PYTHON_CLIENT_MEM_FRACTION=0.95 python3 -m train.train \
     --lr $LR \
     --minibatch-size $MINIBATCH \
     --opponent self-play \
-    --pool-size 3 \
+    --pool-size $POOL_SIZE \
+    --clip $CLIP \
     --load-path models/sft_pretrained.eqx \
     --save-path models/ppo_final.eqx
 PHASE_END=$(date +%s)

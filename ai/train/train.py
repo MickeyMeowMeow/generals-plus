@@ -201,7 +201,7 @@ def _make_rollout_body_selfplay(network, opponent_network, reset_pool):
     pool_size = reset_pool.armies.shape[0]
 
     def scan_body(carry, _):
-        states, memories, key = carry
+        states, memories, memories_p1, key = carry
         num_envs = states.armies.shape[0]
 
         obs_p0 = jax.vmap(lambda s: game.get_observation(s, 0))(states)
@@ -217,8 +217,8 @@ def _make_rollout_body_selfplay(network, opponent_network, reset_pool):
             lambda o, m, k: network(o, m, k, None)
         )(obs_24ch, masks, jnp.stack(env_keys))
 
-        # Self-play opponent (argmax inference)
-        obs_24ch_p1 = jax.vmap(build_24ch_input)(obs_p1, memories)
+        # Self-play opponent (argmax inference) — uses its own memory
+        obs_24ch_p1 = jax.vmap(build_24ch_input)(obs_p1, memories_p1)
         masks_p1 = jax.vmap(lambda o: compute_valid_move_mask(
             o.armies, o.owned_cells, o.mountains))(obs_p1)
         actions_p1, _ = jax.vmap(
@@ -248,14 +248,17 @@ def _make_rollout_body_selfplay(network, opponent_network, reset_pool):
         new_memories = jax.vmap(update_memory)(obs_p0, actions_p0, memories)
         new_memories = jax.vmap(reset_memory_on_done)(new_memories, dones)
 
-        carry_new = (new_states, new_memories, key)
+        new_memories_p1 = jax.vmap(update_memory)(obs_p1, actions_p1, memories_p1)
+        new_memories_p1 = jax.vmap(reset_memory_on_done)(new_memories_p1, dones)
+
+        carry_new = (new_states, new_memories, new_memories_p1, key)
         return carry_new, (obs_24ch, masks, actions_p0, logprobs, values,
                            rewards, dones, infos)
 
     return scan_body
 
 
-def run_rollout(states, memories, key, network, opponent_network, num_steps, reset_pool):
+def run_rollout(states, memories, key, network, opponent_network, num_steps, reset_pool, memories_p1=None):
     """Run a full rollout using lax.scan (single fused XLA computation).
 
     Replaces the old Python for-loop + per-step jit pattern.
@@ -263,10 +266,11 @@ def run_rollout(states, memories, key, network, opponent_network, num_steps, res
     """
     if opponent_network is not None:
         body = _make_rollout_body_selfplay(network, opponent_network, reset_pool)
+        carry = (states, memories, memories_p1, key)
     else:
         body = _make_rollout_body_random(network, reset_pool)
+        carry = (states, memories, key)
 
-    carry = (states, memories, key)
     carry, data = jax.lax.scan(body, carry, None, length=num_steps)
     return carry, data
 
@@ -275,7 +279,7 @@ def run_rollout(states, memories, key, network, opponent_network, num_steps, res
 # PPO loss + fused training epoch
 # ---------------------------------------------------------------------------
 
-def ppo_loss_fn(network, obs_24ch, mask, action, old_logprob, advantage, ret, clip=0.2):
+def ppo_loss_fn(network, obs_24ch, mask, action, old_logprob, advantage, ret, clip=0.2, value_coef=0.05):
     """PPO loss for a single sample. Returns (total, policy, value, entropy) parts."""
     _, value, logprob, entropy = network(obs_24ch, mask, jrandom.PRNGKey(0), action)
 
@@ -286,22 +290,16 @@ def ppo_loss_fn(network, obs_24ch, mask, action, old_logprob, advantage, ret, cl
     value_loss = 0.5 * (value - ret) ** 2
     entropy_loss = -0.01 * entropy
 
-    return policy_loss + value_loss + entropy_loss, policy_loss, value_loss, entropy_loss
+    return policy_loss + value_coef * value_loss + entropy_loss, policy_loss, value_loss, entropy_loss
 
 
-def make_train_epoch(optimizer, minibatch_size):
+def make_train_epoch(optimizer, minibatch_size, clip=0.2, grad_scale_mask=None, value_coef=0.05):
     """Create a JIT-compiled training function that fuses all minibatch steps
     into a single XLA program via ``jax.lax.scan``.
 
-    Benefits over a Python for-loop:
-      - No GIL: entire minibatch loop runs on GPU as one XLA program.
-      - No sync points: ``float(loss)`` inside a Python loop forces 256
-        GPU→CPU syncs per iteration; scan has zero.
-      - ``jax.checkpoint`` (remat) on each scan step keeps memory O(1)
-        per step instead of O(num_minibatches).
-
-    The scan body is purely arithmetic (conv, element-wise, reduction)
-    with no data-dependent branching — GPU-friendly.
+    ``grad_scale_mask`` is an optional pytree of scalars that multiplies
+    gradients before the optimizer step.  Used to give value head params
+    a larger effective learning rate.
     """
     @eqx.filter_jit
     def train_epoch(network, opt_state, batch):
@@ -331,13 +329,16 @@ def make_train_epoch(optimizer, minibatch_size):
             def loss_fn(d):
                 net = eqx.combine(d, static)
                 tot, pol, val, ent = jax.vmap(
-                    lambda o, m, a, olp, adv, r: ppo_loss_fn(net, o, m, a, olp, adv, r)
+                    lambda o, m, a, olp, adv, r: ppo_loss_fn(net, o, m, a, olp, adv, r, clip, value_coef)
                 )(mb_o, mb_m, mb_a, mb_lp, mb_adv, mb_ret)
                 return jnp.mean(tot), (jnp.mean(pol), jnp.mean(val), jnp.mean(ent))
 
             (total, (policy_l, value_l, entropy_l)), grads = jax.value_and_grad(
                 loss_fn, has_aux=True,
             )(diff)
+            # Scale gradients for value head parameters
+            if grad_scale_mask is not None:
+                grads = jax.tree.map(lambda g, s: g * s, grads, grad_scale_mask)
             updates, opt_state = optimizer.update(grads, opt_state, diff)
             diff = optax.apply_updates(diff, updates)
             return (diff, opt_state), (total, policy_l, value_l, entropy_l)
@@ -356,14 +357,21 @@ def make_train_epoch(optimizer, minibatch_size):
 # ---------------------------------------------------------------------------
 
 @jax.jit
-def compute_gae(rewards, values, dones, gamma=0.99, lam=0.95):
-    """Compute advantages using GAE."""
+def compute_gae(rewards, values, dones, next_values, gamma=0.99, lam=0.95):
+    """Compute advantages using GAE.
+
+    Args:
+        rewards: (num_steps, num_envs)
+        values: (num_steps, num_envs) — V(s_t) from rollout.
+        dones: (num_steps, num_envs)
+        next_values: (num_envs,) — V(s_{T+1}) computed after rollout for bootstrap.
+    """
     num_steps, num_envs = rewards.shape
     advantages = jnp.zeros_like(rewards)
     last_adv = jnp.zeros(num_envs)
 
     for t in reversed(range(num_steps)):
-        next_value = jnp.where(t == num_steps - 1, 0.0, values[t + 1])
+        next_value = jnp.where(t == num_steps - 1, next_values, values[t + 1])
         next_nonterminal = jnp.where(t == num_steps - 1, 1.0 - dones[t], 1.0 - dones[t + 1])
         delta = rewards[t] + gamma * next_value * next_nonterminal - values[t]
         advantages = advantages.at[t].set(delta + gamma * lam * next_nonterminal * last_adv)
@@ -384,7 +392,10 @@ def main():
     parser.add_argument("--num-iterations", type=int, default=500, help="Training iterations")
     parser.add_argument("--resume", default=None, help="Resume from checkpoint .eqx file")
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate")
+    parser.add_argument("--value-lr-scale", type=float, default=1.0, help="Value head LR multiplier")
     parser.add_argument("--minibatch-size", type=int, default=256, help="Minibatch size")
+    parser.add_argument("--clip", type=float, default=0.2, help="PPO clip range")
+    parser.add_argument("--value-coef", type=float, default=0.05, help="Value loss coefficient")
     parser.add_argument("--save-path", default="models/ppo_unet.eqx", help="Model save path")
     parser.add_argument("--load-path", default=None, help="Load pretrained model (SFT)")
     parser.add_argument("--opponent", default="random", choices=["random", "self-play"],
@@ -416,13 +427,10 @@ def main():
         network = eqx.tree_deserialise_leaves(args.resume, network)
         # Load optimizer state from companion file
         opt_path = args.resume.replace(".eqx", ".opt")
+        optimizer = optax.adam(args.lr)
+        opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
         if os.path.exists(opt_path):
-            optimizer = optax.adam(args.lr)
-            opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
             opt_state = eqx.tree_deserialise_leaves(opt_path, opt_state)
-        else:
-            optimizer = optax.adam(args.lr)
-            opt_state = optimizer.init(eqx.filter(network, eqx.is_array))
         # Extract iteration number from filename
         m = re.search(r"checkpoint_(\d+)", args.resume)
         if m:
@@ -468,6 +476,7 @@ def main():
     H, W = states.armies.shape[1], states.armies.shape[2]
     _single_mem = init_memory(H, W)
     memories = jax.tree.map(lambda x: jnp.stack([x] * num_envs), _single_mem)
+    memories_p1 = jax.tree.map(lambda x: jnp.stack([x] * num_envs), _single_mem)
 
     # Pre-generate state pool for auto-reset (avoids calling generate_grid
     # inside lax.scan, which would run every step even for non-done envs).
@@ -480,10 +489,39 @@ def main():
     # Warmup — compile rollout + train_epoch (first-run JIT compilation)
     print("Warming up (JIT compilation)...")
     opponent = pool.get_opponent(key) if args.opponent == "self-play" else None
-    carry, _ = run_rollout(states, memories, key, network, opponent, num_steps=3, reset_pool=reset_pool)
+    carry, _ = run_rollout(states, memories, key, network, opponent, num_steps=3, reset_pool=reset_pool,
+                           memories_p1=memories_p1 if opponent is not None else None)
     jax.block_until_ready(carry[0])
 
-    train_epoch = make_train_epoch(optimizer, args.minibatch_size)
+    # Build gradient scaling mask: value_lr_scale for value head, 1.0 elsewhere.
+    # This effectively gives value parameters a higher LR without changing the optimizer.
+    _value_param_names = {"value_fc1", "value_fc2"}
+    def _make_scale_mask(path, _):
+        # Equinox module fields appear as NamedSequenceKey in the path
+        for key in path:
+            if hasattr(key, 'name') and key.name in _value_param_names:
+                return jnp.float32(args.value_lr_scale)
+            # Also check idx-based access: NamedSequenceKey has .idx
+        # Fallback: check string representation
+        path_str = str(path)
+        for name in _value_param_names:
+            if name in path_str:
+                return jnp.float32(args.value_lr_scale)
+        return jnp.float32(1.0)
+
+    diff_template = eqx.filter(network, eqx.is_array)
+    grad_scale_mask = jax.tree.map_with_path(_make_scale_mask, diff_template) \
+        if args.value_lr_scale != 1.0 else None
+
+    if args.value_lr_scale != 1.0:
+        n_value = sum(1 for _ in jax.tree.leaves(grad_scale_mask)
+                      if float(_) != 1.0)
+        print(f"Value LR scale: {args.value_lr_scale}x ({n_value} param tensors)")
+
+    train_epoch = make_train_epoch(optimizer, args.minibatch_size,
+                                   clip=args.clip,
+                                   grad_scale_mask=grad_scale_mask,
+                                   value_coef=args.value_coef)
     print("Training...\n")
 
     pbar = _tqdm(range(start_iter, args.num_iterations),
@@ -493,7 +531,7 @@ def main():
     _save_thread = None
 
     # Sliding window for pool update decisions (reduce noisy per-iter updates)
-    WIN_WINDOW = 10
+    WIN_WINDOW = 20
     _win_history = []
 
     for iteration in pbar:
@@ -512,11 +550,14 @@ def main():
             opponent = None
 
         # Run full rollout via lax.scan (single fused XLA computation)
-        carry = (states, memories, key)
         carry, rollout_data = run_rollout(
             states, memories, key, network, opponent, num_steps, reset_pool=reset_pool,
+            memories_p1=memories_p1 if opponent is not None else None,
         )
-        states, memories, key = carry
+        if opponent is not None:
+            states, memories, memories_p1, key = carry
+        else:
+            states, memories, key = carry
 
         # rollout_data is pre-stacked by lax.scan: (num_steps, num_envs, ...)
         obs_all = rollout_data[0]
@@ -528,8 +569,19 @@ def main():
         dones_all = rollout_data[6]
         infos_all = rollout_data[7]
 
+        # Compute bootstrap values V(s_{T+1}) from final states
+        obs_p0_final = jax.vmap(lambda s: game.get_observation(s, 0))(states)
+        obs_24ch_final = jax.vmap(build_24ch_input)(obs_p0_final, memories)
+        masks_final = jax.vmap(lambda o: compute_valid_move_mask(
+            o.armies, o.owned_cells, o.mountains))(obs_p0_final)
+        _, bootstrap_values, _, _ = jax.vmap(
+            lambda o, m: network(o, m, jrandom.PRNGKey(0), None)
+        )(obs_24ch_final, masks_final)
+        # Done envs at last step: game ended, no future value
+        bootstrap_values = bootstrap_values * (1.0 - dones_all[-1])
+
         # Compute advantages
-        advantages = compute_gae(rewards_all, values_all, dones_all)
+        advantages = compute_gae(rewards_all, values_all, dones_all, bootstrap_values)
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
         returns = advantages + values_all
 
@@ -579,7 +631,7 @@ def main():
         pbar.set_postfix(
             loss=f"{avg_loss:.3f}",
             p=f"{pol_loss:.3f}",
-            v=f"{val_loss:.3f}",
+            vmse=f"{val_loss / 0.5:.3f}",
             e=f"{ent_loss:.3f}",
             adv=f"{avg_adv:+.3f}",
             reward=f"{avg_reward:+.3f}",
