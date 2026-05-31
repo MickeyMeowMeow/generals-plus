@@ -1,7 +1,11 @@
 import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, matchMaker, Room } from "@colyseus/core";
-import type { CollapseShape, GridGeneratorInput } from "@generals-plus/engine";
+import type {
+  CollapseShape,
+  GridGeneratorInput,
+  GridInput,
+} from "@generals-plus/engine";
 import {
   DefaultGenOptions,
   DefaultGridBounds,
@@ -29,6 +33,10 @@ import {
 import type { CreateGameOptions } from "#/features/game/utils";
 import { createGame, generateSeed } from "#/features/game/utils";
 import {
+  buildSpawnMap,
+  createGridFromDoc,
+} from "#/features/maps/grid-serializer";
+import {
   BASE_TICK_INTERVAL,
   calculateFinishTick,
   MODE_SETTINGS,
@@ -39,6 +47,7 @@ import {
   onSetupRoomDisposed,
 } from "#/features/setup/custom-room-registry";
 import { setupSettingsUpdateSchema } from "#/features/setup/schemas";
+import { MongoMapRepository } from "#/infra/db/repositories/MongoMapRepository";
 
 const DEFAULT_MAX_PLAYERS = 8;
 const SETUP_TEAM_PREFIX = "setup_team_";
@@ -729,10 +738,13 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     return base;
   }
 
-  private buildCreateGameOptions(): CreateGameOptions {
+  private buildCreateGameOptions(customGrid?: {
+    gridOptions: GridInput;
+    spawnMap?: Map<string, import("@generals-plus/engine").ICoordinate>;
+  }): CreateGameOptions {
     const teamAssignments = this.buildFinalTeamAssignments();
     const base = {
-      gridOptions: this.getGridOptions(),
+      gridOptions: customGrid?.gridOptions ?? this.getGridOptions(),
       playerIds: this.state.players.map((p) => p.id),
       playerPerTeam: this.state.playersPerTeam,
       teamAssignments,
@@ -806,8 +818,42 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   private async startGame() {
-    const options = this.buildCreateGameOptions();
+    let customGrid:
+      | {
+          gridOptions: GridInput;
+          spawnMap?: Map<string, import("@generals-plus/engine").ICoordinate>;
+        }
+      | undefined;
+
+    if (this.state.mapSource === "custom" && this.state.customMapId) {
+      const mapRepository = new MongoMapRepository();
+      const mapDoc = await mapRepository.findById(this.state.customMapId);
+      if (!mapDoc) {
+        throw new Error(`Custom map "${this.state.customMapId}" not found`);
+      }
+
+      await mapRepository.incrementPlays(this.state.customMapId);
+
+      const grid = createGridFromDoc(mapDoc.grid);
+      const teamAssignments = this.buildFinalTeamAssignments();
+      const spawnMap = buildSpawnMap(
+        mapDoc.grid.spawns,
+        teamAssignments,
+        this.state.players.map((p) => p.id),
+      );
+
+      customGrid = {
+        gridOptions: { grid },
+        spawnMap: spawnMap.size > 0 ? spawnMap : undefined,
+      };
+    }
+
+    const options = this.buildCreateGameOptions(customGrid);
     const game = createGame(options);
+
+    if (customGrid?.spawnMap) {
+      game.spawnPositions = customGrid.spawnMap;
+    }
 
     const playerInit = createPlayerInit(this.state.players, game);
 

@@ -1,6 +1,7 @@
 import type { GameMode } from "@generals-plus/engine";
 import type { UserPreferences } from "@generals-plus/shared-types";
 
+import type { IMapDocument } from "#/infra/db/models/map-model";
 import type { IPlayerRatings } from "#/infra/db/models/user-model";
 
 /**
@@ -49,4 +50,70 @@ export interface IUserRepository {
   updateRatings(
     updates: Array<{ userId: string; mode: GameMode; newRating: number }>,
   ): Promise<void>;
+}
+
+export interface IMap {
+  id: string;
+  name: string;
+  description: string;
+  authorId: string;
+  authorName: string;
+  grid: IMapDocument["grid"];
+  supportedModes: GameMode[];
+  minPlayers: number;
+  maxPlayers: number;
+  tags: string[];
+  status: "draft" | "published";
+  stats: { plays: number; likes: number };
+  thumbnail: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MapCreateOptions {
+  name: string;
+  description?: string;
+  grid: IMapDocument["grid"];
+  supportedModes: GameMode[];
+  minPlayers: number;
+  maxPlayers: number;
+  tags?: string[];
+  status?: "draft" | "published";
+  thumbnail?: string;
+}
+
+export interface MapUpdateOptions {
+  name?: string;
+  description?: string;
+  grid?: IMapDocument["grid"];
+  supportedModes?: GameMode[];
+  minPlayers?: number;
+  maxPlayers?: number;
+  tags?: string[];
+  status?: "draft" | "published";
+  thumbnail?: string;
+}
+
+export interface IMapRepository {
+  create(
+    authorId: string,
+    authorName: string,
+    options: MapCreateOptions,
+  ): Promise<IMap>;
+  findById(id: string): Promise<IMap | null>;
+  findByAuthor(authorId: string): Promise<IMap[]>;
+  findPublished(options: {
+    page?: number;
+    limit?: number;
+    mode?: GameMode;
+    sort?: "plays" | "likes" | "date";
+  }): Promise<{ maps: IMap[]; total: number }>;
+  update(
+    id: string,
+    authorId: string,
+    update: MapUpdateOptions,
+  ): Promise<IMap | null>;
+  delete(id: string, authorId: string): Promise<boolean>;
+  incrementPlays(id: string): Promise<void>;
+  toggleLike(id: string, userId: string): Promise<"liked" | "unliked">;
 }

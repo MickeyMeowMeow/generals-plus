@@ -4,7 +4,7 @@ import {
   CUSTOM_ROOM_KEY_MIN_LENGTH,
   isValidCustomRoomKeyLength,
 } from "@generals-plus/shared-types";
-import { LogOut, Play, Plus, User } from "lucide-react";
+import { LogOut, Map as MapIcon, Play, Plus, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -153,6 +153,12 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              <Button asChild variant="ghost">
+                <Link to="/maps">
+                  <MapIcon className="size-4" />
+                  Maps
+                </Link>
+              </Button>
               <Button asChild variant="ghost">
                 <Link to="/profile">
                   <User className="size-4" />

@@ -13,6 +13,7 @@ import mongoose from "mongoose";
 
 import { ENV } from "#/env";
 import { auth } from "#/features/auth/auth-config";
+import { registerMapRoutes } from "#/features/maps/map-routes";
 import { MatchRoom } from "#/features/match/match-room";
 import { registerProfileRoutes } from "#/features/profile/profile-routes";
 import { MatchQueueRoom } from "#/features/queue/queue-room";
@@ -100,6 +101,8 @@ export default defineServer({
     }
 
     registerCustomRoomRoutes(app);
+
+    registerMapRoutes(app);
 
     // Health check endpoint
     app.get("/health", (_req, res) => {
