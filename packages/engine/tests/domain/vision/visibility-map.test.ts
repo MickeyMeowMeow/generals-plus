@@ -235,9 +235,9 @@ describe("VisibilityMap", () => {
     expect(shrouded.troopCount).toBeNull(); // troops still hidden under shroud
 
     const hidden = createVisionCell(cell, Visibility.HIDDEN);
-    expect(hidden.visibility).toBe(Visibility.HIDDEN);
+    expect(hidden.visibility).toBe(Visibility.SHROUDED); // HIDDEN bomb sites upgrade to SHROUDED so frontend can distinguish
     expect(hidden.terrain).toBe(Terrain.BOMB_SITE);
     expect(hidden.siteIndex).toBe(2);
-    expect(hidden.troopCount).toBeNull(); // troops still hidden when hidden
+    expect(hidden.troopCount).toBeNull(); // troops still hidden
   });
 });

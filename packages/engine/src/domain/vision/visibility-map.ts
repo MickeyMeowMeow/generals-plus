@@ -78,7 +78,7 @@ export function createVisionCell(
       const isBombSite = cell.terrain === Terrain.BOMB_SITE;
       return {
         coordinate: cell.coordinate,
-        visibility,
+        visibility: isBombSite ? Visibility.SHROUDED : visibility,
         terrain: isBombSite ? Terrain.BOMB_SITE : HiddenTerrain,
         troopCount: null,
         owner: null,

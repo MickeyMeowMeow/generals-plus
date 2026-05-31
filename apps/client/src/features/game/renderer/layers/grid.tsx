@@ -1,3 +1,4 @@
+import { Visibility } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import { useCallback } from "react";
@@ -29,6 +30,10 @@ export function getCellFillColor(
     return playerColors.get(cell.ownerIndex) ?? 0x333333;
   }
 
+  if (cell.visibility === Visibility.SHROUDED) {
+    return 0x525356;
+  }
+
   if ((cell.troopCount ?? 0) > 0) {
     return NeutralTroopCellColor;
   }
@@ -50,7 +55,9 @@ export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
 
         const color = cell.ownerIndex
           ? (playerColors.get(cell.ownerIndex) ?? 0x333333)
-          : TerrainTheme[cell.terrain]?.color || 0xffffff;
+          : cell.visibility === Visibility.SHROUDED
+            ? 0x525356
+            : TerrainTheme[cell.terrain]?.color || 0xffffff;
 
         g.fill(color);
 
