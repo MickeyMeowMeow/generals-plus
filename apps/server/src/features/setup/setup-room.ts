@@ -1,4 +1,3 @@
-import { JWT } from "@colyseus/auth";
 import type { Client } from "@colyseus/core";
 import { logger, matchMaker, Room } from "@colyseus/core";
 import type { CollapseShape, GridGeneratorInput } from "@generals-plus/engine";
@@ -26,6 +25,7 @@ import {
   SetupState,
 } from "@generals-plus/shared-types";
 
+import { resolveAuthUser } from "#/features/auth/auth-config";
 import type { CreateGameOptions } from "#/features/game/utils";
 import { createGame, generateSeed } from "#/features/game/utils";
 import {
@@ -39,10 +39,8 @@ import {
   onSetupRoomDisposed,
 } from "#/features/setup/custom-room-registry";
 import { setupSettingsUpdateSchema } from "#/features/setup/schemas";
-import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
 
 const DEFAULT_MAX_PLAYERS = 8;
-const userRepository = new MongoUserRepository();
 const SETUP_TEAM_PREFIX = "setup_team_";
 const DEMOLITION_FINAL_TEAM_IDS = ["attackers", "defenders"] as const;
 const DEMOLITION_SETUP_TEAM_IDS = ["attackers", "defenders"] as const;
@@ -152,21 +150,7 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   }
 
   static async onAuth(token: string) {
-    const decoded = (await JWT.verify(token)) as Record<string, unknown>;
-    const userId = decoded?.id as string | undefined;
-    if (!userId) return decoded;
-
-    try {
-      const user = await userRepository.findById(userId);
-      if (user) {
-        const { password: _, ...safeData } = user;
-        return safeData;
-      }
-    } catch {
-      // Fall through to decoded token data
-    }
-
-    return decoded;
+    return resolveAuthUser(token);
   }
 
   async onJoin(client: Client) {

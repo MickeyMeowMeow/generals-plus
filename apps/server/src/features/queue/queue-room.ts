@@ -1,4 +1,3 @@
-import { JWT } from "@colyseus/auth";
 import type { Client, QueueOptions } from "@colyseus/core";
 import { logger, matchMaker, QueueRoom } from "@colyseus/core";
 import {
@@ -15,6 +14,7 @@ import {
   ROOM_NAMES,
 } from "@generals-plus/shared-types";
 
+import { resolveAuthUser } from "#/features/auth/auth-config";
 import { createGame, generateSeed } from "#/features/game/utils";
 import {
   BASE_TICK_INTERVAL,
@@ -284,21 +284,7 @@ export class MatchQueueRoom extends QueueRoom {
 
   /** Verify the client auth token and return fresh user data from the database. */
   static async onAuth(token: string) {
-    const decoded = (await JWT.verify(token)) as Record<string, unknown>;
-    const userId = decoded?.id as string | undefined;
-    if (!userId) return decoded;
-
-    try {
-      const user = await userRepository.findById(userId);
-      if (user) {
-        const { password: _, ...safeData } = user;
-        return safeData;
-      }
-    } catch {
-      // Fall through to decoded token data
-    }
-
-    return decoded;
+    return resolveAuthUser(token);
   }
 
   /**
