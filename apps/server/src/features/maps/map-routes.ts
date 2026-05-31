@@ -67,7 +67,7 @@ export function registerMapRoutes(app: {
   ) => void;
 }) {
   // List published maps
-  app.get("/api/maps", async (request, response) => {
+  app.get("/maps", async (request, response) => {
     const page = Math.max(1, Number(request.query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(request.query.limit) || 20));
     const mode = request.query.mode as GameMode | undefined;
@@ -87,7 +87,7 @@ export function registerMapRoutes(app: {
   });
 
   // Get single map
-  app.get("/api/maps/:id", async (request, response) => {
+  app.get("/maps/:id", async (request, response) => {
     const map = await mapRepository.findById(getParam(request.params, "id"));
     if (!map) {
       response.status(404).json({ error: "Map not found" });
@@ -97,7 +97,7 @@ export function registerMapRoutes(app: {
   });
 
   // Create map
-  app.post("/api/maps", async (request, response) => {
+  app.post("/maps", async (request, response) => {
     const user = await getAuthorizedUser(request);
     if (!user) {
       response.status(401).json({ error: "Unauthorized" });
@@ -132,7 +132,7 @@ export function registerMapRoutes(app: {
   });
 
   // Update map
-  app.put("/api/maps/:id", async (request, response) => {
+  app.put("/maps/:id", async (request, response) => {
     const userId = await getAuthorizedUserId(request);
     if (!userId) {
       response.status(401).json({ error: "Unauthorized" });
@@ -175,7 +175,7 @@ export function registerMapRoutes(app: {
   });
 
   // Delete map
-  app.delete("/api/maps/:id", async (request, response) => {
+  app.delete("/maps/:id", async (request, response) => {
     const userId = await getAuthorizedUserId(request);
     if (!userId) {
       response.status(401).json({ error: "Unauthorized" });
@@ -194,7 +194,7 @@ export function registerMapRoutes(app: {
   });
 
   // Toggle like
-  app.post("/api/maps/:id/like", async (request, response) => {
+  app.post("/maps/:id/like", async (request, response) => {
     const userId = await getAuthorizedUserId(request);
     if (!userId) {
       response.status(401).json({ error: "Unauthorized" });
