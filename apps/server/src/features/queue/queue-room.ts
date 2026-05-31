@@ -282,9 +282,23 @@ export class MatchQueueRoom extends QueueRoom {
     }
   }
 
-  /** Verify the client auth token before allowing queue participation. */
+  /** Verify the client auth token and return fresh user data from the database. */
   static async onAuth(token: string) {
-    return JWT.verify(token);
+    const decoded = (await JWT.verify(token)) as Record<string, unknown>;
+    const userId = decoded?.id as string | undefined;
+    if (!userId) return decoded;
+
+    try {
+      const user = await userRepository.findById(userId);
+      if (user) {
+        const { password: _, ...safeData } = user;
+        return safeData;
+      }
+    } catch {
+      // Fall through to decoded token data
+    }
+
+    return decoded;
   }
 
   /**
