@@ -321,9 +321,11 @@ describe("client room flows", () => {
     expect(
       await screen.findByRole("dialog", { name: "Choose mode" }),
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Demolition/ })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /Demolition, Ready/ }),
+    ).toBeEnabled();
 
-    await user.click(screen.getByRole("button", { name: /Classic/ }));
+    await user.click(screen.getByRole("button", { name: /Classic, Ready/ }));
 
     expect(
       await screen.findByRole("heading", { name: "Pick Your Color" }),
@@ -528,7 +530,9 @@ describe("client room flows", () => {
 
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Start" }));
-    await user.click(await screen.findByRole("button", { name: /Classic/ }));
+    await user.click(
+      await screen.findByRole("button", { name: /Classic, Ready/ }),
+    );
     await screen.findByRole("heading", { name: "Pick Your Color" });
 
     queueRoom.emitMessage("seat", reservation);
