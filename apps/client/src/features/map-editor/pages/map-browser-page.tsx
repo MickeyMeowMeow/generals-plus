@@ -260,17 +260,18 @@ function MapCard({
         <div className="flex items-center gap-1">
           {(isOwner || isAdmin) && (
             <>
-              {isOwner && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={onEdit}
-                  className={`h-7 px-2 ${isEditDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  <Pencil className="size-3" />
-                </Button>
-              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={onEdit}
+                className={`h-7 px-2 ${isEditDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                title={
+                  isAdmin && !isOwner ? "Edit map as Administrator" : "Edit map"
+                }
+              >
+                <Pencil className="size-3" />
+              </Button>
               <Button
                 type="button"
                 size="sm"

@@ -111,7 +111,7 @@ export interface IMapRepository {
   }): Promise<{ maps: IMap[]; total: number }>;
   update(
     id: string,
-    authorId: string,
+    authorId: string | undefined,
     update: MapUpdateOptions,
   ): Promise<IMap | null>;
   delete(id: string, authorId?: string): Promise<boolean>;

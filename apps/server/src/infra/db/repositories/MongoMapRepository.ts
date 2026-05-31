@@ -105,11 +105,15 @@ export class MongoMapRepository implements IMapRepository {
 
   async update(
     id: string,
-    authorId: string,
+    authorId: string | undefined,
     update: MapUpdateOptions,
   ): Promise<IMap | null> {
+    const filter: Record<string, unknown> = { _id: id };
+    if (authorId) {
+      filter.authorId = authorId;
+    }
     const map = await MapModel.findOneAndUpdate(
-      { _id: id, authorId },
+      filter,
       { $set: update },
       { new: true, runValidators: true },
     ).exec();
