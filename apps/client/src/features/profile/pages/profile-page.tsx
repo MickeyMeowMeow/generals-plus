@@ -8,7 +8,7 @@ import {
   BACKGROUND_PRESETS,
   DEFAULT_USER_PREFERENCES,
 } from "@generals-plus/shared-types";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, Save } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -359,7 +359,8 @@ export function ProfilePage() {
             onClick={() => void handlePreferencesSave()}
             disabled={isSaving}
           >
-            {isSaving ? "Saving..." : "Save Preferences"}
+            <Save className="size-4" />
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </div>
       </div>
