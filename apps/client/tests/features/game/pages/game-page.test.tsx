@@ -149,6 +149,7 @@ function createGameState(
   const player = createPlayer(playerOverrides);
   return {
     mode: GameMode.CLASSIC,
+    tick: 42,
     scoreboard: createScoreboard(),
     players: new Map([["player-1", player]]),
     publicPlayers: new Map<
@@ -228,6 +229,38 @@ describe("GamePage", () => {
     fireEvent.click(screen.getByTestId("move-left"));
 
     expect(sendMoveMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the current turn in the top-left overlay", () => {
+    useGameRoomMock.mockReturnValue({
+      room: {
+        sessionId: "player-1",
+        onMessage: vi.fn().mockReturnValue(() => {}),
+      },
+      playerColors: new Map(),
+      playerNames: new Map(),
+      currentPlayer: createPlayer(),
+      renderGrid: createRenderGrid(1, 1),
+      moveQueue: [],
+      gameState: createGameState(),
+      gameResult: null,
+      sendMove: sendMoveMock,
+      clearMoveQueue: vi.fn(),
+      surrender: surrenderMock,
+      error: null,
+      disconnectMessage: null,
+      isConnecting: false,
+    });
+
+    render(
+      <GamePage
+        connection={createConnection()}
+        source={{ type: "official", onReturn: vi.fn() }}
+      />,
+    );
+
+    expect(screen.getByText("Turn")).toBeTruthy();
+    expect(screen.getByText("42")).toBeTruthy();
   });
 
   it("does not queue a move into a known obstacle", () => {

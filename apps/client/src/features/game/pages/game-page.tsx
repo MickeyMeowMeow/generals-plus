@@ -401,8 +401,17 @@ export function GamePage({ connection, source }: GamePageProps) {
 
   return (
     <div className="fixed inset-0 z-20 bg-game-bg">
-      {isViewingAsSpectator ? (
-        <div className="pointer-events-none fixed inset-x-0 top-0 z-30 p-3">
+      <div className="pointer-events-none fixed left-0 top-0 z-30 flex flex-col items-start gap-2 p-3">
+        <div className="inline-flex items-center rounded-none border border-game-border/80 bg-[rgb(27_27_27/0.76)] px-3 py-1.5 shadow-xl shadow-black/25 backdrop-blur-sm">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-game-text-dim/80">
+            Turn
+          </span>
+          <span className="ml-2 text-[15px] font-semibold tabular-nums text-game-text">
+            {gameState.tick}
+          </span>
+        </div>
+
+        {isViewingAsSpectator ? (
           <div className="pointer-events-auto inline-flex rounded-none border border-game-border/80 bg-[rgb(27_27_27/0.76)] p-1 shadow-xl shadow-black/25 backdrop-blur-sm">
             <Button
               type="button"
@@ -416,8 +425,8 @@ export function GamePage({ connection, source }: GamePageProps) {
               <Undo2 className="mt-px size-5" />
             </Button>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
 
       <GameApp
         tick={renderTick}
