@@ -66,15 +66,15 @@ export const mapsApi = {
     if (params.mode) search.set("mode", params.mode);
     if (params.sort) search.set("sort", params.sort);
     const qs = search.toString();
-    return request<CustomMapListResponse>(`/api/maps${qs ? `?${qs}` : ""}`);
+    return request<CustomMapListResponse>(`maps${qs ? `?${qs}` : ""}`);
   },
 
   async get(id: string): Promise<CustomMap> {
-    return request<CustomMap>(`/api/maps/${encodeURIComponent(id)}`);
+    return request<CustomMap>(`maps/${encodeURIComponent(id)}`);
   },
 
   async create(payload: CreateCustomMapRequest): Promise<CustomMap> {
-    return request<CustomMap>("/api/maps", {
+    return request<CustomMap>("maps", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -84,21 +84,21 @@ export const mapsApi = {
     id: string,
     payload: UpdateCustomMapRequest,
   ): Promise<CustomMap> {
-    return request<CustomMap>(`/api/maps/${encodeURIComponent(id)}`, {
+    return request<CustomMap>(`maps/${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     });
   },
 
   async remove(id: string): Promise<void> {
-    await request<void>(`/api/maps/${encodeURIComponent(id)}`, {
+    await request<void>(`maps/${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
   },
 
   async toggleLike(id: string): Promise<{ result: "liked" | "unliked" }> {
     return request<{ result: "liked" | "unliked" }>(
-      `/api/maps/${encodeURIComponent(id)}/like`,
+      `maps/${encodeURIComponent(id)}/like`,
       { method: "POST" },
     );
   },
