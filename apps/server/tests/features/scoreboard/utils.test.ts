@@ -1,11 +1,13 @@
 import type {
   IClassicScoreboard,
+  IDemolitionScoreboard,
   IDominationScoreboard,
   ITurfWarScoreboard,
 } from "@generals-plus/engine";
 import { GameMode, PlayerStatus } from "@generals-plus/engine";
 import {
   ClassicScoreboard,
+  DemolitionScoreboard,
   DominationScoreboard,
   PublicPlayer,
   TurfWarScoreboard,
@@ -305,6 +307,292 @@ describe("syncScoreboard", () => {
       expect(dom.teams.length).toBe(2);
       expect(dom.teams.at(0)?.score).toBe(200);
       expect(dom.teams.at(1)?.score).toBe(180);
+    });
+  });
+
+  // ── Demolition mode ───────────────────────────────────────────
+
+  describe("demolition mode", () => {
+    it("creates DemolitionScoreboard for demolition mode", () => {
+      const scoreboard = createScoreboard(GameMode.DEMOLITION);
+
+      expect(scoreboard).toBeInstanceOf(DemolitionScoreboard);
+      expect(scoreboard.mode).toBe(GameMode.DEMOLITION);
+    });
+
+    it("syncs demolition scoreboard with player entries and bomb fields", () => {
+      const target = createScoreboard(GameMode.DEMOLITION);
+      const source: IDemolitionScoreboard = {
+        mode: GameMode.DEMOLITION,
+        players: [
+          { playerId: "p1", troops: 15, land: 7, isAlive: true },
+          { playerId: "p2", troops: 8, land: 3, isAlive: true },
+        ],
+        bombSiteCount: 2,
+        plantedAtSite: "A",
+        detonationTick: 450,
+        plantProgressTicks: 10,
+        defuseProgressTicks: 3,
+        defuserId: "p2",
+        isPlanted: true,
+        isDefused: false,
+        plantDurationTicks: 6,
+        defuseDurationTicks: 10,
+        detonateDurationTicks: 90,
+      };
+
+      syncScoreboard(target, source);
+
+      expect(target.mode).toBe(GameMode.DEMOLITION);
+      const demo = target as DemolitionScoreboard;
+
+      // Player entries
+      expect(demo.players.length).toBe(2);
+      expect(demo.players.at(0)).toMatchObject({
+        playerId: "p1",
+        troops: 15,
+        land: 7,
+        isAlive: true,
+      });
+      expect(demo.players.at(1)).toMatchObject({
+        playerId: "p2",
+        troops: 8,
+        land: 3,
+        isAlive: true,
+      });
+
+      // Bomb fields
+      expect(demo.bombSiteCount).toBe(2);
+      expect(demo.plantedAtSite).toBe("A");
+      expect(demo.detonationTick).toBe(450);
+      expect(demo.plantProgressTicks).toBe(10);
+      expect(demo.defuseProgressTicks).toBe(3);
+      expect(demo.defuserId).toBe("p2");
+      expect(demo.isPlanted).toBe(true);
+      expect(demo.isDefused).toBe(false);
+      expect(demo.plantDurationTicks).toBe(6);
+      expect(demo.defuseDurationTicks).toBe(10);
+      expect(demo.detonateDurationTicks).toBe(90);
+    });
+
+    it("enriches demolition player entries with public player metadata", () => {
+      const target = createScoreboard(GameMode.DEMOLITION);
+      const source: IDemolitionScoreboard = {
+        mode: GameMode.DEMOLITION,
+        players: [
+          { playerId: "p1", troops: 20, land: 10, isAlive: true },
+          { playerId: "p2", troops: 5, land: 2, isAlive: false },
+        ],
+        bombSiteCount: 1,
+        plantedAtSite: null,
+        detonationTick: null,
+        plantProgressTicks: 0,
+        defuseProgressTicks: 0,
+        defuserId: null,
+        isPlanted: false,
+        isDefused: false,
+        plantDurationTicks: 6,
+        defuseDurationTicks: 10,
+        detonateDurationTicks: 90,
+      };
+
+      syncScoreboard(target, source, [
+        Object.assign(new PublicPlayer(), {
+          id: "p1",
+          teamId: "attackers",
+          displayName: "Bomber",
+          color: 0xff0000,
+          status: PlayerStatus.ACTIVE,
+        }),
+        Object.assign(new PublicPlayer(), {
+          id: "p2",
+          teamId: "defenders",
+          displayName: "Defuser",
+          color: 0x0000ff,
+          status: PlayerStatus.ACTIVE,
+        }),
+      ]);
+
+      const demo = target as DemolitionScoreboard;
+      expect(demo.players.at(0)).toMatchObject({
+        playerId: "p1",
+        teamId: "attackers",
+        displayName: "Bomber",
+        color: 0xff0000,
+        troops: 20,
+        land: 10,
+      });
+      expect(demo.players.at(1)).toMatchObject({
+        playerId: "p2",
+        teamId: "defenders",
+        displayName: "Defuser",
+        color: 0x0000ff,
+        troops: 5,
+        land: 2,
+        isAlive: false,
+      });
+    });
+
+    it("uses empty string / -1 defaults for nullable bomb fields", () => {
+      const target = createScoreboard(GameMode.DEMOLITION);
+      const source: IDemolitionScoreboard = {
+        mode: GameMode.DEMOLITION,
+        players: [],
+        bombSiteCount: 2,
+        plantedAtSite: null,
+        detonationTick: null,
+        plantProgressTicks: 0,
+        defuseProgressTicks: 0,
+        defuserId: null,
+        isPlanted: false,
+        isDefused: false,
+        plantDurationTicks: 6,
+        defuseDurationTicks: 10,
+        detonateDurationTicks: 90,
+      };
+
+      syncScoreboard(target, source);
+
+      const demo = target as DemolitionScoreboard;
+      expect(demo.plantedAtSite).toBe("");
+      expect(demo.detonationTick).toBe(-1);
+      expect(demo.defuserId).toBe("");
+    });
+
+    it("builds team entries from player metadata", () => {
+      const target = createScoreboard(GameMode.DEMOLITION);
+      const source: IDemolitionScoreboard = {
+        mode: GameMode.DEMOLITION,
+        players: [
+          { playerId: "p1", troops: 10, land: 5, isAlive: true },
+          { playerId: "p2", troops: 3, land: 1, isAlive: true },
+          { playerId: "p3", troops: 7, land: 4, isAlive: false },
+        ],
+        bombSiteCount: 2,
+        plantedAtSite: null,
+        detonationTick: null,
+        plantProgressTicks: 0,
+        defuseProgressTicks: 0,
+        defuserId: null,
+        isPlanted: false,
+        isDefused: false,
+        plantDurationTicks: 6,
+        defuseDurationTicks: 10,
+        detonateDurationTicks: 90,
+      };
+
+      syncScoreboard(target, source, [
+        Object.assign(new PublicPlayer(), {
+          id: "p1",
+          teamId: "attackers",
+          displayName: "A1",
+          color: 1,
+          status: PlayerStatus.ACTIVE,
+        }),
+        Object.assign(new PublicPlayer(), {
+          id: "p2",
+          teamId: "attackers",
+          displayName: "A2",
+          color: 2,
+          status: PlayerStatus.ACTIVE,
+        }),
+        Object.assign(new PublicPlayer(), {
+          id: "p3",
+          teamId: "defenders",
+          displayName: "D1",
+          color: 3,
+          status: PlayerStatus.ELIMINATED,
+        }),
+      ]);
+
+      const demo = target as DemolitionScoreboard;
+      expect(demo.teams.length).toBe(2);
+
+      // First team (attackers) should have p1 and p2
+      expect(demo.teams.at(0)).toMatchObject({ teamId: "attackers" });
+      expect(Array.from(demo.teams.at(0)?.playerIds ?? [])).toEqual([
+        "p1",
+        "p2",
+      ]);
+
+      // Second team (defenders) should have p3
+      expect(demo.teams.at(1)).toMatchObject({ teamId: "defenders" });
+      expect(Array.from(demo.teams.at(1)?.playerIds ?? [])).toEqual(["p3"]);
+    });
+
+    it("replaces previous team entries on re-sync", () => {
+      const target = createScoreboard(GameMode.DEMOLITION);
+
+      const source1: IDemolitionScoreboard = {
+        mode: GameMode.DEMOLITION,
+        players: [{ playerId: "p1", troops: 5, land: 2, isAlive: true }],
+        bombSiteCount: 2,
+        plantedAtSite: null,
+        detonationTick: null,
+        plantProgressTicks: 0,
+        defuseProgressTicks: 0,
+        defuserId: null,
+        isPlanted: false,
+        isDefused: false,
+        plantDurationTicks: 6,
+        defuseDurationTicks: 10,
+        detonateDurationTicks: 90,
+      };
+      syncScoreboard(target, source1, [
+        Object.assign(new PublicPlayer(), {
+          id: "p1",
+          teamId: "t1",
+          displayName: "Old",
+          color: 1,
+          status: PlayerStatus.ACTIVE,
+        }),
+      ]);
+      expect((target as DemolitionScoreboard).teams.length).toBe(1);
+
+      // Re-sync with different players and teams
+      const source2: IDemolitionScoreboard = {
+        mode: GameMode.DEMOLITION,
+        players: [
+          { playerId: "p2", troops: 20, land: 8, isAlive: true },
+          { playerId: "p3", troops: 15, land: 6, isAlive: true },
+        ],
+        bombSiteCount: 2,
+        plantedAtSite: "B",
+        detonationTick: 500,
+        plantProgressTicks: 8,
+        defuseProgressTicks: 2,
+        defuserId: "p2",
+        isPlanted: true,
+        isDefused: false,
+        plantDurationTicks: 6,
+        defuseDurationTicks: 10,
+        detonateDurationTicks: 90,
+      };
+      syncScoreboard(target, source2, [
+        Object.assign(new PublicPlayer(), {
+          id: "p2",
+          teamId: "new_attackers",
+          displayName: "NewA",
+          color: 4,
+          status: PlayerStatus.ACTIVE,
+        }),
+        Object.assign(new PublicPlayer(), {
+          id: "p3",
+          teamId: "new_defenders",
+          displayName: "NewD",
+          color: 5,
+          status: PlayerStatus.ACTIVE,
+        }),
+      ]);
+
+      const demo = target as DemolitionScoreboard;
+      expect(demo.players.length).toBe(2);
+      expect(demo.teams.length).toBe(2);
+      expect(demo.players.at(0)?.playerId).toBe("p2");
+      expect(demo.players.at(1)?.playerId).toBe("p3");
+      // Bomb fields updated
+      expect(demo.isPlanted).toBe(true);
+      expect(demo.detonationTick).toBe(500);
     });
   });
 });

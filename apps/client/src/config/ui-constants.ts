@@ -22,12 +22,24 @@ function formatGameMode(mode: string): string {
 }
 
 /** Mode options presented by lobby and setup controls. */
-export const GAME_MODE_OPTIONS = Object.values(GameMode).map((mode) => ({
-  id: mode,
-  label: formatGameMode(mode),
-  minPlayers: 2,
-  isEnabled: SUPPORTED_GAME_MODES.has(mode),
-}));
+export const GAME_MODE_OPTIONS = [
+  ...Object.values(GameMode)
+    .filter((mode) => mode !== GameMode.ESPIONAGE)
+    .map((mode) => ({
+      id: mode as GameMode,
+      label: formatGameMode(mode),
+      minPlayers: 2,
+      isEnabled: SUPPORTED_GAME_MODES.has(mode),
+      isVsAi: false as const,
+    })),
+  {
+    id: "vs-ai" as const,
+    label: "AI Arena",
+    minPlayers: 2,
+    isEnabled: false,
+    isVsAi: true as const,
+  },
+];
 
 /** Playable official modes for queue creation. */
 export const OFFICIAL_GAME_MODES = GAME_MODE_OPTIONS.filter(

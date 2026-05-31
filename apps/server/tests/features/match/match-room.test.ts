@@ -967,9 +967,9 @@ describe("MatchRoom", () => {
 
       (room as unknown as { game: unknown }).game = undefined;
 
-      expect(() =>
-        (room as unknown as { onTick: (d: number) => void }).onTick(0),
-      ).toThrow("Game instance not found");
+      await expect(
+        (room as unknown as { onTick: (d: number) => Promise<void> }).onTick(0),
+      ).rejects.toThrow("Game instance not found");
     });
 
     it("throws on processActionQueues when game instance missing", async () => {

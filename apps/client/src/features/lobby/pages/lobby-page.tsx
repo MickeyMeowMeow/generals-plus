@@ -5,7 +5,7 @@ import {
   isValidCustomRoomKeyLength,
 } from "@generals-plus/shared-types";
 import { LogOut, Map as MapIcon, Play, Plus, User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { BrandTitle, StageCenter } from "#/components/layout";
@@ -28,36 +28,55 @@ const CUSTOM_ROOM_KEY_LENGTH_ERROR = `Room id must be ${CUSTOM_ROOM_KEY_MIN_LENG
 
 function ModeCard({
   mode,
+  aiStatus,
   onSelect,
+  onVsAi,
 }: {
   mode: ModeOption;
+  aiStatus?: "loading" | "online" | "offline";
   onSelect: (mode: GameMode) => void;
+  onVsAi?: () => void;
 }) {
+  const isVsAi = mode.isVsAi;
+  const isDisabled = isVsAi ? aiStatus !== "online" : !mode.isEnabled;
+
+  const statusLabel = isVsAi
+    ? aiStatus === "loading"
+      ? "Checking AI..."
+      : aiStatus === "online"
+        ? "Ready"
+        : "AI Service Temporarily Unavailable"
+    : mode.isEnabled
+      ? "Ready"
+      : "Coming soon";
+
   return (
     <Button
       type="button"
       variant="outline"
-      disabled={!mode.isEnabled}
-      onClick={() => onSelect(mode.id)}
-      aria-label={`${mode.label}, ${mode.isEnabled ? "Ready" : "Coming soon"}`}
+      disabled={isDisabled}
+      onClick={() => (isVsAi ? onVsAi?.() : onSelect(mode.id as GameMode))}
+      aria-label={`${mode.label}, ${statusLabel}`}
       className="h-24 w-full flex-col items-start justify-between whitespace-normal border-game-border bg-game-bg p-3 text-left text-game-text hover:border-white/50 hover:bg-game-surface focus-visible:ring-white/30 disabled:opacity-45"
     >
       <span className="text-lg font-semibold leading-tight">{mode.label}</span>
-      <span className="text-xs text-game-text-dim">
-        {mode.isEnabled ? "Ready" : "Coming soon"}
-      </span>
+      <span className="text-xs text-game-text-dim">{statusLabel}</span>
     </Button>
   );
 }
 
 function ModePickerDialog({
   open,
+  aiStatus,
   onClose,
   onSelectMode,
+  onVsAi,
 }: {
   open: boolean;
+  aiStatus: "loading" | "online" | "offline";
   onClose: () => void;
   onSelectMode: (mode: GameMode) => void;
+  onVsAi: () => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
@@ -71,7 +90,13 @@ function ModePickerDialog({
         </DialogHeader>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {GAME_MODE_OPTIONS.map((mode) => (
-            <ModeCard key={mode.id} mode={mode} onSelect={onSelectMode} />
+            <ModeCard
+              key={mode.id}
+              mode={mode}
+              aiStatus={mode.isVsAi ? aiStatus : undefined}
+              onSelect={onSelectMode}
+              onVsAi={mode.isVsAi ? onVsAi : undefined}
+            />
           ))}
         </div>
       </DialogContent>
@@ -85,7 +110,13 @@ function ModePickerDialog({
  * The lobby keeps the root route stable, offers a mode picker before official
  * queueing, and creates private custom setup rooms by URL.
  */
-export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
+export function LobbyPage({
+  onQueue,
+  onVsAi,
+}: {
+  onQueue: (mode: GameMode) => void;
+  onVsAi: () => void;
+}) {
   const navigate = useNavigate();
   const { actions } = useAuth();
   const displayName = useUser((user) => user?.displayName ?? "Commander");
@@ -94,6 +125,25 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
   const [customRoomId, setCustomRoomId] = useState("");
   const [customError, setCustomError] = useState<string | null>(null);
   const [isModePickerOpen, setIsModePickerOpen] = useState(false);
+
+  const [aiStatus, setAiStatus] = useState<"loading" | "online" | "offline">(
+    "loading",
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    networkProvider
+      .checkAiHealth()
+      .then((available) => {
+        if (!cancelled) setAiStatus(available ? "online" : "offline");
+      })
+      .catch(() => {
+        if (!cancelled) setAiStatus("offline");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const createOrJoinCustomRoom = async () => {
     const trimmedRoomId = customRoomId.trim();
@@ -132,10 +182,15 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
       {isModePickerOpen ? (
         <ModePickerDialog
           open={isModePickerOpen}
+          aiStatus={aiStatus}
           onClose={() => setIsModePickerOpen(false)}
           onSelectMode={(mode) => {
             setIsModePickerOpen(false);
             onQueue(mode);
+          }}
+          onVsAi={() => {
+            setIsModePickerOpen(false);
+            onVsAi();
           }}
         />
       ) : null}
@@ -172,7 +227,7 @@ export function LobbyPage({ onQueue }: { onQueue: (mode: GameMode) => void }) {
             </div>
           </div>
 
-          <section className="grid min-h-40 place-items-center border-t border-game-border pt-5 sm:min-h-44">
+          <section className="grid min-h-40 place-items-center gap-3 border-t border-game-border pt-5 sm:min-h-44">
             <Button
               type="button"
               size="lg"
