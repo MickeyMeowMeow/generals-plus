@@ -1,7 +1,7 @@
 import type { GameMode } from "@generals-plus/engine";
 import type { SeatReservation } from "@generals-plus/shared-types";
 import { QueueServerMessage } from "@generals-plus/shared-types";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Stage } from "#/components/layout";
@@ -22,6 +22,8 @@ export default function Index() {
   const [selectedMode, setSelectedMode] = useState<GameMode>(DEFAULT_GAME_MODE);
   const [vsAiReservation, setVsAiReservation] =
     useState<SeatReservation | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const vsAiRoomRef = useRef<any>(null);
 
   const handleVsAi = async () => {
     const available = await networkProvider.checkAiHealth();
@@ -35,11 +37,15 @@ export default function Index() {
     networkProvider
       .joinOrCreate("vs-ai")
       .then((room) => {
+        vsAiRoomRef.current = room;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (room as any).onMessage(
           QueueServerMessage.SEAT_RESERVATION,
           (reservation: SeatReservation) => {
             setVsAiReservation(reservation);
+            // Leave the matchmaking room once we have a game reservation
+            room.leave();
+            vsAiRoomRef.current = null;
           },
         );
       })
@@ -69,6 +75,8 @@ export default function Index() {
         source={{
           type: "official",
           onReturn: () => {
+            vsAiRoomRef.current?.leave();
+            vsAiRoomRef.current = null;
             setPhase("lobby");
             setVsAiReservation(null);
           },
