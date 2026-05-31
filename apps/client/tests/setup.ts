@@ -14,7 +14,6 @@ if (!("EventSource" in globalThis)) {
       onmessage: ((e: MessageEvent) => void) | null = null;
       onerror: ((e: Event) => void) | null = null;
       onopen: ((e: Event) => void) | null = null;
-      constructor(_url: string | URL) {}
       close() {}
       addEventListener() {}
       removeEventListener() {}
