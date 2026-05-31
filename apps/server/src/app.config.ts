@@ -63,9 +63,7 @@ async function colyseusAdminAuthMiddleware(
 
   const cookieToken = getCookie(req.headers.cookie, "colyseus_auth_token");
   const token =
-    (req.query.token as string) ||
-    cookieToken ||
-    req.header("authorization")?.replace("Bearer ", "");
+    cookieToken || req.header("authorization")?.replace("Bearer ", "");
 
   if (!token) {
     res
@@ -91,16 +89,6 @@ async function colyseusAdminAuthMiddleware(
           "<h1>Forbidden</h1><p>Only administrators can access this monitoring page.</p>",
         );
       return;
-    }
-
-    // Set cookie if authenticated via query param to persist nested requests
-    if (req.query.token) {
-      res.cookie("colyseus_auth_token", req.query.token as string, {
-        path: "/colyseus",
-        httpOnly: true,
-        sameSite: "lax",
-        secure: req.secure || req.headers["x-forwarded-proto"] === "https",
-      });
     }
 
     next();
@@ -177,13 +165,58 @@ export default defineServer({
     // 1. Establish database connection before mounting routes
     await connectDB();
 
-    // 2. Parse JSON bodies for custom room HTTP endpoints.
+    // 2. Parse JSON and URL-encoded bodies.
     app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
 
     // 3. Bind Authentication module routes (/auth/register, /auth/login, etc.)
     app.use(auth.prefix, auth.routes());
 
     registerProfileRoutes(app);
+
+    // 3.5. Bind the secure Colyseus Monitor login endpoint (POST-based cookie exchange)
+    app.post("/colyseus/login", async (req, res) => {
+      const token = req.body.token as string;
+      if (!token) {
+        res
+          .status(400)
+          .send("<h1>Bad Request</h1><p>Missing authentication token.</p>");
+        return;
+      }
+      try {
+        const decoded = (await JWT.verify(token)) as { id?: string } | null;
+        if (!decoded?.id) {
+          res
+            .status(401)
+            .send("<h1>Unauthorized</h1><p>Invalid authentication token.</p>");
+          return;
+        }
+        const user = await userRepository.findById(decoded.id);
+        if (!user?.isAdmin) {
+          res
+            .status(403)
+            .send(
+              "<h1>Forbidden</h1><p>Only administrators can access this monitoring page.</p>",
+            );
+          return;
+        }
+
+        // Set httpOnly cookie with Lax SameSite to allow it to be sent on redirect/history navs
+        res.cookie("colyseus_auth_token", token, {
+          path: "/colyseus",
+          httpOnly: true,
+          sameSite: "lax",
+          secure: req.secure || req.headers["x-forwarded-proto"] === "https",
+        });
+
+        // Redirect to /colyseus/ without any token in URL!
+        res.redirect("/colyseus/");
+      } catch {
+        res
+          .status(401)
+          .send("<h1>Unauthorized</h1><p>Authentication failed.</p>");
+      }
+    });
 
     // 4. Bind Colyseus Monitor (secured for admins in all envs)
     app.use("/colyseus", colyseusAdminAuthMiddleware, monitor());

@@ -289,17 +289,22 @@ export function AdminSettingsPage() {
                 </p>
               </div>
               {authState.token && (
-                <a
-                  href={`${colyseusUrl}?token=${encodeURIComponent(
-                    authState.token,
-                  )}`}
+                <form
+                  action={`${colyseusUrl}/login`}
+                  method="POST"
                   target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 border border-game-border bg-game-bg px-3.5 py-1.5 text-xs font-semibold hover:bg-game-surface transition-colors select-none text-game-text"
+                  className="inline"
+                  rel="noopener"
                 >
-                  <Activity className="size-3.5 text-emerald-400 animate-pulse" />
-                  Inspect Server
-                </a>
+                  <input type="hidden" name="token" value={authState.token} />
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-1.5 border border-game-border bg-game-bg px-3.5 py-1.5 text-xs font-semibold hover:bg-game-surface transition-colors select-none text-game-text cursor-pointer"
+                  >
+                    <Activity className="size-3.5 text-emerald-400 animate-pulse" />
+                    Inspect Server
+                  </button>
+                </form>
               )}
             </div>
           </div>
