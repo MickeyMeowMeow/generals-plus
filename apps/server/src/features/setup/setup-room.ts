@@ -53,6 +53,8 @@ const DEFAULT_MAX_PLAYERS = 8;
 const SETUP_TEAM_PREFIX = "setup_team_";
 const DEMOLITION_FINAL_TEAM_IDS = ["attackers", "defenders"] as const;
 const DEMOLITION_SETUP_TEAM_IDS = ["attackers", "defenders"] as const;
+const PAYLOAD_FINAL_TEAM_IDS = ["team_0", "team_1"] as const;
+const PAYLOAD_SETUP_TEAM_IDS = ["team_0", "team_1"] as const;
 
 const SETTING_LABELS: Record<string, string> = {
   gameMode: "Game Mode",
@@ -96,7 +98,7 @@ interface SetupRoomOptions {
   isPublic?: boolean;
 }
 
-function getDemolitionPlayersPerTeam(maxPlayers: number) {
+function getTwoTeamPlayersPerTeam(maxPlayers: number) {
   return Math.ceil(maxPlayers / 2);
 }
 
@@ -121,8 +123,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     state.isPublic = isPublic;
     state.maxPlayers = maxPlayers;
     state.playersPerTeam =
-      gameMode === GameMode.DEMOLITION
-        ? getDemolitionPlayersPerTeam(maxPlayers)
+      gameMode === GameMode.DEMOLITION || gameMode === GameMode.PAYLOAD
+        ? getTwoTeamPlayersPerTeam(maxPlayers)
         : getDefaultPlayersPerTeam(gameMode);
     state.mapType = GridType.SQUARE;
     state.mapWidth = DefaultGridBounds[GridType.SQUARE].width;
@@ -255,29 +257,32 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         update.playersPerTeam === undefined
       ) {
         update.playersPerTeam =
-          update.gameMode === GameMode.DEMOLITION
+          update.gameMode === GameMode.DEMOLITION ||
+          update.gameMode === GameMode.PAYLOAD
             ? Math.max(
                 this.state.playersPerTeam,
-                getDemolitionPlayersPerTeam(
+                getTwoTeamPlayersPerTeam(
                   update.maxPlayers ?? this.state.maxPlayers,
                 ),
               )
             : getDefaultPlayersPerTeam(update.gameMode);
       } else if (
         (update.gameMode === GameMode.DEMOLITION ||
+          update.gameMode === GameMode.PAYLOAD ||
           (update.gameMode === undefined &&
-            this.state.gameMode === GameMode.DEMOLITION)) &&
+            (this.state.gameMode === GameMode.DEMOLITION ||
+              this.state.gameMode === GameMode.PAYLOAD))) &&
         update.maxPlayers !== undefined &&
         update.playersPerTeam === undefined
       ) {
         update.playersPerTeam = Math.max(
           this.state.playersPerTeam,
-          getDemolitionPlayersPerTeam(update.maxPlayers),
+          getTwoTeamPlayersPerTeam(update.maxPlayers),
         );
       }
 
       // playersPerTeam must be < maxPlayers for standard modes, and large
-      // enough to fit two fixed teams in Demolition.
+      // enough to fit two fixed teams in Demolition and Payload.
       if (
         update.maxPlayers !== undefined ||
         update.playersPerTeam !== undefined
@@ -286,10 +291,10 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         const activePlayersPerTeam =
           update.playersPerTeam ?? this.state.playersPerTeam;
         const activeMode = update.gameMode ?? this.state.gameMode;
-        if (
-          activeMode !== GameMode.DEMOLITION &&
-          activePlayersPerTeam >= activeMaxPlayers
-        ) {
+        const isTwoTeamMode =
+          activeMode === GameMode.DEMOLITION || activeMode === GameMode.PAYLOAD;
+
+        if (!isTwoTeamMode && activePlayersPerTeam >= activeMaxPlayers) {
           this.sendValidationFailed(client, {
             severity: "warning",
             message: "Players per team must be less than max players.",
@@ -297,13 +302,15 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           return;
         }
         if (
-          activeMode === GameMode.DEMOLITION &&
-          activePlayersPerTeam < getDemolitionPlayersPerTeam(activeMaxPlayers)
+          isTwoTeamMode &&
+          activePlayersPerTeam < getTwoTeamPlayersPerTeam(activeMaxPlayers)
         ) {
           this.sendValidationFailed(client, {
             severity: "warning",
             message:
-              "Players per team must be at least half of max players in Demolition.",
+              activeMode === GameMode.DEMOLITION
+                ? "Players per team must be at least half of max players in Demolition."
+                : "Players per team must be at least half of max players in Payload.",
           });
           return;
         }
@@ -587,6 +594,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           });
           return;
         }
+        if (this.state.gameMode === GameMode.PAYLOAD) {
+          this.sendValidationFailed(client, {
+            severity: "warning",
+            field: "team",
+            message: "Payload teams are fixed to Team 1 and Team 2.",
+          });
+          return;
+        }
 
         const teamId = this.createSetupTeamForPlayer(player);
         if (!teamId) {
@@ -728,10 +743,15 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     }
 
     if (this.state.gameMode === GameMode.PAYLOAD) {
+      const countA = this.countPlayersOnTeam("team_0");
+      const countB = this.countPlayersOnTeam("team_1");
       return {
         ...base,
+        generalCount: this.state.playersPerTeam * 2,
         isPayload: true,
         payloadCartSize: this.state.payloadCartSize,
+        payloadLeftCount: countA,
+        payloadRightCount: countB,
       };
     }
 
@@ -934,6 +954,11 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         teamId as (typeof DEMOLITION_SETUP_TEAM_IDS)[number],
       );
     }
+    if (this.state.gameMode === GameMode.PAYLOAD) {
+      return PAYLOAD_SETUP_TEAM_IDS.includes(
+        teamId as (typeof PAYLOAD_SETUP_TEAM_IDS)[number],
+      );
+    }
 
     return this.state.players.some((player) => player.teamId === teamId);
   }
@@ -984,6 +1009,9 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     if (this.state.gameMode === GameMode.DEMOLITION) {
       return DEMOLITION_FINAL_TEAM_IDS.length;
     }
+    if (this.state.gameMode === GameMode.PAYLOAD) {
+      return PAYLOAD_FINAL_TEAM_IDS.length;
+    }
 
     return null;
   }
@@ -991,6 +1019,9 @@ export class SetupRoom extends Room<{ state: SetupState }> {
   private assignNextSetupTeamId(counts = this.getCurrentTeamCounts()): string {
     if (this.state.gameMode === GameMode.DEMOLITION) {
       return this.assignDemolitionSetupTeamId(counts);
+    }
+    if (this.state.gameMode === GameMode.PAYLOAD) {
+      return this.assignPayloadSetupTeamId(counts);
     }
 
     const teamCapacity = this.getTeamCapacity();
@@ -1014,6 +1045,29 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     const teamId = this.createSetupTeamId(counts.keys());
     counts.set(teamId, 1);
     return teamId;
+  }
+
+  private assignPayloadSetupTeamId(
+    counts = this.getCurrentTeamCounts(),
+  ): string {
+    const teamCapacity = this.getTeamCapacity();
+    const availableTeamIds = PAYLOAD_SETUP_TEAM_IDS.filter(
+      (teamId) => (counts.get(teamId) ?? 0) < teamCapacity,
+    );
+    const candidatePool =
+      availableTeamIds.length > 0
+        ? availableTeamIds
+        : [...PAYLOAD_SETUP_TEAM_IDS];
+    const minCount = Math.min(
+      ...candidatePool.map((teamId) => counts.get(teamId) ?? 0),
+    );
+    const candidateTeamIds = candidatePool.filter(
+      (teamId) => (counts.get(teamId) ?? 0) === minCount,
+    );
+    const chosenTeamId =
+      this.pickRandomTeamId(candidateTeamIds) ?? candidateTeamIds[0];
+    counts.set(chosenTeamId, (counts.get(chosenTeamId) ?? 0) + 1);
+    return chosenTeamId;
   }
 
   private assignDemolitionSetupTeamId(
@@ -1107,6 +1161,26 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       );
     }
 
+    if (this.state.gameMode === GameMode.PAYLOAD) {
+      return Object.fromEntries(
+        this.state.players.map((player) => {
+          if (
+            PAYLOAD_FINAL_TEAM_IDS.includes(
+              player.teamId as (typeof PAYLOAD_FINAL_TEAM_IDS)[number],
+            )
+          ) {
+            return [player.id, player.teamId];
+          }
+
+          const groupIndex = Math.max(
+            0,
+            occupiedTeamIds.indexOf(player.teamId),
+          );
+          return [player.id, PAYLOAD_FINAL_TEAM_IDS[groupIndex] ?? "team_1"];
+        }),
+      );
+    }
+
     return Object.fromEntries(
       this.state.players.map((player) => {
         const groupIndex = Math.max(0, occupiedTeamIds.indexOf(player.teamId));
@@ -1139,6 +1213,22 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       }
 
       return DEMOLITION_SETUP_TEAM_IDS.every(
+        (teamId) => (teamCounts.get(teamId) ?? 0) <= teamCapacity,
+      );
+    }
+
+    if (this.state.gameMode === GameMode.PAYLOAD) {
+      for (const player of this.state.players) {
+        if (
+          !PAYLOAD_SETUP_TEAM_IDS.includes(
+            player.teamId as (typeof PAYLOAD_SETUP_TEAM_IDS)[number],
+          )
+        ) {
+          return false;
+        }
+      }
+
+      return PAYLOAD_SETUP_TEAM_IDS.every(
         (teamId) => (teamCounts.get(teamId) ?? 0) <= teamCapacity,
       );
     }

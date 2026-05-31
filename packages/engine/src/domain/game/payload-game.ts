@@ -1,5 +1,6 @@
 import { ActionType } from "#/domain/action/action-type";
 import type { Action } from "#/domain/action/interfaces";
+import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
 import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
 import { EffectType } from "#/domain/effect/effect-type";
@@ -51,6 +52,73 @@ export class PayloadGame extends BaseGame implements IPayloadGame {
     this.payloadSpeedTicks = options?.payloadSpeedTicks ?? 4;
     this.payloadCartSize = options?.payloadCartSize ?? 3;
     this.payloadRequiredOccupied = options?.payloadRequiredOccupied ?? 6;
+  }
+
+  protected assignStartPositions(
+    targetTerrain: Terrain = Terrain.GENERAL,
+  ): void {
+    if (this.spawnPositions) {
+      super.assignStartPositions(targetTerrain);
+      return;
+    }
+
+    const generalCells: ICell[] = [];
+    this.grid.forEach((cell) => {
+      if (cell.terrain === Terrain.GENERAL) {
+        generalCells.push(cell);
+      }
+    });
+
+    // Find the average X coordinate of all generals
+    let sumX = 0;
+    for (const cell of generalCells) {
+      sumX += cell.coordinate.x;
+    }
+    const midX = generalCells.length > 0 ? sumX / generalCells.length : 0;
+
+    const leftGenerals = generalCells.filter(
+      (cell) => cell.coordinate.x < midX,
+    );
+    const rightGenerals = generalCells.filter(
+      (cell) => cell.coordinate.x >= midX,
+    );
+
+    const teamIds = Array.from(this.teams.keys()).sort();
+    const teamALeft = teamIds[0] ?? "";
+    const teamBRight = teamIds[1] ?? "";
+
+    const playersA = Array.from(this.players.values()).filter(
+      (p) => p.team.teamId === teamALeft,
+    );
+    const playersB = Array.from(this.players.values()).filter(
+      (p) => p.team.teamId === teamBRight,
+    );
+
+    let idxA = 0;
+    for (const cell of leftGenerals) {
+      if (idxA < playersA.length) {
+        cell.terrain = targetTerrain;
+        cell.owner = playersA[idxA];
+        idxA++;
+      } else {
+        cell.terrain = Terrain.PLAIN; // Convert unused general on Team 1 side to neutral plain
+        cell.owner = null;
+        cell.troopCount = null;
+      }
+    }
+
+    let idxB = 0;
+    for (const cell of rightGenerals) {
+      if (idxB < playersB.length) {
+        cell.terrain = targetTerrain;
+        cell.owner = playersB[idxB];
+        idxB++;
+      } else {
+        cell.terrain = Terrain.PLAIN; // Convert unused general on Team 2 side to neutral plain
+        cell.owner = null;
+        cell.troopCount = null;
+      }
+    }
   }
 
   startGame(): void {

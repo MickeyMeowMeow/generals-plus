@@ -154,6 +154,11 @@ export abstract class AbstractGridGenerator<
     const cityInitialTroops =
       options.cityInitialTroops ?? DefaultGenOptions.cityInitialTroops;
 
+    const payloadLeftCount =
+      "payloadLeftCount" in options ? (options.payloadLeftCount ?? 0) : 0;
+    const payloadRightCount =
+      "payloadRightCount" in options ? (options.payloadRightCount ?? 0) : 0;
+
     if (
       mountainRate < MIN_RATE ||
       mountainRate > MAX_RATE ||
@@ -188,6 +193,8 @@ export abstract class AbstractGridGenerator<
       cityInitialTroops,
       isPayload,
       payloadCartSize,
+      payloadLeftCount,
+      payloadRightCount,
     };
   }
 
@@ -280,18 +287,26 @@ export abstract class AbstractGridGenerator<
         this.getPayloadTrackGeometry(bounds, isHex, config.payloadCartSize);
 
       const selected: ICoordinate[] = [];
-      const halfCount = Math.ceil(generalCount / 2);
+      const leftCount =
+        typeof config.payloadLeftCount === "number" &&
+        config.payloadLeftCount > 0
+          ? config.payloadLeftCount
+          : Math.ceil(generalCount / 2);
+      const rightCount =
+        typeof config.payloadRightCount === "number" &&
+        config.payloadRightCount > 0
+          ? config.payloadRightCount
+          : generalCount - leftCount;
 
       if (isHex) {
         // Hex: spread horizontally at same y (hex narrows at top/bottom)
         const genYL = leftY - 2;
-        for (let i = 0; i < halfCount; i++) {
+        for (let i = 0; i < leftCount; i++) {
           const x = startX + i;
           if (genYL >= 0 && terrainGrid.isValid({ x, y: genYL })) {
             selected.push({ x, y: genYL });
           }
         }
-        const rightCount = generalCount - selected.length;
         const genYR = rightY + 2;
         for (let i = 0; i < rightCount; i++) {
           const x = endX - i;
@@ -301,11 +316,10 @@ export abstract class AbstractGridGenerator<
         }
       } else {
         // Square: stack vertically at same x
-        for (let i = 0; i < halfCount; i++) {
+        for (let i = 0; i < leftCount; i++) {
           const y = leftY - 2 - i;
           if (y >= 1) selected.push({ x: startX, y });
         }
-        const rightCount = generalCount - selected.length;
         for (let i = 0; i < rightCount; i++) {
           const y = rightY + 2 + i;
           if (y < height - 1) selected.push({ x: endX, y });
