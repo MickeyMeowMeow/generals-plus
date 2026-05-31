@@ -36,7 +36,7 @@ export function MapBrowserPage() {
         setError(err instanceof Error ? err.message : "Failed to load maps");
       })
       .finally(() => setLoading(false));
-  }, [page, limit, sort]);
+  }, [page, sort]);
 
   useEffect(() => {
     load();
