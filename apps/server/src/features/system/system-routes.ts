@@ -34,11 +34,22 @@ export function registerSystemRoutes(app: {
     handler: (req: Request, res: Response) => Promise<void>,
   ) => void;
 }) {
-  // Get global settings (publicly accessible)
-  app.get("/system/settings", async (_request, response) => {
+  // Get global settings (publicly accessible, but filters sensitive fields for non-admins)
+  app.get("/system/settings", async (request, response) => {
     try {
       const settings = await systemSettingsRepository.getSettings();
-      response.json(settings);
+      const user = await getAuthorizedUser(request);
+      if (user?.isAdmin) {
+        response.json(settings);
+      } else {
+        response.json({
+          allowMapCreation: settings.allowMapCreation,
+          allowMapUpdates: settings.allowMapUpdates,
+          systemBanner: settings.systemBanner,
+          maxMapsPerUser: settings.maxMapsPerUser,
+          maintenanceMode: settings.maintenanceMode,
+        });
+      }
     } catch (_error) {
       response.status(500).json({ error: "Failed to fetch system settings" });
     }

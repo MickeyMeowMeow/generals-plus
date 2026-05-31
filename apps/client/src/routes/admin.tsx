@@ -1,13 +1,13 @@
-import { RequireAuthenticated } from "#/common/guards";
+import { RequireAdmin } from "#/common/guards";
 import { Stage } from "#/components/layout";
 import { AdminSettingsPage } from "#/features/admin/pages/admin-settings-page";
 
 export default function AdminRoute() {
   return (
-    <RequireAuthenticated>
+    <RequireAdmin>
       <Stage>
         <AdminSettingsPage />
       </Stage>
-    </RequireAuthenticated>
+    </RequireAdmin>
   );
 }
