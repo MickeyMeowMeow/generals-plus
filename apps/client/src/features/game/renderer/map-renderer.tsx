@@ -146,7 +146,7 @@ export function MapRenderer({
           cartSize={cartSize}
         />
       )}
-      <SiteLabelLayer grid={grid} />
+      <SiteLabelLayer grid={grid} tick={tick} />
       <MoveQueueLayer grid={grid} moveQueue={moveQueue} />
       <TroopLayer
         tick={tick}

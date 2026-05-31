@@ -1,4 +1,4 @@
-import { Terrain } from "@generals-plus/engine";
+import { Terrain, Visibility } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Container, Text, TextStyle } from "pixi.js";
 import { useMemo } from "react";
@@ -11,23 +11,33 @@ import type {
 
 extend({ Container, Text });
 
-const SITE_TEXT_STYLE = new TextStyle({
+const siteLabelBaseStyle = {
   fontFamily: RenderConfig.siteLabelFontFamily,
   fontSize: RenderConfig.cellStride * RenderConfig.siteLabelFontSizeRatio,
   fontWeight: RenderConfig.siteLabelFontWeight,
-  fill: RenderConfig.siteLabelColor,
   stroke: {
     color: RenderConfig.siteLabelStrokeColor,
     width: RenderConfig.siteLabelStrokeWidth,
   },
+};
+
+const SITE_TEXT_STYLE = new TextStyle({
+  ...siteLabelBaseStyle,
+  fill: RenderConfig.siteLabelColor,
+});
+
+const SHROUDED_SITE_TEXT_STYLE = new TextStyle({
+  ...siteLabelBaseStyle,
+  fill: 0x8a8d93,
 });
 
 interface SiteLabelLayerProps {
   grid: RenderGrid;
+  tick?: number;
 }
 
-export function SiteLabelLayer({ grid }: SiteLabelLayerProps) {
-  // Assume that site labels remain unchanged across ticks, so only compute once on mount.
+export function SiteLabelLayer({ grid, tick }: SiteLabelLayerProps) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tick is intentionally included to force a refresh each tick, since cell visibility changes across ticks
   const siteCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; label: string }> = [];
     grid.forEach((cell) => {
@@ -44,7 +54,7 @@ export function SiteLabelLayer({ grid }: SiteLabelLayerProps) {
       }
     });
     return cells;
-  }, [grid]);
+  }, [grid, tick]);
 
   return (
     <pixiContainer>
@@ -58,7 +68,11 @@ export function SiteLabelLayer({ grid }: SiteLabelLayerProps) {
             anchor={0.5}
             x={x * RenderConfig.cellStride}
             y={y * RenderConfig.cellStride}
-            style={SITE_TEXT_STYLE}
+            style={
+              cell.visibility === Visibility.SHROUDED
+                ? SHROUDED_SITE_TEXT_STYLE
+                : SITE_TEXT_STYLE
+            }
           />
         );
       })}
