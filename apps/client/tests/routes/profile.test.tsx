@@ -40,7 +40,7 @@ describe("profile route", () => {
           espionage: 1000,
         },
         preferences: {
-          backgroundImage: { source: "preset", presetId: "classic" },
+          backgroundImage: { source: "preset", presetId: "default" },
           avatar: { source: "default" },
           stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
         },

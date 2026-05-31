@@ -56,13 +56,13 @@ describe("MongoUserRepository and UserModel tests", () => {
       await user.validate();
 
       expect(user.preferences.backgroundImage.source).toBe("preset");
-      expect(user.preferences.backgroundImage.presetId).toBe("classic");
+      expect(user.preferences.backgroundImage.presetId).toBe("default");
     });
 
     it.each([
       [
         "unknown background source",
-        { backgroundImage: { source: "uploaded", presetId: "classic" } },
+        { backgroundImage: { source: "uploaded", presetId: "default" } },
       ],
       ["preset without presetId", { backgroundImage: { source: "preset" } }],
       [
@@ -70,7 +70,7 @@ describe("MongoUserRepository and UserModel tests", () => {
         {
           backgroundImage: {
             source: "preset",
-            presetId: "classic",
+            presetId: "default",
             customUrl: "https://example.com/bg.jpg",
           },
         },
@@ -85,7 +85,7 @@ describe("MongoUserRepository and UserModel tests", () => {
           backgroundImage: {
             source: "customUrl",
             customUrl: "https://example.com/bg.jpg",
-            presetId: "classic",
+            presetId: "default",
           },
         },
       ],
