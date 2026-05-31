@@ -219,4 +219,25 @@ describe("VisibilityMap", () => {
     expect(defenderPerceivedCellWithSight?.item).not.toBeNull();
     expect(defenderPerceivedCellWithSight?.item?.type).toBe(ItemType.BOMB);
   });
+
+  it("always shows BOMB_SITE terrain and siteIndex under SHROUDED and HIDDEN states", () => {
+    const cell = new Cell({
+      coordinate: { x: 1, y: 1 },
+      terrain: Terrain.BOMB_SITE,
+      siteIndex: 2, // site 'C'
+      troopCount: 5,
+    });
+
+    const shrouded = createVisionCell(cell, Visibility.SHROUDED);
+    expect(shrouded.visibility).toBe(Visibility.SHROUDED);
+    expect(shrouded.terrain).toBe(Terrain.BOMB_SITE);
+    expect(shrouded.siteIndex).toBe(2);
+    expect(shrouded.troopCount).toBeNull(); // troops still hidden under shroud
+
+    const hidden = createVisionCell(cell, Visibility.HIDDEN);
+    expect(hidden.visibility).toBe(Visibility.HIDDEN);
+    expect(hidden.terrain).toBe(Terrain.BOMB_SITE);
+    expect(hidden.siteIndex).toBe(2);
+    expect(hidden.troopCount).toBeNull(); // troops still hidden when hidden
+  });
 });

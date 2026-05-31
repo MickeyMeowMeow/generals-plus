@@ -24,10 +24,11 @@ const SITE_TEXT_STYLE = new TextStyle({
 
 interface SiteLabelLayerProps {
   grid: RenderGrid;
+  tick?: number;
 }
 
-export function SiteLabelLayer({ grid }: SiteLabelLayerProps) {
-  // Assume that site labels remain unchanged across ticks, so only compute once on mount.
+export function SiteLabelLayer({ grid, tick }: SiteLabelLayerProps) {
+  // Assume that site labels remain unchanged across ticks, but we recompute when tick changes to handle in-place grid mutation on initialization.
   const siteCells = useMemo(() => {
     const cells: Array<{ cell: RenderGridCell; label: string }> = [];
     grid.forEach((cell) => {
@@ -44,7 +45,7 @@ export function SiteLabelLayer({ grid }: SiteLabelLayerProps) {
       }
     });
     return cells;
-  }, [grid]);
+  }, [grid, tick]);
 
   return (
     <pixiContainer>
