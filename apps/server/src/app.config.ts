@@ -177,6 +177,7 @@ export default defineServer({
     // 3.5. Bind the secure Colyseus Monitor login endpoint (POST-based cookie exchange)
     app.post("/colyseus/login", async (req, res) => {
       const token = req.body.token as string;
+      const basePath = (req.body.basePath as string) || "";
       if (!token) {
         res
           .status(400)
@@ -203,14 +204,14 @@ export default defineServer({
 
         // Set httpOnly cookie with Lax SameSite to allow it to be sent on redirect/history navs
         res.cookie("colyseus_auth_token", token, {
-          path: "/colyseus",
+          path: `${basePath}/colyseus`,
           httpOnly: true,
           sameSite: "lax",
           secure: req.secure || req.headers["x-forwarded-proto"] === "https",
         });
 
         // Redirect to /colyseus/ without any token in URL!
-        res.redirect("/colyseus/");
+        res.redirect(`${basePath}/colyseus/`);
       } catch {
         res
           .status(401)
