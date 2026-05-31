@@ -132,7 +132,7 @@ export function MapMetadataPanel() {
       <div>
         <Label className="text-xs text-game-text-dim">Supported Modes</Label>
         <div className="mt-1 grid grid-cols-2 gap-1.5">
-          {GAME_MODE_OPTIONS.map((mode) => {
+          {GAME_MODE_OPTIONS.filter((m) => !m.isVsAi).map((mode) => {
             const active = supportedModes.includes(mode.id);
             return (
               <label
