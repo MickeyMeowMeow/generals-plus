@@ -74,8 +74,6 @@ export function validateMapGrid(grid: GridTemplate): MapValidationResult {
 
   // Count generals (using absolute coordinates)
   const generalCoords: { x: number; y: number }[] = [];
-  let _flagCount = 0;
-  let _bombSiteCount = 0;
 
   for (let y = 0; y < cells.length; y++) {
     const minX = getMinX(gridType, bounds, y);
@@ -85,8 +83,6 @@ export function validateMapGrid(grid: GridTemplate): MapValidationResult {
       if (cell.terrain === Terrain.GENERAL) {
         generalCoords.push({ x, y });
       }
-      if (cell.terrain === Terrain.FLAG) _flagCount++;
-      if (cell.terrain === Terrain.BOMB_SITE) _bombSiteCount++;
     }
   }
 
