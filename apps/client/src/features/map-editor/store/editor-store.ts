@@ -166,13 +166,29 @@ function pushHistory<S extends EditorState>(state: S, next: Partial<S>): S {
 }
 
 function recomputeBombSiteIndices(cells: CellTemplate[][]): CellTemplate[][] {
-  let counter = 0;
-  return cells.map((row) =>
-    row.map((cell) => {
-      if (cell.terrain === T.BOMB_SITE) {
-        return { ...cell, siteIndex: counter++ };
+  // Collect existing indices (excluding the newly placed site)
+  const usedIndices = new Set<number>();
+  for (const row of cells) {
+    for (const cell of row) {
+      if (cell.terrain === T.BOMB_SITE && cell.siteIndex !== null) {
+        usedIndices.add(cell.siteIndex);
       }
-      return cell;
+    }
+  }
+
+  const nextAvailable = (): number => {
+    let i = 0;
+    while (usedIndices.has(i)) i++;
+    usedIndices.add(i);
+    return i;
+  };
+
+  return cells.map((row, y) =>
+    row.map((cell, x) => {
+      if (cell.terrain !== T.BOMB_SITE) return cell;
+      if (cell.siteIndex !== null) return cell;
+      // Newly placed or stripped site: assign smallest available index
+      return { ...cell, siteIndex: nextAvailable() };
     }),
   );
 }
@@ -410,7 +426,7 @@ export const useEditorStore = create<EditorState & EditorActions>(
             newCells = setCellAt(state, coord, {
               terrain: T.BOMB_SITE as Terrain,
               troopCount: null,
-              siteIndex: 0,
+              siteIndex: null,
             });
             if (cell.terrain === T.GENERAL) newSpawns = removeSpawnAt(coord);
             newCells = recomputeBombSiteIndices(newCells);

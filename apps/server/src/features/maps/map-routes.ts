@@ -200,7 +200,7 @@ export function registerMapRoutes(app: {
     try {
       const map = await mapRepository.update(
         getParam(request.params, "id"),
-        userId,
+        isAdmin ? undefined : userId,
         result.data,
       );
       if (!map) {
