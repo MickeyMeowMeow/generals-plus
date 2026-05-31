@@ -1,3 +1,4 @@
+import { Terrain, Visibility } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import { useCallback } from "react";
@@ -25,6 +26,13 @@ export function getCellFillColor(
   cell: RenderGridCell,
   playerColors: Map<string, number>,
 ) {
+  if (
+    cell.visibility === Visibility.SHROUDED &&
+    cell.terrain === Terrain.BOMB_SITE
+  ) {
+    return 0x525356;
+  }
+
   if (cell.ownerIndex) {
     return playerColors.get(cell.ownerIndex) ?? 0x333333;
   }
