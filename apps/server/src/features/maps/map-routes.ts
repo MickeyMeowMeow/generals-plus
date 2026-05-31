@@ -201,11 +201,15 @@ export function registerMapRoutes(app: {
       return;
     }
 
+    const id = getParam(request.params, "id");
+    const map = await mapRepository.findById(id);
+    if (!map) {
+      response.status(404).json({ error: "Map not found" });
+      return;
+    }
+
     try {
-      const result = await mapRepository.toggleLike(
-        getParam(request.params, "id"),
-        userId,
-      );
+      const result = await mapRepository.toggleLike(id, userId);
       response.json({ result });
     } catch (_error) {
       response.status(500).json({ error: "Failed to toggle like" });
