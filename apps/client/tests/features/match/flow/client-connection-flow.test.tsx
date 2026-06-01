@@ -34,8 +34,8 @@ import { resetSetupConnectionsForTesting } from "#/features/game/api/use-setup-r
 import { QueuePage } from "#/features/game/pages/queue-page";
 import { HttpRequestError } from "#/infra/network/provider/colyseus";
 import { RoomStatus } from "#/infra/network/room";
-import { createMockAuth } from "#/tests/helpers/auth";
-import { renderRoute } from "#/tests/helpers/render";
+import { createMockAuth } from "#tests/helpers/auth";
+import { renderRoute } from "#tests/helpers/render";
 
 const networkMocks = vi.hoisted(() => ({
   joinOrCreate: vi.fn(),

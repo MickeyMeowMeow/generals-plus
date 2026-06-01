@@ -11,7 +11,7 @@ import { Switch } from "#/components/ui/switch";
 import type { SystemSettings } from "#/features/admin/api/system-settings-api";
 import { systemSettingsApi } from "#/features/admin/api/system-settings-api";
 import { useAuth } from "#/features/auth/hooks";
-import { resolveColyseusEndpoint } from "#/infra/colyseus/connection";
+import { resolveColyseusEndpoint } from "#/infra/network/connection";
 
 export function AdminSettingsPage() {
   const { state: authState } = useAuth();

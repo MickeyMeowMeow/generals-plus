@@ -3,8 +3,8 @@
 import { cleanup, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createMockAuth } from "#/tests/helpers/auth";
-import { renderRoute } from "#/tests/helpers/render";
+import { createMockAuth } from "#tests/helpers/auth";
+import { renderRoute } from "#tests/helpers/render";
 
 describe("app routes", () => {
   afterEach(() => {

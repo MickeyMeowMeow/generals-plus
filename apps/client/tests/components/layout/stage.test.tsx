@@ -4,8 +4,8 @@ import { describe, expect, test } from "vitest";
 import { Stage } from "#/components/layout";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { AuthProvider } from "#/features/auth/hooks";
-import { createMockAuth } from "#/tests/helpers/auth";
-import { setAuthValue } from "#/tests/helpers/render";
+import { createMockAuth } from "#tests/helpers/auth";
+import { setAuthValue } from "#tests/helpers/render";
 
 describe("Stage background", () => {
   test("sets the stage background from a direct backgroundUrl prop", () => {
