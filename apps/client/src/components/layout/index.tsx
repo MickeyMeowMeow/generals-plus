@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import { useContext } from "react";
@@ -99,9 +100,15 @@ export function StageCenter({ children }: { children: ReactNode }) {
   return (
     <div className="stage-center">
       <div className="stage-center-backdrop" aria-hidden="true" />
-      <MotionScene className="stage-center-content" enableLayout>
-        <div className="px-8 sm:px-12 lg:px-14">{children}</div>
-      </MotionScene>
+      <motion.div
+        layout
+        transition={{ layout: { duration: 0.18, ease: [0.2, 0.9, 0.2, 1] } }}
+        className="stage-center-content"
+      >
+        <MotionScene>
+          <div className="px-8 sm:px-12 lg:px-14">{children}</div>
+        </MotionScene>
+      </motion.div>
     </div>
   );
 }

@@ -10,7 +10,6 @@ import type {
   SetupState,
   TurfWarSetupSettings,
 } from "@generals-plus/shared-types";
-import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 import { Button } from "#/components/ui/button";
@@ -28,7 +27,6 @@ import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { ModeHelpButton } from "#/features/game/components/mode-help-button";
 import { mapsApi } from "#/features/map-editor/api/maps-api";
 import { MapPickerDialog } from "#/features/map-editor/components/map-picker-dialog";
-import { MOTION_DURATION } from "#/features/motion/motion-tokens";
 import { cn } from "#/lib/utils";
 
 interface GameSettingsProps {
@@ -286,11 +284,7 @@ export function GameSettings({
         ) : null}
       </div>
 
-      <motion.div
-        layout
-        transition={{ layout: { duration: MOTION_DURATION.normal } }}
-        className="grid gap-3 text-left sm:grid-cols-2 lg:grid-cols-3"
-      >
+      <div className="grid gap-3 text-left sm:grid-cols-2 lg:grid-cols-3">
         <div className={cn(fieldClassName, "sm:col-span-2 lg:col-span-3")}>
           <Label className={labelClassName}>Map Source</Label>
           <div className="flex flex-wrap items-center gap-2">
@@ -461,82 +455,51 @@ export function GameSettings({
           </Select>
         </div>
 
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={`dims-${currentSettings.mapType}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: MOTION_DURATION.fast }}
-            className="col-span-full grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-          >
-            {(currentSettings.mapType === GridType.HEX
-              ? HEX_NUMBER_FIELDS
-              : SQUARE_NUMBER_FIELDS
-            ).map(renderNumberField)}
-          </motion.div>
-        </AnimatePresence>
+        {(currentSettings.mapType === GridType.HEX
+          ? HEX_NUMBER_FIELDS
+          : SQUARE_NUMBER_FIELDS
+        ).map(renderNumberField)}
 
         {MAP_DETAIL_FIELDS.map(renderNumberField)}
 
         {/* --- MODE SPECIFIC SETTINGS --- */}
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={`mode-${currentSettings.gameMode}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: MOTION_DURATION.fast }}
-            className="col-span-full grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-          >
-            {(MODE_SPECIFIC_FIELDS[currentSettings.gameMode] ?? []).map(
-              renderNumberField,
-            )}
-          </motion.div>
-        </AnimatePresence>
+        {(MODE_SPECIFIC_FIELDS[currentSettings.gameMode] ?? []).map(
+          renderNumberField,
+        )}
 
-        <AnimatePresence mode="wait" initial={false}>
-          {currentSettings.gameMode === GameMode.COLLAPSE ? (
-            <motion.div
-              key="collapse-shape"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: MOTION_DURATION.fast }}
-              className={fieldClassName}
+        {currentSettings.gameMode === GameMode.COLLAPSE && (
+          <div className={fieldClassName}>
+            <Label id="collapse-shape-label" className={labelClassName}>
+              Collapse Shape
+            </Label>
+            <Select
+              disabled={!isHost}
+              value={currentSettings.collapseShape ?? CollapseShape.CIRCLE}
+              onValueChange={(val) => {
+                const shape = SHAPE_OPTIONS.find((o) => o.id === val)?.id;
+                if (shape) {
+                  onChangeSettings({ collapseShape: shape });
+                }
+              }}
             >
-              <Label id="collapse-shape-label" className={labelClassName}>
-                Collapse Shape
-              </Label>
-              <Select
-                disabled={!isHost}
-                value={currentSettings.collapseShape ?? CollapseShape.CIRCLE}
-                onValueChange={(val) => {
-                  const shape = SHAPE_OPTIONS.find((o) => o.id === val)?.id;
-                  if (shape) {
-                    onChangeSettings({ collapseShape: shape });
-                  }
-                }}
+              <SelectTrigger
+                aria-labelledby="collapse-shape-label"
+                size="sm"
+                className="h-7 w-full border-game-border bg-game-bg px-3 text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60"
               >
-                <SelectTrigger
-                  aria-labelledby="collapse-shape-label"
-                  size="sm"
-                  className="h-7 w-full border-game-border bg-game-bg px-3 text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="border border-game-border bg-game-surface text-game-text">
-                  {SHAPE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.id} value={opt.id}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </motion.div>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border border-game-border bg-game-surface text-game-text">
+                {SHAPE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
