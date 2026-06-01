@@ -7,6 +7,7 @@ import type {
   Action,
   IBaseGame,
   IGameResult,
+  IVisionCell,
   MoveAction,
   MoveActionType,
 } from "@generals-plus/engine";
@@ -650,26 +651,61 @@ export class MatchRoom extends Room<{
     const vision = this.state.clientVisions.get(client.sessionId);
     if (!visionGrid || !vision) return;
 
-    vision.cells.clear();
+    const cells = Array.from(visionGrid) as IVisionCell[];
 
-    for (const vc of visionGrid) {
-      const cell = new VisionCellSchema();
-      cell.visibility = vc.visibility;
-      cell.terrain = vc.terrain;
-      cell.troopCount = vc.troopCount ?? -1;
-      cell.ownerIndex = vc.owner?.playerId ?? "";
-      cell.siteIndex = vc.siteIndex ?? -1;
-      cell.willCollapse = vc.willCollapse ?? false;
-
-      if (vc.item) {
-        cell.item_id = vc.item.id;
-        cell.item_type = vc.item.type;
-      } else {
-        cell.item_id = "";
-        cell.item_type = -1;
+    // Grid size changed (first update or map resize): full rebuild
+    if (vision.cells.length !== cells.length) {
+      vision.cells.clear();
+      for (const vc of cells) {
+        vision.cells.push(this.createVisionCell(vc));
       }
-
-      vision.cells.push(cell);
+      return;
     }
+
+    // Incremental update: reuse existing cells, only mutate changed fields
+    for (let i = 0; i < cells.length; i++) {
+      const vc = cells[i];
+      const cell = vision.cells[i];
+
+      if (cell.visibility !== vc.visibility) cell.visibility = vc.visibility;
+      if (cell.terrain !== vc.terrain) cell.terrain = vc.terrain;
+
+      const troopCount = vc.troopCount ?? -1;
+      if (cell.troopCount !== troopCount) cell.troopCount = troopCount;
+
+      const ownerIndex = vc.owner?.playerId ?? "";
+      if (cell.ownerIndex !== ownerIndex) cell.ownerIndex = ownerIndex;
+
+      const siteIndex = vc.siteIndex ?? -1;
+      if (cell.siteIndex !== siteIndex) cell.siteIndex = siteIndex;
+
+      if (cell.willCollapse !== vc.willCollapse)
+        cell.willCollapse = vc.willCollapse;
+
+      const itemId = vc.item?.id ?? "";
+      const itemType = vc.item?.type ?? -1;
+      if (cell.item_id !== itemId) cell.item_id = itemId;
+      if (cell.item_type !== itemType) cell.item_type = itemType;
+    }
+  }
+
+  private createVisionCell(vc: IVisionCell): VisionCellSchema {
+    const cell = new VisionCellSchema();
+    cell.visibility = vc.visibility;
+    cell.terrain = vc.terrain;
+    cell.troopCount = vc.troopCount ?? -1;
+    cell.ownerIndex = vc.owner?.playerId ?? "";
+    cell.siteIndex = vc.siteIndex ?? -1;
+    cell.willCollapse = vc.willCollapse;
+
+    if (vc.item) {
+      cell.item_id = vc.item.id;
+      cell.item_type = vc.item.type;
+    } else {
+      cell.item_id = "";
+      cell.item_type = -1;
+    }
+
+    return cell;
   }
 }
