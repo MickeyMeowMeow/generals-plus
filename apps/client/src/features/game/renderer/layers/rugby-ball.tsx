@@ -29,6 +29,8 @@ export function RugbyBallLayer({ bombMoveSignal, grid }: RugbyBallLayerProps) {
     return cells;
   }, [bombMoveSignal, grid]);
 
+  const texture = useMemo(() => Texture.from(rugbyIcon), []);
+
   return (
     <pixiContainer>
       {ballCells.map((cell) => {
@@ -37,9 +39,6 @@ export function RugbyBallLayer({ bombMoveSignal, grid }: RugbyBallLayerProps) {
         const cellCoord = grid.toCartesian(cell.coordinate);
         const x = (cellCoord.x + 0.28) * RenderConfig.cellStride;
         const y = (cellCoord.y + 0.28) * RenderConfig.cellStride;
-
-        const texture = Texture.from(rugbyIcon);
-
         return (
           <pixiSprite
             key={`rugby-ball-${cell.coordinate.x},${cell.coordinate.y}`}
