@@ -117,7 +117,7 @@ body {
   z-index: 0;
   pointer-events: none;
   content: "";
-  background-image: var(--stage-background-image);
+  background-image: var(--stage-background-image, url("/bg.png"));
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
