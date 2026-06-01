@@ -21,6 +21,6 @@ export const Terrain = {
   GOAL_ZONE: "goal_zone",
   /** The rugby spawn point tile in Rugby Mode. Where rugby balls spawn. */
   RUGBY_SPAWN: "rugby_spawn",
-};
+} as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];
