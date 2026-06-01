@@ -6,6 +6,7 @@ import type {
   IDemolitionScoreboard,
   IDominationScoreboard,
   IPayloadScoreboard,
+  IRugbyScoreboard,
   ITurfWarScoreboard,
 } from "@generals-plus/engine";
 import { GameMode } from "@generals-plus/engine";
@@ -27,6 +28,9 @@ import {
   DominationScoreboardTeamEntry,
   PayloadScoreboard,
   PayloadScoreboardPlayerEntry,
+  RugbyScoreboard,
+  RugbyScoreboardPlayerEntry,
+  RugbyScoreboardTeamEntry,
   TurfWarScoreboard,
   TurfWarScoreboardPlayerEntry,
   TurfWarScoreboardTeamEntry,
@@ -56,6 +60,9 @@ export function createScoreboard(mode: GameModeType): BaseScoreboard {
       break;
     case GameMode.PAYLOAD:
       scoreboard = new PayloadScoreboard();
+      break;
+    case GameMode.RUGBY:
+      scoreboard = new RugbyScoreboard();
       break;
     default:
       scoreboard = new ClassicScoreboard();
@@ -310,6 +317,61 @@ export function syncScoreboard(
         demoTarget.defuseDurationTicks = demoSource.defuseDurationTicks;
       if (demoTarget.detonateDurationTicks !== demoSource.detonateDurationTicks)
         demoTarget.detonateDurationTicks = demoSource.detonateDurationTicks;
+      break;
+    }
+    case GameMode.RUGBY: {
+      const rugbyTarget = target as RugbyScoreboard;
+      const rugbySource = source as IRugbyScoreboard;
+      syncPlayers(
+        rugbyTarget,
+        rugbySource.players,
+        metadataByPlayer,
+        () => new RugbyScoreboardPlayerEntry(),
+        (schema, entry) => {
+          if (schema.troops !== entry.troops) schema.troops = entry.troops;
+          if (schema.land !== entry.land) schema.land = entry.land;
+          if (schema.isAlive !== entry.isAlive) schema.isAlive = entry.isAlive;
+        },
+      );
+      {
+        const teamPlayers = new Map<string, string[]>();
+        for (const entry of rugbySource.players) {
+          const meta = metadataByPlayer.get(entry.playerId);
+          const teamId = meta?.teamId ?? "";
+          let ids = teamPlayers.get(teamId);
+          if (!ids) {
+            ids = [];
+            teamPlayers.set(teamId, ids);
+          }
+          ids.push(entry.playerId);
+        }
+        const teamEntries = Array.from(rugbySource.teamScores.entries());
+        if (rugbyTarget.teams.length !== teamEntries.length) {
+          rugbyTarget.teams.clear();
+          for (const [teamId, score] of teamEntries) {
+            const schema = new RugbyScoreboardTeamEntry();
+            schema.teamId = teamId;
+            schema.score = score;
+            const ids = teamPlayers.get(teamId);
+            if (ids) schema.playerIds.push(...ids);
+            rugbyTarget.teams.push(schema);
+          }
+        } else {
+          for (let i = 0; i < teamEntries.length; i++) {
+            const [teamId, score] = teamEntries[i];
+            const schema = rugbyTarget.teams[i];
+            if (schema.teamId !== teamId) schema.teamId = teamId;
+            if (schema.score !== score) schema.score = score;
+            syncStringArray(schema.playerIds, teamPlayers.get(teamId) ?? []);
+          }
+        }
+      }
+      const interval = tickInterval ?? 500;
+      rugbyTarget.winningScore = rugbySource.winningScore;
+      rugbyTarget.rugbyBallCount = rugbySource.rugbyBallCount;
+      rugbyTarget.rugbyMoveSpeed =
+        (rugbySource.rugbyMoveSpeedTicks * interval) / 1000;
+      rugbyTarget.totalTime = (rugbySource.totalTimeTicks * interval) / 1000;
       break;
     }
     default:

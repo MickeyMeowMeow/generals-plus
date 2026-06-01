@@ -31,6 +31,11 @@ const PAYLOAD_TEAM_GROUPS = [
   { id: "team_1", label: "Team 2" },
 ] as const;
 
+const RUGBY_TEAM_GROUPS = [
+  { id: "team_0", label: "Team 1" },
+  { id: "team_1", label: "Team 2" },
+] as const;
+
 function getTeamCapacity({ playersPerTeam }: { playersPerTeam: number }) {
   return playersPerTeam;
 }
@@ -194,6 +199,7 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
   const shouldShowTeamControls =
     setupState.gameMode === GameMode.DEMOLITION ||
     setupState.gameMode === GameMode.PAYLOAD ||
+    setupState.gameMode === GameMode.RUGBY ||
     setupState.playersPerTeam > 1;
   const occupiedTeamIds = Array.from(
     new Set(
@@ -219,13 +225,22 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
             ).length,
             capacity: teamCapacity,
           }))
-        : occupiedTeamIds.map((teamId) => ({
-            id: teamId,
-            label: "",
-            count: playersWithTeams.filter((player) => player.teamId === teamId)
-              .length,
-            capacity: teamCapacity,
-          }));
+        : setupState.gameMode === GameMode.RUGBY
+          ? RUGBY_TEAM_GROUPS.map((team) => ({
+              ...team,
+              count: playersWithTeams.filter(
+                (player) => player.teamId === team.id,
+              ).length,
+              capacity: teamCapacity,
+            }))
+          : occupiedTeamIds.map((teamId) => ({
+              id: teamId,
+              label: "",
+              count: playersWithTeams.filter(
+                (player) => player.teamId === teamId,
+              ).length,
+              capacity: teamCapacity,
+            }));
   const hasOversizedTeams = teamGroups.some(
     (team) => team.count > team.capacity,
   );
@@ -290,7 +305,8 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
                 !hasEnoughTeams ? (
                   <p className="basis-full text-sm text-amber-300">
                     {setupState.gameMode === GameMode.DEMOLITION ||
-                    setupState.gameMode === GameMode.PAYLOAD
+                    setupState.gameMode === GameMode.PAYLOAD ||
+                    setupState.gameMode === GameMode.RUGBY
                       ? "Members on both teams are required to start the game."
                       : "At least two teams are required to start the game."}
                   </p>
@@ -328,7 +344,8 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
             onCreateTeam={
               shouldShowTeamControls &&
               setupState.gameMode !== GameMode.DEMOLITION &&
-              setupState.gameMode !== GameMode.PAYLOAD
+              setupState.gameMode !== GameMode.PAYLOAD &&
+              setupState.gameMode !== GameMode.RUGBY
                 ? () =>
                     room?.send(SetupClientMessage.PICK_TEAM, {
                       createNew: true,

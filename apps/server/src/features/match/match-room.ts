@@ -10,12 +10,14 @@ import type {
   IVisionCell,
   MoveAction,
   MoveActionType,
+  RugbyGame,
 } from "@generals-plus/engine";
 import {
   ActionType,
   GameMode,
   GameStatus,
   GridType,
+  ItemType,
   PlayerStatus,
   Terrain,
 } from "@generals-plus/engine";
@@ -496,8 +498,31 @@ export class MatchRoom extends Room<{
       if (!playerId) continue;
 
       while (schemaQueue.queue.length > 0) {
-        const entry = schemaQueue.queue.shift();
+        const entry = schemaQueue.queue[0];
         if (!entry) break;
+
+        // Check if Rugby ball carrier is on cooldown
+        if (this.game.mode === GameMode.RUGBY) {
+          const rugbyGame = this.game as RugbyGame;
+          const sourceCell = rugbyGame.grid.get({
+            x: entry.fromX,
+            y: entry.fromY,
+          });
+          if (sourceCell?.item?.type === ItemType.RUGBY_BALL) {
+            const ball = sourceCell.item;
+            const lastMoveTick =
+              rugbyGame.lastBallMoveTickMap.get(ball.id) ?? -1;
+            if (
+              lastMoveTick >= 0 &&
+              rugbyGame.tick - lastMoveTick < rugbyGame.rugbyMoveSpeedTicks
+            ) {
+              // Carrier is on cooldown, keep action in queue and stop processing for this player on this tick
+              break;
+            }
+          }
+        }
+
+        schemaQueue.queue.shift();
 
         if (entry.type === ActionType.CLEAR_QUEUE) {
           schemaQueue.queue.clear();
@@ -678,6 +703,9 @@ export class MatchRoom extends Room<{
       const siteIndex = vc.siteIndex ?? -1;
       if (cell.siteIndex !== siteIndex) cell.siteIndex = siteIndex;
 
+      const zoneIndex = vc.zoneIndex ?? -1;
+      if (cell.zoneIndex !== zoneIndex) cell.zoneIndex = zoneIndex;
+
       if (cell.willCollapse !== vc.willCollapse)
         cell.willCollapse = vc.willCollapse;
 
@@ -697,6 +725,7 @@ export class MatchRoom extends Room<{
     cell.troopCount = vc.troopCount ?? -1;
     cell.ownerIndex = vc.owner?.playerId ?? "";
     cell.siteIndex = vc.siteIndex ?? -1;
+    cell.zoneIndex = vc.zoneIndex ?? -1;
     cell.willCollapse = vc.willCollapse;
 
     if (vc.item) {

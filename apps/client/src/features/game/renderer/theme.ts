@@ -54,6 +54,12 @@ export const TerrainTheme: Record<VisionTerrain, CellTheme> = {
   [Terrain.BOMB_SITE]: {
     color: 0x8aa4c8,
   },
+  [Terrain.GOAL_ZONE]: {
+    color: 0xd8dde3, // same as PLAIN, overlaid dynamically
+  },
+  [Terrain.RUGBY_SPAWN]: {
+    color: 0xd8dde3, // same as PLAIN, overlaid dynamically in editor
+  },
   [Terrain.VOID]: {
     color: RenderConfig.background,
   },

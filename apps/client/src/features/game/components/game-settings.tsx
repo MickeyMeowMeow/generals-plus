@@ -6,6 +6,7 @@ import type {
   DemolitionSetupSettings,
   DominationSetupSettings,
   PayloadSetupSettings,
+  RugbySetupSettings,
   SetupSettings,
   SetupState,
   TurfWarSetupSettings,
@@ -49,7 +50,8 @@ type NumberKeys =
   | ExtractNumberKeys<DominationSetupSettings>
   | ExtractNumberKeys<DemolitionSetupSettings>
   | ExtractNumberKeys<CollapseSetupSettings>
-  | ExtractNumberKeys<PayloadSetupSettings>;
+  | ExtractNumberKeys<PayloadSetupSettings>
+  | ExtractNumberKeys<RugbySetupSettings>;
 
 const PLAYER_NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "maxPlayers", label: "Max Players" },
@@ -102,6 +104,12 @@ const MODE_SPECIFIC_FIELDS: Partial<
     { key: "duration", label: "Duration (s)" },
     { key: "payloadCartSize", label: "Cart Size" },
     { key: "payloadRequiredOccupied", label: "Required Occupied Tiles" },
+  ],
+  [GameMode.RUGBY]: [
+    { key: "rugbyBallCount", label: "Rugby Balls" },
+    { key: "duration", label: "Duration (s)" },
+    { key: "rugbyMoveSpeed", label: "Ball Carrier Speed (s)" },
+    { key: "rugbyWinningScore", label: "Score Target" },
   ],
 };
 
@@ -322,52 +330,52 @@ export function GameSettings({
         </div>
 
         <div className={fieldClassName}>
+          <Label id="game-mode-label" className={labelClassName}>
+            Game Mode
+          </Label>
           <div className="flex items-center gap-1">
-            <Label id="game-mode-label" className={labelClassName}>
-              Game Mode
-            </Label>
+            <Select
+              disabled={!isHost}
+              value={currentSettings.gameMode ?? GameMode.CLASSIC}
+              onValueChange={(val) => {
+                const mode = GAME_MODE_OPTIONS.find(
+                  (o) => o.id === val && !o.isVsAi,
+                )?.id as GameMode | undefined;
+                if (mode) onChangeSettings({ gameMode: mode });
+              }}
+            >
+              <SelectTrigger
+                aria-labelledby="game-mode-label"
+                size="sm"
+                className="h-7 w-full border-game-border bg-game-bg px-3 text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border border-game-border bg-game-surface text-game-text">
+                {GAME_MODE_OPTIONS.filter((m) => !m.isVsAi).map((mode) => {
+                  const supportedByMap =
+                    !isCustomMap ||
+                    !selectedMap ||
+                    selectedMap.supportedModes.includes(mode.id);
+                  return (
+                    <SelectItem
+                      key={mode.id}
+                      value={mode.id}
+                      disabled={!mode.isEnabled || !supportedByMap}
+                    >
+                      {mode.label}
+                      {mode.isEnabled ? "" : " (coming soon)"}
+                      {!supportedByMap ? " (not supported by map)" : ""}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
             <ModeHelpButton
               gameMode={currentSettings.gameMode ?? GameMode.CLASSIC}
-              className="text-game-text-dim hover:text-game-text"
+              className="shrink-0 text-game-text-dim hover:text-game-text"
             />
           </div>
-          <Select
-            disabled={!isHost}
-            value={currentSettings.gameMode ?? GameMode.CLASSIC}
-            onValueChange={(val) => {
-              const mode = GAME_MODE_OPTIONS.find(
-                (o) => o.id === val && !o.isVsAi,
-              )?.id as GameMode | undefined;
-              if (mode) onChangeSettings({ gameMode: mode });
-            }}
-          >
-            <SelectTrigger
-              aria-labelledby="game-mode-label"
-              size="sm"
-              className="h-7 w-full border-game-border bg-game-bg px-3 text-sm text-game-text focus-visible:ring-white/30 disabled:opacity-60"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="border border-game-border bg-game-surface text-game-text">
-              {GAME_MODE_OPTIONS.filter((m) => !m.isVsAi).map((mode) => {
-                const supportedByMap =
-                  !isCustomMap ||
-                  !selectedMap ||
-                  selectedMap.supportedModes.includes(mode.id);
-                return (
-                  <SelectItem
-                    key={mode.id}
-                    value={mode.id}
-                    disabled={!mode.isEnabled || !supportedByMap}
-                  >
-                    {mode.label}
-                    {mode.isEnabled ? "" : " (coming soon)"}
-                    {!supportedByMap ? " (not supported by map)" : ""}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
         </div>
 
         <div className={fieldClassName}>

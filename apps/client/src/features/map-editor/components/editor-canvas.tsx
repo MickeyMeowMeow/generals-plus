@@ -72,6 +72,7 @@ function buildRenderGrid(
       troopCount: cellTpl.troopCount,
       ownerIndex,
       siteIndex: cellTpl.siteIndex,
+      zoneIndex: cellTpl.zoneIndex,
       item: null,
     };
   };
@@ -203,7 +204,12 @@ const EditorScene = memo(function EditorScene({
       onPointerDown={onPointerDown}
     >
       {/* 1. Base cell rendering with correct player colors */}
-      <GridLayer tick={0} grid={grid} playerColors={playerColorByTeam} />
+      <GridLayer
+        tick={0}
+        grid={grid}
+        playerColors={playerColorByTeam}
+        isEditor={true}
+      />
 
       {/* 2. Terrain icons (Mountain, Swamp, Desert, City, Flag, Crown/General) */}
       <IconLayer tick={0} grid={grid} />

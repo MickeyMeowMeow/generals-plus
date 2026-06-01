@@ -27,6 +27,7 @@ export function createGridFromDoc(gridDoc: GridTemplate): Grid {
             terrain: c.terrain,
             troopCount: c.troopCount,
             siteIndex: c.siteIndex,
+            zoneIndex: c.zoneIndex,
           }),
       ),
     );
@@ -52,6 +53,7 @@ export function createGridFromDoc(gridDoc: GridTemplate): Grid {
           terrain: c.terrain,
           troopCount: c.troopCount,
           siteIndex: c.siteIndex,
+          zoneIndex: c.zoneIndex,
         }),
     );
   });
@@ -95,6 +97,7 @@ export function serializeGrid(grid: Grid, spawns: SpawnPoint[]): GridTemplate {
       terrain: cell.terrain,
       troopCount: cell.troopCount,
       siteIndex: cell.siteIndex,
+      zoneIndex: cell.zoneIndex,
     });
   });
 

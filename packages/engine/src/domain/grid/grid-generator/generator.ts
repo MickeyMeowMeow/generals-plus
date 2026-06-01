@@ -7,6 +7,7 @@ import type {
 } from "#/domain/grid/grid-generator/config";
 import {
   DefaultGenOptions,
+  DefaultGridBounds,
   EDGE_MARGIN,
   GENERAL_SAFE_RADIUS,
   MAX_ATTEMPT_COUNT,
@@ -19,7 +20,8 @@ import {
   MOUNTAIN_CLUSTER_MAX_SIZE,
 } from "#/domain/grid/grid-generator/config";
 import type { ICoordinate } from "#/math/coordinate";
-import type { GenericGrid2D, GridBounds, GridType } from "#/math/grid-2d";
+import type { GenericGrid2D, GridBounds } from "#/math/grid-2d";
+import { GridType } from "#/math/grid-2d";
 import { SeededRandom } from "#/math/random";
 
 function coordToString(coord: ICoordinate): string {
@@ -77,6 +79,111 @@ export abstract class AbstractGridGenerator<
     }
 
     const protectedZone = this.buildProtectedZones(generals, terrainGrid);
+
+    if (config.isRugby) {
+      const bounds = terrainGrid.bounds;
+      const isHex = "leftSlant" in bounds;
+      const height = isHex ? bounds.leftSlant : bounds.height;
+      const cy = Math.floor(height / 2);
+      const startY = cy - 2;
+      const endY = cy + 2;
+
+      // 1/10th spacing cushion from edges
+      const totalWidth = isHex ? bounds.left + bounds.right : bounds.width;
+      const margin = Math.floor(totalWidth / 10);
+      const leftGoalOffset = Math.max(0, margin);
+      const rightGoalOffset = Math.max(0, margin);
+
+      for (let y = startY; y <= endY; y++) {
+        // Left goal zone cell
+        let leftmostX = isHex ? -bounds.left : 0;
+        while (
+          leftmostX <= (isHex ? bounds.right : bounds.width - 1) &&
+          !terrainGrid.isValid({ x: leftmostX, y })
+        ) {
+          leftmostX++;
+        }
+        if (leftmostX <= (isHex ? bounds.right : bounds.width - 1)) {
+          const coord = { x: leftmostX + leftGoalOffset, y };
+          if (
+            terrainGrid.isValid(coord) &&
+            terrainGrid.get(coord) !== Terrain.GENERAL
+          ) {
+            terrainGrid.set(coord, Terrain.GOAL_ZONE);
+            protectedZone.add(`${coord.x},${coord.y}`);
+          }
+        }
+
+        // Right goal zone cell
+        let rightmostX = isHex ? bounds.right : bounds.width - 1;
+        while (
+          rightmostX >= (isHex ? -bounds.left : 0) &&
+          !terrainGrid.isValid({ x: rightmostX, y })
+        ) {
+          rightmostX--;
+        }
+        if (rightmostX >= (isHex ? -bounds.left : 0)) {
+          const coord = { x: rightmostX - rightGoalOffset, y };
+          if (
+            terrainGrid.isValid(coord) &&
+            terrainGrid.get(coord) !== Terrain.GENERAL
+          ) {
+            terrainGrid.set(coord, Terrain.GOAL_ZONE);
+            protectedZone.add(`${coord.x},${coord.y}`);
+          }
+        }
+      }
+
+      // Paint rugby spawns in the middle of the grid (using exact center coordinates: even -> 2, odd -> 1, max 2x2)
+      if (!isHex) {
+        const w = bounds.width;
+        const h = bounds.height;
+        const xCoords = w % 2 === 0 ? [w / 2 - 1, w / 2] : [Math.floor(w / 2)];
+        const yCoords = h % 2 === 0 ? [h / 2 - 1, h / 2] : [Math.floor(h / 2)];
+
+        for (const x of xCoords) {
+          for (const y of yCoords) {
+            const coord = { x, y };
+            if (
+              terrainGrid.isValid(coord) &&
+              terrainGrid.get(coord) !== Terrain.GENERAL &&
+              terrainGrid.get(coord) !== Terrain.GOAL_ZONE
+            ) {
+              terrainGrid.set(coord, Terrain.RUGBY_SPAWN);
+              protectedZone.add(`${coord.x},${coord.y}`);
+            }
+          }
+        }
+      } else {
+        // Fallback for hex grids using the same logical center cell + neighbors
+        const centerCoord = terrainGrid.fromCartesian(
+          terrainGrid.cartesianCenter,
+        );
+        if (centerCoord) {
+          const candidates: ICoordinate[] = [centerCoord];
+          const neighbors = terrainGrid.getNeighbors(centerCoord);
+          for (const [neighCoord] of neighbors) {
+            candidates.push(neighCoord);
+          }
+          candidates.sort((a, b) => {
+            const distA = terrainGrid.getDistanceToCenter(a);
+            const distB = terrainGrid.getDistanceToCenter(b);
+            return distA - distB;
+          });
+          const spawnCount = Math.min(4, candidates.length);
+          for (let i = 0; i < spawnCount; i++) {
+            const coord = candidates[i];
+            if (
+              terrainGrid.get(coord) !== Terrain.GENERAL &&
+              terrainGrid.get(coord) !== Terrain.GOAL_ZONE
+            ) {
+              terrainGrid.set(coord, Terrain.RUGBY_SPAWN);
+              protectedZone.add(`${coord.x},${coord.y}`);
+            }
+          }
+        }
+      }
+    }
 
     if (config.isPayload) {
       const bounds = terrainGrid.bounds;
@@ -145,6 +252,7 @@ export abstract class AbstractGridGenerator<
     const isPayload = "isPayload" in options ? !!options.isPayload : false;
     const payloadCartSize =
       "payloadCartSize" in options ? (options.payloadCartSize ?? 3) : 3;
+    const isRugby = "isRugby" in options ? !!options.isRugby : false;
     const generalCount = options.generalCount ?? DefaultGenOptions.generalCount;
     const minGeneralDistanceFactor =
       options.minGeneralDistanceFactor ??
@@ -195,6 +303,7 @@ export abstract class AbstractGridGenerator<
       payloadCartSize,
       payloadLeftCount,
       payloadRightCount,
+      isRugby,
     };
   }
 
@@ -280,11 +389,15 @@ export abstract class AbstractGridGenerator<
     const { generalCount } = config;
     const minDistance = this.calculateMinGeneralDistance(config);
 
-    if (config.isPayload) {
+    if (config.isPayload || config.isRugby) {
       const bounds = terrainGrid.bounds;
       const isHex = "leftSlant" in bounds;
       const { height, leftY, rightY, startX, endX } =
-        this.getPayloadTrackGeometry(bounds, isHex, config.payloadCartSize);
+        this.getPayloadTrackGeometry(
+          bounds,
+          isHex,
+          config.payloadCartSize ?? 3,
+        );
 
       const selected: ICoordinate[] = [];
       const leftCount =
@@ -590,6 +703,7 @@ export abstract class AbstractGridGenerator<
   ): Cell {
     let troopCount: number | null;
     let siteIndex: number | null = null;
+    let zoneIndex: number | null = null;
     switch (terrain) {
       case Terrain.GENERAL: {
         troopCount =
@@ -610,11 +724,24 @@ export abstract class AbstractGridGenerator<
         siteIndex = index !== -1 ? index : null;
         break;
       }
+      case Terrain.GOAL_ZONE: {
+        troopCount = null;
+        const bounds = options.gridBounds ?? DefaultGridBounds[GridType.SQUARE];
+        const isHex = "leftSlant" in bounds;
+        if (isHex) {
+          zoneIndex = coordinate.x < 0 ? 0 : 1;
+        } else {
+          const width =
+            "width" in bounds ? (bounds as { width: number }).width : 24;
+          zoneIndex = coordinate.x < width / 2 ? 0 : 1;
+        }
+        break;
+      }
       default: {
         troopCount = null;
       }
     }
-    return new Cell({ coordinate, terrain, troopCount, siteIndex });
+    return new Cell({ coordinate, terrain, troopCount, siteIndex, zoneIndex });
   }
 
   protected checkGeneralConnectivity(

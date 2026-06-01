@@ -162,3 +162,25 @@ export class PayloadScoreboard extends BaseScoreboard {
   @type("string") leftTeamId: string = "";
   @type("string") rightTeamId: string = "";
 }
+
+export class RugbyScoreboardPlayerEntry extends TroopLandScoreboardPlayerEntry {
+  @type("boolean") isAlive: boolean = false;
+}
+
+export class RugbyScoreboardTeamEntry extends Schema {
+  @type("string") teamId: string = "";
+  @type(["string"]) playerIds = new ArraySchema<string>();
+  @type("number") score: number = 0;
+}
+
+export class RugbyScoreboard extends BaseScoreboard {
+  @type([RugbyScoreboardPlayerEntry]) players =
+    new ArraySchema<RugbyScoreboardPlayerEntry>();
+  @type([RugbyScoreboardTeamEntry]) teams =
+    new ArraySchema<RugbyScoreboardTeamEntry>();
+
+  @type("number") winningScore: number = 5;
+  @type("number") rugbyBallCount: number = 1;
+  @type("number") rugbyMoveSpeed: number = 1;
+  @type("number") totalTime: number = 300;
+}

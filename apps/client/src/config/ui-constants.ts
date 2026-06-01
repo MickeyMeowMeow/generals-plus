@@ -14,6 +14,7 @@ const SUPPORTED_GAME_MODES: ReadonlySet<GameMode> = new Set([
   GameMode.DEMOLITION,
   GameMode.COLLAPSE,
   GameMode.PAYLOAD,
+  GameMode.RUGBY,
 ]);
 
 /** Formats serialized game-mode ids for compact UI labels. */
@@ -82,10 +83,15 @@ export const GAME_MODE_HELP: Record<GameMode, ModeHelpData> &
     ],
   },
   [GameMode.RUGBY]: {
-    summary: "Sports-style capture. Carry the ball to the enemy's goal zone.",
+    summary:
+      "Capture the Ball and score touchdowns. Carry the Rugby Ball into the opponent's Goal Zone.",
     rules: [
-      "Two teams compete to carry the ball into the enemy's goal zone.",
-      "Score by reaching the opponent's goal with the ball.",
+      "Two teams compete: Left Team vs Right Team.",
+      "A Rugby Ball spawns near the center. Moving onto the ball picks it up.",
+      "Carrying the ball slows down troop movement speed (default: 1 move per second).",
+      "Score a touchdown by moving the ball into the opponent's Goal Zone.",
+      "Goal Zones are located near the left and right margins of the map.",
+      "First team to reach the target score (default: 5) wins, or the team with the highest score on timeout.",
     ],
   },
   [GameMode.COLLAPSE]: {

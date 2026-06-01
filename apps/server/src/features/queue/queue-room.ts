@@ -92,7 +92,14 @@ export class MatchQueueRoom extends QueueRoom {
                   bombSiteCount: modeSettings?.bombSiteCount ?? 2,
                   seed: generateSeed(),
                 }
-              : { generalCount: groupPlayers.length, seed: generateSeed() };
+              : this.gameMode === GameMode.CLASSIC
+                ? {
+                    generalCount: groupPlayers.length,
+                    generalInitialTroops:
+                      modeSettings?.generalInitialTroops ?? 1,
+                    seed: generateSeed(),
+                  }
+                : { generalCount: groupPlayers.length, seed: generateSeed() };
 
         const finishTick = modeSettings?.duration
           ? calculateFinishTick(modeSettings.duration, BASE_TICK_INTERVAL)

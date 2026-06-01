@@ -14,6 +14,7 @@ import {
   GridType,
   PayloadGame,
   Player,
+  RugbyGame,
   StandardTeam,
   TurfWarGame,
 } from "@generals-plus/engine";
@@ -71,6 +72,14 @@ interface PayloadCreateGameOptions extends BaseCreateGameOptions {
   payloadRequiredOccupied?: number;
 }
 
+interface RugbyCreateGameOptions extends BaseCreateGameOptions {
+  mode: typeof GameMode.RUGBY;
+  finishTick?: number;
+  rugbyBallCount?: number;
+  rugbyMoveSpeedTicks?: number;
+  rugbyWinningScore?: number;
+}
+
 interface OtherCreateGameOptions extends BaseCreateGameOptions {
   mode: Exclude<
     GameMode,
@@ -80,6 +89,7 @@ interface OtherCreateGameOptions extends BaseCreateGameOptions {
     | "demolition"
     | "collapse"
     | "payload"
+    | "rugby"
   >;
 }
 
@@ -90,6 +100,7 @@ export type CreateGameOptions =
   | DemolitionCreateGameOptions
   | CollapseCreateGameOptions
   | PayloadCreateGameOptions
+  | RugbyCreateGameOptions
   | OtherCreateGameOptions;
 
 function getRoundRobinTeamAssignments(
@@ -270,6 +281,24 @@ export function createGame(options: CreateGameOptions): IBaseGame {
           payloadSpeedTicks: options.payloadSpeedTicks,
           payloadCartSize: options.payloadCartSize,
           payloadRequiredOccupied: options.payloadRequiredOccupied,
+        },
+      );
+
+      addStandardTeamsAndPlayers(game, options);
+      return game;
+    }
+    case GameMode.RUGBY: {
+      const game = new RugbyGame(
+        {
+          gridType: GridType.SQUARE,
+          ...options.gridOptions,
+          isRugby: true,
+        },
+        {
+          finishTick: options.finishTick,
+          rugbyBallCount: options.rugbyBallCount,
+          rugbyMoveSpeedTicks: options.rugbyMoveSpeedTicks,
+          rugbyWinningScore: options.rugbyWinningScore,
         },
       );
 

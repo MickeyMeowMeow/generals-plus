@@ -34,6 +34,7 @@ const CellTemplateSchema = new Schema<CellTemplate>(
     terrain: { type: String, required: true },
     troopCount: { type: Number, default: null },
     siteIndex: { type: Number, default: null },
+    zoneIndex: { type: Number, default: null },
   },
   { _id: false },
 );
