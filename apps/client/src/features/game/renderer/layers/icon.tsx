@@ -45,14 +45,12 @@ export function IconLayer({ tick, grid }: IconLayerProps) {
         return;
       }
 
-      const texture = Texture.from(icon);
-
       if (!entry) {
         // Create new sprite only if it doesn't exist
         const { x, y } = grid.toCartesian(cell.coordinate);
 
         const sprite = new Sprite({
-          texture,
+          texture: Texture.from(icon),
           anchor: 0.5,
           width: ICON_SIZE,
           height: ICON_SIZE,
@@ -64,7 +62,7 @@ export function IconLayer({ tick, grid }: IconLayerProps) {
         pool.set(key, { sprite, icon });
       } else if (entry.icon !== icon) {
         // Update texture only if the terrain/icon changed
-        entry.sprite.texture = texture;
+        entry.sprite.texture = Texture.from(icon);
         entry.icon = icon;
       }
     });
