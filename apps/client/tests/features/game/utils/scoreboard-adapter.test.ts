@@ -12,7 +12,7 @@ import {
 } from "@generals-plus/shared-types";
 import { describe, expect, it } from "vitest";
 
-import { createGameHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
+import { createGameHudScoreboardModel } from "#/features/game/utils/scoreboard-adapter";
 
 /**
  * Creates one scoreboard player entry using the real shared schema class.

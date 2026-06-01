@@ -6,7 +6,7 @@ import type {
   RugbyScoreboard,
 } from "@generals-plus/shared-types";
 
-import { formatTeamLabel } from "#/features/match/utils/team-label";
+import { formatTeamLabel } from "#/features/game/utils/team-label";
 
 /**
  * Column metadata used by the match HUD scoreboard table.

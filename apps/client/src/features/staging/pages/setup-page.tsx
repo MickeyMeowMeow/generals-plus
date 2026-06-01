@@ -8,12 +8,12 @@ import { toast } from "sonner";
 import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { useUser } from "#/features/auth/hooks";
-import { useSetupRoom } from "#/features/game/api/use-setup-room";
-import { ColorPicker } from "#/features/game/components/color-picker";
-import { GameSettings } from "#/features/game/components/game-settings";
-import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
 import { Avatar } from "#/features/profile/components/avatar";
+import { useSetupRoom } from "#/features/staging/api/use-setup-room";
+import { ColorPicker } from "#/features/staging/components/color-picker";
+import { GameSettings } from "#/features/staging/components/game-settings";
+import { RoomPlayerList } from "#/features/staging/components/room-controls";
 import { networkProvider } from "#/infra/network/provider";
 import { HttpRequestError } from "#/infra/network/provider/colyseus";
 

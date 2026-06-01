@@ -19,8 +19,8 @@ import {
 import { Input } from "#/components/ui/input";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
-import { ModeHelpButton } from "#/features/game/components/mode-help-button";
 import { Avatar } from "#/features/profile/components/avatar";
+import { ModeHelpButton } from "#/features/staging/components/mode-help-button";
 import { networkProvider } from "#/infra/network/provider";
 import { HttpRequestError } from "#/infra/network/provider/colyseus";
 

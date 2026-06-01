@@ -42,7 +42,7 @@ import {
 } from "#/features/game/utils/hotkey";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
-import { formatTeamLabel } from "#/features/match/utils/team-label";
+import { formatTeamLabel } from "#/features/game/utils/team-label";
 import { cn } from "#/lib/utils";
 
 export type GamePageSource =

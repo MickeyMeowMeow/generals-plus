@@ -25,9 +25,9 @@ import {
 } from "#/components/ui/select";
 import { Switch } from "#/components/ui/switch";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
-import { ModeHelpButton } from "#/features/game/components/mode-help-button";
 import { mapsApi } from "#/features/map-editor/api/maps-api";
 import { MapPickerDialog } from "#/features/map-editor/components/map-picker-dialog";
+import { ModeHelpButton } from "#/features/staging/components/mode-help-button";
 import { cn } from "#/lib/utils";
 
 interface GameSettingsProps {

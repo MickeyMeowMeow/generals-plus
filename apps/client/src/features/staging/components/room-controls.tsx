@@ -2,7 +2,7 @@ import { Crown, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { cn } from "#/lib/utils";
+import { cn, colorToHex } from "#/lib/utils";
 
 interface RoomPlayer {
   id: string;
@@ -34,11 +34,6 @@ interface RoomPlayerListProps {
   onJoinTeam?: (teamId: string) => void;
   /** Called when the local player creates a new setup-room group. */
   onCreateTeam?: () => void;
-}
-
-/** Converts numeric player colors into CSS hex values. */
-export function colorToHex(color: number) {
-  return `#${color.toString(16).padStart(6, "0")}`;
 }
 
 /**
@@ -82,7 +77,7 @@ export function RoomPlayerList({
   const renderIdentityIcon = (
     player: RoomPlayer,
     isCurrent: boolean,
-    className = "ml-[-5px] size-3.5 shrink-0 text-game-text-dim",
+    className = "-ml-1.25 size-3.5 shrink-0 text-game-text-dim",
   ) => {
     if (showHost && player.isHost) {
       return <Crown className={className} strokeWidth={2.5} />;
@@ -251,7 +246,7 @@ export function RoomPlayerList({
                 className={cn(
                   "py-2",
                   dropTargetId === team.id &&
-                    "bg-white/5 outline outline-1 outline-white/20",
+                    "bg-white/5 outline outline-white/20",
                 )}
               >
                 {team.label ? (
@@ -302,7 +297,7 @@ export function RoomPlayerList({
                 className={cn(
                   "py-0",
                   dropTargetId === "create-team" &&
-                    "bg-white/5 outline outline-1 outline-white/20",
+                    "bg-white/5 outline outline-white/20",
                 )}
               >
                 <button
