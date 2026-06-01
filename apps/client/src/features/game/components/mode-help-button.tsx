@@ -1,7 +1,6 @@
 import { CircleHelp } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "#/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +10,7 @@ import {
 } from "#/components/ui/dialog";
 import type { ModeHelpData } from "#/config/ui-constants";
 import { GAME_MODE_HELP, GAME_MODE_OPTIONS } from "#/config/ui-constants";
+import { cn } from "#/lib/utils";
 
 function ModeHelpContent({ help }: { help: ModeHelpData }) {
   return (
@@ -50,19 +50,20 @@ export function ModeHelpButton({
 
   return (
     <>
-      <Button
+      <button
         type="button"
-        variant="ghost"
-        size="icon-sm"
         onClick={(e) => {
           e.stopPropagation();
           setOpen(true);
         }}
         aria-label={`Help for ${label}`}
-        className={className}
+        className={cn(
+          "inline-flex size-5 items-center justify-center rounded-none text-game-text-dim outline-none transition-colors hover:text-game-text [&_svg]:pointer-events-none [&_svg]:shrink-0",
+          className,
+        )}
       >
-        <CircleHelp className="size-4" />
-      </Button>
+        <CircleHelp className="size-3.5" />
+      </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="border-game-border bg-game-surface text-game-text">
