@@ -1,6 +1,7 @@
 import type {
   GameMode as GameModeType,
   IBaseScoreboard,
+  IBiohazardScoreboard,
   IClassicScoreboard,
   ICollapseScoreboard,
   IDemolitionScoreboard,
@@ -16,6 +17,8 @@ import type {
   PublicPlayer,
 } from "@generals-plus/shared-types";
 import {
+  BiohazardScoreboard,
+  BiohazardScoreboardPlayerEntry,
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
   CollapseScoreboard,
@@ -63,6 +66,9 @@ export function createScoreboard(mode: GameModeType): BaseScoreboard {
       break;
     case GameMode.RUGBY:
       scoreboard = new RugbyScoreboard();
+      break;
+    case GameMode.BIOHAZARD:
+      scoreboard = new BiohazardScoreboard();
       break;
     default:
       scoreboard = new ClassicScoreboard();
@@ -372,6 +378,32 @@ export function syncScoreboard(
       rugbyTarget.rugbyMoveSpeed =
         (rugbySource.rugbyMoveSpeedTicks * interval) / 1000;
       rugbyTarget.totalTime = (rugbySource.totalTimeTicks * interval) / 1000;
+      break;
+    }
+    case GameMode.BIOHAZARD: {
+      const bioTarget = target as BiohazardScoreboard;
+      const bioSource = source as IBiohazardScoreboard;
+      syncPlayers(
+        bioTarget,
+        bioSource.players,
+        metadataByPlayer,
+        () => new BiohazardScoreboardPlayerEntry(),
+        (schema, entry) => {
+          if (schema.troops !== entry.troops) schema.troops = entry.troops;
+          if (schema.land !== entry.land) schema.land = entry.land;
+          if (schema.isAlive !== entry.isAlive) schema.isAlive = entry.isAlive;
+          if (schema.isZombie !== entry.isZombie)
+            schema.isZombie = entry.isZombie;
+          if (schema.isMotherZombie !== entry.isMotherZombie)
+            schema.isMotherZombie = entry.isMotherZombie;
+        },
+      );
+      bioTarget.infectionPhase = bioSource.infectionPhase;
+      bioTarget.outbreakTick = bioSource.outbreakTick;
+      bioTarget.humanCount = bioSource.humanCount;
+      bioTarget.zombieCount = bioSource.zombieCount;
+      const bioInterval = tickInterval ?? 500;
+      bioTarget.totalTime = (bioSource.totalTimeTicks * bioInterval) / 1000;
       break;
     }
     default:

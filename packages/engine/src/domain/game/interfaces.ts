@@ -248,15 +248,34 @@ export interface IPayloadGame extends IBaseGame {
   getScoreboard(): IPayloadScoreboard;
 }
 
+export interface IBiohazardScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.BIOHAZARD;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+    readonly isAlive: boolean;
+    readonly isZombie: boolean;
+    readonly isMotherZombie: boolean;
+  }>;
+  readonly infectionPhase: "PREPARATION" | "OUTBREAK";
+  readonly outbreakTick: number;
+  readonly humanCount: number;
+  readonly zombieCount: number;
+  readonly totalTimeTicks: number;
+}
+
 /**
  * Biohazard Mode.
  * Manages the infection state and survivor counts.
  */
 export interface IBiohazardGame extends IBaseGame {
   readonly mode: typeof GameMode.BIOHAZARD;
-  infectionPhase: "PREPARATION" | "OUTBREAK" | "CLEANUP";
+  infectionPhase: "PREPARATION" | "OUTBREAK";
   /** The tick when the first Mother Zombie will be chosen. */
   outbreakTick: number;
+
+  getScoreboard(): IBiohazardScoreboard;
 }
 
 /**

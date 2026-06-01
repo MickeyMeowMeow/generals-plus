@@ -15,6 +15,7 @@ const SUPPORTED_GAME_MODES: ReadonlySet<GameMode> = new Set([
   GameMode.COLLAPSE,
   GameMode.PAYLOAD,
   GameMode.RUGBY,
+  GameMode.BIOHAZARD,
 ]);
 
 /** Formats serialized game-mode ids for compact UI labels. */
@@ -65,11 +66,12 @@ export const GAME_MODE_HELP: Record<GameMode, ModeHelpData> &
   },
   [GameMode.BIOHAZARD]: {
     summary:
-      "Survival mode. Zombies try to infect all humans. Humans try to survive.",
+      "Survival mode. Zombies try to eliminate all humans. Humans try to survive or wipe out the zombies.",
     rules: [
-      "Two factions: Zombies vs Humans.",
-      "Zombies win by infecting all humans.",
-      "Humans win by surviving until time runs out.",
+      "Phase 1 (Incubation): All teams play normally, competing for territory.",
+      "Phase 2 (Outbreak & Survival): One random team mutates into zombies; humans auto-ally. Only the Mother Zombie gets boosted troop production.",
+      "Zombies win by eliminating all humans.",
+      "Humans win by eliminating all zombies or surviving until time runs out.",
     ],
   },
   [GameMode.PAYLOAD]: {

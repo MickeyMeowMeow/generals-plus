@@ -5,9 +5,10 @@ import type {
   MoveActionType,
   SurrenderAction,
 } from "@generals-plus/engine";
-import { ActionType, GameStatus } from "@generals-plus/engine";
+import { ActionType, GameMode, GameStatus } from "@generals-plus/engine";
 import type {
   ActionData,
+  BiohazardScoreboard,
   MatchClientMessagePayload,
   MatchServerMessagePayload,
   MatchState,
@@ -34,6 +35,26 @@ type GameRoomClient = RoomClient<
   MatchClientMessagePayload,
   MatchServerMessagePayload
 >;
+
+export function mixZombieColor(
+  originalColor: number,
+  zombieGreen: number = 0x2e7d32,
+  ratio: number = 0.6,
+): number {
+  const rA = (originalColor >> 16) & 0xff;
+  const gA = (originalColor >> 8) & 0xff;
+  const bA = originalColor & 0xff;
+
+  const rB = (zombieGreen >> 16) & 0xff;
+  const gB = (zombieGreen >> 8) & 0xff;
+  const bB = zombieGreen & 0xff;
+
+  const r = Math.round(rA * (1 - ratio) + rB * ratio);
+  const g = Math.round(gA * (1 - ratio) + gB * ratio);
+  const b = Math.round(bA * (1 - ratio) + bB * ratio);
+
+  return (r << 16) | (g << 8) | b;
+}
 
 const DISCONNECTED_MESSAGE = "Your connection to the match was lost.";
 
@@ -185,8 +206,28 @@ export function useGameRoom(connection: GameRoomConnection) {
 
           const colorMap = new Map<string, number>();
           const nameMap = new Map<string, string>();
+
+          const zombiePlayerIds = new Set<string>();
+          if (
+            state.scoreboard &&
+            state.scoreboard.mode === GameMode.BIOHAZARD
+          ) {
+            const bioScoreboard = state.scoreboard as BiohazardScoreboard;
+            if (bioScoreboard.players) {
+              bioScoreboard.players.forEach((entry) => {
+                if (entry.isZombie) {
+                  zombiePlayerIds.add(entry.playerId);
+                }
+              });
+            }
+          }
+
           state.publicPlayers.forEach((player) => {
-            colorMap.set(player.id, player.color);
+            let color = player.color;
+            if (zombiePlayerIds.has(player.id)) {
+              color = mixZombieColor(player.color);
+            }
+            colorMap.set(player.id, color);
             nameMap.set(player.id, player.displayName);
           });
           setPlayerColors(colorMap);

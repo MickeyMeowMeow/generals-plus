@@ -1,5 +1,6 @@
 import { GameMode } from "@generals-plus/engine";
 import type {
+  BiohazardScoreboard,
   CollapseScoreboard,
   DemolitionScoreboard,
   MatchState,
@@ -115,6 +116,24 @@ export function parseTimerProps(gameState: MatchState) {
       targetTick: gameState.finishTick > 0 ? gameState.finishTick : totalTicks,
       tickInterval: gameState.tickInterval,
       label: "Time remaining",
+    };
+  }
+
+  if (gameState.mode === GameMode.BIOHAZARD) {
+    const bioScoreboard = gameState.scoreboard as BiohazardScoreboard;
+    const isPrep = bioScoreboard.infectionPhase === "PREPARATION";
+    const targetTick = isPrep
+      ? bioScoreboard.outbreakTick
+      : gameState.finishTick > 0
+        ? gameState.finishTick
+        : 0;
+    const label = isPrep ? "Outbreak In" : "Time remaining";
+
+    timerProps = {
+      currentTick: gameState.tick,
+      targetTick,
+      tickInterval: gameState.tickInterval,
+      label,
     };
   }
 

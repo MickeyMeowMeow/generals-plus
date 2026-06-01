@@ -184,3 +184,20 @@ export class RugbyScoreboard extends BaseScoreboard {
   @type("number") rugbyMoveSpeed: number = 1;
   @type("number") totalTime: number = 300;
 }
+
+export class BiohazardScoreboardPlayerEntry extends TroopLandScoreboardPlayerEntry {
+  @type("boolean") isAlive: boolean = false;
+  @type("boolean") isZombie: boolean = false;
+  @type("boolean") isMotherZombie: boolean = false;
+}
+
+export class BiohazardScoreboard extends BaseScoreboard {
+  @type([BiohazardScoreboardPlayerEntry]) players =
+    new ArraySchema<BiohazardScoreboardPlayerEntry>();
+
+  @type("string") infectionPhase: string = "PREPARATION";
+  @type("number") outbreakTick: number = 0;
+  @type("number") humanCount: number = 0;
+  @type("number") zombieCount: number = 0;
+  @type("number") totalTime: number = 240;
+}
