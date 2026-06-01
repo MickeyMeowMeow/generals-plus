@@ -38,9 +38,8 @@ export function IconLayer({ tick, grid }: IconLayerProps) {
       if (!icon) {
         if (entry) {
           // Clean up sprite if terrain no longer has an icon
-          // container.removeChild(entry.sprite);
-          // entry.sprite.destroy();
-          entry.sprite.texture = Texture.EMPTY;
+          container.removeChild(entry.sprite);
+          entry.sprite.destroy();
           pool.delete(key);
         }
         return;
