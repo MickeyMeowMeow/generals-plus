@@ -7,6 +7,7 @@ import { Separator } from "#/components/ui/separator";
 import { colorToHex } from "#/features/game/components/room-controls";
 import { TimerBar } from "#/features/game/components/timer-bar";
 import { createGameHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
+import { AnimatedNumber } from "#/features/motion/components/animated-number";
 import { MOTION_DURATION } from "#/features/motion/motion-tokens";
 
 interface TimerProps {
@@ -37,6 +38,20 @@ function getScoreboardGridStyle(columnCount: number): CSSProperties {
  */
 function formatValue(value: number | string | undefined) {
   return value ?? "";
+}
+
+/**
+ * Wraps HUD metric values in the shared per-digit animation while leaving
+ * empty cells blank.
+ */
+function renderMetricValue(value: number | string | undefined) {
+  const formatted = formatValue(value);
+
+  if (formatted === "") {
+    return "";
+  }
+
+  return <AnimatedNumber value={String(formatted)} className="justify-end" />;
 }
 
 /**
@@ -149,7 +164,7 @@ export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
                         key={`group-metric-${group.id}-${column.key}`}
                         className="text-right tabular-nums text-[13px] font-semibold"
                       >
-                        {formatValue(group.totals?.[column.key])}
+                        {renderMetricValue(group.totals?.[column.key])}
                       </span>,
                     );
                   });
@@ -178,7 +193,7 @@ export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
                           key={`player-metric-${player.id}-${column.key}`}
                           className={`text-right tabular-nums text-[13px] font-normal ${player.isAlive ? "" : "text-game-text-dim/50"}`}
                         >
-                          {formatValue(player.values?.[column.key])}
+                          {renderMetricValue(player.values?.[column.key])}
                         </span>,
                       );
                     });
@@ -222,7 +237,7 @@ export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
                         key={`player-metric-${player.id}-${column.key}`}
                         className={`text-right tabular-nums text-[13px] font-normal ${player.isAlive ? "" : "text-game-text-dim/50"}`}
                       >
-                        {formatValue(player.values?.[column.key])}
+                        {renderMetricValue(player.values?.[column.key])}
                       </span>,
                     );
                   });
