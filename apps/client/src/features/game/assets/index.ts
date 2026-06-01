@@ -9,6 +9,7 @@ import obstacleIcon from "#/features/game/assets/generals-io/obstacle.svg";
 import pingAttackIcon from "#/features/game/assets/generals-io/ping-attack.svg";
 import pingDefenseIcon from "#/features/game/assets/generals-io/ping-defense.svg";
 import pingRallyIcon from "#/features/game/assets/generals-io/ping-rally.svg";
+import rugbyIcon from "#/features/game/assets/generals-io/rugby.svg";
 import swampIcon from "#/features/game/assets/generals-io/swamp.svg";
 
 export {
@@ -23,5 +24,6 @@ export {
   pingAttackIcon,
   pingDefenseIcon,
   pingRallyIcon,
+  rugbyIcon,
   swampIcon,
 };

@@ -37,6 +37,9 @@ export const setupSettingsUpdateSchema = z
     payloadSpeed: z.number().min(0.5).max(10),
     payloadCartSize: z.number().int().min(1).max(5),
     payloadRequiredOccupied: z.number().int().min(1).max(25),
+    rugbyBallCount: z.number().int().min(1).max(5),
+    rugbyMoveSpeed: z.number().min(0.2).max(10),
+    rugbyWinningScore: z.number().int().min(1).max(20),
   })
   .partial()
   .strict();

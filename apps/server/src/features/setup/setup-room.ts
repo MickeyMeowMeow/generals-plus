@@ -56,6 +56,8 @@ const DEMOLITION_FINAL_TEAM_IDS = ["attackers", "defenders"] as const;
 const DEMOLITION_SETUP_TEAM_IDS = ["attackers", "defenders"] as const;
 const PAYLOAD_FINAL_TEAM_IDS = ["team_0", "team_1"] as const;
 const PAYLOAD_SETUP_TEAM_IDS = ["team_0", "team_1"] as const;
+const RUGBY_FINAL_TEAM_IDS = ["team_0", "team_1"] as const;
+const RUGBY_SETUP_TEAM_IDS = ["team_0", "team_1"] as const;
 
 const SETTING_LABELS: Record<string, string> = {
   gameMode: "Game Mode",
@@ -454,7 +456,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         this.state.gameMode === GameMode.TURF_WAR ||
         this.state.gameMode === GameMode.DOMINATION ||
         this.state.gameMode === GameMode.DEMOLITION ||
-        this.state.gameMode === GameMode.PAYLOAD
+        this.state.gameMode === GameMode.PAYLOAD ||
+        this.state.gameMode === GameMode.RUGBY
       ) {
         this.state.finishTick = calculateFinishTick(
           this.state.duration,
@@ -624,6 +627,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           });
           return;
         }
+        if (this.state.gameMode === GameMode.RUGBY) {
+          this.sendValidationFailed(client, {
+            severity: "warning",
+            field: "team",
+            message: "Rugby teams are fixed to Team 1 and Team 2.",
+          });
+          return;
+        }
 
         const teamId = this.createSetupTeamForPlayer(player);
         if (!teamId) {
@@ -777,6 +788,14 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       };
     }
 
+    if (this.state.gameMode === GameMode.RUGBY) {
+      return {
+        ...base,
+        generalCount: this.state.playersPerTeam * 2,
+        isRugby: true,
+      };
+    }
+
     return base;
   }
 
@@ -854,6 +873,18 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           payloadCartSize: this.state.payloadCartSize,
           payloadRequiredOccupied: this.state.payloadRequiredOccupied,
         };
+      case GameMode.RUGBY:
+        return {
+          ...base,
+          mode: GameMode.RUGBY,
+          finishTick: this.state.finishTick,
+          rugbyBallCount: this.state.rugbyBallCount,
+          rugbyMoveSpeedTicks: calculateFinishTick(
+            this.state.rugbyMoveSpeed,
+            this.state.tickInterval,
+          ),
+          rugbyWinningScore: this.state.rugbyWinningScore,
+        };
       default:
         return { ...base, mode: this.state.gameMode };
     }
@@ -903,7 +934,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       options.mode === GameMode.TURF_WAR ||
       options.mode === GameMode.DOMINATION ||
       options.mode === GameMode.DEMOLITION ||
-      options.mode === GameMode.PAYLOAD;
+      options.mode === GameMode.PAYLOAD ||
+      options.mode === GameMode.RUGBY;
 
     const metadata: RoomData = {
       mode: options.mode,
@@ -981,6 +1013,11 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         teamId as (typeof PAYLOAD_SETUP_TEAM_IDS)[number],
       );
     }
+    if (this.state.gameMode === GameMode.RUGBY) {
+      return RUGBY_SETUP_TEAM_IDS.includes(
+        teamId as (typeof RUGBY_SETUP_TEAM_IDS)[number],
+      );
+    }
 
     return this.state.players.some((player) => player.teamId === teamId);
   }
@@ -1034,6 +1071,9 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     if (this.state.gameMode === GameMode.PAYLOAD) {
       return PAYLOAD_FINAL_TEAM_IDS.length;
     }
+    if (this.state.gameMode === GameMode.RUGBY) {
+      return RUGBY_FINAL_TEAM_IDS.length;
+    }
 
     return null;
   }
@@ -1044,6 +1084,9 @@ export class SetupRoom extends Room<{ state: SetupState }> {
     }
     if (this.state.gameMode === GameMode.PAYLOAD) {
       return this.assignPayloadSetupTeamId(counts);
+    }
+    if (this.state.gameMode === GameMode.RUGBY) {
+      return this.assignRugbySetupTeamId(counts);
     }
 
     const teamCapacity = this.getTeamCapacity();
@@ -1103,6 +1146,27 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       availableTeamIds.length > 0
         ? availableTeamIds
         : [...DEMOLITION_SETUP_TEAM_IDS];
+    const minCount = Math.min(
+      ...candidatePool.map((teamId) => counts.get(teamId) ?? 0),
+    );
+    const candidateTeamIds = candidatePool.filter(
+      (teamId) => (counts.get(teamId) ?? 0) === minCount,
+    );
+    const chosenTeamId =
+      this.pickRandomTeamId(candidateTeamIds) ?? candidateTeamIds[0];
+    counts.set(chosenTeamId, (counts.get(chosenTeamId) ?? 0) + 1);
+    return chosenTeamId;
+  }
+
+  private assignRugbySetupTeamId(counts = this.getCurrentTeamCounts()): string {
+    const teamCapacity = this.getTeamCapacity();
+    const availableTeamIds = RUGBY_SETUP_TEAM_IDS.filter(
+      (teamId) => (counts.get(teamId) ?? 0) < teamCapacity,
+    );
+    const candidatePool =
+      availableTeamIds.length > 0
+        ? availableTeamIds
+        : [...RUGBY_SETUP_TEAM_IDS];
     const minCount = Math.min(
       ...candidatePool.map((teamId) => counts.get(teamId) ?? 0),
     );
@@ -1203,6 +1267,26 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       );
     }
 
+    if (this.state.gameMode === GameMode.RUGBY) {
+      return Object.fromEntries(
+        this.state.players.map((player) => {
+          if (
+            RUGBY_FINAL_TEAM_IDS.includes(
+              player.teamId as (typeof RUGBY_FINAL_TEAM_IDS)[number],
+            )
+          ) {
+            return [player.id, player.teamId];
+          }
+
+          const groupIndex = Math.max(
+            0,
+            occupiedTeamIds.indexOf(player.teamId),
+          );
+          return [player.id, RUGBY_FINAL_TEAM_IDS[groupIndex] ?? "team_1"];
+        }),
+      );
+    }
+
     return Object.fromEntries(
       this.state.players.map((player) => {
         const groupIndex = Math.max(0, occupiedTeamIds.indexOf(player.teamId));
@@ -1251,6 +1335,22 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       }
 
       return PAYLOAD_SETUP_TEAM_IDS.every(
+        (teamId) => (teamCounts.get(teamId) ?? 0) <= teamCapacity,
+      );
+    }
+
+    if (this.state.gameMode === GameMode.RUGBY) {
+      for (const player of this.state.players) {
+        if (
+          !RUGBY_SETUP_TEAM_IDS.includes(
+            player.teamId as (typeof RUGBY_SETUP_TEAM_IDS)[number],
+          )
+        ) {
+          return false;
+        }
+      }
+
+      return RUGBY_SETUP_TEAM_IDS.every(
         (teamId) => (teamCounts.get(teamId) ?? 0) <= teamCapacity,
       );
     }

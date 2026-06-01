@@ -20,6 +20,7 @@ export interface RenderGridCell {
   visibility: Visibility;
   ownerIndex: string | null;
   siteIndex: number | null;
+  zoneIndex?: number | null;
   item: { id: string; type: number } | null;
   willCollapse?: boolean;
 }
@@ -38,6 +39,7 @@ export function createRenderGrid(shape: GridShape): RenderGrid {
     troopCount: null,
     ownerIndex: null,
     siteIndex: null,
+    zoneIndex: null,
     item: null,
   });
 
@@ -76,7 +78,9 @@ export function updateRenderGrid(
   ) => {
     bombMoved ||=
       (newVision.item_type === ItemType.BOMB ||
-        currentCell.item?.type === ItemType.BOMB) &&
+        currentCell.item?.type === ItemType.BOMB ||
+        newVision.item_type === ItemType.RUGBY_BALL ||
+        currentCell.item?.type === ItemType.RUGBY_BALL) &&
       newVision.item_id !== currentCell.item?.id;
 
     return {
@@ -86,6 +90,7 @@ export function updateRenderGrid(
       troopCount: newVision.troopCount === -1 ? null : newVision.troopCount,
       ownerIndex: newVision.ownerIndex || null,
       siteIndex: newVision.siteIndex === -1 ? null : newVision.siteIndex,
+      zoneIndex: newVision.zoneIndex === -1 ? null : newVision.zoneIndex,
       item:
         newVision.item_type !== -1
           ? { id: newVision.item_id, type: newVision.item_type }

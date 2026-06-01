@@ -18,6 +18,9 @@ export interface ModeSettings {
   payloadSpeed?: number;
   payloadCartSize?: number;
   payloadRequiredOccupied?: number;
+  rugbyBallCount?: number;
+  rugbyMoveSpeed?: number;
+  rugbyWinningScore?: number;
 }
 
 export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
@@ -41,6 +44,12 @@ export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
     payloadSpeed: 2,
     payloadCartSize: 3,
     payloadRequiredOccupied: 6,
+  },
+  [GameMode.RUGBY]: {
+    duration: 300,
+    rugbyBallCount: 1,
+    rugbyMoveSpeed: 1,
+    rugbyWinningScore: 5,
   },
 };
 

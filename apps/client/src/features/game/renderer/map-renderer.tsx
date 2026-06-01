@@ -14,6 +14,7 @@ import { MoveQueueLayer } from "#/features/game/renderer/layers/move-queue";
 import { PayloadLayer } from "#/features/game/renderer/layers/payload";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { PingLayer } from "#/features/game/renderer/layers/ping";
+import { RugbyBallLayer } from "#/features/game/renderer/layers/rugby-ball";
 import { SiteLabelLayer } from "#/features/game/renderer/layers/site-label";
 import { TroopLayer } from "#/features/game/renderer/layers/troop";
 import { RenderConfig } from "#/features/game/renderer/render-config";
@@ -159,6 +160,7 @@ export function MapRenderer({
         isPlanted={isPlanted}
         ticksRemaining={ticksRemaining}
       />
+      <RugbyBallLayer bombMoveSignal={bombMoveSignal} grid={grid} />
       <HighlightLayer grid={grid} selection={selection} />
       <PingLayer grid={grid} pings={pings} />
     </pixiContainer>

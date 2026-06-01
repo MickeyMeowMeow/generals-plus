@@ -10,6 +10,7 @@ import {
   pingAttackIcon,
   pingDefenseIcon,
   pingRallyIcon,
+  rugbyIcon,
 } from "#/features/game/assets";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { MapRenderer } from "#/features/game/renderer/map-renderer";
@@ -119,10 +120,11 @@ export function GameApp({
         .map((theme) => theme.icon)
         .filter((icon): icon is string => icon !== undefined);
 
-      // Also preload bomb and ping icons
+      // Also preload bomb, rugby, and ping icons
       icons.push(
         bombNormalIcon,
         bombPlantedIcon,
+        rugbyIcon,
         pingAttackIcon,
         pingDefenseIcon,
         pingRallyIcon,

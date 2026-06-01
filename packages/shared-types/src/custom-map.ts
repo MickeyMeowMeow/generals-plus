@@ -4,6 +4,7 @@ export interface CellTemplate {
   terrain: Terrain;
   troopCount: number | null;
   siteIndex: number | null;
+  zoneIndex: number | null;
 }
 
 export interface SpawnPoint {

@@ -6,6 +6,7 @@ import type {
   DemolitionSetupSettings,
   DominationSetupSettings,
   PayloadSetupSettings,
+  RugbySetupSettings,
   SetupSettings,
   SetupState,
   TurfWarSetupSettings,
@@ -49,7 +50,8 @@ type NumberKeys =
   | ExtractNumberKeys<DominationSetupSettings>
   | ExtractNumberKeys<DemolitionSetupSettings>
   | ExtractNumberKeys<CollapseSetupSettings>
-  | ExtractNumberKeys<PayloadSetupSettings>;
+  | ExtractNumberKeys<PayloadSetupSettings>
+  | ExtractNumberKeys<RugbySetupSettings>;
 
 const PLAYER_NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "maxPlayers", label: "Max Players" },
@@ -102,6 +104,12 @@ const MODE_SPECIFIC_FIELDS: Partial<
     { key: "duration", label: "Duration (s)" },
     { key: "payloadCartSize", label: "Cart Size" },
     { key: "payloadRequiredOccupied", label: "Required Occupied Tiles" },
+  ],
+  [GameMode.RUGBY]: [
+    { key: "rugbyBallCount", label: "Rugby Balls" },
+    { key: "duration", label: "Duration (s)" },
+    { key: "rugbyMoveSpeed", label: "Ball Carrier Speed (s)" },
+    { key: "rugbyWinningScore", label: "Score Target" },
   ],
 };
 

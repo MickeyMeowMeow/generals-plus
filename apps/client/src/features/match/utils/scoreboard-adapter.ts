@@ -3,6 +3,7 @@ import type {
   BaseScoreboard,
   DemolitionScoreboard,
   PayloadScoreboard,
+  RugbyScoreboard,
 } from "@generals-plus/shared-types";
 
 import { formatTeamLabel } from "#/features/match/utils/team-label";
@@ -442,6 +443,60 @@ function createPayloadModel(
   };
 }
 
+const rugbyColumns: GameHudColumn[] = [
+  { key: "score", label: "Touchdowns" },
+  { key: "land", label: "Land" },
+  { key: "troops", label: "Soldiers" },
+];
+
+interface RugbyTeamEntryLike {
+  teamId: string;
+  score: number;
+}
+
+interface ScoreboardWithRugbyTeams {
+  teams?: Iterable<RugbyTeamEntryLike>;
+}
+
+function getRugbyTeamEntries(scoreboard: BaseScoreboard): RugbyTeamEntryLike[] {
+  const teams = (scoreboard as ScoreboardWithRugbyTeams | undefined)?.teams;
+  return teams ? Array.from(teams) : [];
+}
+
+function createRugbyModel(scoreboard: BaseScoreboard): GameHudScoreboardModel {
+  const rugbyScoreboard = scoreboard as RugbyScoreboard;
+  const rows = createPlayerRows(scoreboard);
+  const scoreByTeam = new Map(
+    getRugbyTeamEntries(scoreboard).map((entry) => [entry.teamId, entry.score]),
+  );
+
+  const finalTarget = rugbyScoreboard.winningScore ?? 5;
+
+  const groups = createTeamGroups(rows).map((group) => {
+    const score = scoreByTeam.get(group.id) ?? 0;
+    return {
+      ...group,
+      label: group.label,
+      totals: {
+        ...group.totals,
+        score: `${score}/${finalTarget}`,
+      },
+    };
+  });
+
+  return {
+    title: "Rugby Mode",
+    subtitle: `Target: ${finalTarget}`,
+    columns: rugbyColumns,
+    groups: groups.sort(
+      (a, b) =>
+        (scoreByTeam.get(b.id) ?? 0) - (scoreByTeam.get(a.id) ?? 0) ||
+        a.label.localeCompare(b.label),
+    ),
+    hasTeams: true,
+  };
+}
+
 /**
  * Converts the mode-specific match scoreboard schema into a single HUD model.
  *
@@ -463,6 +518,8 @@ export function createGameHudScoreboardModel(
       return createDemolitionModel(scoreboard);
     case GameMode.PAYLOAD:
       return createPayloadModel(scoreboard);
+    case GameMode.RUGBY:
+      return createRugbyModel(scoreboard);
     default:
       return createTroopLandModel("Classic", scoreboard);
   }

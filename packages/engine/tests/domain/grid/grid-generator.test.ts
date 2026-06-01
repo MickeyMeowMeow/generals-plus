@@ -368,4 +368,34 @@ describe("SquareGridGenerator", () => {
       expect(flags).toHaveLength(0);
     });
   });
+
+  describe("rugby generation", () => {
+    it("generates goal zones and rugby spawn points at the center", () => {
+      const grid = generator.generate({
+        gridBounds: { width: 20, height: 14 },
+        seed: 42,
+        isRugby: true,
+        generalCount: 2,
+      });
+
+      const goalZones = collectByTerrain(grid, Terrain.GOAL_ZONE);
+      const rugbySpawns = collectByTerrain(grid, Terrain.RUGBY_SPAWN);
+
+      // Goal zones should be generated
+      expect(goalZones.length).toBeGreaterThan(0);
+
+      // Rugby spawn points should be generated at the center (we expect exactly 4)
+      expect(rugbySpawns.length).toBe(4);
+
+      // Verify rugby spawn points are close to the center
+      const cx = (grid.width - 1) / 2;
+      const cy = (grid.height - 1) / 2;
+      for (const spawn of rugbySpawns) {
+        const dx = Math.abs(spawn.x - cx);
+        const dy = Math.abs(spawn.y - cy);
+        expect(dx).toBeLessThanOrEqual(2);
+        expect(dy).toBeLessThanOrEqual(2);
+      }
+    });
+  });
 });

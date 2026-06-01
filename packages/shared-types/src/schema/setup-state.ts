@@ -57,6 +57,10 @@ export class SetupState extends Schema {
   @type("number") payloadCartSize: number = 3;
   @type("number") payloadRequiredOccupied: number = 6;
 
+  @type("number") rugbyBallCount: number = 1;
+  @type("number") rugbyMoveSpeed: number = 1;
+  @type("number") rugbyWinningScore: number = 5;
+
   @type("number") tickInterval: number = 500;
   @type("number") finishTick: number = 360;
 }

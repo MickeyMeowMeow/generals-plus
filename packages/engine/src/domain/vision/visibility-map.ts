@@ -32,7 +32,12 @@ export function createVisionCell(
 
   const hasBomb = cell.item?.type === ItemType.BOMB;
   const showBombForAttackers = hasBomb && teamType === TeamType.ATTACKER;
-  const attackerItem = showBombForAttackers ? cell.item : null;
+  const isRugbyBall = cell.item?.type === ItemType.RUGBY_BALL;
+  const showItem = isRugbyBall
+    ? cell.item
+    : showBombForAttackers
+      ? cell.item
+      : null;
 
   switch (visibility) {
     case Visibility.VISIBLE:
@@ -44,6 +49,7 @@ export function createVisionCell(
         owner: cell.owner,
         item: cell.item,
         siteIndex: cell.siteIndex,
+        zoneIndex: cell.zoneIndex,
         willCollapse: cell.willCollapse,
       };
     case Visibility.TERRAIN:
@@ -53,37 +59,48 @@ export function createVisionCell(
         terrain: cell.terrain,
         troopCount: null,
         owner: null,
-        item: attackerItem,
+        item: showItem,
         siteIndex: cell.siteIndex,
+        zoneIndex: cell.zoneIndex,
         willCollapse: cell.willCollapse,
       };
     case Visibility.SHROUDED: {
       const isBombSite = cell.terrain === Terrain.BOMB_SITE;
+      const isGoalZone = cell.terrain === Terrain.GOAL_ZONE;
       return {
         coordinate: cell.coordinate,
         visibility,
         terrain: isBombSite
           ? Terrain.BOMB_SITE
-          : cell.terrain === Terrain.MOUNTAIN || cell.terrain === Terrain.CITY
-            ? MaskedTerrain.MAYBE_MOUNTAIN
-            : MaskedTerrain.MAYBE_PLAIN,
+          : isGoalZone
+            ? Terrain.GOAL_ZONE
+            : cell.terrain === Terrain.MOUNTAIN || cell.terrain === Terrain.CITY
+              ? MaskedTerrain.MAYBE_MOUNTAIN
+              : MaskedTerrain.MAYBE_PLAIN,
         troopCount: null,
         owner: null,
-        item: attackerItem,
+        item: showItem,
         siteIndex: isBombSite ? cell.siteIndex : null,
+        zoneIndex: isGoalZone ? cell.zoneIndex : null,
         willCollapse: cell.willCollapse,
       };
     }
     case Visibility.HIDDEN: {
       const isBombSite = cell.terrain === Terrain.BOMB_SITE;
+      const isGoalZone = cell.terrain === Terrain.GOAL_ZONE;
       return {
         coordinate: cell.coordinate,
-        visibility: isBombSite ? Visibility.SHROUDED : visibility,
-        terrain: isBombSite ? Terrain.BOMB_SITE : HiddenTerrain,
+        visibility: isBombSite || isGoalZone ? Visibility.SHROUDED : visibility,
+        terrain: isBombSite
+          ? Terrain.BOMB_SITE
+          : isGoalZone
+            ? Terrain.GOAL_ZONE
+            : HiddenTerrain,
         troopCount: null,
         owner: null,
-        item: attackerItem,
+        item: showItem,
         siteIndex: isBombSite ? cell.siteIndex : null,
+        zoneIndex: isGoalZone ? cell.zoneIndex : null,
         willCollapse: cell.willCollapse,
       };
     }

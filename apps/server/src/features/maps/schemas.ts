@@ -7,6 +7,7 @@ const CellTemplateSchema = z.object({
   terrain: TerrainSchema,
   troopCount: z.number().nullable().default(null),
   siteIndex: z.number().int().min(0).nullable().default(null),
+  zoneIndex: z.number().int().min(0).nullable().default(null),
 });
 
 const SpawnPointSchema = z.object({

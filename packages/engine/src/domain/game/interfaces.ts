@@ -295,14 +295,30 @@ export interface IEspionageGame extends IBaseGame {
   isGlobalRevealActive: boolean;
 }
 
+export interface IRugbyScoreboard extends IBaseScoreboard {
+  readonly mode: typeof GameMode.RUGBY;
+  readonly players: Array<{
+    readonly playerId: string;
+    readonly troops: number;
+    readonly land: number;
+    readonly isAlive: boolean;
+  }>;
+  readonly teamScores: Map<string, number>;
+  readonly winningScore: number;
+  readonly totalTimeTicks: number;
+  readonly rugbyBallCount: number;
+  readonly rugbyMoveSpeedTicks: number;
+}
+
 /**
  * Rugby Mode.
  * Focused on scoring and area control totals.
  */
 export interface IRugbyGame extends IBaseGame {
   readonly mode: typeof GameMode.RUGBY;
-  /** Global score limit or record. */
-  winningScore?: number;
+  winningScore: number;
+
+  getScoreboard(): IRugbyScoreboard;
 }
 
 /**
