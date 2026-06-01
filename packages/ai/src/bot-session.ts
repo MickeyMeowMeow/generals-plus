@@ -130,20 +130,19 @@ export class BotSession {
     const vision = state.clientVisions.get(this.sessionId);
     if (!visionGrid || !vision) return;
 
-    const cells = Array.from(visionGrid) as IVisionCell[];
-
     // Grid size changed (first update): full rebuild
-    if (vision.cells.length !== cells.length) {
+    if (vision.cells.length !== visionGrid.totalCells) {
       vision.cells.clear();
-      for (const vc of cells) {
+      for (const vc of visionGrid) {
         vision.cells.push(this.createVisionCell(vc));
       }
       return;
     }
 
-    // Incremental update: reuse existing cells, only mutate changed fields
-    for (let i = 0; i < cells.length; i++) {
-      const vc = cells[i];
+    // Incremental update: reuse existing cells, only mutate changed fields.
+    // Iterate the IVisionGrid directly (no Array.from allocation).
+    let i = 0;
+    for (const vc of visionGrid) {
       const cell = vision.cells[i];
 
       if (cell.visibility !== vc.visibility) cell.visibility = vc.visibility;
@@ -163,6 +162,8 @@ export class BotSession {
       const itemType = vc.item?.type ?? -1;
       if (cell.item_id !== itemId) cell.item_id = itemId;
       if (cell.item_type !== itemType) cell.item_type = itemType;
+
+      i++;
     }
   }
 
