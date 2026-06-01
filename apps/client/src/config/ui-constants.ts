@@ -69,8 +69,7 @@ export const GAME_MODE_HELP: Record<GameMode, ModeHelpData> &
       "Survival mode. Zombies try to eliminate all humans. Humans try to survive or wipe out the zombies.",
     rules: [
       "Phase 1 (Incubation): All teams play normally, competing for territory.",
-      "Phase 2 (Outbreak): One random team mutates into zombies. Only the Mother Zombie gets boosted troop production.",
-      "Phase 3 (Infection & Survival): Humans auto-ally. Zombies and humans fight to eliminate each other.",
+      "Phase 2 (Outbreak & Survival): One random team mutates into zombies; humans auto-ally. Only the Mother Zombie gets boosted troop production.",
       "Zombies win by eliminating all humans.",
       "Humans win by eliminating all zombies or surviving until time runs out.",
     ],
