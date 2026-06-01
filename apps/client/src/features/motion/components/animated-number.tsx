@@ -207,7 +207,7 @@ export function AnimatedNumber({
                           opacity: 0,
                         }}
                         transition={{
-                          duration: MOTION_DURATION.fast,
+                          duration: MOTION_DURATION.normal,
                           ease: MOTION_EASING.enter,
                         }}
                         className="inline-flex items-center will-change-transform"
