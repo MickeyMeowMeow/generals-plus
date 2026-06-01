@@ -24,7 +24,7 @@ export function SurrenderOverlay({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === SurrenderKey) {
+      if (e.code === SurrenderKey && canSurrender) {
         e.preventDefault();
         setIsOpen(true);
         return;
@@ -32,7 +32,7 @@ export function SurrenderOverlay({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [canSurrender]);
 
   return (
     <Dialog open={isOpen && canSurrender} onOpenChange={setIsOpen}>
