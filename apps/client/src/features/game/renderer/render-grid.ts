@@ -20,7 +20,7 @@ export interface RenderGridCell {
   visibility: Visibility;
   ownerIndex: string | null;
   siteIndex: number | null;
-  zoneIndex?: number | null;
+  zoneIndex: number | null;
   item: { id: string; type: number } | null;
   willCollapse?: boolean;
 }
