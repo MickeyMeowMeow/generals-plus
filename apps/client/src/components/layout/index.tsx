@@ -98,12 +98,12 @@ export function BrandTitle({ compact = false }: { compact?: boolean }) {
 export function StageCenter({ children }: { children: ReactNode }) {
   return (
     <div className="stage-center">
-      <MotionLayout className="relative w-full">
-        <div className="stage-center-backdrop" aria-hidden="true" />
-        <MotionScene className="stage-center-content">
+      <div className="stage-center-backdrop" aria-hidden="true" />
+      <MotionScene className="stage-center-content">
+        <MotionLayout>
           <div className="px-8 sm:px-12 lg:px-14">{children}</div>
-        </MotionScene>
-      </MotionLayout>
+        </MotionLayout>
+      </MotionScene>
     </div>
   );
 }

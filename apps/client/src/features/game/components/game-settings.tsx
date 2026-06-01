@@ -461,14 +461,14 @@ export function GameSettings({
           </Select>
         </div>
 
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={`dims-${currentSettings.mapType}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: MOTION_DURATION.fast }}
-            className="contents"
+            className="col-span-full grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
           >
             {(currentSettings.mapType === GridType.HEX
               ? HEX_NUMBER_FIELDS
@@ -480,14 +480,14 @@ export function GameSettings({
         {MAP_DETAIL_FIELDS.map(renderNumberField)}
 
         {/* --- MODE SPECIFIC SETTINGS --- */}
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={`mode-${currentSettings.gameMode}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: MOTION_DURATION.fast }}
-            className="contents"
+            className="col-span-full grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
           >
             {(MODE_SPECIFIC_FIELDS[currentSettings.gameMode] ?? []).map(
               renderNumberField,
@@ -495,7 +495,7 @@ export function GameSettings({
           </motion.div>
         </AnimatePresence>
 
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="wait" initial={false}>
           {currentSettings.gameMode === GameMode.COLLAPSE ? (
             <motion.div
               key="collapse-shape"
