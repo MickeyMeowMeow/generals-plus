@@ -1,11 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 
-import { Stage } from "#/components/layout";
+import { Stage, StageCenter, StagePanel } from "#/components/layout";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { AuthProvider } from "#/features/auth/hooks";
-import { createMockAuth } from "#/tests/helpers/auth";
-import { setAuthValue } from "#/tests/helpers/render";
+import { createMockAuth } from "#tests/helpers/auth";
+import { setAuthValue } from "#tests/helpers/render";
 
 describe("Stage background", () => {
   test("sets the stage background from a direct backgroundUrl prop", () => {
@@ -46,6 +46,7 @@ describe("Stage background", () => {
           preferences: {
             backgroundImage: { source: "preset", presetId: "default" },
             avatar: { source: "default" },
+            motion: { mode: "system" },
             stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
           },
         },
@@ -78,6 +79,7 @@ describe("Stage background", () => {
               customUrl: "https://cdn.example.com/custom.jpg",
             },
             avatar: { source: "default" },
+            motion: { mode: "system" },
             stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
           },
         },
@@ -95,5 +97,19 @@ describe("Stage background", () => {
     expect(screen.getByRole("main").getAttribute("style")).toContain(
       '--stage-background-image: url("https://cdn.example.com/custom.jpg")',
     );
+  });
+});
+
+describe("Stage motion wrappers", () => {
+  test("renders the stage center content inside a motion scene wrapper", () => {
+    render(
+      <StageCenter>
+        <StagePanel>Scene</StagePanel>
+      </StageCenter>,
+    );
+
+    expect(
+      screen.getByText("Scene").closest("[data-motion-scene]"),
+    ).toBeTruthy();
   });
 });

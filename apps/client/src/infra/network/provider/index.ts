@@ -1,5 +1,5 @@
 import type { UserProfile } from "#/common/types/user-profile";
-import { resolveColyseusEndpoint } from "#/infra/colyseus/connection";
+import { resolveColyseusEndpoint } from "#/infra/network/connection";
 import { ColyseusNetworkProvider } from "#/infra/network/provider/colyseus";
 import type { NetworkProvider } from "#/infra/network/provider/interfaces";
 

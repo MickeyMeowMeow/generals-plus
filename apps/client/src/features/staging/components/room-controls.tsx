@@ -1,8 +1,11 @@
+import { motion } from "framer-motion";
 import { Crown, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { cn } from "#/lib/utils";
+import { AnimatedNumber } from "#/features/motion/components/animated-number";
+import { MOTION_DURATION } from "#/features/motion/motion-tokens";
+import { cn, colorToHex } from "#/lib/utils";
 
 interface RoomPlayer {
   id: string;
@@ -36,11 +39,12 @@ interface RoomPlayerListProps {
   onCreateTeam?: () => void;
 }
 
-/** Converts numeric player colors into CSS hex values. */
-export function colorToHex(color: number) {
-  return `#${color.toString(16).padStart(6, "0")}`;
+/** Formats a display-only occupancy ratio with the shared digit animation. */
+function renderAnimatedCount(current: number, max: number) {
+  return (
+    <AnimatedNumber value={`${current} / ${max}`} className="tabular-nums" />
+  );
 }
-
 /**
  * Shared flat player list for queue and setup screens.
  *
@@ -82,7 +86,7 @@ export function RoomPlayerList({
   const renderIdentityIcon = (
     player: RoomPlayer,
     isCurrent: boolean,
-    className = "ml-[-5px] size-3.5 shrink-0 text-game-text-dim",
+    className = "-ml-1.25 size-3.5 shrink-0 text-game-text-dim",
   ) => {
     if (showHost && player.isHost) {
       return <Crown className={className} strokeWidth={2.5} />;
@@ -196,8 +200,13 @@ export function RoomPlayerList({
     const isDraggable = canManageTeams && isCurrent;
 
     return (
-      <li
+      <motion.li
         key={player.id}
+        layout
+        initial={{ opacity: 0.92, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: MOTION_DURATION.fast }}
+        data-motion-surface="player-row"
         onPointerDown={(event) => {
           if (!isDraggable) return;
           dragPointerId.current = event.pointerId;
@@ -226,7 +235,7 @@ export function RoomPlayerList({
             {aside}
           </span>
         ) : null}
-      </li>
+      </motion.li>
     );
   };
 
@@ -235,8 +244,9 @@ export function RoomPlayerList({
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-xl font-semibold">Players</h2>
         <span className="text-sm text-game-text-dim">
-          {playerList.length}
-          {typeof maxPlayers === "number" ? ` / ${maxPlayers}` : ""}
+          {typeof maxPlayers === "number"
+            ? renderAnimatedCount(playerList.length, maxPlayers)
+            : playerList.length}
         </span>
       </div>
       {canManageTeams ? (
@@ -251,7 +261,7 @@ export function RoomPlayerList({
                 className={cn(
                   "py-2",
                   dropTargetId === team.id &&
-                    "bg-white/5 outline outline-1 outline-white/20",
+                    "bg-white/5 outline outline-white/20",
                 )}
               >
                 {team.label ? (
@@ -267,7 +277,7 @@ export function RoomPlayerList({
                           : "text-game-text-dim",
                       )}
                     >
-                      {team.count} / {team.capacity}
+                      {renderAnimatedCount(team.count, team.capacity)}
                     </span>
                   </div>
                 ) : null}
@@ -284,7 +294,7 @@ export function RoomPlayerList({
                               : "text-game-text-dim",
                           )}
                         >
-                          {team.count} / {team.capacity}
+                          {renderAnimatedCount(team.count, team.capacity)}
                         </span>
                       ) : undefined,
                     ),
@@ -302,7 +312,7 @@ export function RoomPlayerList({
                 className={cn(
                   "py-0",
                   dropTargetId === "create-team" &&
-                    "bg-white/5 outline outline-1 outline-white/20",
+                    "bg-white/5 outline outline-white/20",
                 )}
               >
                 <button

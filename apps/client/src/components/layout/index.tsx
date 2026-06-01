@@ -1,10 +1,13 @@
+import { motion } from "framer-motion";
 import { AlertTriangle, Loader2 } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import { useContext } from "react";
 
 import { Toaster } from "#/components/ui/sonner";
 import { APP_TITLE } from "#/config/ui-constants";
 import { AuthContext } from "#/features/auth/providers/auth-provider";
+import { MotionLayout } from "#/features/motion/components/motion-layout";
+import { MotionScene } from "#/features/motion/components/motion-scene";
 import {
   resolveStageBackgroundUrl,
   toStageBackgroundImageValue,
@@ -97,9 +100,15 @@ export function StageCenter({ children }: { children: ReactNode }) {
   return (
     <div className="stage-center">
       <div className="stage-center-backdrop" aria-hidden="true" />
-      <div className="stage-center-content">
-        <div className="px-8 sm:px-12 lg:px-14">{children}</div>
-      </div>
+      <motion.div
+        layout
+        transition={{ layout: { duration: 0.18, ease: [0.2, 0.9, 0.2, 1] } }}
+        className="stage-center-content"
+      >
+        <MotionScene>
+          <div className="px-8 sm:px-12 lg:px-14">{children}</div>
+        </MotionScene>
+      </motion.div>
     </div>
   );
 }
@@ -110,12 +119,15 @@ export function StageCenter({ children }: { children: ReactNode }) {
 export function StagePanel({
   children,
   className,
+  ...props
 }: {
   children: ReactNode;
   className?: string;
-}) {
+} & HTMLAttributes<HTMLElement>) {
   return (
-    <section className={cn("game-panel p-5", className)}>{children}</section>
+    <section className={cn("game-panel p-5", className)} {...props}>
+      {children}
+    </section>
   );
 }
 
@@ -125,18 +137,20 @@ export function StagePanel({
 export function FloatingHud({
   children,
   className,
+  ...props
 }: {
   children: ReactNode;
   className?: string;
-}) {
+} & HTMLAttributes<HTMLElement>) {
   return (
     <aside
       className={cn(
         "fixed right-3 top-3 z-30 max-h-[calc(100svh-1.5rem)] w-[min(19.5rem,calc(100vw-1.5rem))] overflow-auto border border-game-border/80 bg-[rgb(27_27_27/0.76)] p-3 shadow-xl shadow-black/25 backdrop-blur-sm",
         className,
       )}
+      {...props}
     >
-      {children}
+      <MotionLayout>{children}</MotionLayout>
     </aside>
   );
 }
@@ -146,7 +160,10 @@ export function FloatingHud({
  */
 export function LoadingPanel({ message }: { message: string }) {
   return (
-    <StagePanel className="mx-auto max-w-sm text-center">
+    <StagePanel
+      className="mx-auto max-w-sm text-center"
+      data-motion-surface="loading-panel"
+    >
       <Loader2 className="mx-auto mb-3 size-5 animate-spin text-game-accent" />
       <p className="text-sm text-game-text-dim">{message}</p>
     </StagePanel>
@@ -172,7 +189,7 @@ export function ErrorPanel({
   action?: ReactNode;
 }) {
   return (
-    <StagePanel className="mx-auto max-w-md">
+    <StagePanel className="mx-auto max-w-md" data-motion-surface="error-panel">
       <div className="flex gap-3">
         <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
         <div>

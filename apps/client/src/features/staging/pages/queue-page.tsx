@@ -6,12 +6,17 @@ import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useUser } from "#/features/auth/hooks";
-import { useQueueRoom } from "#/features/game/api/use-queue-room";
-import { ColorPicker } from "#/features/game/components/color-picker";
-import { ModeHelpButton } from "#/features/game/components/mode-help-button";
-import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
+import { AnimatedNumber } from "#/features/motion/components/animated-number";
+import {
+  MotionStaggerGroup,
+  MotionStaggerItem,
+} from "#/features/motion/components/motion-stagger";
 import { Avatar } from "#/features/profile/components/avatar";
+import { useQueueRoom } from "#/features/staging/api/use-queue-room";
+import { ColorPicker } from "#/features/staging/components/color-picker";
+import { ModeHelpButton } from "#/features/staging/components/mode-help-button";
+import { RoomPlayerList } from "#/features/staging/components/room-controls";
 import { RoomStatus } from "#/infra/network/room";
 
 function getModeOption(mode: GameMode) {
@@ -119,25 +124,27 @@ export function QueuePage({
 
   return (
     <StageCenter>
-      <div className="mx-auto grid w-full max-w-5xl gap-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Avatar preferences={preferences?.avatar} />
-            <div>
-              <p className="text-sm text-game-text-dim">Hello,</p>
-              <p className="text-2xl font-bold">{displayName}</p>
+      <MotionStaggerGroup className="mx-auto grid w-full max-w-5xl gap-8">
+        <MotionStaggerItem>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Avatar preferences={preferences?.avatar} />
+              <div>
+                <p className="text-sm text-game-text-dim">Hello,</p>
+                <p className="text-2xl font-bold">{displayName}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <p className="text-sm text-game-text-dim">Mode: {modeLabel}</p>
+              <ModeHelpButton
+                gameMode={gameMode}
+                className="text-game-text-dim hover:text-game-text"
+              />
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <p className="text-sm text-game-text-dim">Mode: {modeLabel}</p>
-            <ModeHelpButton
-              gameMode={gameMode}
-              className="text-game-text-dim hover:text-game-text"
-            />
-          </div>
-        </div>
+        </MotionStaggerItem>
 
-        <div className="grid gap-8 border-t border-game-border pt-8 md:grid-cols-[1fr_20rem]">
+        <MotionStaggerItem className="grid gap-8 border-t border-game-border pt-8 md:grid-cols-[1fr_20rem]">
           <section className="space-y-4">
             <h2 className="text-xl font-semibold">Pick Your Color</h2>
             {myPlayer ? (
@@ -169,17 +176,17 @@ export function QueuePage({
               Leave queue
             </Button>
           </div>
-        </div>
+        </MotionStaggerItem>
 
-        <div className="mt-8 flex flex-col items-center gap-1">
+        <MotionStaggerItem className="mt-8 flex flex-col items-center gap-1">
           <p className="text-center text-2xl font-semibold text-game-text-dim">
             QUEUED
           </p>
           <p className="text-center text-4xl font-semibold tabular-nums text-game-text-dim">
-            {queueDuration}
+            <AnimatedNumber value={queueDuration} />
           </p>
-        </div>
-      </div>
+        </MotionStaggerItem>
+      </MotionStaggerGroup>
     </StageCenter>
   );
 }

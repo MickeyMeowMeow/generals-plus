@@ -29,13 +29,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { AuthContext } from "#/features/auth/providers/auth-provider";
 import { resetGameConnectionsForTesting } from "#/features/game/api/use-game-room";
-import { resetQueueConnectionsForTesting } from "#/features/game/api/use-queue-room";
-import { resetSetupConnectionsForTesting } from "#/features/game/api/use-setup-room";
-import { QueuePage } from "#/features/game/pages/queue-page";
+import { resetQueueConnectionsForTesting } from "#/features/staging/api/use-queue-room";
+import { resetSetupConnectionsForTesting } from "#/features/staging/api/use-setup-room";
+import { QueuePage } from "#/features/staging/pages/queue-page";
 import { HttpRequestError } from "#/infra/network/provider/colyseus";
 import { RoomStatus } from "#/infra/network/room";
-import { createMockAuth } from "#/tests/helpers/auth";
-import { renderRoute } from "#/tests/helpers/render";
+import { createMockAuth } from "#tests/helpers/auth";
+import { renderRoute } from "#tests/helpers/render";
 
 const networkMocks = vi.hoisted(() => ({
   joinOrCreate: vi.fn(),
@@ -408,13 +408,16 @@ describe("client room flows", () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByText("00:00")).toBeTruthy();
+    expect(screen.getByLabelText("00:00")).toBeTruthy();
+    expect(
+      screen.getByLabelText("00:00").closest("[data-animated-number='true']"),
+    ).toBeTruthy();
 
     await act(async () => {
       vi.advanceTimersByTime(3_000);
     });
 
-    expect(screen.getByText("00:03")).toBeTruthy();
+    expect(screen.getByLabelText("00:03")).toBeTruthy();
   });
 
   it("keeps queue time running across queue-state updates", async () => {
@@ -446,6 +449,8 @@ describe("client room flows", () => {
       vi.advanceTimersByTime(2_000);
     });
 
+    expect(screen.getByLabelText("00:02")).toBeTruthy();
+
     act(() => {
       queueRoom.emitState(
         createState({
@@ -465,11 +470,13 @@ describe("client room flows", () => {
       );
     });
 
+    expect(screen.getByLabelText("00:02")).toBeTruthy();
+
     await act(async () => {
       vi.advanceTimersByTime(1_000);
     });
 
-    expect(screen.getByText("00:03")).toBeTruthy();
+    expect(screen.getByLabelText("00:03")).toBeTruthy();
   });
 
   it("leaves the official queue when the queue room disconnects", async () => {

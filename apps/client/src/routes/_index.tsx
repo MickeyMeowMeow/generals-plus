@@ -10,8 +10,8 @@ import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth } from "#/features/auth/hooks";
 import { AuthPage } from "#/features/auth/pages/auth-page";
 import { GamePage } from "#/features/game/pages/game-page";
-import { QueuePage } from "#/features/game/pages/queue-page";
 import { LobbyPage } from "#/features/lobby/pages/lobby-page";
+import { QueuePage } from "#/features/staging/pages/queue-page";
 import { networkProvider } from "#/infra/network/provider";
 
 type OfficialPhase = "lobby" | "queue" | "vs-ai";

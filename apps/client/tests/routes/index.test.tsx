@@ -5,8 +5,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthStatus } from "#/features/auth/auth-store";
-import { createMockAuth } from "#/tests/helpers/auth";
-import { renderRoute } from "#/tests/helpers/render";
+import { createMockAuth } from "#tests/helpers/auth";
+import { renderRoute } from "#tests/helpers/render";
 
 describe("index route", () => {
   beforeEach(() => {
@@ -60,6 +60,23 @@ describe("index route", () => {
     expect(screen.getByRole("button", { name: "Start" })).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Create/Join custom room" }),
+    ).toBeTruthy();
+  });
+
+  it("renders the lobby start flow inside motion scene wrappers", () => {
+    renderRoute(
+      "/",
+      createMockAuth({
+        status: AuthStatus.AUTHENTICATED,
+        user: { id: "nova", displayName: "Nova" },
+        token: "tok",
+      }),
+    );
+
+    expect(
+      screen
+        .getByRole("button", { name: /start/i })
+        .closest("[data-motion-stagger-group]"),
     ).toBeTruthy();
   });
 

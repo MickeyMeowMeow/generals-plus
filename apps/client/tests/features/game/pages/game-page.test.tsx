@@ -261,7 +261,10 @@ describe("GamePage", () => {
     );
 
     expect(screen.getByText("Turn")).toBeTruthy();
-    expect(screen.getByText("42")).toBeTruthy();
+    expect(screen.getByLabelText("42")).toBeTruthy();
+    expect(
+      screen.getByLabelText("42").closest("[data-animated-number='true']"),
+    ).toBeTruthy();
   });
 
   it("does not queue a move into a known obstacle", () => {

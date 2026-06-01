@@ -12,7 +12,7 @@ import {
   CustomRoomFullError,
   createCustomRoom,
   resolveCustomRoom,
-} from "./custom-room-registry";
+} from "#/features/setup/custom-room-registry";
 
 async function getAuthorizedUserId(request: Request) {
   const header = request.header("authorization");

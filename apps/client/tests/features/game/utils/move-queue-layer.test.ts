@@ -1,10 +1,10 @@
 import { SquareGrid2D, Terrain, Visibility } from "@generals-plus/engine";
 import { describe, expect, it, vi } from "vitest";
 
-import { getArrowAnchor } from "#/features/game/renderer/layers/move-queue-geometry";
 import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { SquareRenderGrid } from "#/features/game/renderer/render-grid";
 import { MoveDirection } from "#/features/game/utils/move";
+import { getArrowAnchor } from "#/features/game/utils/move-queue-geometry";
 
 const stride = vi.hoisted(() => 100);
 const from = { x: 2, y: 3 };

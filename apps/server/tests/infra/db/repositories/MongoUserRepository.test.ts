@@ -1,4 +1,5 @@
 import { GameMode } from "@generals-plus/engine";
+import { DEFAULT_USER_PREFERENCES } from "@generals-plus/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { IUserDocument } from "#/infra/db/models/user-model";
@@ -57,6 +58,23 @@ describe("MongoUserRepository and UserModel tests", () => {
 
       expect(user.preferences.backgroundImage.source).toBe("preset");
       expect(user.preferences.backgroundImage.presetId).toBe("default");
+      expect(user.preferences.motion.mode).toBe("system");
+    });
+
+    it("should retain explicit motion preferences in the user schema", async () => {
+      const user = new UserModel({
+        email: "motion@example.com",
+        displayName: "Motion User",
+        preferences: {
+          ...structuredClone(DEFAULT_USER_PREFERENCES),
+          motion: { mode: "reduced" },
+        },
+      });
+
+      await user.validate();
+
+      expect(user.preferences.motion.mode).toBe("reduced");
+      expect(user.toObject().preferences.motion.mode).toBe("reduced");
     });
 
     it.each([

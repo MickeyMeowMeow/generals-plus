@@ -7,9 +7,9 @@ import IndexRoute from "#/routes/_index";
 import MatchRoute from "#/routes/match.$roomId";
 import NotFoundRoute from "#/routes/not-found";
 import ProfileRoute from "#/routes/profile";
-import { setTestAuthValue } from "./test-auth-state";
+import { setTestAuthValue } from "#tests/helpers/test-auth-state";
 
-export { setTestAuthValue as setAuthValue } from "./test-auth-state";
+export { setTestAuthValue as setAuthValue } from "#tests/helpers/test-auth-state";
 
 export const defaultRoutes = [
   {
