@@ -70,10 +70,17 @@ export function BrandTitle({ compact = false }: { compact?: boolean }) {
     <div className="text-center">
       <h1
         className={cn(
-          "game-brand mx-auto max-w-full font-semibold leading-tight",
+          "game-brand mx-auto inline-flex max-w-full items-center gap-5 font-semibold leading-tight",
           compact ? "text-3xl sm:text-4xl" : "text-4xl sm:text-5xl",
         )}
       >
+        <img
+          src="/icon.png"
+          alt=""
+          className={
+            compact ? "size-11 sm:size-12 -mt-1" : "size-13 sm:size-14 -mt-1"
+          }
+        />
         {APP_TITLE}
       </h1>
     </div>

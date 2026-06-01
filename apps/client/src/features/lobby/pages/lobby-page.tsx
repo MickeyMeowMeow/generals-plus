@@ -91,7 +91,7 @@ function ModePickerDialog({
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent
-        className="max-h-[min(48rem,calc(100svh-2rem))] sm:max-w-4xl overflow-auto border-game-border bg-game-surface p-5 text-game-text"
+        className="max-h-[min(48rem,calc(100svh-2rem))] sm:max-w-4xl overflow-auto p-5"
         aria-describedby={undefined}
         showCloseButton={true}
       >

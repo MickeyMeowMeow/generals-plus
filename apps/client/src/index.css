@@ -117,7 +117,7 @@ body {
   z-index: 0;
   pointer-events: none;
   content: "";
-  background-image: var(--stage-background-image);
+  background-image: var(--stage-background-image, url("/bg.png"));
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -177,7 +177,10 @@ body {
 
 .game-panel {
   border: 1px solid var(--game-border);
-  background: var(--game-surface);
+  background: rgb(27 27 27 / 0.68);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.28);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
 }
 
 .game-brand {
