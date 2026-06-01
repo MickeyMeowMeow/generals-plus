@@ -53,6 +53,10 @@ describe("AnimatedNumber", () => {
     const { rerender, container } = renderWithMotion(
       <AnimatedNumber value="9" />,
     );
+    const rootBefore = screen.getByLabelText("9");
+    const cellsBefore = rootBefore.querySelectorAll("[data-digit-cell='true']");
+    expect(cellsBefore).toHaveLength(1);
+    const rightmostBefore = cellsBefore.item(0);
 
     rerender(
       <MotionProvider preferenceMode="full">
@@ -61,6 +65,10 @@ describe("AnimatedNumber", () => {
     );
 
     expect(screen.getByLabelText("10").textContent).toBe("10");
+    const rootAfter = screen.getByLabelText("10");
+    const cellsAfter = rootAfter.querySelectorAll("[data-digit-cell='true']");
+    expect(cellsAfter).toHaveLength(2);
+    expect(cellsAfter.item(1)).toBe(rightmostBefore);
     expect(
       container.querySelectorAll("[data-roll-direction='up']"),
     ).toHaveLength(2);

@@ -100,9 +100,10 @@ function buildDigitCells(
     const previousChar =
       previousValue[previousValue.length - maxLength + offset] ?? null;
     const nextChar = nextValue[nextValue.length - maxLength + offset] ?? "";
+    const offsetFromRight = maxLength - offset - 1;
 
     return {
-      key: `${tokenIndex}-${offset}`,
+      key: `${tokenIndex}-right-${offsetFromRight}`,
       nextChar,
       changed: previousChar !== nextChar,
     };
