@@ -4,11 +4,13 @@ import { Container, Sprite, Texture } from "pixi.js";
 import { useEffect, useMemo, useState } from "react";
 
 import { bombNormalIcon, bombPlantedIcon } from "#/features/game/assets";
+import { getBoardPulse } from "#/features/game/renderer/board-motion";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type {
   RenderGrid,
   RenderGridCell,
 } from "#/features/game/renderer/render-grid";
+import { useMotionPreference } from "#/features/motion/motion-provider";
 
 extend({ Container, Sprite });
 
@@ -39,6 +41,7 @@ export function BombLayer({
   isPlanted,
   ticksRemaining = -1,
 }: BombLayerProps) {
+  const { shouldReduceMotion } = useMotionPreference();
   // biome-ignore lint/correctness/useExhaustiveDependencies: bombMoveSignal is intentionally included to force a refresh each time a bomb move occurs
   const bombCells = useMemo(() => {
     const cells: RenderGridCell[] = [];
@@ -82,8 +85,12 @@ export function BombLayer({
             : bombIcons.normal
           : bombIcons.normal;
         const texture = Texture.from(icon);
-        const finalSize = isPlanted && flash ? size * 1.15 : size;
-        const finalAlpha = isPlanted && flash ? 0.6 : 1.0;
+        const pulse = getBoardPulse({
+          ageMs: flash ? 0 : 240,
+          reducedMotion: shouldReduceMotion,
+        });
+        const finalSize = isPlanted ? size * pulse.scale : size;
+        const finalAlpha = isPlanted ? pulse.alpha : 1.0;
 
         return (
           <pixiSprite
