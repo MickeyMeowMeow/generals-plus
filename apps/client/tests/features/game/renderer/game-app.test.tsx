@@ -38,6 +38,7 @@ function renderGameApp(overrides: Partial<Parameters<typeof GameApp>[0]> = {}) {
         troopCount: null,
         ownerIndex: null,
         siteIndex: null,
+        zoneIndex: null,
         item: null,
       }))}
       selection={null}

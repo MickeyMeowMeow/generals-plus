@@ -29,6 +29,7 @@ describe("MoveQueueLayer", () => {
     troopCount: null,
     ownerIndex: null,
     siteIndex: null,
+    zoneIndex: null,
     item: null,
   }));
 
