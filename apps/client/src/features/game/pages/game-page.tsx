@@ -26,7 +26,7 @@ import { PingPanel } from "#/features/game/components/ping-panel";
 import { ReturnButton } from "#/features/game/components/return-button";
 import { StatusDialog } from "#/features/game/components/status-dialog";
 import { SurrenderOverlay } from "#/features/game/components/surrender-overlay";
-import { TickCounter } from "#/features/game/components/turn-counter";
+import { TurnCounter } from "#/features/game/components/turn-counter";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import {
@@ -378,7 +378,7 @@ export function GamePage({ connection, source }: GamePageProps) {
   return (
     <div className="fixed inset-0 z-20 bg-game-bg">
       <div className="pointer-events-none fixed left-0 top-0 z-30 flex flex-col items-start gap-2 p-3">
-        <TickCounter tick={gameState.tick} />
+        <TurnCounter tick={gameState.tick} />
         {isViewingAsSpectator ? <ReturnButton onReturn={handleReturn} /> : null}
       </div>
 
