@@ -49,8 +49,11 @@ export function TimerBar({
           {label}
         </span>
         <span
+          data-motion-emphasis={
+            isCritical ? "critical" : isWarning ? "warning" : "normal"
+          }
           className={cn(
-            "text-sm font-medium tabular-nums transition-colors",
+            "text-sm font-medium tabular-nums transition-[color,transform] duration-(--motion-duration-fast) ease-(--motion-ease-emphasis)",
             isCritical
               ? "text-timer-critical"
               : isWarning
@@ -64,7 +67,7 @@ export function TimerBar({
       <Progress
         value={Math.min(100, progressPercentage)}
         className={cn(
-          "h-1.5 border border-game-border bg-game-bg transition-all",
+          "h-1.5 border border-game-border bg-game-bg transition-[border-color,background-color] duration-(--motion-duration-fast) ease-(--motion-ease-enter)",
           isCritical
             ? "[&>div]:bg-timer-critical"
             : isWarning

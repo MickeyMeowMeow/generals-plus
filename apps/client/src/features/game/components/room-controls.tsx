@@ -1,7 +1,9 @@
+import { motion } from "framer-motion";
 import { Crown, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { MOTION_DURATION } from "#/features/motion/motion-tokens";
 import { cn } from "#/lib/utils";
 
 interface RoomPlayer {
@@ -196,8 +198,13 @@ export function RoomPlayerList({
     const isDraggable = canManageTeams && isCurrent;
 
     return (
-      <li
+      <motion.li
         key={player.id}
+        layout
+        initial={{ opacity: 0.92, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: MOTION_DURATION.fast }}
+        data-motion-surface="player-row"
         onPointerDown={(event) => {
           if (!isDraggable) return;
           dragPointerId.current = event.pointerId;
@@ -226,7 +233,7 @@ export function RoomPlayerList({
             {aside}
           </span>
         ) : null}
-      </li>
+      </motion.li>
     );
   };
 

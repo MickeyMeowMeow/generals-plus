@@ -64,6 +64,14 @@ describe("TimerBar Component", () => {
     expect(timeText.className).toContain("text-timer-critical");
   });
 
+  it("marks critical time with a single emphasis surface", () => {
+    render(<TimerBar currentTick={95} targetTick={100} tickInterval={1000} />);
+
+    expect(screen.getByText("0:05").getAttribute("data-motion-emphasis")).toBe(
+      "critical",
+    );
+  });
+
   it("caps remaining time at zero when currentTick exceeds targetTick", () => {
     render(<TimerBar currentTick={110} targetTick={100} tickInterval={1000} />);
 

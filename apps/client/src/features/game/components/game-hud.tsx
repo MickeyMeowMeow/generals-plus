@@ -1,4 +1,5 @@
 import type { BaseScoreboard } from "@generals-plus/shared-types";
+import { motion } from "framer-motion";
 import type { CSSProperties } from "react";
 
 import { FloatingHud } from "#/components/layout";
@@ -6,6 +7,7 @@ import { Separator } from "#/components/ui/separator";
 import { colorToHex } from "#/features/game/components/room-controls";
 import { TimerBar } from "#/features/game/components/timer-bar";
 import { createGameHudScoreboardModel } from "#/features/match/utils/scoreboard-adapter";
+import { MOTION_DURATION } from "#/features/motion/motion-tokens";
 
 interface TimerProps {
   currentTick: number;
@@ -55,7 +57,14 @@ export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
 
   return (
     <FloatingHud>
-      <div className="space-y-3">
+      <motion.div
+        key={`${scoreboardModel.title}:${scoreboardModel.subtitle ?? ""}`}
+        data-motion-surface="hud"
+        initial={{ opacity: 0.96, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: MOTION_DURATION.fast }}
+        className="space-y-3"
+      >
         {shouldShowTimer ? (
           <>
             <TimerBar
@@ -209,7 +218,7 @@ export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
                 })}
           </div>
         </div>
-      </div>
+      </motion.div>
     </FloatingHud>
   );
 }
