@@ -115,14 +115,14 @@ export abstract class AbstractGridGenerator<
         }
 
         // Right goal zone cell
-        let rightmostX = 100;
+        let rightmostX = isHex ? bounds.right : bounds.width - 1;
         while (
-          rightmostX > -100 &&
+          rightmostX >= (isHex ? -bounds.left : 0) &&
           !terrainGrid.isValid({ x: rightmostX, y })
         ) {
           rightmostX--;
         }
-        if (rightmostX > -100) {
+        if (rightmostX >= (isHex ? -bounds.left : 0)) {
           const coord = { x: rightmostX - rightGoalOffset, y };
           if (
             terrainGrid.isValid(coord) &&
