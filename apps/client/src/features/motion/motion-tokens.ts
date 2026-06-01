@@ -15,3 +15,9 @@ export const MOTION_EASING = {
   exit: [0.4, 0, 1, 1],
   emphasis: [0.22, 1, 0.36, 1],
 } as const;
+
+/** Standard transition for layout-size animations (container resize). */
+export const MOTION_LAYOUT_TRANSITION = {
+  duration: MOTION_DURATION.normal,
+  ease: MOTION_EASING.enter,
+} as const;
