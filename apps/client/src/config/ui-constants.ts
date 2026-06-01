@@ -89,7 +89,6 @@ export const GAME_MODE_HELP: Record<GameMode, ModeHelpData> &
       "Two teams compete: Left Team vs Right Team.",
       "A Rugby Ball spawns near the center. Moving onto the ball picks it up.",
       "Carrying the ball slows down troop movement speed (default: 1 move per second).",
-      "In a split move, the ball remains with the larger half of the troops.",
       "Score a touchdown by moving the ball into the opponent's Goal Zone.",
       "Goal Zones are located near the left and right margins of the map.",
       "First team to reach the target score (default: 5) wins, or the team with the highest score on timeout.",

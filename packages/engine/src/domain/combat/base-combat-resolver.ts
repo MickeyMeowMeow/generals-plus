@@ -117,18 +117,9 @@ export abstract class BaseCombatResolver implements CombatResolver {
     if (isSuccessfulOccupation && source.item !== null) {
       if (!this.canMoveItem || this.canMoveItem(source.item, attacker)) {
         if (target.item === null) {
-          let shouldMove = true;
-          if (action.type === ActionType.SPLIT_MOVE) {
-            const remainingTroops = currentTroops - movingTroops;
-            if (remainingTroops >= movingTroops) {
-              shouldMove = false; // Stay at source since source has larger or equal troops
-            }
-          }
-          if (shouldMove) {
-            source.item.coordinate = target.coordinate;
-            target.item = source.item;
-            source.item = null;
-          }
+          source.item.coordinate = target.coordinate;
+          target.item = source.item;
+          source.item = null;
         }
       }
     }
