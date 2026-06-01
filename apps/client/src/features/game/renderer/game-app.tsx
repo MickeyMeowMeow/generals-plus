@@ -16,6 +16,7 @@ import {
   ClearMoveQueueKey,
   KeyToDirection,
   KeyToPing,
+  SelectPingToolModifier,
   SplitMoveModifier,
 } from "#/features/game/config/hotkeys";
 import type { Ping } from "#/features/game/renderer/layers/ping";
@@ -157,7 +158,7 @@ export function GameApp({
         return;
       }
 
-      if (KeyToPing[e.code]) {
+      if (KeyToPing[e.code] && !e.getModifierState(SelectPingToolModifier)) {
         e.preventDefault();
         const coord = grid?.fromCartesian({
           x: pointerRef.current.x / RenderConfig.cellStride,

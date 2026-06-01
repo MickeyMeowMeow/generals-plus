@@ -28,9 +28,9 @@ import { StatusDialog } from "#/features/game/components/status-dialog";
 import { SurrenderOverlay } from "#/features/game/components/surrender-overlay";
 import { TurnCounter } from "#/features/game/components/turn-counter";
 import {
-  ChoosePingBrushModifier,
-  ClearPingBrushKey,
+  DeselectPingToolKey,
   KeyToPing,
+  SelectPingToolModifier,
 } from "#/features/game/config/hotkeys";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { Ping } from "#/features/game/renderer/layers/ping";
@@ -277,11 +277,11 @@ export function GamePage({ connection, source }: GamePageProps) {
         return;
       }
 
-      if (e.code === ClearPingBrushKey) {
+      if (e.code === DeselectPingToolKey) {
         setActiveBrush(null);
       }
 
-      if (e.getModifierState(ChoosePingBrushModifier) && KeyToPing[e.code]) {
+      if (e.getModifierState(SelectPingToolModifier) && KeyToPing[e.code]) {
         const pingType = KeyToPing[e.code];
         setActiveBrush((prev) => (prev === pingType ? null : pingType));
       }

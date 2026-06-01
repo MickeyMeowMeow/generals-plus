@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import {
-  ChoosePingBrushModifier,
   ClearMoveQueueKey,
   KeyToDirection,
   KeyToPing,
+  SelectPingToolModifier,
   SplitMoveModifier,
   SurrenderKey,
   ToggleHotkeysKey,
@@ -170,7 +170,7 @@ export function HotkeyOverlay({ gridType }: HotkeyOverlayProps) {
               </div>
               <div className="flex items-center justify-between gap-6">
                 <span className="flex items-center gap-1">
-                  <Kbd>{ChoosePingBrushModifier}</Kbd>{" "}
+                  <Kbd>{SelectPingToolModifier}</Kbd>{" "}
                   <span className="opacity-40">+</span>{" "}
                   <KbdGroup codes={pingCodes} />
                 </span>

@@ -35,8 +35,8 @@ export const KeyToPing: Record<string, "attack" | "defense" | "rally"> = {
   Digit3: "rally",
 };
 
-export const ClearPingBrushKey = "KeyC";
-export const ChoosePingBrushModifier = "Shift";
+export const DeselectPingToolKey = "KeyC";
+export const SelectPingToolModifier = "Shift";
 
 export const ToggleHotkeysKey = "Slash";
 export const ToggleHotkeysModifier = "Shift";
