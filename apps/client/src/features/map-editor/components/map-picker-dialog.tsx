@@ -75,7 +75,7 @@ export function MapPickerDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        className="max-h-[85vh] flex flex-col border-game-border bg-game-surface text-game-text sm:max-w-3xl overflow-hidden"
+        className="max-h-[85vh] flex flex-col sm:max-w-3xl overflow-hidden"
         aria-describedby={undefined}
         showCloseButton={true}
       >

@@ -66,7 +66,7 @@ export function ModeHelpButton({
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-game-border bg-game-surface text-game-text">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-lg">{label}</DialogTitle>
           </DialogHeader>
