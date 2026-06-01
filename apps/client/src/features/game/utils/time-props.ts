@@ -7,10 +7,6 @@ import type {
 } from "@generals-plus/shared-types";
 
 export function parseTimerProps(gameState: MatchState) {
-  if (!gameState) {
-    return undefined;
-  }
-
   let timerProps: {
     currentTick: number;
     targetTick: number;
