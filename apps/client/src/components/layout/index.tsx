@@ -5,6 +5,7 @@ import { useContext } from "react";
 import { Toaster } from "#/components/ui/sonner";
 import { APP_TITLE } from "#/config/ui-constants";
 import { AuthContext } from "#/features/auth/providers/auth-provider";
+import { MotionLayout } from "#/features/motion/components/motion-layout";
 import { MotionScene } from "#/features/motion/components/motion-scene";
 import {
   resolveStageBackgroundUrl,
@@ -97,10 +98,12 @@ export function BrandTitle({ compact = false }: { compact?: boolean }) {
 export function StageCenter({ children }: { children: ReactNode }) {
   return (
     <div className="stage-center">
-      <div className="stage-center-backdrop" aria-hidden="true" />
-      <MotionScene className="stage-center-content">
-        <div className="px-8 sm:px-12 lg:px-14">{children}</div>
-      </MotionScene>
+      <MotionLayout className="relative w-full">
+        <div className="stage-center-backdrop" aria-hidden="true" />
+        <MotionScene className="stage-center-content">
+          <div className="px-8 sm:px-12 lg:px-14">{children}</div>
+        </MotionScene>
+      </MotionLayout>
     </div>
   );
 }
@@ -142,7 +145,7 @@ export function FloatingHud({
       )}
       {...props}
     >
-      {children}
+      <MotionLayout>{children}</MotionLayout>
     </aside>
   );
 }
