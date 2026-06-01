@@ -1,15 +1,14 @@
 import { extend } from "@pixi/react";
 import { Container, Sprite, Texture } from "pixi.js";
-import { useMemo } from "react";
+import { useEffect, useRef } from "react";
 
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
-import type {
-  RenderGrid,
-  RenderGridCell,
-} from "#/features/game/renderer/render-grid";
-import { TerrainTheme } from "#/features/game/renderer/theme.ts";
+import { RenderConfig } from "#/features/game/renderer/render-config";
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
+import { TerrainTheme } from "#/features/game/renderer/theme";
 
-extend({ Container, Sprite });
+extend({ Container });
+
+const ICON_SIZE = RenderConfig.cellStride * RenderConfig.terrainIconScale;
 
 interface IconLayerProps {
   tick: number;
@@ -17,35 +16,60 @@ interface IconLayerProps {
 }
 
 export function IconLayer({ tick, grid }: IconLayerProps) {
+  const containerRef = useRef<Container>(null);
+  // Persists PIXI sprites across ticks to bypass React reconciliation overhead
+  const poolRef = useRef<Map<string, { sprite: Sprite; icon: string }>>(
+    new Map(),
+  );
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: tick is intentionally included to force a refresh each tick, since terrain can change frequently (e.g. from SHROUDED to VISIBLE)
-  const iconCells = useMemo(() => {
-    const cells: Array<{ cell: RenderGridCell; icon: string }> = [];
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const pool = poolRef.current;
+
     grid.forEach((cell) => {
       const icon = TerrainTheme[cell.terrain]?.icon;
-      if (icon) cells.push({ cell, icon });
+
+      const key = `${cell.coordinate.x},${cell.coordinate.y}`;
+      const entry = pool.get(key);
+
+      if (!icon) {
+        if (entry) {
+          // Clean up sprite if terrain no longer has an icon
+          // container.removeChild(entry.sprite);
+          // entry.sprite.destroy();
+          entry.sprite.texture = Texture.EMPTY;
+          pool.delete(key);
+        }
+        return;
+      }
+
+      const texture = Texture.from(icon);
+
+      if (!entry) {
+        // Create new sprite only if it doesn't exist
+        const { x, y } = grid.toCartesian(cell.coordinate);
+
+        const sprite = new Sprite({
+          texture,
+          anchor: 0.5,
+          width: ICON_SIZE,
+          height: ICON_SIZE,
+          x: x * RenderConfig.cellStride,
+          y: y * RenderConfig.cellStride,
+        });
+
+        container.addChild(sprite);
+        pool.set(key, { sprite, icon });
+      } else if (entry.icon !== icon) {
+        // Update texture only if the terrain/icon changed
+        entry.sprite.texture = texture;
+        entry.icon = icon;
+      }
     });
-    return cells;
   }, [tick, grid]);
 
-  return (
-    <pixiContainer>
-      {iconCells.map(({ cell, icon }) => {
-        const { x, y } = grid.toCartesian(cell.coordinate);
-        const iconSize =
-          RenderConfig.cellStride * RenderConfig.terrainIconScale;
-
-        return (
-          <pixiSprite
-            key={`icon-${cell.coordinate.x},${cell.coordinate.y}`}
-            texture={Texture.from(icon)}
-            anchor={0.5}
-            width={iconSize}
-            height={iconSize}
-            x={x * RenderConfig.cellStride}
-            y={y * RenderConfig.cellStride}
-          />
-        );
-      })}
-    </pixiContainer>
-  );
+  return <pixiContainer ref={containerRef} />;
 }

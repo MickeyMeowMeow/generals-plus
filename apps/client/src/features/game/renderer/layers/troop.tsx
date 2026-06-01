@@ -2,12 +2,12 @@ import type { ICoordinate } from "@generals-plus/engine";
 import { isSameCoord } from "@generals-plus/engine";
 import { extend } from "@pixi/react";
 import { Container, Text, TextStyle } from "pixi.js";
-import { useMemo } from "react";
+import { useEffect, useRef } from "react";
 
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 
-extend({ Container, Text });
+extend({ Container });
 
 interface TroopLayerProps {
   tick: number;
@@ -38,36 +38,59 @@ export function TroopLayer({
   grid,
   splitMoveSelection,
 }: TroopLayerProps) {
+  const containerRef = useRef<Container>(null);
+  const poolRef = useRef<Map<string, { textObj: Text; text: string }>>(
+    new Map(),
+  );
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: tick is intentionally included to force a refresh each tick, since troop counts can change frequently
-  const troopCells = useMemo(() => {
-    const cells: Array<{ coordinate: ICoordinate; text: string }> = [];
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const pool = poolRef.current;
 
     grid.forEach(({ coordinate, troopCount }) => {
-      if (splitMoveSelection && isSameCoord(coordinate, splitMoveSelection)) {
-        cells.push({ coordinate, text: "50%" });
-      } else if (troopCount) {
-        cells.push({ coordinate, text: troopCount.toString() });
-      }
-    });
-    return cells;
-  }, [tick, grid, splitMoveSelection]);
+      const isSplitMove =
+        splitMoveSelection && isSameCoord(coordinate, splitMoveSelection);
 
-  return (
-    <pixiContainer>
-      {troopCells.map(({ coordinate, text }) => {
+      const textValue = isSplitMove
+        ? "50%"
+        : troopCount
+          ? troopCount.toString()
+          : null;
+
+      const key = `${coordinate.x},${coordinate.y}`;
+      const entry = pool.get(key);
+
+      if (!textValue) {
+        if (entry) {
+          // Clean up for removed troop text
+          container.removeChild(entry.textObj);
+          entry.textObj.destroy();
+          pool.delete(key);
+        }
+        return;
+      }
+
+      if (!entry) {
+        const textObj = new Text({ text: textValue, style: TROOP_TEXT_STYLE });
         const { x, y } = grid.toCartesian(coordinate);
 
-        return (
-          <pixiText
-            key={`troop-${coordinate.x},${coordinate.y}`}
-            text={text}
-            anchor={0.5}
-            x={x * RenderConfig.cellStride}
-            y={y * RenderConfig.cellStride}
-            style={TROOP_TEXT_STYLE}
-          />
-        );
-      })}
-    </pixiContainer>
-  );
+        textObj.anchor.set(0.5);
+        textObj.x = x * RenderConfig.cellStride;
+        textObj.y = y * RenderConfig.cellStride;
+
+        container.addChild(textObj);
+        pool.set(key, { textObj, text: textValue });
+      }
+      // Update text string only if it changed
+      else if (entry.text !== textValue) {
+        entry.textObj.text = textValue;
+        entry.text = textValue;
+      }
+    });
+  }, [tick, grid, splitMoveSelection]);
+
+  return <pixiContainer ref={containerRef} />;
 }
