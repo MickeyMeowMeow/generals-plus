@@ -7,6 +7,8 @@ export { QueuePlayer, QueueState } from "#/schema/queue-state";
 export {
   BaseScoreboard,
   BaseScoreboardPlayerEntry,
+  BiohazardScoreboard,
+  BiohazardScoreboardPlayerEntry,
   ClassicScoreboard,
   ClassicScoreboardPlayerEntry,
   CollapseScoreboard,

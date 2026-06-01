@@ -21,6 +21,8 @@ export interface ModeSettings {
   rugbyBallCount?: number;
   rugbyMoveSpeed?: number;
   rugbyWinningScore?: number;
+  incubationDuration?: number;
+  zombieTroopMultiplier?: number;
 }
 
 export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
@@ -50,6 +52,11 @@ export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
     rugbyBallCount: 1,
     rugbyMoveSpeed: 1,
     rugbyWinningScore: 5,
+  },
+  [GameMode.BIOHAZARD]: {
+    duration: 240,
+    incubationDuration: 60,
+    zombieTroopMultiplier: 2,
   },
 };
 

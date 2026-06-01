@@ -71,6 +71,13 @@ export interface RugbySetupSettings extends BaseSetupSettings {
   rugbyWinningScore: number;
 }
 
+export interface BiohazardSetupSettings extends BaseSetupSettings {
+  gameMode: typeof GameMode.BIOHAZARD;
+  duration: number;
+  incubationDuration: number;
+  zombieTroopMultiplier: number;
+}
+
 export interface OtherSettings extends BaseSetupSettings {
   gameMode: Exclude<
     GameMode,
@@ -81,6 +88,7 @@ export interface OtherSettings extends BaseSetupSettings {
     | typeof GameMode.COLLAPSE
     | typeof GameMode.PAYLOAD
     | typeof GameMode.RUGBY
+    | typeof GameMode.BIOHAZARD
   >;
 }
 
@@ -92,4 +100,5 @@ export type SetupSettings =
   | CollapseSetupSettings
   | PayloadSetupSettings
   | RugbySetupSettings
+  | BiohazardSetupSettings
   | OtherSettings;

@@ -5,6 +5,7 @@ import type {
 } from "@generals-plus/engine";
 import {
   AttackerTeam,
+  BiohazardGame,
   ClassicGame,
   CollapseGame,
   DefenderTeam,
@@ -80,6 +81,13 @@ interface RugbyCreateGameOptions extends BaseCreateGameOptions {
   rugbyWinningScore?: number;
 }
 
+interface BiohazardCreateGameOptions extends BaseCreateGameOptions {
+  mode: typeof GameMode.BIOHAZARD;
+  outbreakTick?: number;
+  finishTick?: number;
+  zombieTroopMultiplier?: number;
+}
+
 interface OtherCreateGameOptions extends BaseCreateGameOptions {
   mode: Exclude<
     GameMode,
@@ -90,6 +98,7 @@ interface OtherCreateGameOptions extends BaseCreateGameOptions {
     | "collapse"
     | "payload"
     | "rugby"
+    | "biohazard"
   >;
 }
 
@@ -101,6 +110,7 @@ export type CreateGameOptions =
   | CollapseCreateGameOptions
   | PayloadCreateGameOptions
   | RugbyCreateGameOptions
+  | BiohazardCreateGameOptions
   | OtherCreateGameOptions;
 
 function getRoundRobinTeamAssignments(
@@ -299,6 +309,22 @@ export function createGame(options: CreateGameOptions): IBaseGame {
           rugbyBallCount: options.rugbyBallCount,
           rugbyMoveSpeedTicks: options.rugbyMoveSpeedTicks,
           rugbyWinningScore: options.rugbyWinningScore,
+        },
+      );
+
+      addStandardTeamsAndPlayers(game, options);
+      return game;
+    }
+    case GameMode.BIOHAZARD: {
+      const game = new BiohazardGame(
+        {
+          gridType: GridType.SQUARE,
+          ...options.gridOptions,
+        },
+        {
+          outbreakTick: options.outbreakTick,
+          finishTick: options.finishTick,
+          zombieTroopMultiplier: options.zombieTroopMultiplier,
         },
       );
 

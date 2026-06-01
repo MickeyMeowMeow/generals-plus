@@ -41,7 +41,21 @@ export interface IDefenderTeam extends IBaseTeam {
   readonly type: typeof TeamType.DEFENDER;
 }
 
+export interface IHumanTeam extends IBaseTeam {
+  readonly type: typeof TeamType.HUMAN;
+}
+
+export interface IZombieTeam extends IBaseTeam {
+  readonly type: typeof TeamType.ZOMBIE;
+}
+
 /**
  * Combined type representing any possible state a team can be in.
  */
-export type Team = IStandardTeam | IScoringTeam | IAttackerTeam | IDefenderTeam;
+export type Team =
+  | IStandardTeam
+  | IScoringTeam
+  | IAttackerTeam
+  | IDefenderTeam
+  | IHumanTeam
+  | IZombieTeam;

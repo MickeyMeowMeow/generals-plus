@@ -457,7 +457,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
         this.state.gameMode === GameMode.DOMINATION ||
         this.state.gameMode === GameMode.DEMOLITION ||
         this.state.gameMode === GameMode.PAYLOAD ||
-        this.state.gameMode === GameMode.RUGBY
+        this.state.gameMode === GameMode.RUGBY ||
+        this.state.gameMode === GameMode.BIOHAZARD
       ) {
         this.state.finishTick = calculateFinishTick(
           this.state.duration,
@@ -885,6 +886,17 @@ export class SetupRoom extends Room<{ state: SetupState }> {
           ),
           rugbyWinningScore: this.state.rugbyWinningScore,
         };
+      case GameMode.BIOHAZARD:
+        return {
+          ...base,
+          mode: GameMode.BIOHAZARD,
+          outbreakTick: calculateFinishTick(
+            this.state.incubationDuration,
+            this.state.tickInterval,
+          ),
+          finishTick: this.state.finishTick,
+          zombieTroopMultiplier: this.state.zombieTroopMultiplier,
+        };
       default:
         return { ...base, mode: this.state.gameMode };
     }
@@ -935,7 +947,8 @@ export class SetupRoom extends Room<{ state: SetupState }> {
       options.mode === GameMode.DOMINATION ||
       options.mode === GameMode.DEMOLITION ||
       options.mode === GameMode.PAYLOAD ||
-      options.mode === GameMode.RUGBY;
+      options.mode === GameMode.RUGBY ||
+      options.mode === GameMode.BIOHAZARD;
 
     const metadata: RoomData = {
       mode: options.mode,

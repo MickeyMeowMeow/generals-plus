@@ -37,6 +37,12 @@ export interface TroopModifierEffectOptions
    * Number of troops to generate or drain. Positive for generation, negative for drain.
    */
   delta: number;
+
+  /**
+   * If set, only cells owned by players whose IDs are in this set are affected.
+   * Useful for targeting specific players (e.g., mother zombie troop boost).
+   */
+  ownerPlayerIds?: ReadonlySet<string>;
 }
 
 /**
@@ -45,16 +51,24 @@ export interface TroopModifierEffectOptions
 export class TroopModifierEffect extends PeriodicEffect<TroopModifierGrid> {
   readonly terrain: Terrain;
   readonly delta: number;
+  private readonly ownerPlayerIds?: ReadonlySet<string>;
 
   constructor(currentTick: number, options: TroopModifierEffectOptions) {
     super(currentTick, options);
     this.terrain = options.terrain;
     this.delta = options.delta;
+    this.ownerPlayerIds = options.ownerPlayerIds;
   }
 
   trigger(currentTick: number): void {
     this.target.forEachTerrain(this.terrain, (cell) => {
       if (cell.owner?.status === PlayerStatus.ACTIVE) {
+        if (
+          this.ownerPlayerIds &&
+          !this.ownerPlayerIds.has(cell.owner.playerId)
+        ) {
+          return;
+        }
         cell.addTroops(this.delta);
       }
     });

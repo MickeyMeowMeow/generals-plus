@@ -40,6 +40,8 @@ export const setupSettingsUpdateSchema = z
     rugbyBallCount: z.number().int().min(1).max(5),
     rugbyMoveSpeed: z.number().min(0.2).max(10),
     rugbyWinningScore: z.number().int().min(1).max(20),
+    incubationDuration: z.number().min(15).max(300),
+    zombieTroopMultiplier: z.number().min(1.5).max(5),
   })
   .partial()
   .strict();

@@ -61,6 +61,9 @@ export class SetupState extends Schema {
   @type("number") rugbyMoveSpeed: number = 1;
   @type("number") rugbyWinningScore: number = 5;
 
+  @type("number") incubationDuration: number = 60;
+  @type("number") zombieTroopMultiplier: number = 2;
+
   @type("number") tickInterval: number = 500;
   @type("number") finishTick: number = 360;
 }

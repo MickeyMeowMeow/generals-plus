@@ -1,5 +1,6 @@
 import { CollapseShape, GameMode, GridType } from "@generals-plus/engine";
 import type {
+  BiohazardSetupSettings,
   ClassicSetupSettings,
   CollapseSetupSettings,
   CustomMap,
@@ -51,7 +52,8 @@ type NumberKeys =
   | ExtractNumberKeys<DemolitionSetupSettings>
   | ExtractNumberKeys<CollapseSetupSettings>
   | ExtractNumberKeys<PayloadSetupSettings>
-  | ExtractNumberKeys<RugbySetupSettings>;
+  | ExtractNumberKeys<RugbySetupSettings>
+  | ExtractNumberKeys<BiohazardSetupSettings>;
 
 const PLAYER_NUMBER_FIELDS: Array<{ key: NumberKeys; label: string }> = [
   { key: "maxPlayers", label: "Max Players" },
@@ -110,6 +112,11 @@ const MODE_SPECIFIC_FIELDS: Partial<
     { key: "duration", label: "Duration (s)" },
     { key: "rugbyMoveSpeed", label: "Ball Carrier Speed (s)" },
     { key: "rugbyWinningScore", label: "Score Target" },
+  ],
+  [GameMode.BIOHAZARD]: [
+    { key: "duration", label: "Total Duration (s)" },
+    { key: "incubationDuration", label: "Incubation Phase (s)" },
+    { key: "zombieTroopMultiplier", label: "Zombie Troop Multiplier" },
   ],
 };
 

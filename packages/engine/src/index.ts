@@ -14,6 +14,7 @@ export * from "#/domain/effect/effect-type";
 export * from "#/domain/effect/periodic/periodic-effect";
 export * from "#/domain/effect/periodic/troop-modifier";
 export * from "#/domain/game/base-game";
+export * from "#/domain/game/biohazard-game";
 export * from "#/domain/game/classic-game";
 export * from "#/domain/game/collapse-game";
 export * from "#/domain/game/demolition-game";

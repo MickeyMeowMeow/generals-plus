@@ -1,6 +1,7 @@
 import { GameMode } from "@generals-plus/engine";
 import type {
   BaseScoreboard,
+  BiohazardScoreboard,
   DemolitionScoreboard,
   PayloadScoreboard,
   RugbyScoreboard,
@@ -497,6 +498,29 @@ function createRugbyModel(scoreboard: BaseScoreboard): GameHudScoreboardModel {
   };
 }
 
+function createBiohazardModel(
+  scoreboard: BaseScoreboard,
+): GameHudScoreboardModel {
+  const bioScoreboard = scoreboard as BiohazardScoreboard;
+  const rows = createPlayerRows(scoreboard);
+  const hasTeams = bioScoreboard.infectionPhase === "OUTBREAK";
+
+  const phaseLabel =
+    bioScoreboard.infectionPhase === "OUTBREAK" ? "Outbreak" : "Incubation";
+
+  return {
+    title: "Biohazard",
+    subtitle: phaseLabel,
+    columns: troopLandColumns,
+    groups: createTeamGroups(rows).sort(
+      (a, b) =>
+        Number(b.totals?.troops ?? 0) - Number(a.totals?.troops ?? 0) ||
+        a.label.localeCompare(b.label),
+    ),
+    hasTeams,
+  };
+}
+
 /**
  * Converts the mode-specific match scoreboard schema into a single HUD model.
  *
@@ -520,6 +544,8 @@ export function createGameHudScoreboardModel(
       return createPayloadModel(scoreboard);
     case GameMode.RUGBY:
       return createRugbyModel(scoreboard);
+    case GameMode.BIOHAZARD:
+      return createBiohazardModel(scoreboard);
     default:
       return createTroopLandModel("Classic", scoreboard);
   }
