@@ -55,6 +55,9 @@ export function ProfilePage() {
       ? user.preferences.avatar.customUrl
       : "",
   );
+  const [motionMode, setMotionMode] = useState<
+    UserPreferences["motion"]["mode"]
+  >(user?.preferences?.motion?.mode ?? DEFAULT_USER_PREFERENCES.motion.mode);
   const [backdropBlur, setBackdropBlur] = useState(
     user?.preferences?.stageAppearance?.backdropBlur ??
       DEFAULT_USER_PREFERENCES.stageAppearance.backdropBlur,
@@ -110,6 +113,7 @@ export function ProfilePage() {
         avatar.source === "customUrl"
           ? { source: "customUrl", customUrl: avatarCustomUrl.trim() }
           : avatar,
+      motion: { mode: motionMode },
       stageAppearance: {
         backdropBlur,
         backdropOpacity,
@@ -351,6 +355,44 @@ export function ProfilePage() {
           </div>
         </section>
 
+        {/* Motion */}
+        <section className="grid gap-4 border-t border-game-border pt-5">
+          <h2 className="text-base font-semibold">Motion</h2>
+          <RadioGroup
+            value={motionMode}
+            onValueChange={(value) => setMotionMode(value as typeof motionMode)}
+            className="grid gap-2 sm:grid-cols-3"
+          >
+            <Label
+              className={cn(
+                "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-transparent px-3 py-2 text-sm",
+                motionMode === "system" && "border-white/60 bg-white/5",
+              )}
+            >
+              <RadioGroupItem value="system" />
+              Follow system
+            </Label>
+            <Label
+              className={cn(
+                "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-transparent px-3 py-2 text-sm",
+                motionMode === "full" && "border-white/60 bg-white/5",
+              )}
+            >
+              <RadioGroupItem value="full" />
+              Full motion
+            </Label>
+            <Label
+              className={cn(
+                "flex min-h-10 cursor-pointer items-center gap-2 border border-game-border bg-transparent px-3 py-2 text-sm",
+                motionMode === "reduced" && "border-white/60 bg-white/5",
+              )}
+            >
+              <RadioGroupItem value="reduced" />
+              Reduced motion
+            </Label>
+          </RadioGroup>
+        </section>
+
         {/* Save */}
         <div className="flex justify-end border-t border-game-border pt-5">
           <Button
@@ -359,7 +401,7 @@ export function ProfilePage() {
             disabled={isSaving}
           >
             <Save className="size-4" />
-            {isSaving ? "Saving..." : "Save"}
+            {isSaving ? "Saving..." : "Save preferences"}
           </Button>
         </div>
       </div>
