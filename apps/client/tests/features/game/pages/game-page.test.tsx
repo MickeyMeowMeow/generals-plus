@@ -636,7 +636,7 @@ describe("GamePage", () => {
     expect(surrenderMock).toHaveBeenCalledTimes(1);
   });
 
-  it("clears the active brush on C without opening surrender confirmation", () => {
+  it("clears the active ping tool on C without opening surrender confirmation", () => {
     const roomSendMock = vi.fn();
 
     useGameRoomMock.mockReturnValue({

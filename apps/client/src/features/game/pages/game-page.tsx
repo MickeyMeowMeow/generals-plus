@@ -125,7 +125,7 @@ export function GamePage({ connection, source }: GamePageProps) {
   } = useGameRoom(stableConnection);
 
   const [pings, setPings] = useState<Ping[]>([]);
-  const [activeBrush, setActiveBrush] = useState<
+  const [activePingTool, setActivePingTool] = useState<
     "attack" | "defense" | "rally" | null
   >(null);
 
@@ -214,8 +214,8 @@ export function GamePage({ connection, source }: GamePageProps) {
 
   const handleSelectCell = useCallback(
     (coord: ICoordinate) => {
-      if (activeBrush) {
-        handlePing(coord, activeBrush);
+      if (activePingTool) {
+        handlePing(coord, activePingTool);
         return;
       }
       const cell = renderGrid?.get(coord);
@@ -224,7 +224,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       setSelection(coord);
       setIsStickySplitMove(false);
     },
-    [activeBrush, handlePing, renderGrid],
+    [activePingTool, handlePing, renderGrid],
   );
 
   const handleToggleStickySplitMove = useCallback(() => {
@@ -278,12 +278,12 @@ export function GamePage({ connection, source }: GamePageProps) {
       }
 
       if (e.code === DeselectPingToolKey) {
-        setActiveBrush(null);
+        setActivePingTool(null);
       }
 
       if (e.getModifierState(SelectPingToolModifier) && KeyToPing[e.code]) {
         const pingType = KeyToPing[e.code];
-        setActiveBrush((prev) => (prev === pingType ? null : pingType));
+        setActivePingTool((prev) => (prev === pingType ? null : pingType));
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -440,7 +440,10 @@ export function GamePage({ connection, source }: GamePageProps) {
 
       <HotkeyOverlay gridType={renderGrid.gridType} />
 
-      <PingPanel activeBrush={activeBrush} setActiveBrush={setActiveBrush} />
+      <PingPanel
+        activePingTool={activePingTool}
+        setActivePingTool={setActivePingTool}
+      />
 
       <DisconnectDialog
         message={disconnectMessage}
@@ -451,7 +454,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       <SurrenderOverlay
         canSurrender={canSurrender}
         onSurrender={() => {
-          setActiveBrush(null);
+          setActivePingTool(null);
           setSelection(null);
           setIsStickySplitMove(false);
           surrender();
