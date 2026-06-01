@@ -1,12 +1,11 @@
 import { GridType } from "@generals-plus/engine";
 import { useEffect, useState } from "react";
 
-interface HotkeyPanelProps {
-  isOpen?: boolean;
+interface HotkeyOverlayProps {
   gridType: GridType;
 }
 
-export function HotkeyOverlay({ gridType }: HotkeyPanelProps) {
+export function HotkeyOverlay({ gridType }: HotkeyOverlayProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {

@@ -11,7 +11,7 @@ import {
 } from "#/components/ui/dialog";
 import { SurrenderKey } from "#/features/game/utils/hotkey";
 
-interface SurrenderDialogProps {
+interface SurrenderOverlayProps {
   canSurrender: boolean;
   onSurrender: () => void;
 }
@@ -19,7 +19,7 @@ interface SurrenderDialogProps {
 export function SurrenderOverlay({
   canSurrender,
   onSurrender,
-}: SurrenderDialogProps) {
+}: SurrenderOverlayProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
