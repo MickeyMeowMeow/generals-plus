@@ -22,7 +22,7 @@ describe("TimerBar Component", () => {
 
     // 100 ticks * 1000ms = 100 seconds = 1:40
     expect(screen.getByText("Phase ends in")).toBeDefined();
-    expect(screen.getByText("1:40")).toBeDefined();
+    expect(screen.getByLabelText("1:40")).toBeDefined();
   });
 
   it("applies 'normal' color styling when time > 30s", () => {
@@ -34,7 +34,7 @@ describe("TimerBar Component", () => {
       />,
     );
 
-    const timeText = screen.getByText("0:50");
+    const timeText = screen.getByLabelText("0:50");
     expect(timeText.className).toContain("text-timer-normal");
   });
 
@@ -47,7 +47,7 @@ describe("TimerBar Component", () => {
       />,
     );
 
-    const timeText = screen.getByText("0:30");
+    const timeText = screen.getByLabelText("0:30");
     expect(timeText.className).toContain("text-timer-warning");
   });
 
@@ -60,22 +60,30 @@ describe("TimerBar Component", () => {
       />,
     );
 
-    const timeText = screen.getByText("0:05");
+    const timeText = screen.getByLabelText("0:05");
     expect(timeText.className).toContain("text-timer-critical");
   });
 
   it("marks critical time with a single emphasis surface", () => {
     render(<TimerBar currentTick={95} targetTick={100} tickInterval={1000} />);
 
-    expect(screen.getByText("0:05").getAttribute("data-motion-emphasis")).toBe(
-      "critical",
-    );
+    expect(
+      screen.getByLabelText("0:05").getAttribute("data-motion-emphasis"),
+    ).toBe("critical");
+  });
+
+  it("renders the remaining time inside the animated-number wrapper", () => {
+    render(<TimerBar currentTick={70} targetTick={100} tickInterval={1000} />);
+
+    const timeText = screen.getByLabelText("0:30");
+    expect(timeText.closest("[data-animated-number='true']")).toBeTruthy();
+    expect(timeText.className).toContain("text-timer-warning");
   });
 
   it("caps remaining time at zero when currentTick exceeds targetTick", () => {
     render(<TimerBar currentTick={110} targetTick={100} tickInterval={1000} />);
 
     // Should not show negative time
-    expect(screen.getByText("0:00")).toBeDefined();
+    expect(screen.getByLabelText("0:00")).toBeDefined();
   });
 });

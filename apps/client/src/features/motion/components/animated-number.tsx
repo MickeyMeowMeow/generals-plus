@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import type { ComponentPropsWithoutRef } from "react";
 import { useEffect, useRef } from "react";
 
 import { useMotionPreference } from "#/features/motion/motion-provider";
@@ -11,11 +12,10 @@ import { cn } from "#/lib/utils";
 
 type RollDirection = "up" | "down";
 
-interface AnimatedNumberProps {
+interface AnimatedNumberProps
+  extends Omit<ComponentPropsWithoutRef<"span">, "children"> {
   /** Final formatted display value rendered by the caller. */
   readonly value: string | number;
-  /** Optional classes for the whole rendered value. */
-  readonly className?: string;
   /** Optional classes applied to each separator or digit cell. */
   readonly cellClassName?: string;
   /** Optional explicit direction override for value changes. */
@@ -115,6 +115,7 @@ export function AnimatedNumber({
   className,
   cellClassName,
   direction = "auto",
+  ...props
 }: AnimatedNumberProps) {
   const { shouldReduceMotion } = useMotionPreference();
   const nextValue = String(value);
@@ -138,6 +139,7 @@ export function AnimatedNumber({
       aria-label={nextValue}
       data-animated-number="true"
       className={cn("inline-flex items-baseline whitespace-pre", className)}
+      {...props}
     >
       {nextTokens.map((nextToken, tokenIndex) => {
         const previousToken = previousTokens[tokenIndex] ?? {
