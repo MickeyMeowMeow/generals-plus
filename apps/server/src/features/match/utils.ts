@@ -4,6 +4,8 @@ export const BASE_TICK_INTERVAL = 500;
 
 export interface ModeSettings {
   duration?: number;
+  generalInitialTroops?: number;
+  cityInitialTroops?: number;
   flagCount?: number;
   targetScore?: number;
   bombSiteCount?: number;
@@ -19,6 +21,7 @@ export interface ModeSettings {
 }
 
 export const MODE_SETTINGS: Partial<Record<GameMode, ModeSettings>> = {
+  [GameMode.CLASSIC]: { generalInitialTroops: 1 },
   [GameMode.DOMINATION]: { duration: 300, flagCount: 3, targetScore: 1000 },
   [GameMode.TURF_WAR]: { duration: 180 },
   [GameMode.DEMOLITION]: {
