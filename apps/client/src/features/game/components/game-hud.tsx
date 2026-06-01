@@ -1,5 +1,5 @@
 import type { BaseScoreboard } from "@generals-plus/shared-types";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import type { CSSProperties } from "react";
 
 import { FloatingHud } from "#/components/layout";
@@ -59,23 +59,36 @@ export function GameHud({ scoreboard, timer, targetScore }: GameHudProps) {
     <FloatingHud>
       <motion.div
         key={`${scoreboardModel.title}:${scoreboardModel.subtitle ?? ""}`}
+        layout
         data-motion-surface="hud"
         initial={{ opacity: 0.96, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: MOTION_DURATION.fast }}
+        transition={{
+          layout: { duration: MOTION_DURATION.normal },
+          duration: MOTION_DURATION.fast,
+        }}
         className="space-y-3"
       >
-        {shouldShowTimer ? (
-          <>
-            <TimerBar
-              currentTick={timer.currentTick}
-              targetTick={timer.targetTick}
-              tickInterval={timer.tickInterval}
-              startTick={timer.startTick}
-            />
-            <Separator className="bg-game-border/70" />
-          </>
-        ) : null}
+        <AnimatePresence mode="popLayout">
+          {shouldShowTimer ? (
+            <motion.div
+              key="timer"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: MOTION_DURATION.fast }}
+              style={{ overflow: "hidden" }}
+            >
+              <TimerBar
+                currentTick={timer.currentTick}
+                targetTick={timer.targetTick}
+                tickInterval={timer.tickInterval}
+                startTick={timer.startTick}
+              />
+              <Separator className="bg-game-border/70" />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         <div className="space-y-2">
           <div className="flex justify-between items-baseline">
