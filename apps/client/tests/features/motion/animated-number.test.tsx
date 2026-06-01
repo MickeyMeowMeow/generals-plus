@@ -29,6 +29,26 @@ describe("AnimatedNumber", () => {
     expect(screen.getByLabelText("129").textContent).toBe("129");
   });
 
+  it("keeps digit cell wrappers stable across updates", () => {
+    const { rerender } = renderWithMotion(<AnimatedNumber value="128" />);
+
+    const rootBefore = screen.getByLabelText("128");
+    const cellsBefore = rootBefore.querySelectorAll("[data-digit-cell='true']");
+    expect(cellsBefore).toHaveLength(3);
+    const lastCellBefore = cellsBefore.item(2);
+
+    rerender(
+      <MotionProvider preferenceMode="full">
+        <AnimatedNumber value="129" />
+      </MotionProvider>,
+    );
+
+    const rootAfter = screen.getByLabelText("129");
+    const cellsAfter = rootAfter.querySelectorAll("[data-digit-cell='true']");
+    expect(cellsAfter).toHaveLength(3);
+    expect(cellsAfter.item(2)).toBe(lastCellBefore);
+  });
+
   it("aligns digits from the right when a digit run grows", () => {
     const { rerender, container } = renderWithMotion(
       <AnimatedNumber value="9" />,

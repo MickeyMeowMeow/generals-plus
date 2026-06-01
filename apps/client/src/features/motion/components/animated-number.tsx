@@ -50,7 +50,7 @@ function tokenizeNumberString(value: string): NumberToken[] {
   return matches.map((part) => {
     const token = {
       kind: /^\d+$/.test(part) ? "digits" : "separator",
-      key: `${offset}-${part}`,
+      key: `${/^\d+$/.test(part) ? "digits" : "separator"}-${offset}`,
       value: part,
     } satisfies NumberToken;
     offset += part.length;
@@ -102,7 +102,7 @@ function buildDigitCells(
     const nextChar = nextValue[nextValue.length - maxLength + offset] ?? "";
 
     return {
-      key: `${tokenIndex}-${offset}-${nextChar || "empty"}`,
+      key: `${tokenIndex}-${offset}`,
       nextChar,
       changed: previousChar !== nextChar,
     };
@@ -169,55 +169,48 @@ export function AnimatedNumber({
         return (
           <span key={`digits-${nextToken.key}`} className="inline-flex">
             {cells.map((cell) => {
-              if (!cell.changed || shouldReduceMotion) {
-                return (
-                  <span
-                    key={cell.key}
-                    data-animated-kind="digit"
-                    className={cellClassName}
-                  >
-                    {cell.nextChar}
-                  </span>
-                );
-              }
-
               return (
                 <span
                   key={cell.key}
+                  data-digit-cell="true"
                   data-animated-kind="digit"
-                  data-roll-direction={rollDirection}
                   className={cn(
                     "relative inline-flex h-[1em] overflow-hidden align-baseline",
                     cellClassName,
                   )}
                 >
-                  <AnimatePresence initial={false} mode="popLayout">
-                    <motion.span
-                      key={cell.nextChar}
-                      initial={{
-                        y:
-                          rollDirection === "up"
-                            ? MOTION_DISTANCE.xs
-                            : -MOTION_DISTANCE.xs,
-                        opacity: 0,
-                      }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{
-                        y:
-                          rollDirection === "up"
-                            ? -MOTION_DISTANCE.xs
-                            : MOTION_DISTANCE.xs,
-                        opacity: 0,
-                      }}
-                      transition={{
-                        duration: MOTION_DURATION.fast,
-                        ease: MOTION_EASING.enter,
-                      }}
-                      className="inline-block"
-                    >
-                      {cell.nextChar}
-                    </motion.span>
-                  </AnimatePresence>
+                  {!cell.changed || shouldReduceMotion ? (
+                    <span className="inline-block">{cell.nextChar}</span>
+                  ) : (
+                    <AnimatePresence initial={false} mode="popLayout">
+                      <motion.span
+                        key={cell.nextChar}
+                        data-roll-direction={rollDirection}
+                        initial={{
+                          y:
+                            rollDirection === "up"
+                              ? MOTION_DISTANCE.xs
+                              : -MOTION_DISTANCE.xs,
+                          opacity: 0,
+                        }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{
+                          y:
+                            rollDirection === "up"
+                              ? -MOTION_DISTANCE.xs
+                              : MOTION_DISTANCE.xs,
+                          opacity: 0,
+                        }}
+                        transition={{
+                          duration: MOTION_DURATION.fast,
+                          ease: MOTION_EASING.enter,
+                        }}
+                        className="inline-block"
+                      >
+                        {cell.nextChar}
+                      </motion.span>
+                    </AnimatePresence>
+                  )}
                 </span>
               );
             })}
