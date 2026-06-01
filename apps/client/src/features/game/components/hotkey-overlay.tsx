@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import {
   ClearMoveQueueKey,
+  DeselectPingToolKey,
   KeyToDirection,
   KeyToPing,
   SelectPingToolModifier,
@@ -175,6 +176,11 @@ export function HotkeyOverlay({ gridType }: HotkeyOverlayProps) {
                   <KbdGroup codes={pingCodes} />
                 </span>
                 <span className="text-right">Select ping tool</span>
+              </div>
+
+              <div className="flex items-center justify-between gap-6">
+                <Kbd>{getKeyLabel(DeselectPingToolKey)}</Kbd>
+                <span className="text-right">Deselect ping tool</span>
               </div>
 
               <div className="h-px bg-game-border/30" />
