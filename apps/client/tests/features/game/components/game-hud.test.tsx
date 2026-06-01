@@ -29,21 +29,17 @@ function createClassicScoreboard() {
 }
 
 describe("GameHud", () => {
-  it("renders scoreboard values through AnimatedNumber without wrapping labels", () => {
+  it("renders scoreboard labels and values as plain text", () => {
     render(
       <MotionProvider preferenceMode="full">
         <GameHud scoreboard={createClassicScoreboard()} />
       </MotionProvider>,
     );
 
-    expect(
-      screen.getByText("Nova").closest("[data-animated-number='true']"),
-    ).toBeNull();
-    expect(
-      screen.getByLabelText("4").closest("[data-animated-number='true']"),
-    ).toBeTruthy();
-    expect(
-      screen.getByLabelText("12").closest("[data-animated-number='true']"),
-    ).toBeTruthy();
+    expect(screen.getByText("Nova")).toBeTruthy();
+    expect(screen.getByText("4")).toBeTruthy();
+    expect(screen.getByText("12")).toBeTruthy();
+    expect(screen.queryByLabelText("4")).toBeNull();
+    expect(screen.queryByLabelText("12")).toBeNull();
   });
 });
