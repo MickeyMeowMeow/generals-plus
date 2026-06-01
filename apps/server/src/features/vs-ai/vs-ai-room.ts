@@ -18,6 +18,7 @@ import {
 } from "@generals-plus/shared-types";
 
 import { createGame, generateSeed } from "#/features/game/utils";
+import { MODE_SETTINGS } from "#/features/match/utils";
 import { MongoSystemSettingsRepository } from "#/infra/db/repositories/MongoSystemSettingsRepository";
 
 const BOT_PLAYER_ID = "__bot__";
@@ -71,6 +72,7 @@ export class VsAiRoom extends Room {
     const userId = auth.id;
     const displayName = auth.displayName ?? "Player";
 
+    const classicDefaults = MODE_SETTINGS[GameMode.CLASSIC];
     const game = createGame({
       mode: GameMode.CLASSIC,
       gridOptions: {
@@ -81,6 +83,12 @@ export class VsAiRoom extends Room {
         cityRate: 0.05,
         generalCount: 2,
         minGeneralDistanceFactor: 0.6,
+        ...(classicDefaults?.generalInitialTroops !== undefined && {
+          generalInitialTroops: classicDefaults.generalInitialTroops,
+        }),
+        ...(classicDefaults?.cityInitialTroops !== undefined && {
+          cityInitialTroops: classicDefaults.cityInitialTroops,
+        }),
       },
       playerIds: [userId, BOT_PLAYER_ID],
       playerPerTeam: 1,

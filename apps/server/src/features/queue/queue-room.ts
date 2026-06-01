@@ -102,6 +102,12 @@ export class MatchQueueRoom extends QueueRoom {
           gridOptions: {
             gridType: GridType.SQUARE,
             ...gridOptions,
+            ...(modeSettings?.generalInitialTroops !== undefined && {
+              generalInitialTroops: modeSettings.generalInitialTroops,
+            }),
+            ...(modeSettings?.cityInitialTroops !== undefined && {
+              cityInitialTroops: modeSettings.cityInitialTroops,
+            }),
           },
           playerIds: groupPlayers.map((p) => p.id),
           playerPerTeam: getDefaultPlayersPerTeam(this.gameMode),
