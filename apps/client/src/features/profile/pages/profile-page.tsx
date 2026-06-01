@@ -354,11 +354,8 @@ export function ProfilePage() {
               </span>
             </div>
           </div>
-        </section>
 
-        {/* Motion */}
-        <section className="grid gap-4 border-t border-game-border pt-5">
-          <h2 className="text-base font-semibold">Motion</h2>
+          <Label>Motion</Label>
           <RadioGroup
             value={motionMode}
             onValueChange={(value) => setMotionMode(value as typeof motionMode)}
