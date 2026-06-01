@@ -27,13 +27,13 @@ import { ReturnButton } from "#/features/game/components/return-button";
 import { StatusDialog } from "#/features/game/components/status-dialog";
 import { SurrenderOverlay } from "#/features/game/components/surrender-overlay";
 import { TurnCounter } from "#/features/game/components/turn-counter";
-import { GameApp } from "#/features/game/renderer/game-app";
-import type { Ping } from "#/features/game/renderer/layers/ping";
 import {
   ChoosePingBrushModifier,
   ClearPingBrushKey,
   KeyToPing,
-} from "#/features/game/utils/hotkey";
+} from "#/features/game/config/hotkeys";
+import { GameApp } from "#/features/game/renderer/game-app";
+import type { Ping } from "#/features/game/renderer/layers/ping";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 import { formatTeamLabel } from "#/features/game/utils/team-label";

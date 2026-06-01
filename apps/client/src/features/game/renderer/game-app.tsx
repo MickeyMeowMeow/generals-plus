@@ -12,18 +12,18 @@ import {
   pingRallyIcon,
   rugbyIcon,
 } from "#/features/game/assets";
+import {
+  ClearMoveQueueKey,
+  KeyToDirection,
+  KeyToPing,
+  SplitMoveModifier,
+} from "#/features/game/config/hotkeys";
 import type { Ping } from "#/features/game/renderer/layers/ping";
 import { MapRenderer } from "#/features/game/renderer/map-renderer";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import { TerrainTheme } from "#/features/game/renderer/theme.ts";
 import { Viewport } from "#/features/game/renderer/viewport";
-import {
-  ClearMoveQueueKey,
-  KeyToDirection,
-  KeyToPing,
-  SplitMoveModifier,
-} from "#/features/game/utils/hotkey";
 import type { MoveDirection, MoveIntent } from "#/features/game/utils/move";
 
 interface GameAppProps {

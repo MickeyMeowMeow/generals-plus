@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
-import { SurrenderKey } from "#/features/game/utils/hotkey";
+import { SurrenderKey } from "#/features/game/config/hotkeys";
 
 interface SurrenderOverlayProps {
   canSurrender: boolean;

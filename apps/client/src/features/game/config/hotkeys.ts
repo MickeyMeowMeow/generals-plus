@@ -37,3 +37,6 @@ export const KeyToPing: Record<string, "attack" | "defense" | "rally"> = {
 
 export const ClearPingBrushKey = "KeyC";
 export const ChoosePingBrushModifier = "Shift";
+
+export const ToggleHotkeysKey = "Slash";
+export const ToggleHotkeysModifier = "Shift";
