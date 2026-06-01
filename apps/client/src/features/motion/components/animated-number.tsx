@@ -138,7 +138,10 @@ export function AnimatedNumber({
       role="img"
       aria-label={nextValue}
       data-animated-number="true"
-      className={cn("inline-flex items-baseline whitespace-pre", className)}
+      className={cn(
+        "inline-flex items-baseline whitespace-pre leading-none",
+        className,
+      )}
       {...props}
     >
       {nextTokens.map((nextToken, tokenIndex) => {
@@ -153,7 +156,7 @@ export function AnimatedNumber({
             <span
               key={`separator-${nextToken.key}`}
               data-animated-kind="separator"
-              className={cellClassName}
+              className={cn("inline-flex items-center", cellClassName)}
             >
               {nextToken.value}
             </span>
@@ -175,12 +178,14 @@ export function AnimatedNumber({
                   data-digit-cell="true"
                   data-animated-kind="digit"
                   className={cn(
-                    "relative inline-flex h-[1em] overflow-hidden align-baseline",
+                    "relative inline-flex h-[1.15em] items-center overflow-hidden align-baseline",
                     cellClassName,
                   )}
                 >
                   {!cell.changed || shouldReduceMotion ? (
-                    <span className="inline-block">{cell.nextChar}</span>
+                    <span className="inline-flex items-center">
+                      {cell.nextChar}
+                    </span>
                   ) : (
                     <AnimatePresence initial={false} mode="popLayout">
                       <motion.span
@@ -205,7 +210,7 @@ export function AnimatedNumber({
                           duration: MOTION_DURATION.fast,
                           ease: MOTION_EASING.enter,
                         }}
-                        className="inline-block"
+                        className="inline-flex items-center will-change-transform"
                       >
                         {cell.nextChar}
                       </motion.span>

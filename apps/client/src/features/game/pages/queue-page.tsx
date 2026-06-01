@@ -11,6 +11,7 @@ import { ColorPicker } from "#/features/game/components/color-picker";
 import { ModeHelpButton } from "#/features/game/components/mode-help-button";
 import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
+import { AnimatedNumber } from "#/features/motion/components/animated-number";
 import {
   MotionStaggerGroup,
   MotionStaggerItem,
@@ -182,7 +183,7 @@ export function QueuePage({
             QUEUED
           </p>
           <p className="text-center text-4xl font-semibold tabular-nums text-game-text-dim">
-            {queueDuration}
+            <AnimatedNumber value={queueDuration} />
           </p>
         </MotionStaggerItem>
       </MotionStaggerGroup>
