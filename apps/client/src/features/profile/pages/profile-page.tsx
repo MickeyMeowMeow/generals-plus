@@ -22,6 +22,7 @@ import { Slider } from "#/components/ui/slider";
 import { Switch } from "#/components/ui/switch";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
+import { MotionStaggerGroup } from "#/features/motion/components/motion-stagger";
 import { Avatar } from "#/features/profile/components/avatar";
 import { cn } from "#/lib/utils";
 
@@ -139,7 +140,7 @@ export function ProfilePage() {
 
   return (
     <StageCenter>
-      <div className="mx-auto grid w-full max-w-3xl gap-5">
+      <MotionStaggerGroup className="mx-auto grid w-full max-w-3xl gap-5">
         {/* Header with inline-editable display name */}
         <div className="flex items-center justify-between">
           <div className="group/name relative">
@@ -404,7 +405,7 @@ export function ProfilePage() {
             {isSaving ? "Saving..." : "Save preferences"}
           </Button>
         </div>
-      </div>
+      </MotionStaggerGroup>
     </StageCenter>
   );
 }
