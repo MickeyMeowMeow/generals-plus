@@ -4,6 +4,7 @@ import { Outlet, useLocation } from "react-router";
 import { Button } from "#/components/ui/button";
 import { useSystemSettings } from "#/features/admin/api/system-settings-api";
 import { AuthProvider, useUser } from "#/features/auth/hooks";
+import { MotionProvider } from "#/features/motion/motion-provider";
 
 function AppShell() {
   const user = useUser();
@@ -12,6 +13,7 @@ function AppShell() {
 
   const showMaintenance = settings?.maintenanceMode && user && !user.isAdmin;
   const isMainPage = location.pathname === "/";
+  const motionMode = user?.preferences?.motion?.mode ?? "system";
 
   if (showMaintenance) {
     return (
@@ -41,17 +43,19 @@ function AppShell() {
   }
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-game-bg text-game-text">
-      {settings?.systemBanner && isMainPage && (
-        <div className="bg-amber-400/10 border-b border-amber-400/20 px-4 py-2 text-center text-xs text-amber-300 font-semibold flex items-center justify-center gap-2 select-none shrink-0 z-50">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-          {settings.systemBanner}
+    <MotionProvider preferenceMode={motionMode}>
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-game-bg text-game-text">
+        {settings?.systemBanner && isMainPage && (
+          <div className="bg-amber-400/10 border-b border-amber-400/20 px-4 py-2 text-center text-xs text-amber-300 font-semibold flex items-center justify-center gap-2 select-none shrink-0 z-50">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            {settings.systemBanner}
+          </div>
+        )}
+        <div className="flex-1 overflow-hidden relative">
+          <Outlet />
         </div>
-      )}
-      <div className="flex-1 overflow-hidden relative">
-        <Outlet />
       </div>
-    </div>
+    </MotionProvider>
   );
 }
 

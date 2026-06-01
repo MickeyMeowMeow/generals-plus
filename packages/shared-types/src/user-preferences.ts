@@ -47,12 +47,21 @@ export interface StageAppearancePreference {
   readonly backdropOpacity: number;
 }
 
+export type MotionMode = "system" | "full" | "reduced";
+
+export interface MotionPreference {
+  /** Follows OS preference when `system`, otherwise forces the chosen mode. */
+  readonly mode: MotionMode;
+}
+
 /** Account-level user preferences shared across devices. */
 export interface UserPreferences {
   /** Account-level background image configuration shared across devices. */
   readonly backgroundImage: BackgroundImagePreference;
   /** Account-level avatar configuration. */
   readonly avatar: AvatarPreference;
+  /** Account-level motion preference. */
+  readonly motion: MotionPreference;
   /** Stage center backdrop visual controls. */
   readonly stageAppearance: StageAppearancePreference;
 }
@@ -64,6 +73,9 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   },
   avatar: {
     source: "default",
+  },
+  motion: {
+    mode: "system",
   },
   stageAppearance: {
     backdropBlur: true,

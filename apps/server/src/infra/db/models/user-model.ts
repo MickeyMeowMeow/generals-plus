@@ -1,5 +1,6 @@
 import type {
   BackgroundImagePreference,
+  MotionPreference,
   UserPreferences,
 } from "@generals-plus/shared-types";
 import {
@@ -40,6 +41,7 @@ const defaultUserPreferences = (): UserPreferences =>
 const backgroundPresetIds = BACKGROUND_PRESETS.map((preset) => preset.id);
 const backgroundSources = ["preset", "customUrl"] as const;
 const avatarSources = ["default", "customUrl"] as const;
+const motionModes = ["system", "full", "reduced"] as const;
 
 interface BackgroundImagePreferenceDocument {
   source: BackgroundImagePreference["source"];
@@ -55,6 +57,10 @@ interface AvatarPreferenceDocument {
 interface StageAppearancePreferenceDocument {
   backdropBlur: boolean;
   backdropOpacity: number;
+}
+
+interface MotionPreferenceDocument {
+  mode: MotionPreference["mode"];
 }
 
 const isValidBackgroundImagePreference = (
@@ -148,6 +154,18 @@ const StageAppearancePreferenceSchema =
     { _id: false },
   );
 
+const MotionPreferenceSchema = new Schema<MotionPreferenceDocument>(
+  {
+    mode: {
+      type: String,
+      enum: motionModes,
+      required: true,
+      default: DEFAULT_USER_PREFERENCES.motion.mode,
+    },
+  },
+  { _id: false },
+);
+
 const UserSchema = new Schema<IUserDocument>(
   {
     email: { type: String, unique: true, sparse: true, trim: true },
@@ -187,6 +205,11 @@ const UserSchema = new Schema<IUserDocument>(
             validator: isValidAvatarPreference,
             message: "Invalid avatar preference.",
           },
+        },
+        motion: {
+          type: MotionPreferenceSchema,
+          required: true,
+          default: () => structuredClone(DEFAULT_USER_PREFERENCES.motion),
         },
         stageAppearance: {
           type: StageAppearancePreferenceSchema,

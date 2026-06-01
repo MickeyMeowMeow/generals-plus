@@ -43,6 +43,7 @@ import {
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 import { formatTeamLabel } from "#/features/match/utils/team-label";
+import { AnimatedNumber } from "#/features/motion/components/animated-number";
 import { cn } from "#/lib/utils";
 
 export type GamePageSource =
@@ -408,7 +409,7 @@ export function GamePage({ connection, source }: GamePageProps) {
             Turn
           </span>
           <span className="ml-2 text-[15px] font-semibold tabular-nums text-game-text">
-            {gameState.tick}
+            <AnimatedNumber value={gameState.tick} />
           </span>
         </div>
 

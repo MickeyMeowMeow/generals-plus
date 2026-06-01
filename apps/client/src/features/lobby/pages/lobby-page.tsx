@@ -20,6 +20,10 @@ import { Input } from "#/components/ui/input";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useAuth, useUser } from "#/features/auth/hooks";
 import { ModeHelpButton } from "#/features/game/components/mode-help-button";
+import {
+  MotionStaggerGroup,
+  MotionStaggerItem,
+} from "#/features/motion/components/motion-stagger";
 import { Avatar } from "#/features/profile/components/avatar";
 import { networkProvider } from "#/infra/network/provider";
 import { HttpRequestError } from "#/infra/network/provider/colyseus";
@@ -207,98 +211,108 @@ export function LobbyPage({
       ) : null}
 
       <StageCenter>
-        <div className="mx-auto grid max-w-5xl gap-5 sm:gap-6">
-          <BrandTitle compact />
+        <MotionStaggerGroup className="mx-auto grid max-w-5xl gap-5 sm:gap-6">
+          <MotionStaggerItem>
+            <BrandTitle compact />
+          </MotionStaggerItem>
 
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Avatar preferences={preferences?.avatar} />
-              <div>
-                <p className="text-sm text-game-text-dim">Hello,</p>
-                <p className="text-2xl font-bold">{displayName}</p>
+          <MotionStaggerItem>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Avatar preferences={preferences?.avatar} />
+                <div>
+                  <p className="text-sm text-game-text-dim">Hello,</p>
+                  <p className="text-2xl font-bold">{displayName}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {isAdmin && (
+              <div className="flex shrink-0 items-center gap-2">
+                {isAdmin && (
+                  <Button asChild variant="ghost">
+                    <Link to="/admin">
+                      <Shield className="size-4" />
+                      Admin
+                    </Link>
+                  </Button>
+                )}
                 <Button asChild variant="ghost">
-                  <Link to="/admin">
-                    <Shield className="size-4" />
-                    Admin
+                  <Link to="/maps">
+                    <MapIcon className="size-4" />
+                    Maps
                   </Link>
                 </Button>
-              )}
-              <Button asChild variant="ghost">
-                <Link to="/maps">
-                  <MapIcon className="size-4" />
-                  Maps
-                </Link>
-              </Button>
-              <Button asChild variant="ghost">
-                <Link to="/profile">
-                  <User className="size-4" />
-                  Profile
-                </Link>
-              </Button>
-              <Button type="button" variant="ghost" onClick={signOut}>
-                <LogOut className="size-4" />
-                Sign out
-              </Button>
-            </div>
-          </div>
-
-          <section className="grid min-h-40 place-items-center gap-3 border-t border-game-border pt-5 sm:min-h-44">
-            <Button
-              type="button"
-              size="lg"
-              onClick={() => setIsModePickerOpen(true)}
-              className="min-w-36"
-            >
-              <Play className="size-4" />
-              Start
-            </Button>
-          </section>
-
-          <section className="grid min-h-32 place-items-center border-t border-game-border pt-5 sm:min-h-36">
-            <div className="grid w-full justify-items-stretch gap-3">
-              <div className="mx-auto flex w-full max-w-sm flex-col gap-3 sm:flex-row">
-                <Input
-                  value={customRoomId}
-                  onChange={(event) => {
-                    setCustomRoomId(event.target.value);
-                    if (customError) {
-                      setCustomError(null);
-                    }
-                  }}
-                  placeholder="Leave blank to randomize"
-                  aria-label="Custom room id"
-                  autoComplete="off"
-                  className="flex-1 border-game-border bg-game-bg text-game-text placeholder:text-game-text-dim"
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !isCreatingCustom) {
-                      event.preventDefault();
-                      void createOrJoinCustomRoom();
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  onClick={() => void createOrJoinCustomRoom()}
-                  disabled={isCreatingCustom}
-                  className="min-w-48 justify-center"
-                >
-                  <Plus className="size-4" />
-                  {isCreatingCustom ? "Creating..." : "Create/Join custom room"}
+                <Button asChild variant="ghost">
+                  <Link to="/profile">
+                    <User className="size-4" />
+                    Profile
+                  </Link>
+                </Button>
+                <Button type="button" variant="ghost" onClick={signOut}>
+                  <LogOut className="size-4" />
+                  Sign out
                 </Button>
               </div>
-
-              {customError ? (
-                <p className="mx-auto flex min-h-8 w-full max-w-sm items-center rounded-none border border-destructive/40 px-3 text-sm text-destructive">
-                  {customError}
-                </p>
-              ) : null}
             </div>
-          </section>
-        </div>
+          </MotionStaggerItem>
+
+          <MotionStaggerItem>
+            <section className="grid min-h-40 place-items-center gap-3 border-t border-game-border pt-5 sm:min-h-44">
+              <Button
+                type="button"
+                size="lg"
+                onClick={() => setIsModePickerOpen(true)}
+                className="min-w-36"
+              >
+                <Play className="size-4" />
+                Start
+              </Button>
+            </section>
+          </MotionStaggerItem>
+
+          <MotionStaggerItem>
+            <section className="grid min-h-32 place-items-center border-t border-game-border pt-5 sm:min-h-36">
+              <div className="grid w-full justify-items-stretch gap-3">
+                <div className="mx-auto flex w-full max-w-sm flex-col gap-3 sm:flex-row">
+                  <Input
+                    value={customRoomId}
+                    onChange={(event) => {
+                      setCustomRoomId(event.target.value);
+                      if (customError) {
+                        setCustomError(null);
+                      }
+                    }}
+                    placeholder="Leave blank to randomize"
+                    aria-label="Custom room id"
+                    autoComplete="off"
+                    className="flex-1 border-game-border bg-game-bg text-game-text placeholder:text-game-text-dim"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !isCreatingCustom) {
+                        event.preventDefault();
+                        void createOrJoinCustomRoom();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => void createOrJoinCustomRoom()}
+                    disabled={isCreatingCustom}
+                    className="min-w-48 justify-center"
+                  >
+                    <Plus className="size-4" />
+                    {isCreatingCustom
+                      ? "Creating..."
+                      : "Create/Join custom room"}
+                  </Button>
+                </div>
+
+                {customError ? (
+                  <p className="mx-auto flex min-h-8 w-full max-w-sm items-center rounded-none border border-destructive/40 px-3 text-sm text-destructive">
+                    {customError}
+                  </p>
+                ) : null}
+              </div>
+            </section>
+          </MotionStaggerItem>
+        </MotionStaggerGroup>
       </StageCenter>
     </>
   );

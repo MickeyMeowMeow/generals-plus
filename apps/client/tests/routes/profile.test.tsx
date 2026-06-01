@@ -42,6 +42,7 @@ describe("profile route", () => {
         preferences: {
           backgroundImage: { source: "preset", presetId: "default" },
           avatar: { source: "default" },
+          motion: { mode: "system" },
           stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
         },
       },
@@ -69,6 +70,17 @@ describe("profile route", () => {
 
     expect(updateUserProfile).toHaveBeenCalledWith(
       expect.objectContaining({ displayName: "Nova Prime" }),
+    );
+
+    await userEvent.click(screen.getByLabelText("Reduced motion"));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(updateUserProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preferences: expect.objectContaining({
+          motion: { mode: "reduced" },
+        }),
+      }),
     );
   });
 });
