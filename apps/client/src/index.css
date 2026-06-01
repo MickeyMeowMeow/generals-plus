@@ -66,6 +66,13 @@
   --timer-warning: #eab308;
   --timer-critical: #ef4444;
 
+  --motion-duration-fast: 120ms;
+  --motion-duration-normal: 180ms;
+  --motion-duration-slow: 260ms;
+  --motion-ease-enter: cubic-bezier(0.2, 0.9, 0.2, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-ease-emphasis: cubic-bezier(0.22, 1, 0.36, 1);
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.148 0.004 228.8);
   --card: oklch(1 0 0);
@@ -101,6 +108,10 @@
 
 body {
   margin: 0;
+}
+
+[data-motion="reduced"] * {
+  scroll-behavior: auto !important;
 }
 
 .game-stage {
