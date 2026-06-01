@@ -3,14 +3,14 @@ import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import { useCallback } from "react";
 
-import type { ArrowTrigonometry } from "#/features/game/renderer/layers/move-queue-geometry";
-import {
-  DIRECTION_TRIGONOMETRY,
-  getArrowAnchor,
-} from "#/features/game/renderer/layers/move-queue-geometry";
 import { RenderConfig } from "#/features/game/renderer/render-config.ts";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
+import type { ArrowTrigonometry } from "#/features/game/utils/move-queue-geometry";
+import {
+  DIRECTION_TRIGONOMETRY,
+  getArrowAnchor,
+} from "#/features/game/utils/move-queue-geometry";
 
 extend({ Graphics });
 
