@@ -19,6 +19,7 @@ import {
   desertIcon,
   flagIcon,
   mountainIcon,
+  rugbyIcon,
   swampIcon,
 } from "#/features/game/assets";
 import type { EditorTool } from "#/features/map-editor/store/editor-store";
@@ -33,6 +34,8 @@ function toolMatches(a: EditorTool, b: EditorTool): boolean {
     return a.troopCount === b.troopCount;
   if (a.kind === "general" && b.kind === "general")
     return a.teamId === b.teamId && a.slot === b.slot;
+  if (a.kind === "goalZone" && b.kind === "goalZone")
+    return a.zoneIndex === b.zoneIndex;
   return true;
 }
 
@@ -126,7 +129,9 @@ export function ToolPalette() {
   const showFlag = supportedModes.includes("domination");
   const showBomb = supportedModes.includes("demolition");
   const showTrack = supportedModes.includes("payload");
-  const showModeObjectivesSection = showFlag || showBomb || showTrack;
+  const showGoalZone = supportedModes.includes("rugby");
+  const showModeObjectivesSection =
+    showFlag || showBomb || showTrack || showGoalZone;
 
   return (
     <div className="flex flex-col gap-5 p-4 bg-game-surface h-full">
@@ -312,6 +317,41 @@ export function ToolPalette() {
                   gameIcon={bombNormalIcon}
                   className="w-full"
                 />
+              </div>
+            )}
+
+            {/* Goal Zone & Rugby Spawn Cards */}
+            {showGoalZone && (
+              <div className="bg-game-bg/40 border border-game-border/40 rounded-none p-2.5 flex flex-col gap-2">
+                <span className="text-[10px] font-bold text-game-text flex items-center gap-1.5 uppercase tracking-wide">
+                  <img
+                    src={rugbyIcon}
+                    className="size-3.5 object-contain"
+                    style={{ filter: "brightness(0) invert(1)" }}
+                    alt="Rugby"
+                  />
+                  Rugby Elements
+                </span>
+                <div className="flex flex-col gap-1.5">
+                  <ToolButton
+                    target={{ kind: "goalZone", zoneIndex: 0 }}
+                    label="Left Goal (Zone 0)"
+                    color="#43a047"
+                    className="w-full"
+                  />
+                  <ToolButton
+                    target={{ kind: "goalZone", zoneIndex: 1 }}
+                    label="Right Goal (Zone 1)"
+                    color="#e53935"
+                    className="w-full"
+                  />
+                  <ToolButton
+                    target={{ kind: "rugbySpawn" }}
+                    label="Rugby Spawn Point"
+                    color="#ff9100"
+                    className="w-full"
+                  />
+                </div>
               </div>
             )}
 

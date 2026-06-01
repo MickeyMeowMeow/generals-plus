@@ -41,6 +41,9 @@ export interface ICell extends EffectTarget {
   /** Index of the bomb site if this cell is a BOMB_SITE, null otherwise. */
   siteIndex: number | null;
 
+  /** Index of the goal zone if this cell is a GOAL_ZONE, null otherwise. */
+  zoneIndex: number | null;
+
   /** Item currently residing in this cell, or null if none. */
   item: IItem | null;
 

@@ -63,6 +63,14 @@ export interface PayloadSetupSettings extends BaseSetupSettings {
   payloadRequiredOccupied: number;
 }
 
+export interface RugbySetupSettings extends BaseSetupSettings {
+  gameMode: typeof GameMode.RUGBY;
+  duration: number;
+  rugbyBallCount: number;
+  rugbyMoveSpeed: number;
+  rugbyWinningScore: number;
+}
+
 export interface OtherSettings extends BaseSetupSettings {
   gameMode: Exclude<
     GameMode,
@@ -72,6 +80,7 @@ export interface OtherSettings extends BaseSetupSettings {
     | typeof GameMode.DEMOLITION
     | typeof GameMode.COLLAPSE
     | typeof GameMode.PAYLOAD
+    | typeof GameMode.RUGBY
   >;
 }
 
@@ -82,4 +91,5 @@ export type SetupSettings =
   | DemolitionSetupSettings
   | CollapseSetupSettings
   | PayloadSetupSettings
+  | RugbySetupSettings
   | OtherSettings;

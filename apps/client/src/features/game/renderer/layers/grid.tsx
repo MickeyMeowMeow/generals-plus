@@ -20,6 +20,7 @@ interface GridLayerProps {
   tick: number;
   grid: RenderGrid;
   playerColors: Map<string, number>;
+  isEditor?: boolean;
 }
 
 export function getCellFillColor(
@@ -50,7 +51,12 @@ export function getCellFillColor(
 
 const CHUNK_SIZE = 16;
 
-export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
+export function GridLayer({
+  tick,
+  grid,
+  playerColors,
+  isEditor,
+}: GridLayerProps) {
   const containerRef = useRef<Container>(null);
 
   // Maintains a cache of Graphics objects mapped to 16x16 geographical chunks
@@ -88,8 +94,10 @@ export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
 
       const color = getCellFillColor(cell, playerColors);
       const collapse = cell.willCollapse ? 1 : 0;
+      const terrain = cell.terrain;
+      const zoneIndex = cell.zoneIndex ?? -1;
 
-      signatureParts.push(`${color}-${collapse}`);
+      signatureParts.push(`${color}-${collapse}-${terrain}-${zoneIndex}`);
     }
 
     // Diff and redraw only the chunks whose visual signature has changed
@@ -121,6 +129,18 @@ export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
             chunk.g.fill({ color: 0x7c3aed, alpha: 0.26 });
             chunk.g.stroke({ width: 2, color: 0xd946ef, alignment: 0.5 });
           }
+
+          if (cell.terrain === Terrain.GOAL_ZONE) {
+            drawCell(chunk.g, grid, cell.coordinate);
+            const overlayColor = cell.zoneIndex === 0 ? 0x43a047 : 0xe53935;
+            chunk.g.fill({ color: overlayColor, alpha: 0.35 });
+            chunk.g.stroke({ width: 1.5, color: overlayColor, alignment: 0.5 });
+          } else if (cell.terrain === Terrain.RUGBY_SPAWN && isEditor) {
+            drawCell(chunk.g, grid, cell.coordinate);
+            const overlayColor = 0xff9100;
+            chunk.g.fill({ color: overlayColor, alpha: 0.35 });
+            chunk.g.stroke({ width: 1.5, color: overlayColor, alignment: 0.5 });
+          }
         }
         chunk.signature = newSignature;
       }
@@ -134,7 +154,7 @@ export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
         chunks.delete(key);
       }
     }
-  }, [tick, grid, playerColors]);
+  }, [tick, grid, playerColors, isEditor]);
 
   return <pixiContainer ref={containerRef} />;
 }

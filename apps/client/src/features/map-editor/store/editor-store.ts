@@ -20,6 +20,8 @@ export type EditorTool =
   | { kind: "city"; troopCount: number }
   | { kind: "general"; teamId: string; slot: number }
   | { kind: "bombSite" }
+  | { kind: "goalZone"; zoneIndex: number }
+  | { kind: "rugbySpawn" }
   | { kind: "trackAdd" }
   | { kind: "trackRemove" }
   | { kind: "erase" };
@@ -89,6 +91,7 @@ function createEmptyCells(
         terrain: T.PLAIN as Terrain,
         troopCount: null,
         siteIndex: null,
+        zoneIndex: null,
       })),
     );
   }
@@ -100,6 +103,7 @@ function createEmptyCells(
       terrain: T.PLAIN as Terrain,
       troopCount: null,
       siteIndex: null,
+      zoneIndex: null,
     }));
   });
 }
@@ -361,11 +365,13 @@ export const useEditorStore = create<EditorState & EditorActions>(
 
         switch (tool.kind) {
           case "terrain": {
-            if (cell.terrain === tool.terrain) return state;
+            if (cell.terrain === tool.terrain && cell.zoneIndex === null)
+              return state;
             newCells = setCellAt(state, coord, {
               terrain: tool.terrain,
               troopCount: null,
               siteIndex: null,
+              zoneIndex: null,
             });
             // If we changed a general/bombsite/etc, clean spawns/track
             if (cell.terrain === T.GENERAL) newSpawns = removeSpawnAt(coord);
@@ -378,6 +384,7 @@ export const useEditorStore = create<EditorState & EditorActions>(
               terrain: T.CITY as Terrain,
               troopCount: tool.troopCount,
               siteIndex: null,
+              zoneIndex: null,
             });
             if (cell.terrain === T.GENERAL) newSpawns = removeSpawnAt(coord);
             if (cell.terrain === T.BOMB_SITE)
@@ -390,6 +397,7 @@ export const useEditorStore = create<EditorState & EditorActions>(
               terrain: T.GENERAL as Terrain,
               troopCount: null,
               siteIndex: null,
+              zoneIndex: null,
             });
             // Remove existing spawn at this position (replacing)
             newSpawns = newSpawns.filter(
@@ -427,9 +435,35 @@ export const useEditorStore = create<EditorState & EditorActions>(
               terrain: T.BOMB_SITE as Terrain,
               troopCount: null,
               siteIndex: null,
+              zoneIndex: null,
             });
             if (cell.terrain === T.GENERAL) newSpawns = removeSpawnAt(coord);
             newCells = recomputeBombSiteIndices(newCells);
+            break;
+          }
+          case "goalZone": {
+            if (tool.kind !== "goalZone") break;
+            newCells = setCellAt(state, coord, {
+              terrain: T.GOAL_ZONE as Terrain,
+              troopCount: null,
+              siteIndex: null,
+              zoneIndex: tool.zoneIndex,
+            });
+            if (cell.terrain === T.GENERAL) newSpawns = removeSpawnAt(coord);
+            if (cell.terrain === T.BOMB_SITE)
+              newCells = recomputeBombSiteIndices(newCells);
+            break;
+          }
+          case "rugbySpawn": {
+            newCells = setCellAt(state, coord, {
+              terrain: T.RUGBY_SPAWN as Terrain,
+              troopCount: null,
+              siteIndex: null,
+              zoneIndex: null,
+            });
+            if (cell.terrain === T.GENERAL) newSpawns = removeSpawnAt(coord);
+            if (cell.terrain === T.BOMB_SITE)
+              newCells = recomputeBombSiteIndices(newCells);
             break;
           }
           case "trackAdd": {
@@ -450,6 +484,7 @@ export const useEditorStore = create<EditorState & EditorActions>(
               terrain: T.PLAIN as Terrain,
               troopCount: null,
               siteIndex: null,
+              zoneIndex: null,
             });
             newSpawns = removeSpawnAt(coord);
             newTrack = newTrack.filter(

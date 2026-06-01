@@ -17,6 +17,10 @@ export const Terrain = {
   FLAG: "flag",
   /** The bomb site tile in Demolition Mode. Where the bomb is planted. */
   BOMB_SITE: "bomb_site",
+  /** The goal zone tile in Rugby Mode. Where rugby touchdowns are scored. */
+  GOAL_ZONE: "goal_zone",
+  /** The rugby spawn point tile in Rugby Mode. Where rugby balls spawn. */
+  RUGBY_SPAWN: "rugby_spawn",
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];

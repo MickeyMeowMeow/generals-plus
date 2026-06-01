@@ -158,6 +158,9 @@ export class BotSession {
       const siteIndex = vc.siteIndex ?? -1;
       if (cell.siteIndex !== siteIndex) cell.siteIndex = siteIndex;
 
+      const zoneIndex = vc.zoneIndex ?? -1;
+      if (cell.zoneIndex !== zoneIndex) cell.zoneIndex = zoneIndex;
+
       const itemId = vc.item?.id ?? "";
       const itemType = vc.item?.type ?? -1;
       if (cell.item_id !== itemId) cell.item_id = itemId;
@@ -175,6 +178,7 @@ export class BotSession {
     cell.ownerIndex =
       vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "";
     cell.siteIndex = vc.siteIndex ?? -1;
+    cell.zoneIndex = vc.zoneIndex ?? -1;
 
     if (vc.item) {
       cell.item_id = vc.item.id;

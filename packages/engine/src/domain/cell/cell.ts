@@ -22,6 +22,8 @@ export interface CellOptions {
   readonly vision?: IVisionModifier;
   /** Index of the bomb site if this cell is a BOMB_SITE, null otherwise. */
   readonly siteIndex?: number | null;
+  /** Index of the goal zone if this cell is a GOAL_ZONE, null otherwise. */
+  readonly zoneIndex?: number | null;
   /** Item currently residing in this cell, or null if none. */
   readonly item?: IItem | null;
 }
@@ -39,6 +41,7 @@ export class Cell extends EffectTarget implements ICell {
   owner: ICellOwner | null;
   vision: IVisionModifier;
   siteIndex: number | null;
+  zoneIndex: number | null;
   item: IItem | null;
   onTerrainChange?: (
     cell: ICell,
@@ -60,6 +63,7 @@ export class Cell extends EffectTarget implements ICell {
     this.troopCount = this.isPassable ? (options.troopCount ?? null) : null;
     this.vision = options.vision ?? { radius: 1 };
     this.siteIndex = options.siteIndex ?? null;
+    this.zoneIndex = options.zoneIndex ?? null;
     this.item = options.item ?? null;
   }
 
