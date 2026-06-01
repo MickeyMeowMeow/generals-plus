@@ -96,11 +96,14 @@ export abstract class AbstractGridGenerator<
 
       for (let y = startY; y <= endY; y++) {
         // Left goal zone cell
-        let leftmostX = -100;
-        while (leftmostX < 100 && !terrainGrid.isValid({ x: leftmostX, y })) {
+        let leftmostX = isHex ? -bounds.left : 0;
+        while (
+          leftmostX <= (isHex ? bounds.right : bounds.width - 1) &&
+          !terrainGrid.isValid({ x: leftmostX, y })
+        ) {
           leftmostX++;
         }
-        if (leftmostX < 100) {
+        if (leftmostX <= (isHex ? bounds.right : bounds.width - 1)) {
           const coord = { x: leftmostX + leftGoalOffset, y };
           if (
             terrainGrid.isValid(coord) &&
