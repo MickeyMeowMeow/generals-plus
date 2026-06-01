@@ -399,7 +399,7 @@ export function ProfilePage() {
             disabled={isSaving}
           >
             <Save className="size-4" />
-            {isSaving ? "Saving..." : "Save preferences"}
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </div>
       </MotionStaggerGroup>

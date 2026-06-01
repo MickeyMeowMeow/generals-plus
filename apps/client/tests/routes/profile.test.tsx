@@ -73,9 +73,7 @@ describe("profile route", () => {
     );
 
     await userEvent.click(screen.getByLabelText("Reduced motion"));
-    await userEvent.click(
-      screen.getByRole("button", { name: "Save preferences" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
     expect(updateUserProfile).toHaveBeenCalledWith(
       expect.objectContaining({
