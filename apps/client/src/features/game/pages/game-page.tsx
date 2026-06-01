@@ -27,13 +27,13 @@ import { ReturnButton } from "#/features/game/components/return-button";
 import { StatusDialog } from "#/features/game/components/status-dialog";
 import { SurrenderOverlay } from "#/features/game/components/surrender-overlay";
 import { TurnCounter } from "#/features/game/components/turn-counter";
+import {
+  DeselectPingToolKey,
+  KeyToPing,
+  SelectPingToolModifier,
+} from "#/features/game/config/hotkeys";
 import { GameApp } from "#/features/game/renderer/game-app";
 import type { Ping } from "#/features/game/renderer/layers/ping";
-import {
-  ChoosePingBrushModifier,
-  ClearPingBrushKey,
-  KeyToPing,
-} from "#/features/game/utils/hotkey";
 import type { MoveDirection } from "#/features/game/utils/move";
 import { getTargetCoord } from "#/features/game/utils/move";
 import { formatTeamLabel } from "#/features/game/utils/team-label";
@@ -125,7 +125,7 @@ export function GamePage({ connection, source }: GamePageProps) {
   } = useGameRoom(stableConnection);
 
   const [pings, setPings] = useState<Ping[]>([]);
-  const [activeBrush, setActiveBrush] = useState<
+  const [activePingTool, setActivePingTool] = useState<
     "attack" | "defense" | "rally" | null
   >(null);
 
@@ -214,8 +214,8 @@ export function GamePage({ connection, source }: GamePageProps) {
 
   const handleSelectCell = useCallback(
     (coord: ICoordinate) => {
-      if (activeBrush) {
-        handlePing(coord, activeBrush);
+      if (activePingTool) {
+        handlePing(coord, activePingTool);
         return;
       }
       const cell = renderGrid?.get(coord);
@@ -224,14 +224,14 @@ export function GamePage({ connection, source }: GamePageProps) {
       setSelection(coord);
       setIsStickySplitMove(false);
     },
-    [activeBrush, handlePing, renderGrid],
+    [activePingTool, handlePing, renderGrid],
   );
 
   const handleToggleStickySplitMove = useCallback(() => {
-    if (!isActiveSplitMove) {
+    if (!isActiveSplitMove && !activePingTool) {
       setIsStickySplitMove((prev) => !prev);
     }
-  }, [isActiveSplitMove]);
+  }, [isActiveSplitMove, activePingTool]);
 
   const handleQueueMove = useCallback(
     (direction: MoveDirection) => {
@@ -277,13 +277,13 @@ export function GamePage({ connection, source }: GamePageProps) {
         return;
       }
 
-      if (e.code === ClearPingBrushKey) {
-        setActiveBrush(null);
+      if (e.code === DeselectPingToolKey) {
+        setActivePingTool(null);
       }
 
-      if (e.getModifierState(ChoosePingBrushModifier) && KeyToPing[e.code]) {
+      if (e.getModifierState(SelectPingToolModifier) && KeyToPing[e.code]) {
         const pingType = KeyToPing[e.code];
-        setActiveBrush((prev) => (prev === pingType ? null : pingType));
+        setActivePingTool((prev) => (prev === pingType ? null : pingType));
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -440,7 +440,10 @@ export function GamePage({ connection, source }: GamePageProps) {
 
       <HotkeyOverlay gridType={renderGrid.gridType} />
 
-      <PingPanel activeBrush={activeBrush} setActiveBrush={setActiveBrush} />
+      <PingPanel
+        activePingTool={activePingTool}
+        setActivePingTool={setActivePingTool}
+      />
 
       <DisconnectDialog
         message={disconnectMessage}
@@ -451,7 +454,7 @@ export function GamePage({ connection, source }: GamePageProps) {
       <SurrenderOverlay
         canSurrender={canSurrender}
         onSurrender={() => {
-          setActiveBrush(null);
+          setActivePingTool(null);
           setSelection(null);
           setIsStickySplitMove(false);
           surrender();

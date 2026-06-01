@@ -102,6 +102,7 @@ export function MapRenderer({
       if (!coord) return;
 
       if (e.button === 2) {
+        onCellClick(coord);
         onToggleStickySplitMove();
         lastPrimaryClickRef.current = null;
         return;

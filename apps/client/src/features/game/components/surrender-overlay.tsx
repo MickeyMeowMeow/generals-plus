@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
-import { SurrenderKey } from "#/features/game/utils/hotkey";
+import { SurrenderKey } from "#/features/game/config/hotkeys";
 
 interface SurrenderOverlayProps {
   canSurrender: boolean;
@@ -26,7 +26,7 @@ export function SurrenderOverlay({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === SurrenderKey && canSurrender) {
         e.preventDefault();
-        setIsOpen(true);
+        setIsOpen((prev) => !prev);
         return;
       }
     };
