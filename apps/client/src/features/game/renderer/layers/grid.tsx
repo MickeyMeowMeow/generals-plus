@@ -65,7 +65,7 @@ export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
 
     const chunks = chunksRef.current;
     const cellsByChunk = new Map<string, RenderGridCell[]>();
-    const signatures = new Map<string, string>();
+    const signaturePartsByChunk = new Map<string, string[]>();
 
     // Group cells by spatial chunk and compute a fast comparison signature
     for (const cell of grid) {
@@ -77,19 +77,24 @@ export function GridLayer({ tick, grid, playerColors }: GridLayerProps) {
       if (!chunkCells) {
         chunkCells = [];
         cellsByChunk.set(key, chunkCells);
-        signatures.set(key, "");
       }
       chunkCells.push(cell);
+
+      let signatureParts = signaturePartsByChunk.get(key);
+      if (!signatureParts) {
+        signatureParts = [];
+        signaturePartsByChunk.set(key, signatureParts);
+      }
 
       const color = getCellFillColor(cell, playerColors);
       const collapse = cell.willCollapse ? 1 : 0;
 
-      signatures.set(key, `${signatures.get(key)}${color}-${collapse}|`);
+      signatureParts.push(`${color}-${collapse}`);
     }
 
     // Diff and redraw only the chunks whose visual signature has changed
     for (const [key, cells] of cellsByChunk.entries()) {
-      const newSignature = signatures.get(key) ?? "";
+      const newSignature = signaturePartsByChunk.get(key)?.join("|") || "";
       let chunk = chunks.get(key);
 
       if (!chunk) {
