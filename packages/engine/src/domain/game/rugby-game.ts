@@ -2,7 +2,7 @@ import { ActionType } from "#/domain/action/action-type";
 import type { Action } from "#/domain/action/interfaces";
 import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
-import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
+import { RespawningCombatResolver } from "#/domain/combat/respawning-combat-resolver";
 import { EffectType } from "#/domain/effect/effect-type";
 import { TroopModifierEffect } from "#/domain/effect/periodic/troop-modifier";
 import { BaseGame } from "#/domain/game/base-game";
@@ -26,7 +26,7 @@ export interface RugbyGameOptions {
 
 export class RugbyGame extends BaseGame implements IRugbyGame {
   readonly mode = GameMode.RUGBY;
-  private readonly combatResolver = new StandardCombatResolver();
+  private readonly combatResolver = new RespawningCombatResolver();
 
   readonly rugbyBallCount: number;
   readonly rugbyMoveSpeedTicks: number;

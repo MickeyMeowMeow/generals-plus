@@ -476,4 +476,66 @@ describe("DemolitionGame", () => {
     expect(adjCell.item).toBeNull();
     expect(bomb.coordinate).toEqual(siteCell.coordinate);
   });
+
+  it("respawns general instead of instant elimination when a general is captured", () => {
+    const grid = createPlainGrid5x5();
+    const game = new DemolitionGame({ grid });
+
+    const attackers = new AttackerTeam("attackers");
+    const defenders = new DefenderTeam("defenders");
+    const p1 = new Player(attackers, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(defenders, "p2", PlayerStatus.ACTIVE);
+
+    game.teams.set(attackers.teamId, attackers);
+    game.teams.set(defenders.teamId, defenders);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+
+    game.startGame();
+
+    // Find the generals
+    let p1Gen: Cell | null = null;
+    let p2Gen: Cell | null = null;
+    grid.forEach((c) => {
+      if (c.terrain === Terrain.GENERAL) {
+        if (c.owner?.playerId === "p1") p1Gen = c as Cell;
+        if (c.owner?.playerId === "p2") p2Gen = c as Cell;
+      }
+    });
+
+    expect(p1Gen).not.toBeNull();
+    expect(p2Gen).not.toBeNull();
+    if (!p1Gen || !p2Gen) throw new Error("Generals must exist");
+
+    // Make p2 (defender) own an extra plain cell
+    const p2Plain = grid.get({ x: 3, y: 3 }) as Cell;
+    p2Plain.owner = p2;
+    p2Plain.terrain = Terrain.PLAIN;
+
+    // Position p1 troops next to p2's general
+    const adjacentToP2Gen = grid.getNeighbors(p2Gen.coordinate)[0][0];
+    const attackerCell = grid.get(adjacentToP2Gen) as Cell;
+    attackerCell.owner = p1;
+    attackerCell.troopCount = 20;
+
+    p2Gen.troopCount = 5;
+
+    // Attacker captures p2 general
+    const success = game.handleAction({
+      playerId: "p1",
+      from: attackerCell.coordinate,
+      to: p2Gen.coordinate,
+      type: ActionType.MOVE,
+    });
+    expect(success).toBe(true);
+
+    game.nextTick();
+
+    // Captured general terrain should turn into PLAIN
+    expect(p2Gen.terrain).toBe(Terrain.PLAIN);
+    // Player p2 should still be active (respawned)
+    expect(p2.status).toBe(PlayerStatus.ACTIVE);
+    // The plain cell owned by p2 should be converted to GENERAL
+    expect(p2Plain.terrain).toBe(Terrain.GENERAL);
+  });
 });

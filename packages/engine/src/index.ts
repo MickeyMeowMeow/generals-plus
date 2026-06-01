@@ -6,6 +6,7 @@ export * from "#/domain/action/interfaces";
 export * from "#/domain/cell/cell";
 export * from "#/domain/cell/interfaces";
 export * from "#/domain/cell/terrain";
+export * from "#/domain/combat/respawning-combat-resolver";
 export * from "#/domain/combat/standard-combat-resolver";
 export * from "#/domain/effect/effect";
 export * from "#/domain/effect/effect-registry";
