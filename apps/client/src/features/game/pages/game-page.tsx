@@ -10,6 +10,7 @@ import type {
   CollapseScoreboard,
   DemolitionScoreboard,
   PayloadScoreboard,
+  RugbyScoreboard,
 } from "@generals-plus/shared-types";
 import {
   MatchClientMessage,
@@ -567,6 +568,25 @@ export function GamePage({ connection, source }: GamePageProps) {
           timerProps = {
             currentTick: gameState.tick,
             targetTick: gameState.finishTick > 0 ? gameState.finishTick : 0,
+            tickInterval: gameState.tickInterval,
+            label: "Time remaining",
+          };
+        }
+
+        if (gameState.mode === GameMode.RUGBY) {
+          const rugbyScoreboard = gameState.scoreboard as RugbyScoreboard;
+          const totalTicks =
+            rugbyScoreboard.totalTime > 0
+              ? Math.round(
+                  (rugbyScoreboard.totalTime * 1000) /
+                    (gameState.tickInterval || 500),
+                )
+              : 0;
+
+          timerProps = {
+            currentTick: gameState.tick,
+            targetTick:
+              gameState.finishTick > 0 ? gameState.finishTick : totalTicks,
             tickInterval: gameState.tickInterval,
             label: "Time remaining",
           };
