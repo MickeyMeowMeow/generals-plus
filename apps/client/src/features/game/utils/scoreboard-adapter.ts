@@ -131,6 +131,26 @@ const dominationColumns: GameHudColumn[] = [
   { key: "troops", label: "Soldiers" },
 ];
 
+function mixZombieColor(
+  originalColor: number,
+  zombieGreen: number = 0x2e7d32,
+  ratio: number = 0.6,
+): number {
+  const rA = (originalColor >> 16) & 0xff;
+  const gA = (originalColor >> 8) & 0xff;
+  const bA = originalColor & 0xff;
+
+  const rB = (zombieGreen >> 16) & 0xff;
+  const gB = (zombieGreen >> 8) & 0xff;
+  const bB = zombieGreen & 0xff;
+
+  const r = Math.round(rA * (1 - ratio) + rB * ratio);
+  const g = Math.round(gA * (1 - ratio) + gB * ratio);
+  const b = Math.round(bA * (1 - ratio) + bB * ratio);
+
+  return (r << 16) | (g << 8) | b;
+}
+
 /**
  * Extracts common troop and land entries from scoreboards that expose players.
  *
@@ -148,6 +168,8 @@ function getTroopLandEntries(scoreboard: BaseScoreboard) {
         land: entry.land,
         troops: entry.troops,
         isAlive: (entry as unknown as { isAlive?: boolean }).isAlive ?? true,
+        isZombie:
+          (entry as unknown as { isZombie?: boolean }).isZombie ?? false,
       }))
     : [];
 }
@@ -207,11 +229,15 @@ function createPlayerRows(scoreboard: BaseScoreboard): GameHudRow[] {
   const scoreEntries = getTroopLandEntries(scoreboard);
   return scoreEntries
     .map((score) => {
+      let color = score.color ?? 0;
+      if (scoreboard.mode === GameMode.BIOHAZARD && score.isZombie) {
+        color = mixZombieColor(color);
+      }
       return {
         id: score.playerId,
         teamId: score.teamId,
         label: score.displayName || score.playerId,
-        color: score.color ?? 0,
+        color,
         values: {
           land: score.land,
           troops: score.troops,
