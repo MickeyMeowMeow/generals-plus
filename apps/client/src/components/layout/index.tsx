@@ -99,10 +99,8 @@ export function StageCenter({ children }: { children: ReactNode }) {
   return (
     <div className="stage-center">
       <div className="stage-center-backdrop" aria-hidden="true" />
-      <MotionScene className="stage-center-content">
-        <MotionLayout>
-          <div className="px-8 sm:px-12 lg:px-14">{children}</div>
-        </MotionLayout>
+      <MotionScene className="stage-center-content" enableLayout>
+        <div className="px-8 sm:px-12 lg:px-14">{children}</div>
       </MotionScene>
     </div>
   );

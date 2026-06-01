@@ -5,16 +5,20 @@ import {
   MOTION_DISTANCE,
   MOTION_DURATION,
   MOTION_EASING,
+  MOTION_LAYOUT_TRANSITION,
 } from "#/features/motion/motion-tokens";
 
 export function MotionScene({
   sceneKey,
   children,
   className,
+  enableLayout = false,
 }: {
   readonly sceneKey?: string;
   readonly children: React.ReactNode;
   readonly className?: string;
+  /** Enable layout animation for smooth size changes within the same scene. */
+  readonly enableLayout?: boolean;
 }) {
   const { shouldReduceMotion } = useMotionPreference();
 
@@ -51,6 +55,10 @@ export function MotionScene({
     <AnimatePresence mode="wait">
       <motion.div
         key={sceneKey}
+        layout={enableLayout && !shouldReduceMotion}
+        transition={{
+          ...(enableLayout && { layout: MOTION_LAYOUT_TRANSITION }),
+        }}
         className={className}
         data-motion-scene
         initial="hidden"
