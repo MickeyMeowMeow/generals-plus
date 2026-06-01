@@ -9,6 +9,10 @@ import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { useUser } from "#/features/auth/hooks";
 import { GamePage } from "#/features/game/pages/game-page";
+import {
+  MotionStaggerGroup,
+  MotionStaggerItem,
+} from "#/features/motion/components/motion-stagger";
 import { Avatar } from "#/features/profile/components/avatar";
 import { useSetupRoom } from "#/features/staging/api/use-setup-room";
 import { ColorPicker } from "#/features/staging/components/color-picker";
@@ -249,105 +253,108 @@ export function CustomSetupRoom({ roomId }: { roomId: string }) {
 
   return (
     <StageCenter>
-      <div className="mx-auto grid w-full max-w-5xl gap-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Avatar preferences={preferences?.avatar} />
-            <div>
-              <p className="text-sm text-game-text-dim">Hello,</p>
-              <p className="text-2xl font-bold">{displayName}</p>
+      <MotionStaggerGroup className="mx-auto grid w-full max-w-5xl gap-8">
+        <MotionStaggerItem>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Avatar preferences={preferences?.avatar} />
+              <div>
+                <p className="text-sm text-game-text-dim">Hello,</p>
+                <p className="text-2xl font-bold">{displayName}</p>
+              </div>
             </div>
+            <p className="text-sm text-game-text-dim">
+              {isHost ? "You are host" : "You are guest"}
+            </p>
           </div>
-          <p className="text-sm text-game-text-dim">
-            {isHost ? "You are host" : "You are guest"}
-          </p>
-        </div>
-      </div>
+        </MotionStaggerItem>
 
-      <div className="grid gap-8 border-t border-game-border pt-8 md:grid-cols-[1fr_20rem]">
-        <div className="space-y-8">
-          <GameSettings
-            isHost={isHost}
-            currentSettings={setupState}
-            onChangeSettings={updateSettings}
-          />
+        <MotionStaggerItem className="grid gap-8 border-t border-game-border pt-8 md:grid-cols-[1fr_20rem]">
+          <div className="space-y-8">
+            <GameSettings
+              isHost={isHost}
+              currentSettings={setupState}
+              onChangeSettings={updateSettings}
+            />
 
-          <section className="space-y-4">
-            <h2 className="text-xl font-semibold">Pick Your Color</h2>
-            {myPlayer ? (
-              <ColorPicker
-                takenColors={takenColors}
-                currentColor={myPlayer.color}
-                onSelect={(color) =>
-                  room?.send(SetupClientMessage.PICK_COLOR, { color })
-                }
-              />
-            ) : (
-              <p className="text-sm text-game-text-dim">
-                Waiting for player assignment.
-              </p>
-            )}
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold">Pick Your Color</h2>
+              {myPlayer ? (
+                <ColorPicker
+                  takenColors={takenColors}
+                  currentColor={myPlayer.color}
+                  onSelect={(color) =>
+                    room?.send(SetupClientMessage.PICK_COLOR, { color })
+                  }
+                />
+              ) : (
+                <p className="text-sm text-game-text-dim">
+                  Waiting for player assignment.
+                </p>
+              )}
 
-            <div className="flex flex-wrap gap-3 pt-2">
-              {canStart ? (
-                <Button type="button" onClick={startGame}>
-                  <Play className="size-4" />
-                  Force start game
+              <div className="flex flex-wrap gap-3 pt-2">
+                {canStart ? (
+                  <Button type="button" onClick={startGame}>
+                    <Play className="size-4" />
+                    Force start game
+                  </Button>
+                ) : null}
+                {!hasOversizedTeams &&
+                setupState.players.length >= 2 &&
+                !hasEnoughTeams ? (
+                  <p className="basis-full text-sm text-amber-300">
+                    {setupState.gameMode === GameMode.DEMOLITION ||
+                    setupState.gameMode === GameMode.PAYLOAD ||
+                    setupState.gameMode === GameMode.RUGBY
+                      ? "Members on both teams are required to start the game."
+                      : "At least two teams are required to start the game."}
+                  </p>
+                ) : null}
+                {hasOversizedTeams ? (
+                  <p className="basis-full text-sm text-amber-300">
+                    Each team must have no more than {teamCapacity} players to
+                    start the game.
+                  </p>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => navigate("/")}
+                >
+                  <LogOut className="size-4" />
+                  Leave room
                 </Button>
-              ) : null}
-              {!hasOversizedTeams &&
-              setupState.players.length >= 2 &&
-              !hasEnoughTeams ? (
-                <p className="basis-full text-sm text-amber-300">
-                  {setupState.gameMode === GameMode.DEMOLITION ||
-                  setupState.gameMode === GameMode.PAYLOAD ||
-                  setupState.gameMode === GameMode.RUGBY
-                    ? "Members on both teams are required to start the game."
-                    : "At least two teams are required to start the game."}
-                </p>
-              ) : null}
-              {hasOversizedTeams ? (
-                <p className="basis-full text-sm text-amber-300">
-                  Each team must have no more than {teamCapacity} players to
-                  start the game.
-                </p>
-              ) : null}
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => navigate("/")}
-              >
-                <LogOut className="size-4" />
-                Leave room
-              </Button>
-            </div>
-          </section>
-        </div>
+              </div>
+            </section>
+          </div>
 
-        <RoomPlayerList
-          players={playersWithTeams}
-          currentUserId={userId}
-          maxPlayers={setupState.maxPlayers}
-          showHost
-          teamGroups={shouldShowTeamControls ? teamGroups : undefined}
-          onJoinTeam={
-            shouldShowTeamControls
-              ? (teamId) => room?.send(SetupClientMessage.PICK_TEAM, { teamId })
-              : undefined
-          }
-          onCreateTeam={
-            shouldShowTeamControls &&
-            setupState.gameMode !== GameMode.DEMOLITION &&
-            setupState.gameMode !== GameMode.PAYLOAD &&
-            setupState.gameMode !== GameMode.RUGBY
-              ? () =>
-                  room?.send(SetupClientMessage.PICK_TEAM, {
-                    createNew: true,
-                  })
-              : undefined
-          }
-        />
-      </div>
+          <RoomPlayerList
+            players={playersWithTeams}
+            currentUserId={userId}
+            maxPlayers={setupState.maxPlayers}
+            showHost
+            teamGroups={shouldShowTeamControls ? teamGroups : undefined}
+            onJoinTeam={
+              shouldShowTeamControls
+                ? (teamId) =>
+                    room?.send(SetupClientMessage.PICK_TEAM, { teamId })
+                : undefined
+            }
+            onCreateTeam={
+              shouldShowTeamControls &&
+              setupState.gameMode !== GameMode.DEMOLITION &&
+              setupState.gameMode !== GameMode.PAYLOAD &&
+              setupState.gameMode !== GameMode.RUGBY
+                ? () =>
+                    room?.send(SetupClientMessage.PICK_TEAM, {
+                      createNew: true,
+                    })
+                : undefined
+            }
+          />
+        </MotionStaggerItem>
+      </MotionStaggerGroup>
     </StageCenter>
   );
 }

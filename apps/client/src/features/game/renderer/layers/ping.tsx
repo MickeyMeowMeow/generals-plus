@@ -6,8 +6,10 @@ import {
   pingDefenseIcon,
   pingRallyIcon,
 } from "#/features/game/assets";
+import { getBoardPulse } from "#/features/game/renderer/board-motion";
 import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
+import { useMotionPreference } from "#/features/motion/motion-provider";
 
 extend({ Container, Sprite });
 
@@ -30,6 +32,8 @@ const pingIcons: Record<string, string> = {
 };
 
 export function PingLayer({ grid, pings }: PingLayerProps) {
+  const { shouldReduceMotion } = useMotionPreference();
+
   return (
     <pixiContainer>
       {pings.map((ping) => {
@@ -41,6 +45,11 @@ export function PingLayer({ grid, pings }: PingLayerProps) {
 
         const icon = pingIcons[ping.type] || pingIcons.rally;
         const texture = Texture.from(icon);
+        const createdAt = Number(ping.id.split("-").at(-2) ?? 0);
+        const pulse = getBoardPulse({
+          ageMs: Date.now() - createdAt,
+          reducedMotion: shouldReduceMotion,
+        });
 
         return (
           <pixiSprite
@@ -49,8 +58,9 @@ export function PingLayer({ grid, pings }: PingLayerProps) {
             anchor={0.5}
             x={x}
             y={y}
-            width={size}
-            height={size}
+            width={size * pulse.scale}
+            height={size * pulse.scale}
+            alpha={pulse.alpha}
           />
         );
       })}

@@ -1,4 +1,5 @@
 import { Progress } from "#/components/ui/progress";
+import { AnimatedNumber } from "#/features/motion/components/animated-number";
 import { cn, formatTime } from "#/lib/utils";
 
 const TimeThreshold = {
@@ -37,6 +38,7 @@ export function TimerBar({
   // Calculate remaining time in seconds
   const remainingTicks = Math.max(0, targetTick - currentTick);
   const remainingSeconds = (remainingTicks * tickInterval) / 1000;
+  const formattedTime = formatTime(remainingSeconds);
 
   // Determine urgency state for styling
   const isCritical = remainingSeconds <= TimeThreshold.CRITICAL_SECONDS;
@@ -48,23 +50,25 @@ export function TimerBar({
         <span className="text-[10px] uppercase tracking-wider text-game-text-dim">
           {label}
         </span>
-        <span
+        <AnimatedNumber
+          value={formattedTime}
+          data-motion-emphasis={
+            isCritical ? "critical" : isWarning ? "warning" : "normal"
+          }
           className={cn(
-            "text-sm font-medium tabular-nums transition-colors",
+            "text-sm font-medium tabular-nums transition-[color,transform] duration-(--motion-duration-fast) ease-(--motion-ease-emphasis)",
             isCritical
               ? "text-timer-critical"
               : isWarning
                 ? "text-timer-warning"
                 : "text-timer-normal",
           )}
-        >
-          {formatTime(remainingSeconds)}
-        </span>
+        />
       </div>
       <Progress
         value={Math.min(100, progressPercentage)}
         className={cn(
-          "h-1.5 border border-game-border bg-game-bg transition-all",
+          "h-1.5 border border-game-border bg-game-bg transition-[border-color,background-color] duration-(--motion-duration-fast) ease-(--motion-ease-enter)",
           isCritical
             ? "[&>div]:bg-timer-critical"
             : isWarning

@@ -30,8 +30,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }
       toastOptions={{
         classNames: {
-          toast:
-            "group/toast border-game-border/80 bg-game-surface font-sans text-game-text shadow-xl shadow-black/30",
           warning: "border-warning/70",
           success: "border-success/70",
           error: "border-error/70",
@@ -42,7 +40,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "font-sans text-xs leading-5 tracking-normal text-game-text-dim",
           icon: "text-warning",
           closeButton:
-            "rounded-none border-game-border bg-game-surface font-sans text-game-text-dim transition hover:text-game-text",
+            "rounded-none border-game-border bg-game-surface font-sans text-game-text-dim transition-colors duration-(--motion-duration-fast) hover:text-game-text",
+          toast:
+            "group/toast border-game-border/80 bg-game-surface font-sans text-game-text shadow-xl shadow-black/30 transition-transform duration-(--motion-duration-fast) ease-(--motion-ease-enter)",
         },
       }}
       {...props}

@@ -3,7 +3,8 @@ import { extend } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import { useCallback } from "react";
 
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
+import { getBoardPulse } from "#/features/game/renderer/board-motion";
+import { RenderConfig } from "#/features/game/renderer/render-config";
 import type { RenderGrid } from "#/features/game/renderer/render-grid";
 import type { MoveIntent } from "#/features/game/utils/move";
 import type { ArrowTrigonometry } from "#/features/game/utils/move-queue-geometry";
@@ -11,6 +12,7 @@ import {
   DIRECTION_TRIGONOMETRY,
   getArrowAnchor,
 } from "#/features/game/utils/move-queue-geometry";
+import { useMotionPreference } from "#/features/motion/motion-provider";
 
 extend({ Graphics });
 
@@ -67,12 +69,17 @@ function drawArrow(
   g: Graphics,
   points: { x: number; y: number }[],
   strokeWidth: number,
+  alpha = 1,
 ) {
-  const shape = g.poly(points).fill(RenderConfig.arrowColor);
+  const shape = g.poly(points).fill({
+    color: RenderConfig.arrowColor,
+    alpha,
+  });
   if (strokeWidth > 0) {
     shape.stroke({
       width: strokeWidth,
       color: RenderConfig.arrowStrokeColor,
+      alpha,
       join: "round",
     });
   }
@@ -123,6 +130,8 @@ interface MoveQueueLayerProps {
 }
 
 export function MoveQueueLayer({ grid, moveQueue }: MoveQueueLayerProps) {
+  const { shouldReduceMotion } = useMotionPreference();
+
   // Only redraw when move queue changes
   const drawMoveQueue = useCallback(
     (g: Graphics) => {
@@ -132,10 +141,14 @@ export function MoveQueueLayer({ grid, moveQueue }: MoveQueueLayerProps) {
       const points = createArrowPoints();
 
       // Draw move queue arrows
-      moveQueue.forEach((move) => {
+      moveQueue.forEach((move, index) => {
         // Keep the whole arrow inside the departure cell for stronger contrast.
         const { anchorX, anchorY } = getArrowAnchor(grid, move);
         const trigonometry = DIRECTION_TRIGONOMETRY[move.direction];
+        const pulse = getBoardPulse({
+          ageMs: index * 80,
+          reducedMotion: shouldReduceMotion,
+        });
 
         if (move.type === ActionType.SPLIT_MOVE) {
           drawSplitArrow(g, points, anchorX, anchorY, trigonometry);
@@ -145,11 +158,12 @@ export function MoveQueueLayer({ grid, moveQueue }: MoveQueueLayerProps) {
         drawArrow(
           g,
           transformArrowPoints(points, anchorX, anchorY, trigonometry),
-          RenderConfig.arrowStrokeWidth,
+          RenderConfig.arrowStrokeWidth * pulse.scale,
+          pulse.alpha,
         );
       });
     },
-    [grid, moveQueue],
+    [grid, moveQueue, shouldReduceMotion],
   );
 
   return <pixiGraphics draw={drawMoveQueue} />;

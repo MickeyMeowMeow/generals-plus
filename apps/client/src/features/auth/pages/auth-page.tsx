@@ -9,6 +9,10 @@ import type {
 } from "#/features/auth/components/auth-form";
 import { AuthForm, AuthFormMode } from "#/features/auth/components/auth-form";
 import { useAuth } from "#/features/auth/hooks";
+import {
+  MotionStaggerGroup,
+  MotionStaggerItem,
+} from "#/features/motion/components/motion-stagger";
 
 /**
  * Root-route unauthenticated scene.
@@ -32,9 +36,11 @@ export function AuthPage() {
 
   return (
     <StageCenter>
-      <div className="mx-auto grid max-w-4xl gap-7">
-        <BrandTitle />
-        <div className="mx-auto w-full max-w-md">
+      <MotionStaggerGroup className="mx-auto grid max-w-4xl gap-7">
+        <MotionStaggerItem>
+          <BrandTitle />
+        </MotionStaggerItem>
+        <MotionStaggerItem className="mx-auto w-full max-w-md">
           <AuthForm
             mode={mode}
             onModeChange={(nextMode) => {
@@ -54,8 +60,8 @@ export function AuthPage() {
               await actions.signInAnonymously(displayName);
             }}
           />
-        </div>
-      </div>
+        </MotionStaggerItem>
+      </MotionStaggerGroup>
     </StageCenter>
   );
 }

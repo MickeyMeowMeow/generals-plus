@@ -408,13 +408,16 @@ describe("client room flows", () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByText("00:00")).toBeTruthy();
+    expect(screen.getByLabelText("00:00")).toBeTruthy();
+    expect(
+      screen.getByLabelText("00:00").closest("[data-animated-number='true']"),
+    ).toBeTruthy();
 
     await act(async () => {
       vi.advanceTimersByTime(3_000);
     });
 
-    expect(screen.getByText("00:03")).toBeTruthy();
+    expect(screen.getByLabelText("00:03")).toBeTruthy();
   });
 
   it("keeps queue time running across queue-state updates", async () => {
@@ -446,6 +449,8 @@ describe("client room flows", () => {
       vi.advanceTimersByTime(2_000);
     });
 
+    expect(screen.getByLabelText("00:02")).toBeTruthy();
+
     act(() => {
       queueRoom.emitState(
         createState({
@@ -465,11 +470,13 @@ describe("client room flows", () => {
       );
     });
 
+    expect(screen.getByLabelText("00:02")).toBeTruthy();
+
     await act(async () => {
       vi.advanceTimersByTime(1_000);
     });
 
-    expect(screen.getByText("00:03")).toBeTruthy();
+    expect(screen.getByLabelText("00:03")).toBeTruthy();
   });
 
   it("leaves the official queue when the queue room disconnects", async () => {

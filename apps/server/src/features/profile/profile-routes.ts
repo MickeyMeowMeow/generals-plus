@@ -2,6 +2,7 @@ import { JWT } from "@colyseus/auth";
 import type {
   AvatarPreference,
   BackgroundPresetId,
+  MotionMode,
   StageAppearancePreference,
   UserPreferences,
 } from "@generals-plus/shared-types";
@@ -20,9 +21,12 @@ const CUSTOM_URL_BACKGROUND_FIELDS = new Set(["source", "customUrl"]);
 const DEFAULT_AVATAR_FIELDS = new Set(["source"]);
 const CUSTOM_URL_AVATAR_FIELDS = new Set(["source", "customUrl"]);
 const STAGE_APPEARANCE_FIELDS = new Set(["backdropBlur", "backdropOpacity"]);
+const MOTION_FIELDS = new Set(["mode"]);
+const VALID_MOTION_MODES = new Set<MotionMode>(["system", "full", "reduced"]);
 const ALLOWED_PREFERENCE_FIELDS = new Set([
   "backgroundImage",
   "avatar",
+  "motion",
   "stageAppearance",
 ]);
 
@@ -129,6 +133,9 @@ function normalizePreferences(
   const avatar = normalizeAvatar(value.avatar);
   if (!avatar.ok) return avatar;
 
+  const motion = normalizeMotion(value.motion);
+  if (!motion.ok) return motion;
+
   const stageAppearance = normalizeStageAppearance(value.stageAppearance);
   if (!stageAppearance.ok) return stageAppearance;
 
@@ -137,6 +144,7 @@ function normalizePreferences(
     preferences: {
       backgroundImage: backgroundImage.backgroundImage,
       avatar: avatar.avatar,
+      motion: motion.motion,
       stageAppearance: stageAppearance.stageAppearance,
     },
   };
@@ -258,6 +266,38 @@ function normalizeAvatar(
   }
 
   return { ok: false, error: "Avatar source is invalid." };
+}
+
+/** Validates motion preference fields. */
+function normalizeMotion(
+  value: unknown,
+):
+  | { ok: true; motion: UserPreferences["motion"] }
+  | { ok: false; error: string } {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Motion preference must be an object." };
+  }
+
+  const unknownField = findUnknownField(value, MOTION_FIELDS);
+  if (unknownField) {
+    return {
+      ok: false,
+      error: `Unknown motion field: ${unknownField}`,
+    };
+  }
+
+  if (typeof value.mode !== "string") {
+    return { ok: false, error: "Motion mode must be a string." };
+  }
+
+  if (!VALID_MOTION_MODES.has(value.mode as MotionMode)) {
+    return {
+      ok: false,
+      error: `Motion mode must be one of: ${[...VALID_MOTION_MODES].join(", ")}.`,
+    };
+  }
+
+  return { ok: true, motion: { mode: value.mode as MotionMode } };
 }
 
 /** Validates stage appearance preference fields. */

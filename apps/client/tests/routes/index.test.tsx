@@ -63,6 +63,23 @@ describe("index route", () => {
     ).toBeTruthy();
   });
 
+  it("renders the lobby start flow inside motion scene wrappers", () => {
+    renderRoute(
+      "/",
+      createMockAuth({
+        status: AuthStatus.AUTHENTICATED,
+        user: { id: "nova", displayName: "Nova" },
+        token: "tok",
+      }),
+    );
+
+    expect(
+      screen
+        .getByRole("button", { name: /start/i })
+        .closest("[data-motion-stagger-group]"),
+    ).toBeTruthy();
+  });
+
   it("shows a profile entry beside sign out", () => {
     renderRoute(
       "/",

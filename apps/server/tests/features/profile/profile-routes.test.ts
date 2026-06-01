@@ -90,6 +90,7 @@ describe("registerProfileRoutes", () => {
           preferences: {
             backgroundImage: { source: "preset", presetId: "touhou" },
             avatar: { source: "default" },
+            motion: { mode: "system" },
             stageAppearance: { backdropBlur: true, backdropOpacity: 42 },
           },
         },
@@ -103,6 +104,7 @@ describe("registerProfileRoutes", () => {
       preferences: {
         backgroundImage: { source: "preset", presetId: "touhou" },
         avatar: { source: "default" },
+        motion: { mode: "system" },
         stageAppearance: { backdropBlur: true, backdropOpacity: 42 },
       },
     });
