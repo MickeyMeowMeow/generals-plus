@@ -152,7 +152,10 @@ export function FloatingHud({
  */
 export function LoadingPanel({ message }: { message: string }) {
   return (
-    <StagePanel className="mx-auto max-w-sm text-center">
+    <StagePanel
+      className="mx-auto max-w-sm text-center"
+      data-motion-surface="loading-panel"
+    >
       <Loader2 className="mx-auto mb-3 size-5 animate-spin text-game-accent" />
       <p className="text-sm text-game-text-dim">{message}</p>
     </StagePanel>
@@ -178,7 +181,7 @@ export function ErrorPanel({
   action?: ReactNode;
 }) {
   return (
-    <StagePanel className="mx-auto max-w-md">
+    <StagePanel className="mx-auto max-w-md" data-motion-surface="error-panel">
       <div className="flex gap-3">
         <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
         <div>
