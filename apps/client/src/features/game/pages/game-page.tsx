@@ -228,10 +228,10 @@ export function GamePage({ connection, source }: GamePageProps) {
   );
 
   const handleToggleStickySplitMove = useCallback(() => {
-    if (!isActiveSplitMove) {
+    if (!isActiveSplitMove && !activePingTool) {
       setIsStickySplitMove((prev) => !prev);
     }
-  }, [isActiveSplitMove]);
+  }, [isActiveSplitMove, activePingTool]);
 
   const handleQueueMove = useCallback(
     (direction: MoveDirection) => {
