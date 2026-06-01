@@ -4,14 +4,14 @@ import { Graphics } from "pixi.js";
 import { useCallback } from "react";
 
 import { getBoardPulse } from "#/features/game/renderer/board-motion";
-import type { ArrowTrigonometry } from "#/features/game/renderer/layers/move-queue-geometry";
+import { RenderConfig } from "#/features/game/renderer/render-config";
+import type { RenderGrid } from "#/features/game/renderer/render-grid";
+import type { MoveIntent } from "#/features/game/utils/move";
+import type { ArrowTrigonometry } from "#/features/game/utils/move-queue-geometry";
 import {
   DIRECTION_TRIGONOMETRY,
   getArrowAnchor,
-} from "#/features/game/renderer/layers/move-queue-geometry";
-import { RenderConfig } from "#/features/game/renderer/render-config.ts";
-import type { RenderGrid } from "#/features/game/renderer/render-grid";
-import type { MoveIntent } from "#/features/game/utils/move";
+} from "#/features/game/utils/move-queue-geometry";
 import { useMotionPreference } from "#/features/motion/motion-provider";
 
 extend({ Graphics });

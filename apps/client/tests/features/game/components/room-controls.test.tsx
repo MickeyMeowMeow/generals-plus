@@ -3,8 +3,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { MotionProvider } from "#/features/motion/motion-provider";
+import { RoomPlayerList } from "#/features/staging/components/room-controls";
 
 const players = [
   {

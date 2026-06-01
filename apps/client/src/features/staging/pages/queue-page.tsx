@@ -6,10 +6,6 @@ import { ErrorPanel, LoadingPanel, StageCenter } from "#/components/layout";
 import { Button } from "#/components/ui/button";
 import { GAME_MODE_OPTIONS } from "#/config/ui-constants";
 import { useUser } from "#/features/auth/hooks";
-import { useQueueRoom } from "#/features/game/api/use-queue-room";
-import { ColorPicker } from "#/features/game/components/color-picker";
-import { ModeHelpButton } from "#/features/game/components/mode-help-button";
-import { RoomPlayerList } from "#/features/game/components/room-controls";
 import { GamePage } from "#/features/game/pages/game-page";
 import { AnimatedNumber } from "#/features/motion/components/animated-number";
 import {
@@ -17,6 +13,10 @@ import {
   MotionStaggerItem,
 } from "#/features/motion/components/motion-stagger";
 import { Avatar } from "#/features/profile/components/avatar";
+import { useQueueRoom } from "#/features/staging/api/use-queue-room";
+import { ColorPicker } from "#/features/staging/components/color-picker";
+import { ModeHelpButton } from "#/features/staging/components/mode-help-button";
+import { RoomPlayerList } from "#/features/staging/components/room-controls";
 import { RoomStatus } from "#/infra/network/room";
 
 function getModeOption(mode: GameMode) {

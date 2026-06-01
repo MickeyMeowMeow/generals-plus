@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { resolveColyseusEndpoint } from "#/infra/colyseus/connection";
+import { resolveColyseusEndpoint } from "#/infra/network/connection";
 import { networkProvider } from "#/infra/network/provider";
 
 function getHttpEndpoint(): string {

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AnimatedNumber } from "#/features/motion/components/animated-number";
 import { MOTION_DURATION } from "#/features/motion/motion-tokens";
-import { cn } from "#/lib/utils";
+import { cn, colorToHex } from "#/lib/utils";
 
 interface RoomPlayer {
   id: string;
@@ -39,18 +39,12 @@ interface RoomPlayerListProps {
   onCreateTeam?: () => void;
 }
 
-/** Converts numeric player colors into CSS hex values. */
-export function colorToHex(color: number) {
-  return `#${color.toString(16).padStart(6, "0")}`;
-}
-
 /** Formats a display-only occupancy ratio with the shared digit animation. */
 function renderAnimatedCount(current: number, max: number) {
   return (
     <AnimatedNumber value={`${current} / ${max}`} className="tabular-nums" />
   );
 }
-
 /**
  * Shared flat player list for queue and setup screens.
  *
@@ -92,7 +86,7 @@ export function RoomPlayerList({
   const renderIdentityIcon = (
     player: RoomPlayer,
     isCurrent: boolean,
-    className = "ml-[-5px] size-3.5 shrink-0 text-game-text-dim",
+    className = "-ml-1.25 size-3.5 shrink-0 text-game-text-dim",
   ) => {
     if (showHost && player.isHost) {
       return <Crown className={className} strokeWidth={2.5} />;
@@ -267,7 +261,7 @@ export function RoomPlayerList({
                 className={cn(
                   "py-2",
                   dropTargetId === team.id &&
-                    "bg-white/5 outline outline-1 outline-white/20",
+                    "bg-white/5 outline outline-white/20",
                 )}
               >
                 {team.label ? (
@@ -318,7 +312,7 @@ export function RoomPlayerList({
                 className={cn(
                   "py-0",
                   dropTargetId === "create-team" &&
-                    "bg-white/5 outline outline-1 outline-white/20",
+                    "bg-white/5 outline outline-white/20",
                 )}
               >
                 <button

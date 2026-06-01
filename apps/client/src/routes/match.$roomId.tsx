@@ -5,7 +5,7 @@ import { Button } from "#/components/ui/button";
 import { AuthStatus } from "#/features/auth/auth-store";
 import { useAuth } from "#/features/auth/hooks";
 import { AuthPage } from "#/features/auth/pages/auth-page";
-import { CustomSetupRoom } from "#/features/game/pages/setup-page";
+import { CustomSetupRoom } from "#/features/staging/pages/setup-page";
 
 /**
  * Custom-room route container.

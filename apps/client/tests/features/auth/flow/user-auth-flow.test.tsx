@@ -5,8 +5,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthStatus } from "#/features/auth/auth-store";
-import { createMockAuth } from "#/tests/helpers/auth";
-import { renderRoute, setAuthValue } from "#/tests/helpers/render";
+import { createMockAuth } from "#tests/helpers/auth";
+import { renderRoute, setAuthValue } from "#tests/helpers/render";
 
 describe("user auth flow", () => {
   afterEach(() => {

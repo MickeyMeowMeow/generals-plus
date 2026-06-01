@@ -5,7 +5,7 @@ import type {
   UpdateCustomMapRequest,
 } from "@generals-plus/shared-types";
 
-import { resolveColyseusEndpoint } from "#/infra/colyseus/connection";
+import { resolveColyseusEndpoint } from "#/infra/network/connection";
 import { networkProvider } from "#/infra/network/provider";
 
 function getHttpEndpoint(): string {
