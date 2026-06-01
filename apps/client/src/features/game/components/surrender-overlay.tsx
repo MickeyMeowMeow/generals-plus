@@ -26,7 +26,7 @@ export function SurrenderOverlay({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === SurrenderKey && canSurrender) {
         e.preventDefault();
-        setIsOpen(true);
+        setIsOpen((prev) => !prev);
         return;
       }
     };
