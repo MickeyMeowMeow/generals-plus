@@ -110,10 +110,6 @@ body {
   margin: 0;
 }
 
-[data-motion="reduced"] * {
-  scroll-behavior: auto !important;
-}
-
 .game-stage {
   isolation: isolate;
   position: relative;
@@ -208,6 +204,10 @@ body {
   html {
     @apply font-sans;
   }
+}
+
+[data-motion="reduced"] * {
+  scroll-behavior: auto;
 }
 
 @theme inline {
