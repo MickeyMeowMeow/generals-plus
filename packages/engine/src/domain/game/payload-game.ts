@@ -2,7 +2,7 @@ import { ActionType } from "#/domain/action/action-type";
 import type { Action } from "#/domain/action/interfaces";
 import type { ICell } from "#/domain/cell/interfaces";
 import { Terrain } from "#/domain/cell/terrain";
-import { StandardCombatResolver } from "#/domain/combat/standard-combat-resolver";
+import { RespawningCombatResolver } from "#/domain/combat/respawning-combat-resolver";
 import { EffectType } from "#/domain/effect/effect-type";
 import { TroopModifierEffect } from "#/domain/effect/periodic/troop-modifier";
 import { BaseGame } from "#/domain/game/base-game";
@@ -27,7 +27,7 @@ export interface PayloadGameOptions {
 
 export class PayloadGame extends BaseGame implements IPayloadGame {
   readonly mode = GameMode.PAYLOAD;
-  private readonly combatResolver = new StandardCombatResolver();
+  private readonly combatResolver = new RespawningCombatResolver();
 
   readonly payloadSpeedTicks: number;
   readonly payloadCartSize: number;

@@ -245,4 +245,56 @@ describe("RugbyGame", () => {
     expect(result?.winnerTeamId).toBe("left-team");
     expect(game.status).toBe(GameStatus.FINISHED);
   });
+
+  it("respawns general instead of instant elimination when a general is captured", () => {
+    const grid = create9x5Grid();
+    const game = new RugbyGame({ grid });
+
+    const t1 = new StandardTeam("left-team");
+    const t2 = new StandardTeam("right-team");
+    const p1 = new Player(t1, "p1", PlayerStatus.ACTIVE);
+    const p2 = new Player(t2, "p2", PlayerStatus.ACTIVE);
+    game.teams.set(t1.teamId, t1);
+    game.teams.set(t2.teamId, t2);
+    game.players.set(p1.playerId, p1);
+    game.players.set(p2.playerId, p2);
+
+    getCell(grid, { x: 1, y: 2 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 1, y: 2 }).owner = p1;
+    getCell(grid, { x: 7, y: 2 }).terrain = Terrain.GENERAL;
+    getCell(grid, { x: 7, y: 2 }).owner = p2;
+
+    game.startGame();
+
+    // Make p2 own an extra plain cell
+    const p2Plain = getCell(grid, { x: 6, y: 2 });
+    p2Plain.owner = p2;
+    p2Plain.terrain = Terrain.PLAIN;
+
+    // Position p1 troops next to p2's general
+    const attackerCell = getCell(grid, { x: 8, y: 2 });
+    attackerCell.owner = p1;
+    attackerCell.troopCount = 20;
+
+    const p2Gen = getCell(grid, { x: 7, y: 2 });
+    p2Gen.troopCount = 5;
+
+    // Attacker captures p2 general
+    const success = game.handleAction({
+      playerId: "p1",
+      from: attackerCell.coordinate,
+      to: p2Gen.coordinate,
+      type: ActionType.MOVE,
+    });
+    expect(success).toBe(true);
+
+    game.nextTick();
+
+    // Captured general terrain should turn into PLAIN
+    expect(p2Gen.terrain).toBe(Terrain.PLAIN);
+    // Player p2 should still be active (respawned)
+    expect(p2.status).toBe(PlayerStatus.ACTIVE);
+    // The plain cell owned by p2 should be converted to GENERAL
+    expect(p2Plain.terrain).toBe(Terrain.GENERAL);
+  });
 });
