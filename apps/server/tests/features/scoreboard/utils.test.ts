@@ -165,6 +165,52 @@ describe("syncScoreboard", () => {
     });
   });
 
+  it("incrementally updates turf_war teams when team count stays the same", () => {
+    const target = createScoreboard(GameMode.TURF_WAR);
+
+    // First sync
+    syncScoreboard(target, {
+      mode: GameMode.TURF_WAR,
+      players: [
+        { playerId: "p1", troops: 10, land: 5, isAlive: true },
+        { playerId: "p2", troops: 3, land: 1, isAlive: true },
+      ],
+      teams: [
+        { teamId: "t1", playerIds: ["p1"], landPercent: 83 },
+        { teamId: "t2", playerIds: ["p2"], landPercent: 17 },
+      ],
+    } as ITurfWarScoreboard);
+
+    const tw = target as TurfWarScoreboard;
+    const team0Ref = tw.teams.at(0);
+    const team1Ref = tw.teams.at(1);
+
+    // Second sync: same team count → incremental path
+    syncScoreboard(target, {
+      mode: GameMode.TURF_WAR,
+      players: [
+        { playerId: "p1", troops: 20, land: 8, isAlive: true },
+        { playerId: "p2", troops: 5, land: 2, isAlive: false },
+      ],
+      teams: [
+        { teamId: "t1", playerIds: ["p1"], landPercent: 80 },
+        { teamId: "t2", playerIds: ["p2"], landPercent: 20 },
+      ],
+    } as ITurfWarScoreboard);
+
+    // Schema instances reused
+    expect(tw.teams.at(0)).toBe(team0Ref);
+    expect(tw.teams.at(1)).toBe(team1Ref);
+
+    // landPercent updated
+    expect(tw.teams.at(0)?.landPercent).toBe(80);
+    expect(tw.teams.at(1)?.landPercent).toBe(20);
+
+    // Player fields updated
+    expect(tw.players.at(0)).toMatchObject({ troops: 20, land: 8 });
+    expect(tw.players.at(1)).toMatchObject({ troops: 5, isAlive: false });
+  });
+
   it("falls back to classic sync for unknown mode", () => {
     const target = createScoreboard("unknown" as GameMode);
     const source = {
@@ -182,6 +228,96 @@ describe("syncScoreboard", () => {
       troops: 10,
       land: 5,
       isAlive: true,
+    });
+  });
+
+  describe("incremental update (same player count)", () => {
+    it("updates changed player fields in place without clear/rebuild", () => {
+      const target = createScoreboard(GameMode.CLASSIC);
+
+      // First sync: populate
+      syncScoreboard(target, {
+        mode: GameMode.CLASSIC,
+        players: [
+          { playerId: "p1", troops: 10, land: 5, isAlive: true },
+          { playerId: "p2", troops: 3, land: 1, isAlive: true },
+        ],
+      } as IClassicScoreboard);
+
+      const classic = target as ClassicScoreboard;
+      const p0Ref = classic.players.at(0);
+      const p1Ref = classic.players.at(1);
+
+      // Second sync: same count, different values → incremental path
+      syncScoreboard(target, {
+        mode: GameMode.CLASSIC,
+        players: [
+          { playerId: "p1", troops: 20, land: 8, isAlive: true },
+          { playerId: "p2", troops: 3, land: 1, isAlive: false },
+        ],
+      } as IClassicScoreboard);
+
+      // Schema instances should be reused (same reference)
+      expect(classic.players.at(0)).toBe(p0Ref);
+      expect(classic.players.at(1)).toBe(p1Ref);
+
+      // Changed fields updated
+      expect(classic.players.at(0)).toMatchObject({
+        playerId: "p1",
+        troops: 20,
+        land: 8,
+        isAlive: true,
+      });
+      expect(classic.players.at(1)).toMatchObject({
+        playerId: "p2",
+        troops: 3, // unchanged
+        land: 1, // unchanged
+        isAlive: false, // changed
+      });
+    });
+
+    it("reuses schema instances when syncing metadata that has not changed", () => {
+      const metadata: PublicPlayer[] = [
+        Object.assign(new PublicPlayer(), {
+          id: "p1",
+          teamId: "t1",
+          displayName: "Alpha",
+          color: 1,
+          status: PlayerStatus.ACTIVE,
+        }),
+      ];
+
+      const target = createScoreboard(GameMode.CLASSIC);
+      syncScoreboard(
+        target,
+        {
+          mode: GameMode.CLASSIC,
+          players: [{ playerId: "p1", troops: 5, land: 2, isAlive: true }],
+        } as IClassicScoreboard,
+        metadata,
+      );
+
+      const classic = target as ClassicScoreboard;
+      const p0Ref = classic.players.at(0);
+
+      syncScoreboard(
+        target,
+        {
+          mode: GameMode.CLASSIC,
+          players: [{ playerId: "p1", troops: 15, land: 6, isAlive: true }],
+        } as IClassicScoreboard,
+        metadata,
+      );
+
+      expect(classic.players.at(0)).toBe(p0Ref);
+      expect(classic.players.at(0)).toMatchObject({
+        playerId: "p1",
+        teamId: "t1",
+        displayName: "Alpha",
+        color: 1,
+        troops: 15,
+        land: 6,
+      });
     });
   });
 
@@ -254,6 +390,76 @@ describe("syncScoreboard", () => {
         score: 80,
       });
       expect(Array.from(dom.teams.at(1)?.playerIds ?? [])).toEqual(["p2"]);
+    });
+
+    it("incrementally updates team entries when team count stays the same", () => {
+      const target = createScoreboard(GameMode.DOMINATION);
+      const metadata = [
+        Object.assign(new PublicPlayer(), {
+          id: "p1",
+          teamId: "t1",
+          displayName: "A",
+          color: 1,
+          status: PlayerStatus.ACTIVE,
+        }),
+        Object.assign(new PublicPlayer(), {
+          id: "p2",
+          teamId: "t2",
+          displayName: "B",
+          color: 2,
+          status: PlayerStatus.ACTIVE,
+        }),
+      ];
+
+      // First sync
+      syncScoreboard(
+        target,
+        {
+          mode: GameMode.DOMINATION,
+          players: [
+            { playerId: "p1", troops: 10, land: 5, isAlive: true },
+            { playerId: "p2", troops: 3, land: 1, isAlive: true },
+          ],
+          teamScores: new Map([
+            ["t1", 100],
+            ["t2", 50],
+          ]),
+        } as IDominationScoreboard,
+        metadata,
+      );
+
+      const dom = target as DominationScoreboard;
+      const team0Ref = dom.teams.at(0);
+      const team1Ref = dom.teams.at(1);
+
+      // Second sync: same player/team count → incremental path
+      syncScoreboard(
+        target,
+        {
+          mode: GameMode.DOMINATION,
+          players: [
+            { playerId: "p1", troops: 25, land: 12, isAlive: true },
+            { playerId: "p2", troops: 3, land: 1, isAlive: false },
+          ],
+          teamScores: new Map([
+            ["t1", 200],
+            ["t2", 50],
+          ]),
+        } as IDominationScoreboard,
+        metadata,
+      );
+
+      // Schema instances reused
+      expect(dom.teams.at(0)).toBe(team0Ref);
+      expect(dom.teams.at(1)).toBe(team1Ref);
+
+      // Scores updated
+      expect(dom.teams.at(0)?.score).toBe(200);
+      expect(dom.teams.at(1)?.score).toBe(50); // unchanged
+
+      // Player fields updated
+      expect(dom.players.at(0)).toMatchObject({ troops: 25, land: 12 });
+      expect(dom.players.at(1)).toMatchObject({ isAlive: false });
     });
 
     it("replaces previous team entries on re-sync", () => {

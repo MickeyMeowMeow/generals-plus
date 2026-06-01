@@ -130,28 +130,61 @@ export class BotSession {
     const vision = state.clientVisions.get(this.sessionId);
     if (!visionGrid || !vision) return;
 
-    const cells = Array.from(visionGrid) as IVisionCell[];
-    vision.cells.clear();
-
-    for (const vc of cells) {
-      const cell = new VisionCellSchema();
-      cell.visibility = vc.visibility;
-      cell.terrain = vc.terrain;
-      cell.troopCount = vc.troopCount ?? -1;
-      cell.ownerIndex =
-        vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "";
-      cell.siteIndex = vc.siteIndex ?? -1;
-
-      if (vc.item) {
-        cell.item_id = vc.item.id;
-        cell.item_type = vc.item.type;
-      } else {
-        cell.item_id = "";
-        cell.item_type = -1;
+    // Grid size changed (first update): full rebuild
+    if (vision.cells.length !== visionGrid.totalCells) {
+      vision.cells.clear();
+      for (const vc of visionGrid) {
+        vision.cells.push(this.createVisionCell(vc));
       }
-
-      vision.cells.push(cell);
+      return;
     }
+
+    // Incremental update: reuse existing cells, only mutate changed fields.
+    // Iterate the IVisionGrid directly (no Array.from allocation).
+    let i = 0;
+    for (const vc of visionGrid) {
+      const cell = vision.cells[i];
+
+      if (cell.visibility !== vc.visibility) cell.visibility = vc.visibility;
+      if (cell.terrain !== vc.terrain) cell.terrain = vc.terrain;
+
+      const troopCount = vc.troopCount ?? -1;
+      if (cell.troopCount !== troopCount) cell.troopCount = troopCount;
+
+      const ownerIndex =
+        vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "";
+      if (cell.ownerIndex !== ownerIndex) cell.ownerIndex = ownerIndex;
+
+      const siteIndex = vc.siteIndex ?? -1;
+      if (cell.siteIndex !== siteIndex) cell.siteIndex = siteIndex;
+
+      const itemId = vc.item?.id ?? "";
+      const itemType = vc.item?.type ?? -1;
+      if (cell.item_id !== itemId) cell.item_id = itemId;
+      if (cell.item_type !== itemType) cell.item_type = itemType;
+
+      i++;
+    }
+  }
+
+  private createVisionCell(vc: IVisionCell): VisionCellSchema {
+    const cell = new VisionCellSchema();
+    cell.visibility = vc.visibility;
+    cell.terrain = vc.terrain;
+    cell.troopCount = vc.troopCount ?? -1;
+    cell.ownerIndex =
+      vc.owner?.status === PlayerStatus.ACTIVE ? vc.owner.playerId : "";
+    cell.siteIndex = vc.siteIndex ?? -1;
+
+    if (vc.item) {
+      cell.item_id = vc.item.id;
+      cell.item_type = vc.item.type;
+    } else {
+      cell.item_id = "";
+      cell.item_type = -1;
+    }
+
+    return cell;
   }
 
   end(): void {

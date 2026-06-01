@@ -93,9 +93,9 @@ export function syncScoreboard(
         metadataByPlayer,
         () => new CollapseScoreboardPlayerEntry(),
         (schema, entry) => {
-          schema.troops = entry.troops;
-          schema.land = entry.land;
-          schema.isAlive = entry.isAlive;
+          if (schema.troops !== entry.troops) schema.troops = entry.troops;
+          if (schema.land !== entry.land) schema.land = entry.land;
+          if (schema.isAlive !== entry.isAlive) schema.isAlive = entry.isAlive;
         },
       );
       collapseTarget.nextCollapseTick = collapseSource.nextCollapseTick;
@@ -113,9 +113,9 @@ export function syncScoreboard(
         metadataByPlayer,
         () => new PayloadScoreboardPlayerEntry(),
         (schema, entry) => {
-          schema.troops = entry.troops;
-          schema.land = entry.land;
-          schema.isAlive = entry.isAlive;
+          if (schema.troops !== entry.troops) schema.troops = entry.troops;
+          if (schema.land !== entry.land) schema.land = entry.land;
+          if (schema.isAlive !== entry.isAlive) schema.isAlive = entry.isAlive;
         },
       );
       const interval = tickInterval ?? 500;
@@ -142,9 +142,9 @@ export function syncScoreboard(
         metadataByPlayer,
         () => new ClassicScoreboardPlayerEntry(),
         (schema, entry) => {
-          schema.troops = entry.troops;
-          schema.land = entry.land;
-          schema.isAlive = entry.isAlive;
+          if (schema.troops !== entry.troops) schema.troops = entry.troops;
+          if (schema.land !== entry.land) schema.land = entry.land;
+          if (schema.isAlive !== entry.isAlive) schema.isAlive = entry.isAlive;
         },
       );
       break;
@@ -158,18 +158,30 @@ export function syncScoreboard(
         metadataByPlayer,
         () => new TurfWarScoreboardPlayerEntry(),
         (schema, entry) => {
-          schema.troops = entry.troops;
-          schema.land = entry.land;
-          schema.isAlive = entry.isAlive;
+          if (schema.troops !== entry.troops) schema.troops = entry.troops;
+          if (schema.land !== entry.land) schema.land = entry.land;
+          if (schema.isAlive !== entry.isAlive) schema.isAlive = entry.isAlive;
         },
       );
-      turfTarget.teams.clear();
-      for (const entry of turfSource.teams) {
-        const schema = new TurfWarScoreboardTeamEntry();
-        schema.teamId = entry.teamId;
-        schema.landPercent = entry.landPercent;
-        schema.playerIds.push(...entry.playerIds);
-        turfTarget.teams.push(schema);
+      // Incremental team sync
+      if (turfTarget.teams.length !== turfSource.teams.length) {
+        turfTarget.teams.clear();
+        for (const entry of turfSource.teams) {
+          const schema = new TurfWarScoreboardTeamEntry();
+          schema.teamId = entry.teamId;
+          schema.landPercent = entry.landPercent;
+          schema.playerIds.push(...entry.playerIds);
+          turfTarget.teams.push(schema);
+        }
+      } else {
+        for (let i = 0; i < turfSource.teams.length; i++) {
+          const entry = turfSource.teams[i];
+          const schema = turfTarget.teams[i];
+          if (schema.teamId !== entry.teamId) schema.teamId = entry.teamId;
+          if (schema.landPercent !== entry.landPercent)
+            schema.landPercent = entry.landPercent;
+          syncStringArray(schema.playerIds, entry.playerIds);
+        }
       }
       break;
     }
@@ -182,32 +194,43 @@ export function syncScoreboard(
         metadataByPlayer,
         () => new DominationScoreboardPlayerEntry(),
         (schema, entry) => {
-          schema.troops = entry.troops;
-          schema.land = entry.land;
-          schema.isAlive = entry.isAlive;
+          if (schema.troops !== entry.troops) schema.troops = entry.troops;
+          if (schema.land !== entry.land) schema.land = entry.land;
+          if (schema.isAlive !== entry.isAlive) schema.isAlive = entry.isAlive;
         },
       );
-      domTarget.teams.clear();
-      const teamPlayers = new Map<string, string[]>();
-      for (const entry of domSource.players) {
-        const meta = metadataByPlayer.get(entry.playerId);
-        const teamId = meta?.teamId ?? "";
-        let ids = teamPlayers.get(teamId);
-        if (!ids) {
-          ids = [];
-          teamPlayers.set(teamId, ids);
+      {
+        const teamPlayers = new Map<string, string[]>();
+        for (const entry of domSource.players) {
+          const meta = metadataByPlayer.get(entry.playerId);
+          const teamId = meta?.teamId ?? "";
+          let ids = teamPlayers.get(teamId);
+          if (!ids) {
+            ids = [];
+            teamPlayers.set(teamId, ids);
+          }
+          ids.push(entry.playerId);
         }
-        ids.push(entry.playerId);
-      }
-      for (const [teamId, score] of domSource.teamScores.entries()) {
-        const schema = new DominationScoreboardTeamEntry();
-        schema.teamId = teamId;
-        schema.score = score;
-        const ids = teamPlayers.get(teamId);
-        if (ids) {
-          schema.playerIds.push(...ids);
+        const teamEntries = Array.from(domSource.teamScores.entries());
+        if (domTarget.teams.length !== teamEntries.length) {
+          domTarget.teams.clear();
+          for (const [teamId, score] of teamEntries) {
+            const schema = new DominationScoreboardTeamEntry();
+            schema.teamId = teamId;
+            schema.score = score;
+            const ids = teamPlayers.get(teamId);
+            if (ids) schema.playerIds.push(...ids);
+            domTarget.teams.push(schema);
+          }
+        } else {
+          for (let i = 0; i < teamEntries.length; i++) {
+            const [teamId, score] = teamEntries[i];
+            const schema = domTarget.teams[i];
+            if (schema.teamId !== teamId) schema.teamId = teamId;
+            if (schema.score !== score) schema.score = score;
+            syncStringArray(schema.playerIds, teamPlayers.get(teamId) ?? []);
+          }
         }
-        domTarget.teams.push(schema);
       }
       break;
     }
@@ -220,43 +243,73 @@ export function syncScoreboard(
         metadataByPlayer,
         () => new DemolitionScoreboardPlayerEntry(),
         (schema, entry) => {
-          schema.troops = entry.troops;
-          schema.land = entry.land;
-          schema.isAlive = entry.isAlive;
+          if (schema.troops !== entry.troops) schema.troops = entry.troops;
+          if (schema.land !== entry.land) schema.land = entry.land;
+          if (schema.isAlive !== entry.isAlive) schema.isAlive = entry.isAlive;
         },
       );
-      demoTarget.teams.clear();
-      const teamPlayers = new Map<string, string[]>();
-      for (const entry of demoSource.players) {
-        const meta = metadataByPlayer.get(entry.playerId);
-        const teamId = meta?.teamId ?? "";
-        let ids = teamPlayers.get(teamId);
-        if (!ids) {
-          ids = [];
-          teamPlayers.set(teamId, ids);
+      {
+        const teamPlayers = new Map<string, string[]>();
+        for (const entry of demoSource.players) {
+          const meta = metadataByPlayer.get(entry.playerId);
+          const teamId = meta?.teamId ?? "";
+          let ids = teamPlayers.get(teamId);
+          if (!ids) {
+            ids = [];
+            teamPlayers.set(teamId, ids);
+          }
+          ids.push(entry.playerId);
         }
-        ids.push(entry.playerId);
-      }
-      for (const teamId of teamPlayers.keys()) {
-        const schema = new DemolitionScoreboardTeamEntry();
-        schema.teamId = teamId;
-        const ids = teamPlayers.get(teamId);
-        if (ids) {
-          schema.playerIds.push(...ids);
+        const teamIds = Array.from(teamPlayers.keys());
+        if (demoTarget.teams.length !== teamIds.length) {
+          demoTarget.teams.clear();
+          for (const teamId of teamIds) {
+            const schema = new DemolitionScoreboardTeamEntry();
+            schema.teamId = teamId;
+            const ids = teamPlayers.get(teamId);
+            if (ids) schema.playerIds.push(...ids);
+            demoTarget.teams.push(schema);
+          }
+        } else {
+          for (let i = 0; i < teamIds.length; i++) {
+            const teamId = teamIds[i];
+            const schema = demoTarget.teams[i];
+            if (schema.teamId !== teamId) schema.teamId = teamId;
+            syncStringArray(schema.playerIds, teamPlayers.get(teamId) ?? []);
+          }
         }
-        demoTarget.teams.push(schema);
       }
-      demoTarget.bombSiteCount = demoSource.bombSiteCount;
-      demoTarget.plantedAtSite = demoSource.plantedAtSite ?? "";
-      demoTarget.detonationTick = demoSource.detonationTick ?? -1;
-      demoTarget.plantProgressTicks = demoSource.plantProgressTicks;
-      demoTarget.defuseProgressTicks = demoSource.defuseProgressTicks;
-      demoTarget.defuserId = demoSource.defuserId ?? "";
-      demoTarget.isPlanted = demoSource.isPlanted;
-      demoTarget.isDefused = demoSource.isDefused;
-      demoTarget.plantDurationTicks = demoSource.plantDurationTicks;
-      demoTarget.defuseDurationTicks = demoSource.defuseDurationTicks;
-      demoTarget.detonateDurationTicks = demoSource.detonateDurationTicks;
+      if (demoTarget.bombSiteCount !== demoSource.bombSiteCount)
+        demoTarget.bombSiteCount = demoSource.bombSiteCount;
+      {
+        const plantedAtSite = demoSource.plantedAtSite ?? "";
+        if (demoTarget.plantedAtSite !== plantedAtSite)
+          demoTarget.plantedAtSite = plantedAtSite;
+      }
+      {
+        const detonationTick = demoSource.detonationTick ?? -1;
+        if (demoTarget.detonationTick !== detonationTick)
+          demoTarget.detonationTick = detonationTick;
+      }
+      if (demoTarget.plantProgressTicks !== demoSource.plantProgressTicks)
+        demoTarget.plantProgressTicks = demoSource.plantProgressTicks;
+      if (demoTarget.defuseProgressTicks !== demoSource.defuseProgressTicks)
+        demoTarget.defuseProgressTicks = demoSource.defuseProgressTicks;
+      {
+        const defuserId = demoSource.defuserId ?? "";
+        if (demoTarget.defuserId !== defuserId)
+          demoTarget.defuserId = defuserId;
+      }
+      if (demoTarget.isPlanted !== demoSource.isPlanted)
+        demoTarget.isPlanted = demoSource.isPlanted;
+      if (demoTarget.isDefused !== demoSource.isDefused)
+        demoTarget.isDefused = demoSource.isDefused;
+      if (demoTarget.plantDurationTicks !== demoSource.plantDurationTicks)
+        demoTarget.plantDurationTicks = demoSource.plantDurationTicks;
+      if (demoTarget.defuseDurationTicks !== demoSource.defuseDurationTicks)
+        demoTarget.defuseDurationTicks = demoSource.defuseDurationTicks;
+      if (demoTarget.detonateDurationTicks !== demoSource.detonateDurationTicks)
+        demoTarget.detonateDurationTicks = demoSource.detonateDurationTicks;
       break;
     }
     default:
@@ -266,9 +319,9 @@ export function syncScoreboard(
         metadataByPlayer,
         () => new ClassicScoreboardPlayerEntry(),
         (schema, entry) => {
-          schema.troops = entry.troops;
-          schema.land = entry.land;
-          schema.isAlive = entry.isAlive;
+          if (schema.troops !== entry.troops) schema.troops = entry.troops;
+          if (schema.land !== entry.land) schema.land = entry.land;
+          if (schema.isAlive !== entry.isAlive) schema.isAlive = entry.isAlive;
         },
       );
       break;
@@ -279,21 +332,73 @@ function syncPlayers<
   T extends BaseScoreboardPlayerEntry,
   E extends { readonly playerId: string },
 >(
-  target: { players: { clear(): void; push(item: T): void } },
+  target: {
+    players: {
+      clear(): void;
+      push(item: T): void;
+      readonly length: number;
+      [index: number]: T;
+    };
+  },
   entries: readonly E[],
   metadataByPlayer: ReadonlyMap<string, PublicPlayer>,
   createEntry: () => T,
   configure?: (schema: T, entry: E) => void,
 ) {
-  target.players.clear();
-  for (const entry of entries) {
-    const schema = createEntry();
+  // Player count changed: full rebuild
+  if (target.players.length !== entries.length) {
+    target.players.clear();
+    for (const entry of entries) {
+      const schema = createEntry();
+      const metadata = metadataByPlayer.get(entry.playerId);
+      schema.playerId = entry.playerId;
+      schema.teamId = metadata?.teamId ?? "";
+      schema.displayName = metadata?.displayName ?? entry.playerId;
+      schema.color = metadata?.color ?? 0;
+      configure?.(schema, entry);
+      target.players.push(schema);
+    }
+    return;
+  }
+
+  // Incremental update: reuse existing entries, only mutate changed fields
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    const schema = target.players[i];
     const metadata = metadataByPlayer.get(entry.playerId);
-    schema.playerId = entry.playerId;
-    schema.teamId = metadata?.teamId ?? "";
-    schema.displayName = metadata?.displayName ?? entry.playerId;
-    schema.color = metadata?.color ?? 0;
+
+    if (schema.playerId !== entry.playerId) schema.playerId = entry.playerId;
+    const teamId = metadata?.teamId ?? "";
+    if (schema.teamId !== teamId) schema.teamId = teamId;
+    const displayName = metadata?.displayName ?? entry.playerId;
+    if (schema.displayName !== displayName) schema.displayName = displayName;
+    const color = metadata?.color ?? 0;
+    if (schema.color !== color) schema.color = color;
     configure?.(schema, entry);
-    target.players.push(schema);
+  }
+}
+
+/**
+ * Incrementally sync a primitive ArraySchema<string> with a source array,
+ * only mutating indices whose value actually changed.
+ */
+function syncStringArray(
+  target: {
+    clear(): void;
+    push(...items: string[]): void;
+    readonly length: number;
+    [index: number]: string;
+  },
+  source: readonly string[],
+): void {
+  if (target.length !== source.length) {
+    target.clear();
+    target.push(...source);
+    return;
+  }
+  for (let i = 0; i < source.length; i++) {
+    if (target[i] !== source[i]) {
+      target[i] = source[i];
+    }
   }
 }
