@@ -7,6 +7,7 @@ import type {
 } from "#/domain/grid/grid-generator/config";
 import {
   DefaultGenOptions,
+  DefaultGridBounds,
   EDGE_MARGIN,
   GENERAL_SAFE_RADIUS,
   MAX_ATTEMPT_COUNT,
@@ -19,7 +20,8 @@ import {
   MOUNTAIN_CLUSTER_MAX_SIZE,
 } from "#/domain/grid/grid-generator/config";
 import type { ICoordinate } from "#/math/coordinate";
-import type { GenericGrid2D, GridBounds, GridType } from "#/math/grid-2d";
+import type { GenericGrid2D, GridBounds } from "#/math/grid-2d";
+import { GridType } from "#/math/grid-2d";
 import { SeededRandom } from "#/math/random";
 
 function coordToString(coord: ICoordinate): string {

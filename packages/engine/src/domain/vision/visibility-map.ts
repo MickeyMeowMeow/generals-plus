@@ -26,6 +26,7 @@ export function createVisionCell(
       owner: null,
       item: null,
       siteIndex: null,
+      zoneIndex: null,
       willCollapse: false,
     };
   }
