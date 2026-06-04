@@ -1,3 +1,4 @@
+import { isValidEmail } from "@generals-plus/shared-types";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -84,10 +85,6 @@ function toHumanReadableAuthError(error: unknown, fallback: string): string {
   }
 
   return message;
-}
-
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 /**

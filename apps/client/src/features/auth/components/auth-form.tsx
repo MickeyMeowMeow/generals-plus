@@ -1,3 +1,4 @@
+import { isValidEmail } from "@generals-plus/shared-types";
 import { Loader2, LogIn, ShieldUser, UserPlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 
@@ -37,10 +38,6 @@ interface AuthFormProps {
   onSignIn: (values: SignInFormValues) => Promise<void>;
   onRegister: (values: RegisterFormValues) => Promise<void>;
   onGuestSignIn: (values: GuestFormValues) => Promise<void>;
-}
-
-function isValidEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 function FieldError({ message }: { message?: string }) {

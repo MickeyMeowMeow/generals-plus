@@ -1,6 +1,7 @@
 export * from "#/color-palette";
 export * from "#/custom-map";
 export * from "#/custom-room";
+export * from "#/email-validation";
 export * from "#/messages";
 export * from "#/player-ratings";
 export * from "#/room-data";

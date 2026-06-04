@@ -6,6 +6,7 @@ import type {
 import {
   BACKGROUND_PRESETS,
   DEFAULT_USER_PREFERENCES,
+  isValidEmail,
 } from "@generals-plus/shared-types";
 import type { Document } from "mongoose";
 import mongoose, { Schema } from "mongoose";
@@ -168,7 +169,16 @@ const MotionPreferenceSchema = new Schema<MotionPreferenceDocument>(
 
 const UserSchema = new Schema<IUserDocument>(
   {
-    email: { type: String, unique: true, sparse: true, trim: true },
+    email: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      validate: {
+        validator: (value: string) => isValidEmail(value),
+        message: "Invalid email address.",
+      },
+    },
     isAdmin: { type: Boolean, default: false },
     password: { type: String },
     displayName: { type: String, trim: true },
