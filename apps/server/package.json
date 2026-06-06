@@ -25,6 +25,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^8.5.0",
     "@colyseus/auth": "^0.17.9",
     "@colyseus/core": "^0.17.42",
     "@colyseus/monitor": "^0.17.8",
@@ -46,8 +47,12 @@
     "@colyseus/tools": "~0.17.19",
     "@generals-plus/typescript-config": "workspace:*",
     "@generals-plus/vitest-config": "workspace:*",
+    "@scalar/express-api-reference": "^0.9.20",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/js-yaml": "^4.0.9",
+    "js-yaml": "^4.2.0",
+    "oas-overlay": "npm:openapi-overlays-js@^0.2.0",
     "tsdown": "^0.21.10",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
