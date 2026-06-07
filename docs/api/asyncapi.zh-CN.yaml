@@ -1,20 +1,20 @@
 channels:
   match:
-    description: 游戏对战房间。仅通过 seat reservation 加入。
-    publishSummary: match 房间客户端消息
-    subscribeSummary: match 房间服务端消息
+    description: 游戏对战房间。仅通过座位预约信息加入。
+    publishSummary: match 房间客户端上行消息
+    subscribeSummary: match 房间服务端下行消息
   queue:
     description: 官方匹配队列房间。按游戏模式进行排队。
-    publishSummary: queue 房间客户端消息
-    subscribeSummary: queue 房间服务端消息
+    publishSummary: queue 房间客户端上行消息
+    subscribeSummary: queue 房间服务端下行消息
   setup:
     description: 赛前配置大厅。房主管理设置并启动游戏。
-    publishSummary: setup 房间客户端消息
-    subscribeSummary: setup 房间服务端消息
+    publishSummary: setup 房间客户端上行消息
+    subscribeSummary: setup 房间服务端下行消息
   vs-ai:
-    description: 即时 1v1 人机对战房间。加入后立即创建比赛并发送 seat reservation。
-    publishSummary: vs-ai 房间客户端消息
-    subscribeSummary: vs-ai 房间服务端消息
+    description: 即时 1v1 人机对战房间。加入后会立即创建比赛并下发座位预约信息。
+    publishSummary: vs-ai 房间客户端上行消息
+    subscribeSummary: vs-ai 房间服务端下行消息
 messages:
   match_action:
     title: 提交游戏操作

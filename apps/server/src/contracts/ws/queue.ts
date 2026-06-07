@@ -8,27 +8,25 @@ import {
 
 export const queueWsContracts = {
   channel: "queue",
-  description: "Official matchmaking queue for ranked and public game modes.",
-  joinOptions: QueueJoinOptionsSchema.describe(
-    "Client-supplied queue join options",
-  ),
+  description: "官方匹配队列房间，用于排位和公开游戏模式。",
+  joinOptions: QueueJoinOptionsSchema.describe("客户端提供的排队选项"),
   clientToServer: {
     confirm: {
-      summary: "Confirm seat reservation to proceed to the match room",
-      payload: z.object({}).describe("No payload"),
+      summary: "确认座位预约并进入对战房间",
+      payload: z.object({}).describe("无请求体"),
     },
     pickColor: {
-      summary: "Pick a palette color while in queue",
+      summary: "在排队过程中选择颜色",
       payload: PickColorSchema,
     },
   },
   serverToClient: {
     error: {
-      summary: "Queue error message",
-      payload: z.string().describe("Human-readable error message"),
+      summary: "队列错误消息",
+      payload: z.string().describe("面向用户展示的错误消息"),
     },
     seat: {
-      summary: "Match found and seat reservation issued",
+      summary: "已匹配成功并下发座位预约信息",
       payload: SeatReservationSchema,
     },
   },

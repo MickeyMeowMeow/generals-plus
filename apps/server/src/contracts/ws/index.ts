@@ -70,7 +70,7 @@ export function generateAsyncApiSpec(): Record<string, unknown> {
       description: contract.description,
       publish: publishKeys.length
         ? {
-            summary: `Client messages for ${contract.channel}`,
+            summary: `${contract.channel} 房间中客户端发送给服务端的消息`,
             message:
               publishKeys.length === 1
                 ? {
@@ -85,7 +85,7 @@ export function generateAsyncApiSpec(): Record<string, unknown> {
         : undefined,
       subscribe: subscribeKeys.length
         ? {
-            summary: `Server messages for ${contract.channel}`,
+            summary: `${contract.channel} 房间中服务端发送给客户端的消息`,
             message:
               subscribeKeys.length === 1
                 ? {
@@ -112,16 +112,15 @@ export function generateAsyncApiSpec(): Record<string, unknown> {
   return {
     asyncapi: "2.6.0",
     info: {
-      title: "Generals Plus WebSocket API",
+      title: "Generals Plus 实时接口文档",
       version: "1.0.0",
-      description:
-        "WebSocket message contracts for Generals Plus game rooms (Colyseus)",
+      description: "Generals Plus 游戏房间的 Colyseus 实时消息契约文档",
     },
     servers: {
       development: {
         url: "ws://localhost:2567",
         protocol: "colyseus",
-        description: "Local development server",
+        description: "本地开发服务器",
       },
     },
     channels,
