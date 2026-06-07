@@ -4,6 +4,8 @@
  */
 import "dotenv/config";
 
+import * as path from "node:path";
+
 import { JWT } from "@colyseus/auth";
 import { defineRoom, LobbyRoom, logger } from "@colyseus/core";
 import { monitor } from "@colyseus/monitor";
@@ -12,6 +14,7 @@ import { defineServer, matchMaker } from "colyseus";
 import express from "express";
 import mongoose from "mongoose";
 
+import { mountApiDocsPreview } from "#/contracts/scalar-preview";
 import { ENV } from "#/env";
 import { auth } from "#/features/auth/auth-config";
 import { registerMapRoutes } from "#/features/maps/map-routes";
@@ -227,6 +230,15 @@ export default defineServer({
     registerMapRoutes(app);
 
     registerSystemRoutes(app);
+
+    try {
+      mountApiDocsPreview(app, [
+        path.resolve(process.cwd(), "../../docs/api/dist"),
+        path.resolve(process.cwd(), "docs/api/dist"),
+      ]);
+    } catch {
+      // API docs not generated yet, so skip mounting the preview UI.
+    }
 
     // Health check endpoint
     app.get("/health", (_req, res) => {
