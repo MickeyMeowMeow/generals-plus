@@ -112,10 +112,10 @@ export function generateAsyncApiSpec(): Record<string, unknown> {
   return {
     asyncapi: "2.6.0",
     info: {
-      title: "generals+ WebSocket API",
+      title: "Generals Plus WebSocket API",
       version: "1.0.0",
       description:
-        "WebSocket message contracts for generals+ game rooms (Colyseus)",
+        "WebSocket message contracts for Generals Plus game rooms (Colyseus)",
     },
     servers: {
       development: {

@@ -1,12 +1,12 @@
 overlay: 1.0.0
 info:
-  title: generals+ API 中文说明
+  title: Generals Plus API 中文说明
   version: 1.0.0
 actions:
   - target: $.info
     update:
-      title: generals+ API 中文说明
-      description: generals+ 游戏服务端的 REST API 文档。
+      title: Generals Plus API 中文说明
+      description: Generals Plus 游戏服务端的 REST API 文档。
 
   - target: $.paths['/maps'].get
     update:

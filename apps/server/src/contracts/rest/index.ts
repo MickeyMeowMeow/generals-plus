@@ -32,9 +32,9 @@ export function generateOpenApiSpec() {
   return generator.generateDocument({
     openapi: "3.0.0",
     info: {
-      title: "generals+ API",
+      title: "General Plus API",
       version: "1.0.0",
-      description: "API documentation for the generals+ game server",
+      description: "API documentation for the Generals Plus game server",
     },
     servers: [
       { url: "http://localhost:2567", description: "Local development server" },
