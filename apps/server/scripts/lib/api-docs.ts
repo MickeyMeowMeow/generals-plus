@@ -18,6 +18,15 @@ const PROJECT_DIR = path.dirname(APPS_DIR);
 export const DOCS_DIR = path.join(PROJECT_DIR, "docs/api");
 export const DIST_DIR = path.join(DOCS_DIR, "dist");
 export const OFFLINE_DIR = path.join(DOCS_DIR, "offline");
+export const FERN_DIR = path.join(PROJECT_DIR, "fern");
+export const FERN_APIS_DIR = path.join(FERN_DIR, "apis");
+export const FERN_REST_API_DIR = path.join(FERN_APIS_DIR, "rest-api");
+export const FERN_REALTIME_API_DIR = path.join(FERN_APIS_DIR, "realtime-api");
+export const FERN_OPENAPI_PATH = path.join(FERN_REST_API_DIR, "openapi.yml");
+export const FERN_ASYNCAPI_PATH = path.join(
+  FERN_REALTIME_API_DIR,
+  "asyncapi.yml",
+);
 export const OPENAPI_GENERATED_PATH = path.join(
   DIST_DIR,
   "openapi.generated.yaml",
@@ -50,6 +59,15 @@ type AsyncApiTranslationMap = {
     }
   >;
 };
+
+const FERN_OPENAPI_TAG_MAP = {
+  地图: { name: "maps", displayName: "地图" },
+  系统设置: { name: "systemSettings", displayName: "系统设置" },
+  用户资料: { name: "profile", displayName: "用户资料" },
+  认证: { name: "auth", displayName: "认证" },
+  自定义房间: { name: "customRooms", displayName: "自定义房间" },
+  健康检查: { name: "health", displayName: "健康检查" },
+} as const;
 
 function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) {
@@ -134,6 +152,66 @@ function applyAsyncApiTranslations(
   writeYaml(outputPath, spec);
 }
 
+function normalizeOpenApiTagsForFern(spec: Record<string, unknown>) {
+  const tagsUsed = new Set<keyof typeof FERN_OPENAPI_TAG_MAP>();
+  const paths = spec.paths;
+
+  if (!paths || typeof paths !== "object" || Array.isArray(paths)) {
+    return spec;
+  }
+
+  for (const pathItem of Object.values(paths)) {
+    if (!pathItem || typeof pathItem !== "object" || Array.isArray(pathItem)) {
+      continue;
+    }
+
+    for (const operation of Object.values(pathItem)) {
+      if (
+        !operation ||
+        typeof operation !== "object" ||
+        Array.isArray(operation) ||
+        !Array.isArray(operation.tags)
+      ) {
+        continue;
+      }
+
+      operation.tags = operation.tags.map((tag) => {
+        if (
+          typeof tag === "string" &&
+          tag in FERN_OPENAPI_TAG_MAP
+        ) {
+          const key = tag as keyof typeof FERN_OPENAPI_TAG_MAP;
+          tagsUsed.add(key);
+          return FERN_OPENAPI_TAG_MAP[key].name;
+        }
+
+        return tag;
+      });
+    }
+  }
+
+  spec.tags = Array.from(tagsUsed).map((key) => ({
+    name: FERN_OPENAPI_TAG_MAP[key].name,
+    "x-displayName": FERN_OPENAPI_TAG_MAP[key].displayName,
+  }));
+
+  return spec;
+}
+
+function syncFernApiSpecs() {
+  if (!fs.existsSync(FERN_DIR)) {
+    return;
+  }
+
+  ensureDir(FERN_REST_API_DIR);
+  ensureDir(FERN_REALTIME_API_DIR);
+  const openApiSpec = loadYaml<Record<string, unknown>>(OPENAPI_FINAL_PATH);
+  const fernOpenApiSpec = normalizeOpenApiTagsForFern(openApiSpec);
+  writeYaml(FERN_OPENAPI_PATH, fernOpenApiSpec);
+  fs.copyFileSync(ASYNCAPI_FINAL_PATH, FERN_ASYNCAPI_PATH);
+  console.log(`Written: ${FERN_ASYNCAPI_PATH}`);
+}
+
 export function generateApiDocsArtifacts() {
   ensureDir(DOCS_DIR);
   ensureDir(DIST_DIR);
@@ -150,6 +228,7 @@ export function generateApiDocsArtifacts() {
     ASYNCAPI_TRANSLATION_PATH,
     ASYNCAPI_FINAL_PATH,
   );
+  syncFernApiSpecs();
 }
 
 export function exportOfflineApiDocs() {

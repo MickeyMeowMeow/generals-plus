@@ -1,0 +1,20 @@
+---
+title: 更新规范
+description: 本地更新 Fern API 文档的最短流程。
+---
+
+# 更新流程
+
+当服务端契约发生变化时，按下面顺序更新 Fern 文档：
+
+```bash
+pnpm --filter server generate:api-docs
+pnpm docs:fern:check
+pnpm docs:fern:dev
+```
+
+说明：
+
+- 第一条命令会重新生成 `docs/api/dist` 下的规范文件。
+- 同一次生成会把最新的 OpenAPI 和 AsyncAPI 同步到 `fern/apis/rest-api/openapi.yml` 与 `fern/apis/realtime-api/asyncapi.yml`。
+- `pnpm docs:fern:dev` 会启动 Fern 本地预览。
