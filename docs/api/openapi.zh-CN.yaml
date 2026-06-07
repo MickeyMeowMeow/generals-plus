@@ -1,95 +1,1303 @@
-overlay: 1.0.0
 info:
   title: Generals Plus REST API 文档
-  version: 1.0.0
-actions:
-  - target: $.info
-    update:
-      title: Generals Plus REST API 文档
-      description: Generals Plus 游戏服务端的 REST API 文档。
-
-  - target: $.paths['/maps'].get
-    update:
+  description: Generals Plus 游戏服务端的 REST API 文档。
+servers:
+  - description: 本地开发服务器
+paths:
+  /maps:
+    get:
       summary: 获取地图列表
+      tags:
+        - 地图
       description: 分页获取已发布的自定义地图，支持按模式筛选和排序。
-  - target: $.paths['/maps/{id}'].get
-    update:
-      summary: 获取单个地图
-      description: 根据 ID 获取自定义地图详情。
-  - target: $.paths['/maps'].post
-    update:
+      parameters:
+        - schema:
+            description: 页码，从 1 开始
+          description: 页码，从 1 开始
+        - schema:
+            description: 每页条目数，最大 50
+          description: 每页条目数，最大 50
+        - schema:
+            description: 按游戏模式筛选
+          description: 按游戏模式筛选
+        - schema:
+            description: 排序方式
+          description: 排序方式
+        - schema:
+            description: 地图名称或作者的搜索关键词
+          description: 地图名称或作者的搜索关键词
+      responses:
+        '200':
+          description: 分页地图列表
+          content:
+            application/json:
+              schema:
+                properties:
+                  maps:
+                    items:
+                      properties:
+                        id:
+                          description: 地图唯一标识
+                        name:
+                          description: 地图名称
+                        description:
+                          description: 地图说明
+                        authorId:
+                          description: 作者用户 ID
+                        authorName:
+                          description: 作者显示名称
+                        grid:
+                          oneOf:
+                            - properties:
+                                gridType:
+                                  description: 方格地图类型
+                                bounds:
+                                  properties:
+                                    width:
+                                      description: 网格宽度，范围 5 到 100
+                                    height:
+                                      description: 网格高度，范围 5 到 100
+                                  description: 方格地图尺寸
+                                cells:
+                                  items:
+                                    items:
+                                      properties:
+                                        terrain:
+                                          description: 格子的地形类型
+                                        troopCount:
+                                          description: 初始兵力；非城市格子时为 null
+                                        siteIndex:
+                                          description: 炸弹点或旗帜的点位索引
+                                        zoneIndex:
+                                          description: 目标区域索引
+                                  description: 二维格子模板数组
+                                track:
+                                  items:
+                                    properties:
+                                      x:
+                                        description: X 坐标
+                                      'y':
+                                        description: Y 坐标
+                                  description: 运载模式轨道路径点
+                                spawns:
+                                  items:
+                                    properties:
+                                      x:
+                                        description: 网格上的 X 坐标
+                                      'y':
+                                        description: 网格上的 Y 坐标
+                                      teamId:
+                                        description: 该出生点所属队伍标识
+                                      slot:
+                                        description: 该队伍内的玩家槽位索引
+                                  description: 出生点定义
+                            - properties:
+                                gridType:
+                                  description: 六边形地图类型
+                                bounds:
+                                  properties:
+                                    left:
+                                      description: 左半径
+                                    right:
+                                      description: 右半径
+                                    leftSlant:
+                                      description: 左斜半径
+                                    rightSlant:
+                                      description: 右斜半径
+                                  description: 六边形地图尺寸
+                                cells:
+                                  items:
+                                    items:
+                                      properties:
+                                        terrain:
+                                          description: 格子的地形类型
+                                        troopCount:
+                                          description: 初始兵力；非城市格子时为 null
+                                        siteIndex:
+                                          description: 炸弹点或旗帜的点位索引
+                                        zoneIndex:
+                                          description: 目标区域索引
+                                  description: 二维格子模板数组
+                                track:
+                                  items:
+                                    properties:
+                                      x:
+                                        description: X 坐标
+                                      'y':
+                                        description: Y 坐标
+                                  description: 运载模式轨道路径点
+                                spawns:
+                                  items:
+                                    properties:
+                                      x:
+                                        description: 网格上的 X 坐标
+                                      'y':
+                                        description: 网格上的 Y 坐标
+                                      teamId:
+                                        description: 该出生点所属队伍标识
+                                      slot:
+                                        description: 该队伍内的玩家槽位索引
+                                  description: 出生点定义
+                          description: 地图网格布局定义
+                        supportedModes:
+                          description: 支持的游戏模式
+                        minPlayers:
+                          description: 最小玩家人数
+                        maxPlayers:
+                          description: 最大玩家人数
+                        tags:
+                          description: 可检索标签
+                        status:
+                          description: 发布状态
+                        stats:
+                          properties:
+                            plays:
+                              description: 总游玩次数
+                            likes:
+                              description: 总点赞数
+                          description: 地图统计信息
+                        thumbnail:
+                          description: 缩略图 URL
+                        createdAt:
+                          description: 创建时间戳
+                        updatedAt:
+                          description: 最后更新时间戳
+                    description: 当前页地图数组
+                  total:
+                    description: 已发布地图总数
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 内部错误消息
+    post:
       summary: 创建自定义地图
+      tags:
+        - 地图
       description: 上传并创建自定义地图。需要登录。受系统设置和每用户地图上限限制。
-  - target: $.paths['/maps/{id}'].put
-    update:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                name:
+                  description: 地图名称，长度 1 到 100
+                description:
+                  description: 地图说明，最大长度 1000
+                grid:
+                  oneOf:
+                    - properties:
+                        gridType:
+                          description: 方格地图类型
+                        bounds:
+                          properties:
+                            width:
+                              description: 网格宽度，范围 5 到 100
+                            height:
+                              description: 网格高度，范围 5 到 100
+                          description: 方格地图尺寸
+                        cells:
+                          items:
+                            items:
+                              properties:
+                                terrain:
+                                  description: 格子的地形类型
+                                troopCount:
+                                  description: 初始兵力；非城市格子时为 null
+                                siteIndex:
+                                  description: 炸弹点或旗帜的点位索引
+                                zoneIndex:
+                                  description: 目标区域索引
+                          description: 二维格子模板数组
+                        track:
+                          items:
+                            properties:
+                              x:
+                                description: X 坐标
+                              'y':
+                                description: Y 坐标
+                          description: 运载模式轨道路径点
+                        spawns:
+                          items:
+                            properties:
+                              x:
+                                description: 网格上的 X 坐标
+                              'y':
+                                description: 网格上的 Y 坐标
+                              teamId:
+                                description: 该出生点所属队伍标识
+                              slot:
+                                description: 该队伍内的玩家槽位索引
+                          description: 出生点定义
+                    - properties:
+                        gridType:
+                          description: 六边形地图类型
+                        bounds:
+                          properties:
+                            left:
+                              description: 左半径
+                            right:
+                              description: 右半径
+                            leftSlant:
+                              description: 左斜半径
+                            rightSlant:
+                              description: 右斜半径
+                          description: 六边形地图尺寸
+                        cells:
+                          items:
+                            items:
+                              properties:
+                                terrain:
+                                  description: 格子的地形类型
+                                troopCount:
+                                  description: 初始兵力；非城市格子时为 null
+                                siteIndex:
+                                  description: 炸弹点或旗帜的点位索引
+                                zoneIndex:
+                                  description: 目标区域索引
+                          description: 二维格子模板数组
+                        track:
+                          items:
+                            properties:
+                              x:
+                                description: X 坐标
+                              'y':
+                                description: Y 坐标
+                          description: 运载模式轨道路径点
+                        spawns:
+                          items:
+                            properties:
+                              x:
+                                description: 网格上的 X 坐标
+                              'y':
+                                description: 网格上的 Y 坐标
+                              teamId:
+                                description: 该出生点所属队伍标识
+                              slot:
+                                description: 该队伍内的玩家槽位索引
+                          description: 出生点定义
+                  description: 地图网格布局定义
+                supportedModes:
+                  description: 支持的游戏模式，至少 1 个
+                minPlayers:
+                  description: 最小玩家人数
+                maxPlayers:
+                  description: 最大玩家人数
+                tags:
+                  description: 可检索标签
+                status:
+                  description: 发布状态
+                thumbnail:
+                  description: 缩略图 URL
+      responses:
+        '201':
+          description: 地图创建成功
+        '400':
+          description: 校验失败或地图网格无效
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 描述校验失败原因的错误消息
+                  details:
+                    description: 附加错误详情，例如 Zod issue 列表
+        '401':
+          description: 需要认证
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+        '403':
+          description: 地图创建功能已禁用
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 操作被禁止的原因
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 内部错误消息
+  /maps/{id}:
+    get:
+      summary: 获取单个地图
+      tags:
+        - 地图
+      description: 根据 ID 获取自定义地图详情。
+      parameters:
+        - schema:
+            description: 地图唯一标识
+          description: 地图唯一标识
+      responses:
+        '200':
+          description: 地图详情
+        '404':
+          description: 未找到地图
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未找到地图等类似错误消息
+    put:
       summary: 更新地图
+      tags:
+        - 地图
       description: 更新自定义地图。仅作者或管理员可操作。
-  - target: $.paths['/maps/{id}'].delete
-    update:
+      parameters:
+        - schema:
+            description: 地图唯一标识
+          description: 地图唯一标识
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                name:
+                  description: 地图名称，长度 1 到 100
+                description:
+                  description: 地图说明，最大长度 1000
+                grid:
+                  oneOf:
+                    - properties:
+                        gridType:
+                          description: 方格地图类型
+                        bounds:
+                          properties:
+                            width:
+                              description: 网格宽度，范围 5 到 100
+                            height:
+                              description: 网格高度，范围 5 到 100
+                          description: 方格地图尺寸
+                        cells:
+                          items:
+                            items:
+                              properties:
+                                terrain:
+                                  description: 格子的地形类型
+                                troopCount:
+                                  description: 初始兵力；非城市格子时为 null
+                                siteIndex:
+                                  description: 炸弹点或旗帜的点位索引
+                                zoneIndex:
+                                  description: 目标区域索引
+                          description: 二维格子模板数组
+                        track:
+                          items:
+                            properties:
+                              x:
+                                description: X 坐标
+                              'y':
+                                description: Y 坐标
+                          description: 运载模式轨道路径点
+                        spawns:
+                          items:
+                            properties:
+                              x:
+                                description: 网格上的 X 坐标
+                              'y':
+                                description: 网格上的 Y 坐标
+                              teamId:
+                                description: 该出生点所属队伍标识
+                              slot:
+                                description: 该队伍内的玩家槽位索引
+                          description: 出生点定义
+                    - properties:
+                        gridType:
+                          description: 六边形地图类型
+                        bounds:
+                          properties:
+                            left:
+                              description: 左半径
+                            right:
+                              description: 右半径
+                            leftSlant:
+                              description: 左斜半径
+                            rightSlant:
+                              description: 右斜半径
+                          description: 六边形地图尺寸
+                        cells:
+                          items:
+                            items:
+                              properties:
+                                terrain:
+                                  description: 格子的地形类型
+                                troopCount:
+                                  description: 初始兵力；非城市格子时为 null
+                                siteIndex:
+                                  description: 炸弹点或旗帜的点位索引
+                                zoneIndex:
+                                  description: 目标区域索引
+                          description: 二维格子模板数组
+                        track:
+                          items:
+                            properties:
+                              x:
+                                description: X 坐标
+                              'y':
+                                description: Y 坐标
+                          description: 运载模式轨道路径点
+                        spawns:
+                          items:
+                            properties:
+                              x:
+                                description: 网格上的 X 坐标
+                              'y':
+                                description: 网格上的 Y 坐标
+                              teamId:
+                                description: 该出生点所属队伍标识
+                              slot:
+                                description: 该队伍内的玩家槽位索引
+                          description: 出生点定义
+                  description: 地图网格布局定义
+                supportedModes:
+                  description: 支持的游戏模式，至少 1 个
+                minPlayers:
+                  description: 最小玩家人数
+                maxPlayers:
+                  description: 最大玩家人数
+                tags:
+                  description: 可检索标签
+                status:
+                  description: 发布状态
+                thumbnail:
+                  description: 缩略图 URL
+      responses:
+        '200':
+          description: 地图更新成功
+        '400':
+          description: 校验失败或地图网格无效
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 描述校验失败原因的错误消息
+                  details:
+                    description: 附加错误详情，例如 Zod issue 列表
+        '401':
+          description: 需要认证
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+        '403':
+          description: 地图更新功能已禁用
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 操作被禁止的原因
+        '404':
+          description: 未找到地图，或当前用户无权操作
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未找到地图等类似错误消息
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 内部错误消息
+    delete:
       summary: 删除地图
+      tags:
+        - 地图
       description: 删除自定义地图。仅作者或管理员可操作。
-  - target: $.paths['/maps/{id}/like'].post
-    update:
+      parameters:
+        - schema:
+            description: 地图唯一标识
+          description: 地图唯一标识
+      responses:
+        '204':
+          description: 地图删除成功
+        '401':
+          description: 需要认证
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+        '404':
+          description: 未找到地图，或当前用户无权操作
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未找到地图等类似错误消息
+  /maps/{id}/like:
+    post:
       summary: 切换地图点赞
+      tags:
+        - 地图
       description: 切换当前用户对地图的点赞状态。
-
-  - target: $.paths['/system/settings'].get
-    update:
+      parameters:
+        - schema:
+            description: 地图唯一标识
+          description: 地图唯一标识
+      responses:
+        '200':
+          description: 点赞状态切换成功
+          content:
+            application/json:
+              schema:
+                properties:
+                  result:
+                    description: 点赞切换结果
+        '401':
+          description: 需要认证
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+        '404':
+          description: 未找到地图
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未找到地图等类似错误消息
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 内部错误消息
+  /system/settings:
+    get:
       summary: 获取系统设置
+      tags:
+        - 系统设置
       description: 普通用户获取公开设置；管理员获取完整设置。
-  - target: $.paths['/system/settings/stream'].get
-    update:
-      summary: 实时推送系统设置
-      description: 通过 SSE 实时推送系统设置变更。
-  - target: $.paths['/system/settings'].put
-    update:
+      responses:
+        '200':
+          description: 公开设置（普通用户）或完整设置（管理员）
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 内部错误消息
+    put:
       summary: 更新系统设置
+      tags:
+        - 系统设置
       description: 更新系统设置。仅管理员可操作。
-
-  - target: $.paths['/profile'].patch
-    update:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                allowMapCreation:
+                  description: 是否允许非管理员创建地图
+                allowMapUpdates:
+                  description: 是否允许非管理员更新地图
+                systemBanner:
+                  description: 面向所有用户展示的系统横幅消息
+                maxMapsPerUser:
+                  description: 每位用户可拥有的最大地图数
+                maxTotalRooms:
+                  description: 最大同时存在的游戏房间总数，仅管理员可见
+                maxVsAiRooms:
+                  description: 最大同时存在的人机对战房间数，仅管理员可见
+                maintenanceMode:
+                  description: 系统是否处于维护模式
+      responses:
+        '200':
+          description: 系统设置更新成功
+        '401':
+          description: 需要认证
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+        '403':
+          description: 需要管理员权限
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 操作被禁止的原因
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 内部错误消息
+  /system/settings/stream:
+    get:
+      summary: 实时推送系统设置
+      tags:
+        - 系统设置
+      description: 通过 SSE 实时推送系统设置变更。
+      responses:
+        '200':
+          description: 系统设置更新的 SSE 数据流
+  /profile:
+    patch:
       summary: 更新用户资料
+      tags:
+        - 用户资料
       description: 更新当前用户的显示名称和偏好设置。提交偏好设置时需要传完整对象。
-
-  - target: $.paths['/auth/userdata'].get
-    update:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                displayName:
+                  description: 显示名称，去除首尾空格后长度为 1 到 32
+                preferences:
+                  properties:
+                    backgroundImage:
+                      oneOf:
+                        - properties:
+                            source:
+                              description: 使用内置背景预设
+                            presetId:
+                              description: 预设标识
+                        - properties:
+                            source:
+                              description: 使用自定义背景图片 URL
+                            customUrl:
+                              description: 背景图片的 HTTP 或 HTTPS URL
+                      description: 背景图片偏好
+                    avatar:
+                      oneOf:
+                        - properties:
+                            source:
+                              description: 使用默认首字母头像
+                        - properties:
+                            source:
+                              description: 使用自定义头像图片 URL
+                            customUrl:
+                              description: 头像图片的 HTTP 或 HTTPS URL
+                      description: 头像偏好
+                    motion:
+                      properties:
+                        mode:
+                          description: 动效偏好：system 跟随系统，full 全开，reduced 最小化
+                      description: 动效偏好
+                    stageAppearance:
+                      properties:
+                        backdropBlur:
+                          description: 是否启用背景模糊效果
+                        backdropOpacity:
+                          description: 背景遮罩透明度，范围 0 到 100
+                      description: 舞台背景视觉控制
+                  description: 完整的用户偏好设置对象
+      responses:
+        '200':
+          description: 用户资料更新成功
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 描述校验失败原因的错误消息
+                  details:
+                    description: 附加错误详情，例如 Zod issue 列表
+        '401':
+          description: 需要认证
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+        '404':
+          description: 未找到用户
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未找到地图等类似错误消息
+  /auth/userdata:
+    get:
       summary: 获取当前用户资料
+      tags:
+        - 认证
       description: 解析当前 Bearer 令牌并返回认证用户信息。
-  - target: $.paths['/auth/register'].post
-    update:
+      responses:
+        '200':
+          description: 认证用户数据
+        '401':
+          description: 令牌无效或缺失
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+  /auth/register:
+    post:
       summary: 注册账号
+      tags:
+        - 认证
       description: 使用邮箱和密码创建新账号，返回用户信息和 JWT。
-  - target: $.paths['/auth/login'].post
-    update:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                email:
+                  description: 用户邮箱地址
+                password:
+                  description: 用户密码
+                options:
+                  description: 附加注册选项，服务端会做清洗
+      responses:
+        '200':
+          description: 注册成功，返回用户信息和 JWT
+        '400':
+          description: 邮箱或密码格式不正确
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 描述校验失败原因的错误消息
+                  details:
+                    description: 附加错误详情，例如 Zod issue 列表
+        '401':
+          description: 注册失败，例如邮箱已存在
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+  /auth/login:
+    post:
       summary: 登录
+      tags:
+        - 认证
       description: 使用邮箱和密码登录，返回用户信息和 JWT。
-  - target: $.paths['/auth/anonymous'].post
-    update:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                email:
+                  description: 用户邮箱地址
+                password:
+                  description: 用户密码
+      responses:
+        '200':
+          description: 登录成功，返回用户信息和 JWT
+        '401':
+          description: 凭证无效
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+  /auth/anonymous:
+    post:
       summary: 匿名登录
+      tags:
+        - 认证
       description: 创建匿名账号并返回用户信息和 JWT。
-  - target: $.paths['/auth/forgot-password'].post
-    update:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                options:
+                  description: 可选的匿名用户初始化数据
+      responses:
+        '200':
+          description: 匿名登录成功，返回用户信息和 JWT
+        '401':
+          description: 匿名登录失败
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+  /auth/forgot-password:
+    post:
       summary: 请求密码重置
+      tags:
+        - 认证
       description: 触发找回密码流程。当前运行时是否可用取决于鉴权回调配置。
-  - target: $.paths['/colyseus/login'].post
-    update:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                email:
+                  description: 用户邮箱地址
+      responses:
+        '200':
+          description: 找回密码处理器已接受请求
+        '401':
+          description: 找回密码流程不可用，或请求被拒绝
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+  /colyseus/login:
+    post:
       summary: 登录 Colyseus 管理面板
+      tags:
+        - 认证
       description: 使用 JWT 换取 Colyseus Monitor 的 httpOnly Cookie，并重定向到管理页面。
-
-  - target: $.paths['/custom-rooms'].post
-    update:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                token:
+                  description: JWT 认证令牌
+                basePath:
+                  description: Cookie 生效的基础路径
+      responses:
+        '302':
+          description: 设置认证 Cookie 后重定向到 /colyseus/
+        '401':
+          description: 令牌无效
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+        '403':
+          description: 不是管理员
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 操作被禁止的原因
+  /custom-rooms:
+    post:
       summary: 创建自定义房间
+      tags:
+        - 自定义房间
       description: 创建自定义房间。可指定房间密钥，不指定则自动生成。
-  - target: $.paths['/custom-rooms/{customRoomKey}/resolve'].post
-    update:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                customRoomKey:
+                  description: 自定义房间密钥，长度 4 到 16；省略时自动生成
+      responses:
+        '201':
+          description: 自定义房间创建成功
+        '400':
+          description: 自定义房间密钥无效
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 描述校验失败原因的错误消息
+                  details:
+                    description: 附加错误详情，例如 Zod issue 列表
+        '401':
+          description: 需要认证
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+        '409':
+          description: 房间已存在
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 冲突原因
+  /custom-rooms/{customRoomKey}/resolve:
+    post:
       summary: 解析自定义房间
+      tags:
+        - 自定义房间
       description: 根据密钥加入已有房间，或在不存在时创建一个新的 setup 房间。
-
-  - target: $.paths['/health'].get
-    update:
+      parameters:
+        - schema:
+            description: 待解析的自定义房间密钥，长度 4 到 16
+          description: 待解析的自定义房间密钥，长度 4 到 16
+      responses:
+        '200':
+          description: 房间解析成功，已加入或已创建
+        '400':
+          description: 自定义房间密钥无效
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 描述校验失败原因的错误消息
+                  details:
+                    description: 附加错误详情，例如 Zod issue 列表
+        '401':
+          description: 需要认证
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 未授权
+        '409':
+          description: 房间已满
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    description: 冲突原因
+  /health:
+    get:
       summary: 服务器健康检查
+      tags:
+        - 健康检查
       description: 返回服务器健康状态和运行时间。
-  - target: $.paths['/ai/health'].get
-    update:
+      responses:
+        '200':
+          description: 服务器状态正常
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    description: 健康状态，健康时固定为 "ok"
+                  uptime:
+                    description: 服务器已运行秒数
+  /ai/health:
+    get:
       summary: AI 服务健康检查
+      tags:
+        - 健康检查
       description: 检查 Python AI 机器人服务的健康状态。不可用时返回 503。
+      responses:
+        '200':
+          description: AI 机器人服务可用
+          content:
+            application/json:
+              schema:
+                properties:
+                  available:
+                    description: AI 机器人服务可用
+        '503':
+          description: AI 机器人服务不可用
+          content:
+            application/json:
+              schema:
+                properties:
+                  available:
+                    description: AI 机器人服务不可用
+                  error:
+                    description: 错误说明
+components:
+  securitySchemes:
+    bearerAuth:
+      description: 通过 /auth/login、/auth/register 或 /auth/anonymous 获取的 JWT 令牌
+  schemas:
+    MapResponse:
+      properties:
+        id:
+          description: 地图唯一标识
+        name:
+          description: 地图名称
+        description:
+          description: 地图说明
+        authorId:
+          description: 作者用户 ID
+        authorName:
+          description: 作者显示名称
+        grid:
+          oneOf:
+            - properties:
+                gridType:
+                  description: 方格地图类型
+                bounds:
+                  properties:
+                    width:
+                      description: 网格宽度，范围 5 到 100
+                    height:
+                      description: 网格高度，范围 5 到 100
+                  description: 方格地图尺寸
+                cells:
+                  items:
+                    items:
+                      properties:
+                        terrain:
+                          description: 格子的地形类型
+                        troopCount:
+                          description: 初始兵力；非城市格子时为 null
+                        siteIndex:
+                          description: 炸弹点或旗帜的点位索引
+                        zoneIndex:
+                          description: 目标区域索引
+                  description: 二维格子模板数组
+                track:
+                  items:
+                    properties:
+                      x:
+                        description: X 坐标
+                      'y':
+                        description: Y 坐标
+                  description: 运载模式轨道路径点
+                spawns:
+                  items:
+                    properties:
+                      x:
+                        description: 网格上的 X 坐标
+                      'y':
+                        description: 网格上的 Y 坐标
+                      teamId:
+                        description: 该出生点所属队伍标识
+                      slot:
+                        description: 该队伍内的玩家槽位索引
+                  description: 出生点定义
+            - properties:
+                gridType:
+                  description: 六边形地图类型
+                bounds:
+                  properties:
+                    left:
+                      description: 左半径
+                    right:
+                      description: 右半径
+                    leftSlant:
+                      description: 左斜半径
+                    rightSlant:
+                      description: 右斜半径
+                  description: 六边形地图尺寸
+                cells:
+                  items:
+                    items:
+                      properties:
+                        terrain:
+                          description: 格子的地形类型
+                        troopCount:
+                          description: 初始兵力；非城市格子时为 null
+                        siteIndex:
+                          description: 炸弹点或旗帜的点位索引
+                        zoneIndex:
+                          description: 目标区域索引
+                  description: 二维格子模板数组
+                track:
+                  items:
+                    properties:
+                      x:
+                        description: X 坐标
+                      'y':
+                        description: Y 坐标
+                  description: 运载模式轨道路径点
+                spawns:
+                  items:
+                    properties:
+                      x:
+                        description: 网格上的 X 坐标
+                      'y':
+                        description: 网格上的 Y 坐标
+                      teamId:
+                        description: 该出生点所属队伍标识
+                      slot:
+                        description: 该队伍内的玩家槽位索引
+                  description: 出生点定义
+          description: 地图网格布局定义
+        supportedModes:
+          description: 支持的游戏模式
+        minPlayers:
+          description: 最小玩家人数
+        maxPlayers:
+          description: 最大玩家人数
+        tags:
+          description: 可检索标签
+        status:
+          description: 发布状态
+        stats:
+          properties:
+            plays:
+              description: 总游玩次数
+            likes:
+              description: 总点赞数
+          description: 地图统计信息
+        thumbnail:
+          description: 缩略图 URL
+        createdAt:
+          description: 创建时间戳
+        updatedAt:
+          description: 最后更新时间戳
+    PublicSystemSettings:
+      properties:
+        allowMapCreation:
+          description: 是否允许非管理员创建地图
+        allowMapUpdates:
+          description: 是否允许非管理员更新地图
+        systemBanner:
+          description: 系统横幅消息
+        maxMapsPerUser:
+          description: 每位用户可拥有的最大地图数
+        maintenanceMode:
+          description: 维护模式状态
+    SystemSettings:
+      properties:
+        allowMapCreation:
+          description: 是否允许非管理员创建地图
+        allowMapUpdates:
+          description: 是否允许非管理员更新地图
+        systemBanner:
+          description: 面向所有用户展示的系统横幅消息
+        maxMapsPerUser:
+          description: 每位用户可拥有的最大地图数
+        maxTotalRooms:
+          description: 最大同时存在的游戏房间总数，仅管理员可见
+        maxVsAiRooms:
+          description: 最大同时存在的人机对战房间数，仅管理员可见
+        maintenanceMode:
+          description: 系统是否处于维护模式
+    PublicUser:
+      properties:
+        id:
+          description: 用户唯一标识
+        email:
+          description: 用户邮箱地址
+        displayName:
+          description: 显示名称
+        anonymous:
+          description: 账号是否为匿名账号
+        verified:
+          description: 邮箱是否已验证
+        ratings:
+          description: 按游戏模式区分的 ELO 评分
+        preferences:
+          properties:
+            backgroundImage:
+              oneOf:
+                - properties:
+                    source:
+                      description: 使用内置背景预设
+                    presetId:
+                      description: 预设标识
+                - properties:
+                    source:
+                      description: 使用自定义背景图片 URL
+                    customUrl:
+                      description: 背景图片的 HTTP 或 HTTPS URL
+              description: 背景图片偏好
+            avatar:
+              oneOf:
+                - properties:
+                    source:
+                      description: 使用默认首字母头像
+                - properties:
+                    source:
+                      description: 使用自定义头像图片 URL
+                    customUrl:
+                      description: 头像图片的 HTTP 或 HTTPS URL
+              description: 头像偏好
+            motion:
+              properties:
+                mode:
+                  description: 动效偏好：system 跟随系统，full 全开，reduced 最小化
+              description: 动效偏好
+            stageAppearance:
+              properties:
+                backdropBlur:
+                  description: 是否启用背景模糊效果
+                backdropOpacity:
+                  description: 背景遮罩透明度，范围 0 到 100
+              description: 舞台背景视觉控制
+          description: 用户偏好设置
+        isAdmin:
+          description: 用户是否为管理员
+    AuthUserDataResponse:
+      properties:
+        user:
+          properties:
+            id:
+              description: 用户唯一标识
+            email:
+              description: 用户邮箱地址
+            displayName:
+              description: 显示名称
+            anonymous:
+              description: 账号是否为匿名账号
+            verified:
+              description: 邮箱是否已验证
+            ratings:
+              description: 按游戏模式区分的评分
+            preferences:
+              description: 用户偏好设置对象
+            isAdmin:
+              description: 用户是否为管理员
+          description: 认证用户数据
+    AuthSuccessResponse:
+      properties:
+        token:
+          description: JWT 认证令牌
+        user:
+          properties:
+            id:
+              description: 用户唯一标识
+            email:
+              description: 用户邮箱地址
+            displayName:
+              description: 显示名称
+            anonymous:
+              description: 账号是否为匿名账号
+            verified:
+              description: 邮箱是否已验证
+            ratings:
+              description: 按游戏模式区分的评分
+            preferences:
+              description: 用户偏好设置对象
+            isAdmin:
+              description: 用户是否为管理员
+          description: 认证用户数据
+    CustomRoomResolution:
+      properties:
+        customRoomKey:
+          description: 自定义房间密钥
+        setupRoomId:
+          description: setup 房间 ID
+        created:
+          description: 是否新建了房间，而不是加入已有房间

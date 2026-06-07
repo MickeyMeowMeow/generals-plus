@@ -12,13 +12,13 @@ export function createScalarApiReferenceConfiguration(basePath: string) {
   return {
     sources: [
       {
-        title: "REST 接口",
+        title: "REST API",
         slug: "rest-api",
         url: joinDocPath(basePath, "openapi.final.yaml"),
         default: true,
       },
       {
-        title: "实时接口",
+        title: "Realtime API",
         slug: "realtime-api",
         url: joinDocPath(basePath, "asyncapi.final.yaml"),
       },
@@ -36,17 +36,17 @@ export function renderScalarOfflineDocsHtml(input: {
   asyncApiContent: string;
 }) {
   return renderApiReference({
-    pageTitle: "Generals Plus 接口文档",
+    pageTitle: "Generals Plus API Docs",
     config: {
       sources: [
         {
-          title: "REST 接口",
+          title: "REST API",
           slug: "rest-api",
           content: input.openApiContent,
           default: true,
         },
         {
-          title: "实时接口",
+          title: "Realtime API",
           slug: "realtime-api",
           content: input.asyncApiContent,
         },

@@ -70,7 +70,7 @@ export function generateAsyncApiSpec(): Record<string, unknown> {
       description: contract.description,
       publish: publishKeys.length
         ? {
-            summary: `${contract.channel} 房间中客户端发送给服务端的消息`,
+            summary: `Messages the client sends to the server in the ${contract.channel} room`,
             message:
               publishKeys.length === 1
                 ? {
@@ -85,7 +85,7 @@ export function generateAsyncApiSpec(): Record<string, unknown> {
         : undefined,
       subscribe: subscribeKeys.length
         ? {
-            summary: `${contract.channel} 房间中服务端发送给客户端的消息`,
+            summary: `Messages the server sends to the client in the ${contract.channel} room`,
             message:
               subscribeKeys.length === 1
                 ? {
@@ -112,15 +112,16 @@ export function generateAsyncApiSpec(): Record<string, unknown> {
   return {
     asyncapi: "2.6.0",
     info: {
-      title: "Generals Plus 实时接口文档",
+      title: "Generals Plus Realtime API",
       version: "1.0.0",
-      description: "Generals Plus 游戏房间的 Colyseus 实时消息契约文档",
+      description:
+        "AsyncAPI reference for Colyseus room contracts used by Generals Plus.",
     },
     servers: {
       development: {
         url: "ws://localhost:2567",
         protocol: "colyseus",
-        description: "本地开发服务器",
+        description: "Local development server",
       },
     },
     channels,

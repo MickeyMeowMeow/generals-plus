@@ -23,19 +23,20 @@ export function registerMapsContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "get",
     path: "/maps",
-    summary: "获取已发布地图列表",
-    description: "分页获取已发布的自定义地图，支持按条件筛选和排序。",
-    tags: ["地图"],
+    summary: "List published maps",
+    description:
+      "Return published custom maps with pagination, filtering, and sorting.",
+    tags: ["maps"],
     request: {
       query: MapQuerySchema,
     },
     responses: {
       200: {
-        description: "分页地图列表",
+        description: "Paginated map list",
         content: { "application/json": { schema: MapListResponseSchema } },
       },
       500: {
-        description: "服务器内部错误",
+        description: "Internal server error",
         content: { "application/json": { schema: Error500Schema } },
       },
     },
@@ -44,19 +45,19 @@ export function registerMapsContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "get",
     path: "/maps/{id}",
-    summary: "获取单个地图",
-    description: "根据唯一标识获取单个自定义地图。",
-    tags: ["地图"],
+    summary: "Get a single map",
+    description: "Return a custom map by its unique identifier.",
+    tags: ["maps"],
     request: {
       params: MapIdParamsSchema,
     },
     responses: {
       200: {
-        description: "地图详情",
+        description: "Map details",
         content: { "application/json": { schema: MapResponse } },
       },
       404: {
-        description: "未找到地图",
+        description: "Map was not found",
         content: { "application/json": { schema: Error404Schema } },
       },
     },
@@ -65,33 +66,33 @@ export function registerMapsContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "post",
     path: "/maps",
-    summary: "创建自定义地图",
+    summary: "Create a custom map",
     description:
-      "上传并创建新的自定义地图。需要认证，并受系统设置 allowMapCreation 与 maxMapsPerUser 限制。",
-    tags: ["地图"],
+      "Upload and create a new custom map. Authentication is required and the request is subject to allowMapCreation and maxMapsPerUser system settings.",
+    tags: ["maps"],
     security: [{ bearerAuth: [] }],
     request: {
       body: { content: { "application/json": { schema: createMapSchema } } },
     },
     responses: {
       201: {
-        description: "地图创建成功",
+        description: "Map created successfully",
         content: { "application/json": { schema: MapResponse } },
       },
       400: {
-        description: "校验失败或地图网格无效",
+        description: "Validation failed or the map grid is invalid",
         content: { "application/json": { schema: Error400Schema } },
       },
       401: {
-        description: "需要认证",
+        description: "Authentication is required",
         content: { "application/json": { schema: Error401Schema } },
       },
       403: {
-        description: "地图创建功能已禁用",
+        description: "Map creation is disabled",
         content: { "application/json": { schema: Error403Schema } },
       },
       500: {
-        description: "服务器内部错误",
+        description: "Internal server error",
         content: { "application/json": { schema: Error500Schema } },
       },
     },
@@ -100,9 +101,10 @@ export function registerMapsContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "put",
     path: "/maps/{id}",
-    summary: "更新地图",
-    description: "更新已有自定义地图。仅地图作者或管理员可执行。",
-    tags: ["地图"],
+    summary: "Update a map",
+    description:
+      "Update an existing custom map. Only the map author or an administrator can perform this action.",
+    tags: ["maps"],
     security: [{ bearerAuth: [] }],
     request: {
       params: MapIdParamsSchema,
@@ -110,27 +112,28 @@ export function registerMapsContracts(registry: OpenAPIRegistry) {
     },
     responses: {
       200: {
-        description: "地图更新成功",
+        description: "Map updated successfully",
         content: { "application/json": { schema: MapResponse } },
       },
       400: {
-        description: "校验失败或地图网格无效",
+        description: "Validation failed or the map grid is invalid",
         content: { "application/json": { schema: Error400Schema } },
       },
       401: {
-        description: "需要认证",
+        description: "Authentication is required",
         content: { "application/json": { schema: Error401Schema } },
       },
       403: {
-        description: "地图更新功能已禁用",
+        description: "Map updates are disabled",
         content: { "application/json": { schema: Error403Schema } },
       },
       404: {
-        description: "未找到地图，或当前用户无权操作",
+        description:
+          "Map was not found or the current user does not have access",
         content: { "application/json": { schema: Error404Schema } },
       },
       500: {
-        description: "服务器内部错误",
+        description: "Internal server error",
         content: { "application/json": { schema: Error500Schema } },
       },
     },
@@ -139,21 +142,23 @@ export function registerMapsContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "delete",
     path: "/maps/{id}",
-    summary: "删除地图",
-    description: "删除自定义地图。仅地图作者或管理员可执行。",
-    tags: ["地图"],
+    summary: "Delete a map",
+    description:
+      "Delete a custom map. Only the map author or an administrator can perform this action.",
+    tags: ["maps"],
     security: [{ bearerAuth: [] }],
     request: {
       params: MapIdParamsSchema,
     },
     responses: {
-      204: { description: "地图删除成功" },
+      204: { description: "Map deleted successfully" },
       401: {
-        description: "需要认证",
+        description: "Authentication is required",
         content: { "application/json": { schema: Error401Schema } },
       },
       404: {
-        description: "未找到地图，或当前用户无权操作",
+        description:
+          "Map was not found or the current user does not have access",
         content: { "application/json": { schema: Error404Schema } },
       },
     },
@@ -162,28 +167,29 @@ export function registerMapsContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "post",
     path: "/maps/{id}/like",
-    summary: "切换地图点赞状态",
-    description: "切换当前认证用户对地图的点赞状态，返回 liked 或 unliked。",
-    tags: ["地图"],
+    summary: "Toggle map like state",
+    description:
+      "Toggle the current authenticated user's like state for the map and return liked or unliked.",
+    tags: ["maps"],
     security: [{ bearerAuth: [] }],
     request: {
       params: MapIdParamsSchema,
     },
     responses: {
       200: {
-        description: "点赞状态切换成功",
+        description: "Like state toggled successfully",
         content: { "application/json": { schema: ToggleLikeResponseSchema } },
       },
       401: {
-        description: "需要认证",
+        description: "Authentication is required",
         content: { "application/json": { schema: Error401Schema } },
       },
       404: {
-        description: "未找到地图",
+        description: "Map was not found",
         content: { "application/json": { schema: Error404Schema } },
       },
       500: {
-        description: "服务器内部错误",
+        description: "Internal server error",
         content: { "application/json": { schema: Error500Schema } },
       },
     },

@@ -2,16 +2,19 @@ import { GameMode } from "@generals-plus/engine";
 import * as z from "zod";
 
 export const QueueJoinOptionsSchema = z.object({
-  gameMode: z.enum(GameMode).describe("要排队的游戏模式"),
+  gameMode: z.enum(GameMode).describe("Game mode to queue for"),
 });
 
 export const PickColorSchema = z.object({
-  color: z.number().int().describe("调色板颜色索引"),
+  color: z.number().int().describe("Palette color index"),
 });
 
 export const SeatReservationSchema = z.object({
-  name: z.string().describe("目标房间名称，例如 match"),
-  sessionId: z.string().describe("客户端会话 ID"),
-  roomId: z.string().describe("目标房间 ID"),
-  reconnectionToken: z.string().optional().describe("用于重连的令牌"),
+  name: z.string().describe("Target room name, for example match"),
+  sessionId: z.string().describe("Client session ID"),
+  roomId: z.string().describe("Target room ID"),
+  reconnectionToken: z
+    .string()
+    .optional()
+    .describe("Token used for reconnection"),
 });

@@ -2,20 +2,22 @@ import { ActionType, GameMode } from "@generals-plus/engine";
 import * as z from "zod";
 
 export const CoordinateSchema = z.object({
-  x: z.number().int().describe("网格上的 X 坐标"),
-  y: z.number().int().describe("网格上的 Y 坐标"),
+  x: z.number().int().describe("X coordinate on the grid"),
+  y: z.number().int().describe("Y coordinate on the grid"),
 });
 
 export const MoveActionSchema = z.object({
   type: z
     .enum([ActionType.MOVE, ActionType.SPLIT_MOVE])
-    .describe("操作类型：move 或 split_move"),
-  from: CoordinateSchema.describe("起始坐标"),
-  to: CoordinateSchema.describe("目标坐标"),
+    .describe("Action type: move or split_move"),
+  from: CoordinateSchema.describe("Origin coordinate"),
+  to: CoordinateSchema.describe("Destination coordinate"),
 });
 
 export const SurrenderActionSchema = z.object({
-  type: z.literal(ActionType.SURRENDER).describe("投降并结束本场对局"),
+  type: z
+    .literal(ActionType.SURRENDER)
+    .describe("Surrender and end the current match"),
 });
 
 export const ActionSchema = z.discriminatedUnion("type", [
@@ -24,19 +26,22 @@ export const ActionSchema = z.discriminatedUnion("type", [
 ]);
 
 export const ClientPingSchema = z.object({
-  x: z.number().int().describe("标记的 X 坐标"),
-  y: z.number().int().describe("标记的 Y 坐标"),
-  type: z.enum(["attack", "defense", "rally"]).describe("标记类型"),
+  x: z.number().int().describe("Ping X coordinate"),
+  y: z.number().int().describe("Ping Y coordinate"),
+  type: z.enum(["attack", "defense", "rally"]).describe("Ping type"),
 });
 
 export const ServerPingSchema = z.object({
-  playerId: z.string().describe("发送标记的玩家 ID"),
-  x: z.number().int().describe("标记的 X 坐标"),
-  y: z.number().int().describe("标记的 Y 坐标"),
-  type: z.string().describe("标记类型"),
+  playerId: z.string().describe("ID of the player who sent the ping"),
+  x: z.number().int().describe("Ping X coordinate"),
+  y: z.number().int().describe("Ping Y coordinate"),
+  type: z.string().describe("Ping type"),
 });
 
 export const GameResultSchema = z.object({
-  mode: z.enum(GameMode).describe("游戏模式"),
-  winnerTeamId: z.string().nullable().describe("获胜队伍 ID；平局时为 null"),
+  mode: z.enum(GameMode).describe("Game mode"),
+  winnerTeamId: z
+    .string()
+    .nullable()
+    .describe("Winning team ID, or null for a draw"),
 });

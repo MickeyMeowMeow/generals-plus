@@ -1,52 +1,270 @@
+info:
+  title: Generals Plus 实时接口文档
+  description: Generals Plus 游戏房间的 Colyseus 实时消息契约文档
+servers:
+  development:
+    description: 本地开发服务器
 channels:
   match:
     description: 游戏对战房间。仅通过座位预约信息加入。
-    publishSummary: match 房间客户端上行消息
-    subscribeSummary: match 房间服务端下行消息
+    publish:
+      summary: match 房间客户端上行消息
+    subscribe:
+      summary: match 房间服务端下行消息
+    x-colyseus-joinOptions:
+      description: 无需额外参数；客户端通过座位预约信息加入。
   queue:
     description: 官方匹配队列房间。按游戏模式进行排队。
-    publishSummary: queue 房间客户端上行消息
-    subscribeSummary: queue 房间服务端下行消息
+    publish:
+      summary: queue 房间客户端上行消息
+    subscribe:
+      summary: queue 房间服务端下行消息
+    x-colyseus-joinOptions:
+      properties:
+        gameMode:
+          description: 要排队的游戏模式
+      description: 客户端提供的排队选项
   setup:
     description: 赛前配置大厅。房主管理设置并启动游戏。
-    publishSummary: setup 房间客户端上行消息
-    subscribeSummary: setup 房间服务端下行消息
+    publish:
+      summary: setup 房间客户端上行消息
+    subscribe:
+      summary: setup 房间服务端下行消息
+    x-colyseus-joinOptions:
+      properties:
+        gameMode:
+          description: 用于列出和加入 setup 房间的游戏模式
+    x-colyseus-roomCreationOptions:
+      properties:
+        gameMode:
+          description: 创建 setup 房间时的初始游戏模式
+        isPublic:
+          description: 房间是否在公开列表中可见
+        maxPlayers:
+          description: 房间可选的最大玩家数覆盖值
+        customRoomKey:
+          description: 服务端为私有 setup 房间预置的自定义房间密钥
   vs-ai:
     description: 即时 1v1 人机对战房间。加入后会立即创建比赛并下发座位预约信息。
-    publishSummary: vs-ai 房间客户端上行消息
-    subscribeSummary: vs-ai 房间服务端下行消息
-messages:
-  match_action:
-    title: 提交游戏操作
-  match_clear_queue:
-    title: 清空操作队列
-  match_ping:
-    title: 发送地图标记
-  match_game_end:
-    title: 比赛结束
-  queue_confirm:
-    title: 确认座位预约
-  queue_pickColor:
-    title: 选择颜色
-  queue_error:
-    title: 队列错误
-  queue_seat:
-    title: 下发座位预约
-  setup_pickColor:
-    title: 选择颜色
-  setup_pickTeam:
-    title: 选择队伍
-  setup_updateSettings:
-    title: 更新房间设置
-  setup_start:
-    title: 开始游戏
-  setup_error:
-    title: 房间错误
-  setup_validationFailed:
-    title: 设置校验失败
-  setup_seat:
-    title: 下发比赛座位预约
-  vs-ai_confirm:
-    title: 确认人机座位预约
-  vs-ai_seat:
-    title: 下发人机比赛座位预约
+    publish:
+      summary: vs-ai 房间客户端上行消息
+    subscribe:
+      summary: vs-ai 房间服务端下行消息
+    x-colyseus-joinOptions:
+      description: 无需额外参数；通过认证令牌识别玩家身份。
+components:
+  messages:
+    match_action:
+      title: 提交游戏操作
+      payload:
+        oneOf:
+          - properties:
+              type:
+                description: 操作类型：move 或 split_move
+              from:
+                properties:
+                  x:
+                    description: 网格上的 X 坐标
+                  'y':
+                    description: 网格上的 Y 坐标
+                description: 起始坐标
+              to:
+                properties:
+                  x:
+                    description: 网格上的 X 坐标
+                  'y':
+                    description: 网格上的 Y 坐标
+                description: 目标坐标
+          - properties:
+              type:
+                description: 投降并结束本场对局
+    match_clear_queue:
+      title: 清空操作队列
+      payload:
+        description: 无请求体
+    match_ping:
+      title: 发送地图标记
+      payload:
+        properties:
+          playerId:
+            description: 发送标记的玩家 ID
+          x:
+            description: 标记的 X 坐标
+          'y':
+            description: 标记的 Y 坐标
+          type:
+            description: 标记类型
+    match_game_end:
+      title: 比赛结束
+      payload:
+        properties:
+          mode:
+            description: 游戏模式
+          winnerTeamId:
+            description: 获胜队伍 ID；平局时为 null
+    queue_confirm:
+      title: 确认座位预约
+      payload:
+        description: 无请求体
+    queue_pickColor:
+      title: 选择颜色
+      payload:
+        properties:
+          color:
+            description: 调色板颜色索引
+    queue_error:
+      title: 队列错误
+      payload:
+        description: 面向用户展示的错误消息
+    queue_seat:
+      title: 下发座位预约
+      payload:
+        properties:
+          name:
+            description: 目标房间名称，例如 match
+          sessionId:
+            description: 客户端会话 ID
+          roomId:
+            description: 目标房间 ID
+          reconnectionToken:
+            description: 用于重连的令牌
+    setup_pickColor:
+      title: 选择颜色
+      payload:
+        properties:
+          color:
+            description: 调色板颜色索引
+    setup_pickTeam:
+      title: 选择队伍
+      payload:
+        properties:
+          teamId:
+            description: 要加入的已有队伍 ID
+          createNew:
+            description: 是否请求创建新队伍
+    setup_updateSettings:
+      title: 更新房间设置
+      payload:
+        properties:
+          gameMode:
+            description: 游戏模式
+          maxPlayers:
+            description: 最大玩家人数
+          isPublic:
+            description: 房间是否公开展示
+          playersPerTeam:
+            description: 每队玩家数
+          mapType:
+            description: 地图网格类型：方格或六边形
+          mapSource:
+            description: 地图来源：程序生成或自定义地图
+          customMapId:
+            description: 自定义地图 ID，在 mapSource 为 custom 时使用
+          mapWidth:
+            description: 方格地图宽度，范围 5 到 100
+          mapHeight:
+            description: 方格地图高度，范围 5 到 100
+          mapLeft:
+            description: 六边形地图左半径
+          mapRight:
+            description: 六边形地图右半径
+          mapLeftSlant:
+            description: 六边形地图左斜半径
+          mapRightSlant:
+            description: 六边形地图右斜半径
+          seed:
+            description: 地图生成随机种子
+          mountainRate:
+            description: 山地密度，范围 0 到 1
+          cityRate:
+            description: 城市密度，范围 0 到 1
+          minGeneralDistanceFactor:
+            description: 将军最小距离系数，范围 0 到 1
+          generalInitialTroops:
+            description: 将军初始兵力
+          cityInitialTroops:
+            description: 城市初始兵力
+          speed:
+            description: 游戏速度倍率，范围 0.5 到 10
+          duration:
+            description: 对局持续时间，单位秒
+          flagCount:
+            description: 旗帜数量，仅统治模式生效
+          targetScore:
+            description: 获胜分数，仅统治模式生效
+          bombSiteCount:
+            description: 炸弹点数量，仅爆破模式生效
+          plantDuration:
+            description: 安包时长，单位秒，仅爆破模式生效
+          defuseDuration:
+            description: 拆包时长，单位秒，仅爆破模式生效
+          detonateDuration:
+            description: 爆炸倒计时，单位秒，仅爆破模式生效
+          collapseInterval:
+            description: 塌缩波之间的间隔秒数，仅塌缩模式生效
+          startDelay:
+            description: 首次塌缩前的延迟秒数，仅塌缩模式生效
+          collapseShape:
+            description: 塌缩区域形状，仅塌缩模式生效
+          payloadSpeed:
+            description: 运载车移动速度，仅运载模式生效
+          payloadCartSize:
+            description: 运载车大小，仅运载模式生效
+          payloadRequiredOccupied:
+            description: 推动运载车所需占领人数，仅运载模式生效
+          rugbyBallCount:
+            description: 橄榄球数量，仅橄榄球模式生效
+          rugbyMoveSpeed:
+            description: 橄榄球移动速度，仅橄榄球模式生效
+          rugbyWinningScore:
+            description: 获胜分数，仅橄榄球模式生效
+          incubationDuration:
+            description: 潜伏时长，单位秒，仅生化模式生效
+          zombieTroopMultiplier:
+            description: 僵尸兵力倍率，仅生化模式生效
+    setup_start:
+      title: 开始游戏
+      payload:
+        description: 无请求体
+    setup_error:
+      title: 房间错误
+      payload:
+        description: 面向用户展示的错误消息
+    setup_validationFailed:
+      title: 设置校验失败
+      payload:
+        properties:
+          message:
+            description: 面向用户展示的校验错误消息
+          severity:
+            description: 提示消息严重级别
+          field:
+            description: 校验失败的字段
+    setup_seat:
+      title: 下发比赛座位预约
+      payload:
+        properties:
+          name:
+            description: 目标房间名称，例如 match
+          sessionId:
+            description: 客户端会话 ID
+          roomId:
+            description: 目标房间 ID
+          reconnectionToken:
+            description: 用于重连的令牌
+    vs-ai_confirm:
+      title: 确认人机座位预约
+      payload:
+        description: 无请求体
+    vs-ai_seat:
+      title: 下发人机比赛座位预约
+      payload:
+        properties:
+          name:
+            description: 目标房间名称，例如 match
+          sessionId:
+            description: 客户端会话 ID
+          roomId:
+            description: 目标房间 ID
+          reconnectionToken:
+            description: 用于重连的令牌

@@ -22,7 +22,7 @@ describe("Scalar docs configuration", () => {
 
     expect(html).toContain("openapi: 3.0.0");
     expect(html).toContain("asyncapi: 2.6.0");
-    expect(html).toContain("REST 接口");
-    expect(html).toContain("实时接口");
+    expect(html).toContain("REST API");
+    expect(html).toContain("Realtime API");
   });
 });

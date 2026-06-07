@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,28 +36,14 @@ export const ASYNCAPI_GENERATED_PATH = path.join(
 );
 export const OPENAPI_FINAL_PATH = path.join(DIST_DIR, "openapi.final.yaml");
 export const ASYNCAPI_FINAL_PATH = path.join(DIST_DIR, "asyncapi.final.yaml");
-export const OPENAPI_OVERLAY_PATH = path.join(DOCS_DIR, "openapi.zh-CN.yaml");
+export const OPENAPI_TRANSLATION_PATH = path.join(
+  DOCS_DIR,
+  "openapi.zh-CN.yaml",
+);
 export const ASYNCAPI_TRANSLATION_PATH = path.join(
   DOCS_DIR,
   "asyncapi.zh-CN.yaml",
 );
-
-type AsyncApiTranslationMap = {
-  channels?: Record<
-    string,
-    {
-      description?: string;
-      publishSummary?: string;
-      subscribeSummary?: string;
-    }
-  >;
-  messages?: Record<
-    string,
-    {
-      title?: string;
-    }
-  >;
-};
 
 const FERN_OPENAPI_TAG_MAP = {
   地图: { name: "maps", displayName: "地图" },
@@ -85,71 +70,70 @@ function loadYaml<T>(filePath: string): T {
   return yaml.load(fs.readFileSync(filePath, "utf8")) as T;
 }
 
-function applyOpenApiOverlay(
-  inputPath: string,
-  overlayPath: string,
-  outputPath: string,
-) {
-  if (!fs.existsSync(overlayPath)) {
-    fs.copyFileSync(inputPath, outputPath);
-    return;
+function mergeLocalizedSpec(base: unknown, translation: unknown): unknown {
+  if (translation === undefined) {
+    return base;
   }
 
-  const merged = execFileSync(
-    "pnpm",
-    ["exec", "overlayjs", "--openapi", inputPath, "--overlay", overlayPath],
-    {
-      cwd: SERVER_DIR,
-      encoding: "utf8",
-    },
-  );
-  fs.writeFileSync(outputPath, merged, "utf8");
+  if (
+    base === null ||
+    translation === null ||
+    typeof base !== "object" ||
+    typeof translation !== "object"
+  ) {
+    return translation;
+  }
+
+  if (Array.isArray(base) || Array.isArray(translation)) {
+    if (!Array.isArray(base) || !Array.isArray(translation)) {
+      return translation;
+    }
+
+    const maxLength = Math.max(base.length, translation.length);
+    const merged: unknown[] = [];
+
+    for (let index = 0; index < maxLength; index += 1) {
+      if (index >= translation.length) {
+        merged.push(base[index]);
+        continue;
+      }
+
+      if (index >= base.length) {
+        merged.push(translation[index]);
+        continue;
+      }
+
+      merged.push(mergeLocalizedSpec(base[index], translation[index]));
+    }
+
+    return merged;
+  }
+
+  const merged = { ...(base as Record<string, unknown>) };
+
+  for (const [key, value] of Object.entries(
+    translation as Record<string, unknown>,
+  )) {
+    merged[key] = mergeLocalizedSpec(merged[key], value);
+  }
+
+  return merged;
 }
 
-function applyAsyncApiTranslations(
+function applySpecTranslations(
   inputPath: string,
   translationPath: string,
   outputPath: string,
 ) {
-  const spec = loadYaml<Record<string, unknown>>(inputPath) as Record<
-    string,
-    any
-  >;
+  const spec = loadYaml<Record<string, unknown>>(inputPath);
 
   if (!fs.existsSync(translationPath)) {
     writeYaml(outputPath, spec);
     return;
   }
 
-  const translations = loadYaml<AsyncApiTranslationMap>(translationPath);
-
-  for (const [channelName, translation] of Object.entries(
-    translations.channels ?? {},
-  )) {
-    const channel = spec.channels?.[channelName];
-    if (!channel) continue;
-
-    if (translation.description) channel.description = translation.description;
-    if (translation.publishSummary && channel.publish) {
-      channel.publish.summary = translation.publishSummary;
-    }
-    if (translation.subscribeSummary && channel.subscribe) {
-      channel.subscribe.summary = translation.subscribeSummary;
-    }
-  }
-
-  for (const [messageName, translation] of Object.entries(
-    translations.messages ?? {},
-  )) {
-    const message = spec.components?.messages?.[messageName];
-    if (!message) continue;
-
-    if (translation.title) {
-      message.title = translation.title;
-    }
-  }
-
-  writeYaml(outputPath, spec);
+  const translations = loadYaml<Record<string, unknown>>(translationPath);
+  writeYaml(outputPath, mergeLocalizedSpec(spec, translations));
 }
 
 function normalizeOpenApiTagsForFern(spec: Record<string, unknown>) {
@@ -215,12 +199,12 @@ export function generateApiDocsArtifacts() {
 
   writeYaml(OPENAPI_GENERATED_PATH, generateOpenApiSpec());
   writeYaml(ASYNCAPI_GENERATED_PATH, generateAsyncApiSpec());
-  applyOpenApiOverlay(
+  applySpecTranslations(
     OPENAPI_GENERATED_PATH,
-    OPENAPI_OVERLAY_PATH,
+    OPENAPI_TRANSLATION_PATH,
     OPENAPI_FINAL_PATH,
   );
-  applyAsyncApiTranslations(
+  applySpecTranslations(
     ASYNCAPI_GENERATED_PATH,
     ASYNCAPI_TRANSLATION_PATH,
     ASYNCAPI_FINAL_PATH,

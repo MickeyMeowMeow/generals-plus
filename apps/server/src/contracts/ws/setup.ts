@@ -10,70 +10,84 @@ import { setupSettingsUpdateSchema } from "#/features/setup/schemas";
 const ToastSeveritySchema = z.enum(["info", "warning", "error", "success"]);
 
 const SetupJoinOptionsSchema = z.object({
-  gameMode: z.enum(GameMode).describe("用于列出和加入 setup 房间的游戏模式"),
+  gameMode: z
+    .enum(GameMode)
+    .describe("Game mode used to list and join setup rooms"),
 });
 
 const SetupRoomCreationOptionsSchema = z.object({
   gameMode: z
     .enum(GameMode)
     .default(GameMode.CLASSIC)
-    .describe("创建 setup 房间时的初始游戏模式"),
-  isPublic: z.boolean().default(true).describe("房间是否在公开列表中可见"),
+    .describe("Initial game mode used when creating a setup room"),
+  isPublic: z
+    .boolean()
+    .default(true)
+    .describe("Whether the room appears in the public room list"),
   maxPlayers: z
     .number()
     .int()
     .min(2)
     .optional()
-    .describe("房间可选的最大玩家数覆盖值"),
+    .describe("Optional maximum player count override for the room"),
   customRoomKey: z
     .string()
     .optional()
-    .describe("服务端为私有 setup 房间预置的自定义房间密钥"),
+    .describe(
+      "Custom room key pre-assigned by the server for a private setup room",
+    ),
 });
 
 const SetupValidationFailedSchema = z.object({
-  message: z.string().describe("面向用户展示的校验错误消息"),
-  severity: ToastSeveritySchema.describe("提示消息严重级别"),
-  field: z.string().optional().describe("校验失败的字段"),
+  message: z.string().describe("User-facing validation error message"),
+  severity: ToastSeveritySchema.describe("Toast severity level"),
+  field: z.string().optional().describe("Field that failed validation"),
 });
 
 export const setupWsContracts = {
   channel: "setup",
-  description: "赛前配置大厅，用于在创建正式对战房间前配置自定义对局。",
+  description:
+    "Pre-game setup lobby used to configure a custom match before the actual room is created.",
   joinOptions: SetupJoinOptionsSchema,
   roomCreationOptions: SetupRoomCreationOptionsSchema,
   clientToServer: {
     pickColor: {
-      summary: "选择颜色",
+      summary: "Choose a color",
       payload: PickColorSchema,
     },
     pickTeam: {
-      summary: "选择已有队伍或请求创建新队伍",
+      summary: "Join an existing team or request a new one",
       payload: z.object({
-        teamId: z.string().optional().describe("要加入的已有队伍 ID"),
-        createNew: z.boolean().optional().describe("是否请求创建新队伍"),
+        teamId: z
+          .string()
+          .optional()
+          .describe("Identifier of the existing team to join"),
+        createNew: z
+          .boolean()
+          .optional()
+          .describe("Whether to request creation of a new team"),
       }),
     },
     updateSettings: {
-      summary: "仅房主可用：更新游戏配置",
+      summary: "Host only: update match settings",
       payload: setupSettingsUpdateSchema,
     },
     start: {
-      summary: "仅房主可用：开始游戏",
-      payload: z.object({}).describe("无请求体"),
+      summary: "Host only: start the game",
+      payload: z.object({}).describe("Empty request body"),
     },
   },
   serverToClient: {
     error: {
-      summary: "房间错误消息",
-      payload: z.string().describe("面向用户展示的错误消息"),
+      summary: "Room error message",
+      payload: z.string().describe("User-facing error message"),
     },
     validationFailed: {
-      summary: "设置更新或开局校验失败",
+      summary: "Settings update or game start validation failed",
       payload: SetupValidationFailedSchema,
     },
     seat: {
-      summary: "游戏已开始，并已下发座位预约信息",
+      summary: "Game started and seat reservation details were issued",
       payload: SeatReservationSchema,
     },
   },

@@ -9,31 +9,34 @@ import {
 
 export const matchWsContracts = {
   channel: "match",
-  description: "进行中的对战房间。仅能通过座位预约信息加入。",
+  description:
+    "An active match room. Clients can only join through seat reservation details.",
   joinOptions: z
     .object({})
-    .describe("无需额外参数；客户端通过座位预约信息加入。"),
+    .describe(
+      "No extra parameters are required. Clients join via seat reservation details.",
+    ),
   clientToServer: {
     action: {
-      summary: "提交游戏操作",
+      summary: "Submit a game action",
       payload: ActionSchema,
     },
     clear_queue: {
-      summary: "清空玩家已排队的操作",
-      payload: z.object({}).describe("无请求体"),
+      summary: "Clear queued actions",
+      payload: z.object({}).describe("Empty request body"),
     },
     ping: {
-      summary: "发送仅队友可见的地图标记",
+      summary: "Send a teammate-only map ping",
       payload: ClientPingSchema,
     },
   },
   serverToClient: {
     game_end: {
-      summary: "对局结束",
+      summary: "Match finished",
       payload: GameResultSchema,
     },
     ping: {
-      summary: "队内地图标记广播",
+      summary: "Broadcast a team map ping",
       payload: ServerPingSchema,
     },
   },

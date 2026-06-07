@@ -1,57 +1,71 @@
 import * as z from "zod";
 
 export const AuthUserSchema = z.object({
-  id: z.string().describe("用户唯一标识"),
-  email: z.string().optional().describe("用户邮箱地址"),
-  displayName: z.string().optional().describe("显示名称"),
-  anonymous: z.boolean().optional().describe("账号是否为匿名账号"),
-  verified: z.boolean().optional().describe("邮箱是否已验证"),
+  id: z.string().describe("Unique user identifier"),
+  email: z.string().optional().describe("User email address"),
+  displayName: z.string().optional().describe("Display name"),
+  anonymous: z
+    .boolean()
+    .optional()
+    .describe("Whether the account is anonymous"),
+  verified: z
+    .boolean()
+    .optional()
+    .describe("Whether the email address has been verified"),
   ratings: z
     .record(z.string(), z.number())
     .optional()
-    .describe("按游戏模式区分的评分"),
+    .describe("Ratings grouped by game mode"),
   preferences: z
     .record(z.string(), z.unknown())
     .optional()
-    .describe("用户偏好设置对象"),
-  isAdmin: z.boolean().optional().describe("用户是否为管理员"),
+    .describe("User preferences object"),
+  isAdmin: z
+    .boolean()
+    .optional()
+    .describe("Whether the user is an administrator"),
 });
 
 export const RegisterSchema = z.object({
-  email: z.string().email().describe("用户邮箱地址"),
-  password: z.string().min(1).describe("用户密码"),
+  email: z.string().email().describe("User email address"),
+  password: z.string().min(1).describe("User password"),
   options: z
     .record(z.string(), z.unknown())
     .optional()
-    .describe("附加注册选项，服务端会做清洗"),
+    .describe(
+      "Additional registration options that are sanitized on the server",
+    ),
 });
 
 export const LoginSchema = z.object({
-  email: z.string().email().describe("用户邮箱地址"),
-  password: z.string().min(1).describe("用户密码"),
+  email: z.string().email().describe("User email address"),
+  password: z.string().min(1).describe("User password"),
 });
 
 export const AnonymousSignInSchema = z.object({
   options: z
     .record(z.string(), z.unknown())
     .optional()
-    .describe("可选的匿名用户初始化数据"),
+    .describe("Optional initial data for an anonymous user"),
 });
 
 export const ForgotPasswordSchema = z.object({
-  email: z.string().email().describe("用户邮箱地址"),
+  email: z.string().email().describe("User email address"),
 });
 
 export const ColyseusAdminLoginSchema = z.object({
-  token: z.string().describe("JWT 认证令牌"),
-  basePath: z.string().optional().describe("Cookie 生效的基础路径"),
+  token: z.string().describe("JWT bearer token"),
+  basePath: z
+    .string()
+    .optional()
+    .describe("Base path where the cookie should be valid"),
 });
 
 export const AuthSuccessResponseSchema = z.object({
-  token: z.string().describe("JWT 认证令牌"),
-  user: AuthUserSchema.describe("认证用户数据"),
+  token: z.string().describe("JWT bearer token"),
+  user: AuthUserSchema.describe("Authenticated user payload"),
 });
 
 export const AuthUserDataResponseSchema = z.object({
-  user: AuthUserSchema.describe("认证用户数据"),
+  user: AuthUserSchema.describe("Authenticated user payload"),
 });

@@ -21,12 +21,14 @@ export function registerSystemContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "get",
     path: "/system/settings",
-    summary: "获取系统设置",
-    description: "未认证用户获取公开设置；已认证管理员可获取完整设置对象。",
-    tags: ["系统设置"],
+    summary: "Get system settings",
+    description:
+      "Return public settings for anonymous users and the full settings object for authenticated administrators.",
+    tags: ["systemSettings"],
     responses: {
       200: {
-        description: "公开设置（普通用户）或完整设置（管理员）",
+        description:
+          "Public settings for regular users or the full settings object for administrators",
         content: {
           "application/json": {
             schema: z.union([PublicSettings, FullSettings]),
@@ -34,7 +36,7 @@ export function registerSystemContracts(registry: OpenAPIRegistry) {
         },
       },
       500: {
-        description: "服务器内部错误",
+        description: "Internal server error",
         content: { "application/json": { schema: Error500Schema } },
       },
     },
@@ -43,13 +45,13 @@ export function registerSystemContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "get",
     path: "/system/settings/stream",
-    summary: "通过 SSE 实时推送系统设置",
+    summary: "Stream system settings over SSE",
     description:
-      "Server-Sent Events 接口。连接建立时会先发送当前设置，后续实时推送更新。",
-    tags: ["系统设置"],
+      "Server-Sent Events endpoint. The current settings are sent when the connection is established and later updates are streamed in real time.",
+    tags: ["systemSettings"],
     responses: {
       200: {
-        description: "系统设置更新的 SSE 数据流",
+        description: "SSE stream of system settings updates",
         content: { "text/event-stream": { schema: FullSettings } },
       },
     },
@@ -58,9 +60,10 @@ export function registerSystemContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "put",
     path: "/system/settings",
-    summary: "更新系统设置",
-    description: "更新系统设置。需要管理员认证。",
-    tags: ["系统设置"],
+    summary: "Update system settings",
+    description:
+      "Update system settings. Administrator authentication is required.",
+    tags: ["systemSettings"],
     security: [{ bearerAuth: [] }],
     request: {
       body: {
@@ -69,19 +72,19 @@ export function registerSystemContracts(registry: OpenAPIRegistry) {
     },
     responses: {
       200: {
-        description: "系统设置更新成功",
+        description: "System settings updated successfully",
         content: { "application/json": { schema: FullSettings } },
       },
       401: {
-        description: "需要认证",
+        description: "Authentication is required",
         content: { "application/json": { schema: Error401Schema } },
       },
       403: {
-        description: "需要管理员权限",
+        description: "Administrator privileges are required",
         content: { "application/json": { schema: Error403Schema } },
       },
       500: {
-        description: "服务器内部错误",
+        description: "Internal server error",
         content: { "application/json": { schema: Error500Schema } },
       },
     },
