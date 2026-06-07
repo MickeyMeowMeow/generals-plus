@@ -1,0 +1,114 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+concurrency:
+  group: docs-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    if: github.event_name == 'pull_request' && secrets.FERN_TOKEN != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+
+      - name: Generate API specs
+        run: pnpm --filter server generate:api-docs
+
+      - name: Validate Fern docs
+        run: pnpm docs:fern:check
+
+      - name: Generate Fern preview
+        id: fern-preview
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+          PREVIEW_ID: pr-${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          OUTPUT=$(pnpm exec fern generate --docs --preview --id "$PREVIEW_ID" 2>&1)
+          echo "$OUTPUT"
+
+          URL=$(printf '%s\n' "$OUTPUT" | sed -n 's/.*Published docs to \(https:\/\/[^[:space:]]*\).*/\1/p' | tail -n1)
+
+          if [ -z "$URL" ]; then
+            echo "Failed to extract Fern preview URL from CLI output." >&2
+            exit 1
+          fi
+
+          echo "preview_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.fern-preview.outputs.preview_url }}
+        with:
+          script: |
+            const marker = '<!-- fern-docs-preview -->';
+            const body = `${marker}
+            Fern 预览已更新：${process.env.PREVIEW_URL}
+
+            这个链接会随着后续 push 自动刷新。`;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+            });
+
+            const existing = comments.find((comment) =>
+              comment.user?.type === 'Bot' && comment.body?.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.FERN_TOKEN != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup
+
+      - name: Generate API specs
+        run: pnpm --filter server generate:api-docs
+
+      - name: Validate Fern docs
+        run: pnpm docs:fern:check
+
+      - name: Publish Fern docs
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: pnpm exec fern generate --docs
