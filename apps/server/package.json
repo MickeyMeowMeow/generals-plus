@@ -16,15 +16,25 @@
       "./tests/*.tsx",
       "./tests/*/index.ts",
       "./tests/*/index.tsx"
+    ],
+    "#/scripts/*": [
+      "./scripts/*",
+      "./scripts/*.ts",
+      "./scripts/*.tsx",
+      "./scripts/*/index.ts",
+      "./scripts/*/index.tsx"
     ]
   },
   "scripts": {
     "build": "tsdown src/index.ts",
     "dev": "tsx watch src/index.ts",
+    "export:api-docs": "tsx scripts/export-api-docs.ts",
+    "generate:api-docs": "tsx scripts/generate-api-docs.ts",
     "test": "vitest run",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^8.5.0",
     "@colyseus/auth": "^0.17.9",
     "@colyseus/core": "^0.17.42",
     "@colyseus/monitor": "^0.17.8",
@@ -46,8 +56,13 @@
     "@colyseus/tools": "~0.17.19",
     "@generals-plus/typescript-config": "workspace:*",
     "@generals-plus/vitest-config": "workspace:*",
+    "@scalar/client-side-rendering": "^0.1.13",
+    "@scalar/express-api-reference": "^0.9.20",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.12.2",
+    "js-yaml": "^4.2.0",
     "tsdown": "^0.21.10",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",

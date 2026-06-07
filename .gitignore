@@ -30,6 +30,9 @@ build
 
 coverage/
 
+# Generated API docs output
+docs/api/dist/
+
 # Python
 __pycache__/
 *.py[cod]

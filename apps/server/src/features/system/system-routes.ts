@@ -1,6 +1,7 @@
 import { JWT } from "@colyseus/auth";
 import type { Request, Response } from "express";
 
+import { UpdateSystemSettingsSchema } from "#/features/system/schemas";
 import type { ISystemSettings } from "#/infra/db/interfaces";
 import { MongoSystemSettingsRepository } from "#/infra/db/repositories/MongoSystemSettingsRepository";
 import { MongoUserRepository } from "#/infra/db/repositories/MongoUserRepository";
@@ -106,8 +107,17 @@ export function registerSystemRoutes(app: {
     }
 
     try {
+      const validation = UpdateSystemSettingsSchema.safeParse(request.body);
+      if (!validation.success) {
+        response.status(400).json({
+          error: "Validation failed",
+          details: validation.error.issues,
+        });
+        return;
+      }
+
       const result = await systemSettingsRepository.updateSettings(
-        request.body,
+        validation.data,
       );
       broadcastSettings(result);
       response.json(result);

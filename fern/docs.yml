@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://schema.buildwithfern.dev/docs-yml.json
+instances:
+  - url: generals-plus.docs.buildwithfern.com
+
+title: Generals Plus 开发文档
+
+colors:
+  accent-primary:
+    light: "#B45309"
+    dark: "#F59E0B"
+
+navigation:
+  - section: 开始使用
+    contents:
+      - page: 文档概览
+        path: docs/pages/overview.mdx
+      - page: 更新规范
+        path: docs/pages/workflow.mdx
+  - api: REST 接口
+    api-name: rest-api
+  - api: 实时接口
+    api-name: realtime-api
