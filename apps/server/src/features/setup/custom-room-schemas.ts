@@ -6,19 +6,19 @@ export const CreateCustomRoomSchema = z.object({
     .min(4)
     .max(16)
     .optional()
-    .describe("Custom room key, 4-16 characters. Auto-generated if omitted."),
+    .describe("自定义房间密钥，长度 4 到 16；省略时自动生成"),
 });
 
 export const CustomRoomResolutionSchema = z.object({
-  customRoomKey: z.string().describe("The custom room key"),
-  setupRoomId: z.string().describe("The setup room ID"),
+  customRoomKey: z.string().describe("自定义房间密钥"),
+  setupRoomId: z.string().describe("setup 房间 ID"),
   created: z
     .boolean()
-    .describe("Whether a new room was created (vs joining existing)"),
+    .describe("是否新建了房间，而不是加入已有房间"),
 });
 
 export const ResolveCustomRoomParamsSchema = z.object({
   customRoomKey: z
     .string()
-    .describe("Custom room key to resolve, 4-16 characters"),
+    .describe("待解析的自定义房间密钥，长度 4 到 16"),
 });

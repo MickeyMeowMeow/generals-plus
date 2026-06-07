@@ -17,7 +17,7 @@ registry.registerComponent("securitySchemes", "bearerAuth", {
   scheme: "bearer",
   bearerFormat: "JWT",
   description:
-    "JWT token obtained from /auth/login, /auth/register, or /auth/anonymous",
+    "通过 /auth/login、/auth/register 或 /auth/anonymous 获取的 JWT 令牌",
 });
 
 registerMapsContracts(registry);
@@ -32,12 +32,12 @@ export function generateOpenApiSpec() {
   return generator.generateDocument({
     openapi: "3.0.0",
     info: {
-      title: "General Plus API",
+      title: "Generals Plus REST API 文档",
       version: "1.0.0",
-      description: "API documentation for the Generals Plus game server",
+      description: "Generals Plus 游戏服务端的 REST API 文档",
     },
     servers: [
-      { url: "http://localhost:2567", description: "Local development server" },
+      { url: "http://localhost:2567", description: "本地开发服务器" },
     ],
   });
 }

@@ -16,10 +16,10 @@ export function registerProfileContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "patch",
     path: "/profile",
-    summary: "Update user profile",
+    summary: "更新用户资料",
     description:
-      "Update the authenticated user's display name and/or preferences. The preferences payload must be complete when provided.",
-    tags: ["Profile"],
+      "更新当前认证用户的显示名称和偏好设置。提交 preferences 时必须传完整对象。",
+    tags: ["用户资料"],
     security: [{ bearerAuth: [] }],
     request: {
       body: {
@@ -28,19 +28,19 @@ export function registerProfileContracts(registry: OpenAPIRegistry) {
     },
     responses: {
       200: {
-        description: "Profile updated successfully",
+        description: "用户资料更新成功",
         content: { "application/json": { schema: PublicUser } },
       },
       400: {
-        description: "Validation error",
+        description: "请求参数校验失败",
         content: { "application/json": { schema: Error400Schema } },
       },
       401: {
-        description: "Authentication required",
+        description: "需要认证",
         content: { "application/json": { schema: Error401Schema } },
       },
       404: {
-        description: "User not found",
+        description: "未找到用户",
         content: { "application/json": { schema: Error404Schema } },
       },
     },

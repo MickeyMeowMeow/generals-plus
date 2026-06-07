@@ -19,10 +19,10 @@ export function registerCustomRoomContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "post",
     path: "/custom-rooms",
-    summary: "Create a custom room",
+    summary: "创建自定义房间",
     description:
-      "Create a new custom room with an optional key. If no key is provided, one is auto-generated.",
-    tags: ["Custom Rooms"],
+      "创建新的自定义房间。可选传入房间密钥；未传时自动生成。",
+    tags: ["自定义房间"],
     security: [{ bearerAuth: [] }],
     request: {
       body: {
@@ -31,19 +31,19 @@ export function registerCustomRoomContracts(registry: OpenAPIRegistry) {
     },
     responses: {
       201: {
-        description: "Custom room created",
+        description: "自定义房间创建成功",
         content: { "application/json": { schema: Resolution } },
       },
       400: {
-        description: "Invalid custom room key",
+        description: "自定义房间密钥无效",
         content: { "application/json": { schema: Error400Schema } },
       },
       401: {
-        description: "Authentication required",
+        description: "需要认证",
         content: { "application/json": { schema: Error401Schema } },
       },
       409: {
-        description: "Room already exists",
+        description: "房间已存在",
         content: { "application/json": { schema: Error409Schema } },
       },
     },
@@ -52,29 +52,29 @@ export function registerCustomRoomContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "post",
     path: "/custom-rooms/{customRoomKey}/resolve",
-    summary: "Resolve a custom room",
+    summary: "解析自定义房间",
     description:
-      "Resolve a custom room key and either join the existing setup room or create it on demand.",
-    tags: ["Custom Rooms"],
+      "根据自定义房间密钥解析目标房间，并加入已有 setup 房间或按需创建新房间。",
+    tags: ["自定义房间"],
     security: [{ bearerAuth: [] }],
     request: {
       params: ResolveCustomRoomParamsSchema,
     },
     responses: {
       200: {
-        description: "Room resolved (joined or created)",
+        description: "房间解析成功，已加入或已创建",
         content: { "application/json": { schema: Resolution } },
       },
       400: {
-        description: "Invalid custom room key",
+        description: "自定义房间密钥无效",
         content: { "application/json": { schema: Error400Schema } },
       },
       401: {
-        description: "Authentication required",
+        description: "需要认证",
         content: { "application/json": { schema: Error401Schema } },
       },
       409: {
-        description: "Room is full",
+        description: "房间已满",
         content: { "application/json": { schema: Error409Schema } },
       },
     },

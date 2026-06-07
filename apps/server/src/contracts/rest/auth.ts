@@ -27,18 +27,17 @@ export function registerAuthContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "get",
     path: "/auth/userdata",
-    summary: "Get authenticated user data",
-    description:
-      "Resolve the current bearer token and return the authenticated user payload.",
-    tags: ["Authentication"],
+    summary: "获取当前认证用户信息",
+    description: "解析当前 Bearer 令牌并返回认证用户数据。",
+    tags: ["认证"],
     security: [{ bearerAuth: [] }],
     responses: {
       200: {
-        description: "Authenticated user data",
+        description: "认证用户数据",
         content: { "application/json": { schema: AuthUserData } },
       },
       401: {
-        description: "Invalid or missing token",
+        description: "令牌无效或缺失",
         content: { "application/json": { schema: Error401Schema } },
       },
     },
@@ -47,24 +46,24 @@ export function registerAuthContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "post",
     path: "/auth/register",
-    summary: "Register with email and password",
+    summary: "使用邮箱和密码注册",
     description:
-      "Create a new account with email and password. Privileged fields are stripped from options server-side.",
-    tags: ["Authentication"],
+      "使用邮箱和密码创建新账号。options 中的特权字段会在服务端被移除。",
+    tags: ["认证"],
     request: {
       body: { content: { "application/json": { schema: RegisterSchema } } },
     },
     responses: {
       200: {
-        description: "Registration successful, returns user + JWT",
+        description: "注册成功，返回用户信息和 JWT",
         content: { "application/json": { schema: AuthSuccess } },
       },
       400: {
-        description: "Malformed email or password",
+        description: "邮箱或密码格式不正确",
         content: { "application/json": { schema: Error400Schema } },
       },
       401: {
-        description: "Registration failed, such as duplicate email",
+        description: "注册失败，例如邮箱已存在",
         content: { "application/json": { schema: Error401Schema } },
       },
     },
@@ -73,19 +72,19 @@ export function registerAuthContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "post",
     path: "/auth/login",
-    summary: "Login with email and password",
-    description: "Authenticate with email and password. Returns a JWT token.",
-    tags: ["Authentication"],
+    summary: "使用邮箱和密码登录",
+    description: "使用邮箱和密码进行认证，并返回 JWT 令牌。",
+    tags: ["认证"],
     request: {
       body: { content: { "application/json": { schema: LoginSchema } } },
     },
     responses: {
       200: {
-        description: "Login successful, returns user + JWT",
+        description: "登录成功，返回用户信息和 JWT",
         content: { "application/json": { schema: AuthSuccess } },
       },
       401: {
-        description: "Invalid credentials",
+        description: "凭证无效",
         content: { "application/json": { schema: Error401Schema } },
       },
     },
@@ -94,10 +93,9 @@ export function registerAuthContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "post",
     path: "/auth/anonymous",
-    summary: "Anonymous sign-in",
-    description:
-      "Create an anonymous account. A body with optional options may be supplied.",
-    tags: ["Authentication"],
+    summary: "匿名登录",
+    description: "创建匿名账号。请求体中可选传入初始化 options。",
+    tags: ["认证"],
     request: {
       body: {
         content: { "application/json": { schema: AnonymousSignInSchema } },
@@ -105,11 +103,11 @@ export function registerAuthContracts(registry: OpenAPIRegistry) {
     },
     responses: {
       200: {
-        description: "Anonymous sign-in successful, returns user + JWT",
+        description: "匿名登录成功，返回用户信息和 JWT",
         content: { "application/json": { schema: AuthSuccess } },
       },
       401: {
-        description: "Anonymous sign-in failed",
+        description: "匿名登录失败",
         content: { "application/json": { schema: Error401Schema } },
       },
     },
@@ -118,10 +116,10 @@ export function registerAuthContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "post",
     path: "/auth/forgot-password",
-    summary: "Request password reset email",
+    summary: "请求发送密码重置邮件",
     description:
-      "Trigger the forgot-password flow. The current runtime may reject the request depending on auth callback wiring.",
-    tags: ["Authentication"],
+      "触发找回密码流程。当前运行环境是否接受该请求取决于鉴权回调配置。",
+    tags: ["认证"],
     request: {
       body: {
         content: { "application/json": { schema: ForgotPasswordSchema } },
@@ -129,7 +127,7 @@ export function registerAuthContracts(registry: OpenAPIRegistry) {
     },
     responses: {
       200: {
-        description: "Forgot-password handler accepted the request",
+        description: "找回密码处理器已接受请求",
         content: {
           "application/json": {
             schema: z.union([z.boolean(), z.record(z.string(), z.unknown())]),
@@ -137,7 +135,7 @@ export function registerAuthContracts(registry: OpenAPIRegistry) {
         },
       },
       401: {
-        description: "Forgot-password flow unavailable or request rejected",
+        description: "找回密码流程不可用，或请求被拒绝",
         content: { "application/json": { schema: Error401Schema } },
       },
     },
@@ -146,10 +144,10 @@ export function registerAuthContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "post",
     path: "/colyseus/login",
-    summary: "Admin monitor login",
+    summary: "登录 Colyseus 管理面板",
     description:
-      "Exchange a JWT token for an httpOnly cookie to access the Colyseus Monitor. Returns HTML on errors and a 302 redirect on success.",
-    tags: ["Authentication"],
+      "使用 JWT 令牌换取访问 Colyseus Monitor 所需的 httpOnly Cookie。出错时返回 HTML，成功时返回 302 重定向。",
+    tags: ["认证"],
     security: [{ bearerAuth: [] }],
     request: {
       body: {
@@ -157,13 +155,13 @@ export function registerAuthContracts(registry: OpenAPIRegistry) {
       },
     },
     responses: {
-      302: { description: "Redirect to /colyseus/ with auth cookie set" },
+      302: { description: "设置认证 Cookie 后重定向到 /colyseus/" },
       401: {
-        description: "Invalid token",
+        description: "令牌无效",
         content: { "application/json": { schema: Error401Schema } },
       },
       403: {
-        description: "Not an admin",
+        description: "不是管理员",
         content: { "application/json": { schema: Error403Schema } },
       },
     },

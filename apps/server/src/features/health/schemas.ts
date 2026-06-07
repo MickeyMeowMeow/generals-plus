@@ -1,15 +1,15 @@
 import * as z from "zod";
 
 export const HealthResponseSchema = z.object({
-  status: z.literal("ok").describe('Health status, always "ok" when healthy'),
-  uptime: z.number().describe("Server uptime in seconds"),
+  status: z.literal("ok").describe('健康状态，健康时固定为 "ok"'),
+  uptime: z.number().describe("服务器已运行秒数"),
 });
 
 export const AiHealthOkResponseSchema = z.object({
-  available: z.literal(true).describe("AI bot service is available"),
+  available: z.literal(true).describe("AI 机器人服务可用"),
 });
 
 export const AiHealthErrorResponseSchema = z.object({
-  available: z.literal(false).describe("AI bot service is unavailable"),
-  error: z.string().describe("Error description"),
+  available: z.literal(false).describe("AI 机器人服务不可用"),
+  error: z.string().describe("错误说明"),
 });

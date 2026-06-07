@@ -10,12 +10,12 @@ export function registerHealthContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "get",
     path: "/health",
-    summary: "Server health check",
-    description: "Returns the server health status and uptime.",
-    tags: ["Health"],
+    summary: "服务器健康检查",
+    description: "返回服务器健康状态和运行时长。",
+    tags: ["健康检查"],
     responses: {
       200: {
-        description: "Server is healthy",
+        description: "服务器状态正常",
         content: { "application/json": { schema: HealthResponseSchema } },
       },
     },
@@ -24,17 +24,17 @@ export function registerHealthContracts(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: "get",
     path: "/ai/health",
-    summary: "AI bot service health check",
+    summary: "AI 机器人服务健康检查",
     description:
-      "Checks the health of the Python AI bot service. Returns 503 if the bot service is unreachable.",
-    tags: ["Health"],
+      "检查 Python AI 机器人服务的健康状态。服务不可达时返回 503。",
+    tags: ["健康检查"],
     responses: {
       200: {
-        description: "AI bot service is available",
+        description: "AI 机器人服务可用",
         content: { "application/json": { schema: AiHealthOkResponseSchema } },
       },
       503: {
-        description: "AI bot service is unavailable",
+        description: "AI 机器人服务不可用",
         content: {
           "application/json": { schema: AiHealthErrorResponseSchema },
         },

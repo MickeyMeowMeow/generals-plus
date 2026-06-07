@@ -1,11 +1,11 @@
 overlay: 1.0.0
 info:
-  title: Generals Plus API 中文说明
+  title: Generals Plus REST API 文档
   version: 1.0.0
 actions:
   - target: $.info
     update:
-      title: Generals Plus API 中文说明
+      title: Generals Plus REST API 文档
       description: Generals Plus 游戏服务端的 REST API 文档。
 
   - target: $.paths['/maps'].get
@@ -40,7 +40,7 @@ actions:
   - target: $.paths['/system/settings/stream'].get
     update:
       summary: 实时推送系统设置
-      description: 通过 Server-Sent Events 实时推送系统设置变更。
+      description: 通过 SSE 实时推送系统设置变更。
   - target: $.paths['/system/settings'].put
     update:
       summary: 更新系统设置
@@ -54,7 +54,7 @@ actions:
   - target: $.paths['/auth/userdata'].get
     update:
       summary: 获取当前用户资料
-      description: 解析当前 Bearer Token 并返回认证用户信息。
+      description: 解析当前 Bearer 令牌并返回认证用户信息。
   - target: $.paths['/auth/register'].post
     update:
       summary: 注册账号
@@ -74,7 +74,7 @@ actions:
   - target: $.paths['/colyseus/login'].post
     update:
       summary: 登录 Colyseus 管理面板
-      description: 使用 JWT 换取 Colyseus Monitor 的 httpOnly Cookie，并重定向到管理页。
+      description: 使用 JWT 换取 Colyseus Monitor 的 httpOnly Cookie，并重定向到管理页面。
 
   - target: $.paths['/custom-rooms'].post
     update:
