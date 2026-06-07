@@ -4,8 +4,7 @@ import { SeatReservationSchema } from "#/features/queue/schemas";
 
 export const vsAiWsContracts = {
   channel: "vs-ai",
-  description:
-    "即时 1v1 人机对战房间。认证用户加入后会立即创建机器人对局。",
+  description: "即时 1v1 人机对战房间。认证用户加入后会立即创建机器人对局。",
   joinOptions: z
     .object({})
     .describe("无需额外参数；通过认证令牌识别玩家身份。"),

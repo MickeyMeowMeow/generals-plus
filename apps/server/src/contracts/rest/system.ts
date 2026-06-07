@@ -22,8 +22,7 @@ export function registerSystemContracts(registry: OpenAPIRegistry) {
     method: "get",
     path: "/system/settings",
     summary: "获取系统设置",
-    description:
-      "未认证用户获取公开设置；已认证管理员可获取完整设置对象。",
+    description: "未认证用户获取公开设置；已认证管理员可获取完整设置对象。",
     tags: ["系统设置"],
     responses: {
       200: {

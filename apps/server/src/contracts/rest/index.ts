@@ -36,8 +36,6 @@ export function generateOpenApiSpec() {
       version: "1.0.0",
       description: "Generals Plus 游戏服务端的 REST API 文档",
     },
-    servers: [
-      { url: "http://localhost:2567", description: "本地开发服务器" },
-    ],
+    servers: [{ url: "http://localhost:2567", description: "本地开发服务器" }],
   });
 }

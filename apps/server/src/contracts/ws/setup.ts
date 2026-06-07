@@ -10,9 +10,7 @@ import { setupSettingsUpdateSchema } from "#/features/setup/schemas";
 const ToastSeveritySchema = z.enum(["info", "warning", "error", "success"]);
 
 const SetupJoinOptionsSchema = z.object({
-  gameMode: z
-    .enum(GameMode)
-    .describe("用于列出和加入 setup 房间的游戏模式"),
+  gameMode: z.enum(GameMode).describe("用于列出和加入 setup 房间的游戏模式"),
 });
 
 const SetupRoomCreationOptionsSchema = z.object({
@@ -20,10 +18,7 @@ const SetupRoomCreationOptionsSchema = z.object({
     .enum(GameMode)
     .default(GameMode.CLASSIC)
     .describe("创建 setup 房间时的初始游戏模式"),
-  isPublic: z
-    .boolean()
-    .default(true)
-    .describe("房间是否在公开列表中可见"),
+  isPublic: z.boolean().default(true).describe("房间是否在公开列表中可见"),
   maxPlayers: z
     .number()
     .int()
@@ -44,8 +39,7 @@ const SetupValidationFailedSchema = z.object({
 
 export const setupWsContracts = {
   channel: "setup",
-  description:
-    "赛前配置大厅，用于在创建正式对战房间前配置自定义对局。",
+  description: "赛前配置大厅，用于在创建正式对战房间前配置自定义对局。",
   joinOptions: SetupJoinOptionsSchema,
   roomCreationOptions: SetupRoomCreationOptionsSchema,
   clientToServer: {

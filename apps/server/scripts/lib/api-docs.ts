@@ -176,10 +176,7 @@ function normalizeOpenApiTagsForFern(spec: Record<string, unknown>) {
       }
 
       operation.tags = operation.tags.map((tag) => {
-        if (
-          typeof tag === "string" &&
-          tag in FERN_OPENAPI_TAG_MAP
-        ) {
+        if (typeof tag === "string" && tag in FERN_OPENAPI_TAG_MAP) {
           const key = tag as keyof typeof FERN_OPENAPI_TAG_MAP;
           tagsUsed.add(key);
           return FERN_OPENAPI_TAG_MAP[key].name;

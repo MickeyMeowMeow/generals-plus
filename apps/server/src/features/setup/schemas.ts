@@ -28,12 +28,7 @@ export const setupSettingsUpdateSchema = z
       .max(100)
       .describe("方格地图高度，范围 5 到 100"),
     mapLeft: z.number().int().min(5).max(100).describe("六边形地图左半径"),
-    mapRight: z
-      .number()
-      .int()
-      .min(5)
-      .max(100)
-      .describe("六边形地图右半径"),
+    mapRight: z.number().int().min(5).max(100).describe("六边形地图右半径"),
     mapLeftSlant: z
       .number()
       .int()
@@ -54,21 +49,9 @@ export const setupSettingsUpdateSchema = z
       .min(0)
       .max(1)
       .describe("将军最小距离系数，范围 0 到 1"),
-    generalInitialTroops: z
-      .number()
-      .int()
-      .min(1)
-      .describe("将军初始兵力"),
-    cityInitialTroops: z
-      .number()
-      .int()
-      .min(0)
-      .describe("城市初始兵力"),
-    speed: z
-      .number()
-      .min(0.5)
-      .max(10)
-      .describe("游戏速度倍率，范围 0.5 到 10"),
+    generalInitialTroops: z.number().int().min(1).describe("将军初始兵力"),
+    cityInitialTroops: z.number().int().min(0).describe("城市初始兵力"),
+    speed: z.number().min(0.5).max(10).describe("游戏速度倍率，范围 0.5 到 10"),
     duration: z.number().min(30).max(600).describe("对局持续时间，单位秒"),
     flagCount: z
       .number()

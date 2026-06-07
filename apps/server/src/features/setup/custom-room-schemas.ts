@@ -12,13 +12,9 @@ export const CreateCustomRoomSchema = z.object({
 export const CustomRoomResolutionSchema = z.object({
   customRoomKey: z.string().describe("自定义房间密钥"),
   setupRoomId: z.string().describe("setup 房间 ID"),
-  created: z
-    .boolean()
-    .describe("是否新建了房间，而不是加入已有房间"),
+  created: z.boolean().describe("是否新建了房间，而不是加入已有房间"),
 });
 
 export const ResolveCustomRoomParamsSchema = z.object({
-  customRoomKey: z
-    .string()
-    .describe("待解析的自定义房间密钥，长度 4 到 16"),
+  customRoomKey: z.string().describe("待解析的自定义房间密钥，长度 4 到 16"),
 });

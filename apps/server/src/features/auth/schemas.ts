@@ -4,10 +4,7 @@ export const AuthUserSchema = z.object({
   id: z.string().describe("用户唯一标识"),
   email: z.string().optional().describe("用户邮箱地址"),
   displayName: z.string().optional().describe("显示名称"),
-  anonymous: z
-    .boolean()
-    .optional()
-    .describe("账号是否为匿名账号"),
+  anonymous: z.boolean().optional().describe("账号是否为匿名账号"),
   verified: z.boolean().optional().describe("邮箱是否已验证"),
   ratings: z
     .record(z.string(), z.number())

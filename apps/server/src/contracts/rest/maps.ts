@@ -24,8 +24,7 @@ export function registerMapsContracts(registry: OpenAPIRegistry) {
     method: "get",
     path: "/maps",
     summary: "获取已发布地图列表",
-    description:
-      "分页获取已发布的自定义地图，支持按条件筛选和排序。",
+    description: "分页获取已发布的自定义地图，支持按条件筛选和排序。",
     tags: ["地图"],
     request: {
       query: MapQuerySchema,
@@ -102,8 +101,7 @@ export function registerMapsContracts(registry: OpenAPIRegistry) {
     method: "put",
     path: "/maps/{id}",
     summary: "更新地图",
-    description:
-      "更新已有自定义地图。仅地图作者或管理员可执行。",
+    description: "更新已有自定义地图。仅地图作者或管理员可执行。",
     tags: ["地图"],
     security: [{ bearerAuth: [] }],
     request: {
@@ -165,8 +163,7 @@ export function registerMapsContracts(registry: OpenAPIRegistry) {
     method: "post",
     path: "/maps/{id}/like",
     summary: "切换地图点赞状态",
-    description:
-      "切换当前认证用户对地图的点赞状态，返回 liked 或 unliked。",
+    description: "切换当前认证用户对地图的点赞状态，返回 liked 或 unliked。",
     tags: ["地图"],
     security: [{ bearerAuth: [] }],
     request: {

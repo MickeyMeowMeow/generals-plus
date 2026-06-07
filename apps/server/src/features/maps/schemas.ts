@@ -55,20 +55,14 @@ const GridTemplateSchema = z.discriminatedUnion("gridType", [
     gridType: z.literal(GridType.SQUARE).describe("方格地图类型"),
     bounds: SquareBoundsSchema.describe("方格地图尺寸"),
     cells: z.array(z.array(CellTemplateSchema)).describe("二维格子模板数组"),
-    track: z
-      .array(CoordinateSchema)
-      .optional()
-      .describe("运载模式轨道路径点"),
+    track: z.array(CoordinateSchema).optional().describe("运载模式轨道路径点"),
     spawns: z.array(SpawnPointSchema).describe("出生点定义"),
   }),
   z.object({
     gridType: z.literal(GridType.HEX).describe("六边形地图类型"),
     bounds: HexBoundsSchema.describe("六边形地图尺寸"),
     cells: z.array(z.array(CellTemplateSchema)).describe("二维格子模板数组"),
-    track: z
-      .array(CoordinateSchema)
-      .optional()
-      .describe("运载模式轨道路径点"),
+    track: z.array(CoordinateSchema).optional().describe("运载模式轨道路径点"),
     spawns: z.array(SpawnPointSchema).describe("出生点定义"),
   }),
 ]);
@@ -88,10 +82,7 @@ export const createMapSchema = z.object({
   minPlayers: z.number().int().min(2).describe("最小玩家人数"),
   maxPlayers: z.number().int().min(2).describe("最大玩家人数"),
   tags: z.array(z.string()).optional().describe("可检索标签"),
-  status: z
-    .enum(["draft", "published"])
-    .optional()
-    .describe("发布状态"),
+  status: z.enum(["draft", "published"]).optional().describe("发布状态"),
   thumbnail: z.string().optional().describe("缩略图 URL"),
 });
 
@@ -113,23 +104,10 @@ export const updateMapSchema = z.object({
     .min(1)
     .optional()
     .describe("支持的游戏模式，至少 1 个"),
-  minPlayers: z
-    .number()
-    .int()
-    .min(2)
-    .optional()
-    .describe("最小玩家人数"),
-  maxPlayers: z
-    .number()
-    .int()
-    .min(2)
-    .optional()
-    .describe("最大玩家人数"),
+  minPlayers: z.number().int().min(2).optional().describe("最小玩家人数"),
+  maxPlayers: z.number().int().min(2).optional().describe("最大玩家人数"),
   tags: z.array(z.string()).optional().describe("可检索标签"),
-  status: z
-    .enum(["draft", "published"])
-    .optional()
-    .describe("发布状态"),
+  status: z.enum(["draft", "published"]).optional().describe("发布状态"),
   thumbnail: z.string().optional().describe("缩略图 URL"),
 });
 
@@ -169,12 +147,7 @@ export const ToggleLikeResponseSchema = z.object({
 });
 
 export const MapQuerySchema = z.object({
-  page: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .default(1)
-    .describe("页码，从 1 开始"),
+  page: z.coerce.number().int().min(1).default(1).describe("页码，从 1 开始"),
   limit: z.coerce
     .number()
     .int()

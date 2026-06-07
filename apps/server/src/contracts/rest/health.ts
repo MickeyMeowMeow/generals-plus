@@ -25,8 +25,7 @@ export function registerHealthContracts(registry: OpenAPIRegistry) {
     method: "get",
     path: "/ai/health",
     summary: "AI 机器人服务健康检查",
-    description:
-      "检查 Python AI 机器人服务的健康状态。服务不可达时返回 503。",
+    description: "检查 Python AI 机器人服务的健康状态。服务不可达时返回 503。",
     tags: ["健康检查"],
     responses: {
       200: {

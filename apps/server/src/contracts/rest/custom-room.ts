@@ -20,8 +20,7 @@ export function registerCustomRoomContracts(registry: OpenAPIRegistry) {
     method: "post",
     path: "/custom-rooms",
     summary: "创建自定义房间",
-    description:
-      "创建新的自定义房间。可选传入房间密钥；未传时自动生成。",
+    description: "创建新的自定义房间。可选传入房间密钥；未传时自动生成。",
     tags: ["自定义房间"],
     security: [{ bearerAuth: [] }],
     request: {

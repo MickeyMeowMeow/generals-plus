@@ -3,10 +3,7 @@ import * as z from "zod";
 // Shared error response schemas used by API docs and route contracts.
 export const Error400Schema = z.object({
   error: z.string().describe("描述校验失败原因的错误消息"),
-  details: z
-    .any()
-    .optional()
-    .describe("附加错误详情，例如 Zod issue 列表"),
+  details: z.any().optional().describe("附加错误详情，例如 Zod issue 列表"),
 });
 
 export const Error401Schema = z.object({
@@ -30,12 +27,7 @@ export const Error500Schema = z.object({
 });
 
 export const PaginatedQuerySchema = z.object({
-  page: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .default(1)
-    .describe("页码，从 1 开始"),
+  page: z.coerce.number().int().min(1).default(1).describe("页码，从 1 开始"),
   limit: z.coerce
     .number()
     .int()
