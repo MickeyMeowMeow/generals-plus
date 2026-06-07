@@ -1,0 +1,52 @@
+channels:
+  match:
+    description: 游戏对战房间。仅通过 seat reservation 加入。
+    publishSummary: match 房间客户端消息
+    subscribeSummary: match 房间服务端消息
+  queue:
+    description: 官方匹配队列房间。按游戏模式进行排队。
+    publishSummary: queue 房间客户端消息
+    subscribeSummary: queue 房间服务端消息
+  setup:
+    description: 赛前配置大厅。房主管理设置并启动游戏。
+    publishSummary: setup 房间客户端消息
+    subscribeSummary: setup 房间服务端消息
+  vs-ai:
+    description: 即时 1v1 人机对战房间。加入后立即创建比赛并发送 seat reservation。
+    publishSummary: vs-ai 房间客户端消息
+    subscribeSummary: vs-ai 房间服务端消息
+messages:
+  match_action:
+    title: 提交游戏操作
+  match_clear_queue:
+    title: 清空操作队列
+  match_ping:
+    title: 发送地图标记
+  match_game_end:
+    title: 比赛结束
+  queue_confirm:
+    title: 确认座位预约
+  queue_pickColor:
+    title: 选择颜色
+  queue_error:
+    title: 队列错误
+  queue_seat:
+    title: 下发座位预约
+  setup_pickColor:
+    title: 选择颜色
+  setup_pickTeam:
+    title: 选择队伍
+  setup_updateSettings:
+    title: 更新房间设置
+  setup_start:
+    title: 开始游戏
+  setup_error:
+    title: 房间错误
+  setup_validationFailed:
+    title: 设置校验失败
+  setup_seat:
+    title: 下发比赛座位预约
+  vs-ai_confirm:
+    title: 确认人机座位预约
+  vs-ai_seat:
+    title: 下发人机比赛座位预约

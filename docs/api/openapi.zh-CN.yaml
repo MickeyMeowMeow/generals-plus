@@ -1,0 +1,95 @@
+overlay: 1.0.0
+info:
+  title: generals+ API 中文说明
+  version: 1.0.0
+actions:
+  - target: $.info
+    update:
+      title: generals+ API 中文说明
+      description: generals+ 游戏服务端的 REST API 文档。
+
+  - target: $.paths['/maps'].get
+    update:
+      summary: 获取地图列表
+      description: 分页获取已发布的自定义地图，支持按模式筛选和排序。
+  - target: $.paths['/maps/{id}'].get
+    update:
+      summary: 获取单个地图
+      description: 根据 ID 获取自定义地图详情。
+  - target: $.paths['/maps'].post
+    update:
+      summary: 创建自定义地图
+      description: 上传并创建自定义地图。需要登录。受系统设置和每用户地图上限限制。
+  - target: $.paths['/maps/{id}'].put
+    update:
+      summary: 更新地图
+      description: 更新自定义地图。仅作者或管理员可操作。
+  - target: $.paths['/maps/{id}'].delete
+    update:
+      summary: 删除地图
+      description: 删除自定义地图。仅作者或管理员可操作。
+  - target: $.paths['/maps/{id}/like'].post
+    update:
+      summary: 切换地图点赞
+      description: 切换当前用户对地图的点赞状态。
+
+  - target: $.paths['/system/settings'].get
+    update:
+      summary: 获取系统设置
+      description: 普通用户获取公开设置；管理员获取完整设置。
+  - target: $.paths['/system/settings/stream'].get
+    update:
+      summary: 实时推送系统设置
+      description: 通过 Server-Sent Events 实时推送系统设置变更。
+  - target: $.paths['/system/settings'].put
+    update:
+      summary: 更新系统设置
+      description: 更新系统设置。仅管理员可操作。
+
+  - target: $.paths['/profile'].patch
+    update:
+      summary: 更新用户资料
+      description: 更新当前用户的显示名称和偏好设置。提交偏好设置时需要传完整对象。
+
+  - target: $.paths['/auth/userdata'].get
+    update:
+      summary: 获取当前用户资料
+      description: 解析当前 Bearer Token 并返回认证用户信息。
+  - target: $.paths['/auth/register'].post
+    update:
+      summary: 注册账号
+      description: 使用邮箱和密码创建新账号，返回用户信息和 JWT。
+  - target: $.paths['/auth/login'].post
+    update:
+      summary: 登录
+      description: 使用邮箱和密码登录，返回用户信息和 JWT。
+  - target: $.paths['/auth/anonymous'].post
+    update:
+      summary: 匿名登录
+      description: 创建匿名账号并返回用户信息和 JWT。
+  - target: $.paths['/auth/forgot-password'].post
+    update:
+      summary: 请求密码重置
+      description: 触发找回密码流程。当前运行时是否可用取决于鉴权回调配置。
+  - target: $.paths['/colyseus/login'].post
+    update:
+      summary: 登录 Colyseus 管理面板
+      description: 使用 JWT 换取 Colyseus Monitor 的 httpOnly Cookie，并重定向到管理页。
+
+  - target: $.paths['/custom-rooms'].post
+    update:
+      summary: 创建自定义房间
+      description: 创建自定义房间。可指定房间密钥，不指定则自动生成。
+  - target: $.paths['/custom-rooms/{customRoomKey}/resolve'].post
+    update:
+      summary: 解析自定义房间
+      description: 根据密钥加入已有房间，或在不存在时创建一个新的 setup 房间。
+
+  - target: $.paths['/health'].get
+    update:
+      summary: 服务器健康检查
+      description: 返回服务器健康状态和运行时间。
+  - target: $.paths['/ai/health'].get
+    update:
+      summary: AI 服务健康检查
+      description: 检查 Python AI 机器人服务的健康状态。不可用时返回 503。
