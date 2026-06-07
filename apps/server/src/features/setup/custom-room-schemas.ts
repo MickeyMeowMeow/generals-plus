@@ -22,5 +22,7 @@ export const CustomRoomResolutionSchema = z.object({
 export const ResolveCustomRoomParamsSchema = z.object({
   customRoomKey: z
     .string()
+    .min(4)
+    .max(16)
     .describe("Custom room key to resolve, 4 to 16 characters"),
 });

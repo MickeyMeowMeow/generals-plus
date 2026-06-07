@@ -441,6 +441,7 @@ components:
                   required:
                     - source
                     - presetId
+                  additionalProperties: false
                 - type: object
                   properties:
                     source:
@@ -454,6 +455,7 @@ components:
                   required:
                     - source
                     - customUrl
+                  additionalProperties: false
               description: 背景图片偏好
             avatar:
               oneOf:
@@ -466,6 +468,7 @@ components:
                       description: 使用默认首字母头像
                   required:
                     - source
+                  additionalProperties: false
                 - type: object
                   properties:
                     source:
@@ -479,6 +482,7 @@ components:
                   required:
                     - source
                     - customUrl
+                  additionalProperties: false
               description: 头像偏好
             motion:
               type: object
@@ -2063,6 +2067,7 @@ paths:
                           required:
                             - source
                             - presetId
+                          additionalProperties: false
                         - type: object
                           properties:
                             source:
@@ -2076,6 +2081,7 @@ paths:
                           required:
                             - source
                             - customUrl
+                          additionalProperties: false
                       description: 背景图片偏好
                     avatar:
                       oneOf:
@@ -2088,6 +2094,7 @@ paths:
                               description: 使用默认首字母头像
                           required:
                             - source
+                          additionalProperties: false
                         - type: object
                           properties:
                             source:
@@ -2101,6 +2108,7 @@ paths:
                           required:
                             - source
                             - customUrl
+                          additionalProperties: false
                       description: 头像偏好
                     motion:
                       type: object
@@ -2514,6 +2522,8 @@ paths:
       parameters:
         - schema:
             type: string
+            minLength: 4
+            maxLength: 16
             description: 待解析的自定义房间密钥，长度 4 到 16
           required: true
           description: 待解析的自定义房间密钥，长度 4 到 16

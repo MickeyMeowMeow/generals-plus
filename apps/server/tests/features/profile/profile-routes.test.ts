@@ -166,6 +166,9 @@ describe("registerProfileRoutes", () => {
               source: "customUrl",
               customUrl: "ftp://example.com/bg.jpg",
             },
+            avatar: { source: "default" },
+            motion: { mode: "system" },
+            stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
           },
         },
       }),
@@ -173,9 +176,16 @@ describe("registerProfileRoutes", () => {
     );
 
     expect(response.status).toHaveBeenCalledWith(400);
-    expect(response.json).toHaveBeenCalledWith({
-      error: "Custom background URL must use http or https.",
-    });
+    const json = response.json.mock.calls[0]?.[0];
+    expect(json.error).toBe("Validation failed");
+    expect(json.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: ["preferences", "backgroundImage", "customUrl"],
+          message: "URL must use http or https",
+        }),
+      ]),
+    );
     expect(mocks.updateProfile).not.toHaveBeenCalled();
   });
 
@@ -244,6 +254,9 @@ describe("registerProfileRoutes", () => {
               presetId: "default",
               extra: "not-allowed",
             },
+            avatar: { source: "default" },
+            motion: { mode: "system" },
+            stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
           },
         },
       }),
@@ -251,9 +264,15 @@ describe("registerProfileRoutes", () => {
     );
 
     expect(response.status).toHaveBeenCalledWith(400);
-    expect(response.json).toHaveBeenCalledWith({
-      error: "Unknown background image field: extra",
-    });
+    const json = response.json.mock.calls[0]?.[0];
+    expect(json.error).toBe("Validation failed");
+    expect(json.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: ["preferences", "backgroundImage"],
+        }),
+      ]),
+    );
     expect(mocks.updateProfile).not.toHaveBeenCalled();
   });
 
@@ -272,6 +291,9 @@ describe("registerProfileRoutes", () => {
               customUrl: "https://example.com/bg.jpg",
               foo: "not-allowed",
             },
+            avatar: { source: "default" },
+            motion: { mode: "system" },
+            stageAppearance: { backdropBlur: true, backdropOpacity: 58 },
           },
         },
       }),
@@ -279,9 +301,15 @@ describe("registerProfileRoutes", () => {
     );
 
     expect(response.status).toHaveBeenCalledWith(400);
-    expect(response.json).toHaveBeenCalledWith({
-      error: "Unknown background image field: foo",
-    });
+    const json = response.json.mock.calls[0]?.[0];
+    expect(json.error).toBe("Validation failed");
+    expect(json.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: ["preferences", "backgroundImage"],
+        }),
+      ]),
+    );
     expect(mocks.updateProfile).not.toHaveBeenCalled();
   });
 

@@ -1,31 +1,43 @@
 import * as z from "zod";
 
+const HttpUrlSchema = z.string().refine(
+  (val) => {
+    try {
+      const url = new URL(val);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  },
+  { message: "URL must use http or https" },
+);
+
 const BackgroundPresetIdSchema = z.enum(["default", "touhou"]);
 
 export const BackgroundImageSchema = z.discriminatedUnion("source", [
-  z.object({
+  z.strictObject({
     source: z.literal("preset").describe("Use a built-in background preset"),
     presetId: BackgroundPresetIdSchema.describe("Preset identifier"),
   }),
-  z.object({
+  z.strictObject({
     source: z
       .literal("customUrl")
       .describe("Use a custom background image URL"),
-    customUrl: z
-      .string()
-      .describe("HTTP or HTTPS URL for the background image"),
+    customUrl: HttpUrlSchema.describe(
+      "HTTP or HTTPS URL for the background image",
+    ),
   }),
 ]);
 
 export const AvatarSchema = z.discriminatedUnion("source", [
-  z.object({
+  z.strictObject({
     source: z
       .literal("default")
       .describe("Use the default initial-based avatar"),
   }),
-  z.object({
+  z.strictObject({
     source: z.literal("customUrl").describe("Use a custom avatar image URL"),
-    customUrl: z.string().describe("HTTP or HTTPS URL for the avatar image"),
+    customUrl: HttpUrlSchema.describe("HTTP or HTTPS URL for the avatar image"),
   }),
 ]);
 
@@ -64,6 +76,7 @@ export const UserPreferencesSchema = z.object({
 export const UpdateProfileSchema = z.object({
   displayName: z
     .string()
+    .trim()
     .min(1)
     .max(32)
     .describe(
