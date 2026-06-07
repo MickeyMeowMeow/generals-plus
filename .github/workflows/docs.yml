@@ -13,7 +13,6 @@ concurrency:
 
 jobs:
   preview:
-    if: github.event_name == 'pull_request' && secrets.FERN_TOKEN != ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,13 +24,28 @@ jobs:
 
       - uses: ./.github/actions/setup
 
+      - name: Detect Fern token
+        id: fern-token
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: |
+          if [ -n "$FERN_TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "FERN_TOKEN is not configured; skipping Fern preview." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Generate API specs
+        if: steps.fern-token.outputs.configured == 'true'
         run: pnpm --filter server generate:api-docs
 
       - name: Validate Fern docs
+        if: steps.fern-token.outputs.configured == 'true'
         run: pnpm docs:fern:check
 
       - name: Generate Fern preview
+        if: steps.fern-token.outputs.configured == 'true'
         id: fern-preview
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
@@ -52,6 +66,7 @@ jobs:
           echo "preview_url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Comment preview URL on PR
+        if: steps.fern-token.outputs.configured == 'true'
         uses: actions/github-script@v7
         env:
           PREVIEW_URL: ${{ steps.fern-preview.outputs.preview_url }}
@@ -59,9 +74,9 @@ jobs:
           script: |
             const marker = '<!-- fern-docs-preview -->';
             const body = `${marker}
-            Fern 预览已更新：${process.env.PREVIEW_URL}
+            Fern preview updated: ${process.env.PREVIEW_URL}
 
-            这个链接会随着后续 push 自动刷新。`;
+            This link will refresh automatically as new commits are pushed to this PR.`;
 
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
@@ -93,7 +108,6 @@ jobs:
             }
 
   publish:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.FERN_TOKEN != ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -102,13 +116,28 @@ jobs:
 
       - uses: ./.github/actions/setup
 
+      - name: Detect Fern token
+        id: fern-token
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: |
+          if [ -n "$FERN_TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "FERN_TOKEN is not configured; skipping Fern publish." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Generate API specs
+        if: steps.fern-token.outputs.configured == 'true'
         run: pnpm --filter server generate:api-docs
 
       - name: Validate Fern docs
+        if: steps.fern-token.outputs.configured == 'true'
         run: pnpm docs:fern:check
 
       - name: Publish Fern docs
+        if: steps.fern-token.outputs.configured == 'true'
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
         run: pnpm exec fern generate --docs
