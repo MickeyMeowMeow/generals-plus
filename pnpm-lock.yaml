@@ -250,6 +250,9 @@ importers:
       '@generals-plus/vitest-config':
         specifier: workspace:*
         version: link:../../packages/vitest-config
+      '@scalar/client-side-rendering':
+        specifier: ^0.1.13
+        version: 0.1.13
       '@scalar/express-api-reference':
         specifier: ^0.9.20
         version: 0.9.20

@@ -1,0 +1,674 @@
+asyncapi: 2.6.0
+info:
+  title: Generals Plus 实时接口文档
+  version: 1.0.0
+  description: Generals Plus 游戏房间的 Colyseus 实时消息契约文档
+servers:
+  development:
+    url: ws://localhost:2567
+    protocol: colyseus
+    description: 本地开发服务器
+channels:
+  match:
+    description: 游戏对战房间。仅通过座位预约信息加入。
+    publish:
+      summary: match 房间客户端上行消息
+      message:
+        oneOf:
+          - $ref: '#/components/messages/match_action'
+          - $ref: '#/components/messages/match_clear_queue'
+          - $ref: '#/components/messages/match_ping'
+    subscribe:
+      summary: match 房间服务端下行消息
+      message:
+        oneOf:
+          - $ref: '#/components/messages/match_game_end'
+          - $ref: '#/components/messages/match_ping'
+    x-colyseus-joinOptions:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties: {}
+      additionalProperties: false
+      description: 无需额外参数；客户端通过座位预约信息加入。
+  queue:
+    description: 官方匹配队列房间。按游戏模式进行排队。
+    publish:
+      summary: queue 房间客户端上行消息
+      message:
+        oneOf:
+          - $ref: '#/components/messages/queue_confirm'
+          - $ref: '#/components/messages/queue_pickColor'
+    subscribe:
+      summary: queue 房间服务端下行消息
+      message:
+        oneOf:
+          - $ref: '#/components/messages/queue_error'
+          - $ref: '#/components/messages/queue_seat'
+    x-colyseus-joinOptions:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        gameMode:
+          type: string
+          enum:
+            - classic
+            - demolition
+            - turf_war
+            - biohazard
+            - payload
+            - rugby
+            - collapse
+            - domination
+            - espionage
+          description: 要排队的游戏模式
+      required:
+        - gameMode
+      additionalProperties: false
+      description: 客户端提供的排队选项
+  setup:
+    description: 赛前配置大厅。房主管理设置并启动游戏。
+    publish:
+      summary: setup 房间客户端上行消息
+      message:
+        oneOf:
+          - $ref: '#/components/messages/setup_pickColor'
+          - $ref: '#/components/messages/setup_pickTeam'
+          - $ref: '#/components/messages/setup_updateSettings'
+          - $ref: '#/components/messages/setup_start'
+    subscribe:
+      summary: setup 房间服务端下行消息
+      message:
+        oneOf:
+          - $ref: '#/components/messages/setup_error'
+          - $ref: '#/components/messages/setup_validationFailed'
+          - $ref: '#/components/messages/setup_seat'
+    x-colyseus-joinOptions:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        gameMode:
+          type: string
+          enum:
+            - classic
+            - demolition
+            - turf_war
+            - biohazard
+            - payload
+            - rugby
+            - collapse
+            - domination
+            - espionage
+          description: 用于列出和加入 setup 房间的游戏模式
+      required:
+        - gameMode
+      additionalProperties: false
+    x-colyseus-roomCreationOptions:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        gameMode:
+          default: classic
+          description: 创建 setup 房间时的初始游戏模式
+          type: string
+          enum:
+            - classic
+            - demolition
+            - turf_war
+            - biohazard
+            - payload
+            - rugby
+            - collapse
+            - domination
+            - espionage
+        isPublic:
+          default: true
+          description: 房间是否在公开列表中可见
+          type: boolean
+        maxPlayers:
+          description: 房间可选的最大玩家数覆盖值
+          type: integer
+          minimum: 2
+          maximum: 9007199254740991
+        customRoomKey:
+          description: 服务端为私有 setup 房间预置的自定义房间密钥
+          type: string
+      required:
+        - gameMode
+        - isPublic
+      additionalProperties: false
+  vs-ai:
+    description: 即时 1v1 人机对战房间。加入后会立即创建比赛并下发座位预约信息。
+    publish:
+      summary: vs-ai 房间客户端上行消息
+      message:
+        $ref: '#/components/messages/vs-ai_confirm'
+    subscribe:
+      summary: vs-ai 房间服务端下行消息
+      message:
+        $ref: '#/components/messages/vs-ai_seat'
+    x-colyseus-joinOptions:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties: {}
+      additionalProperties: false
+      description: 无需额外参数；通过认证令牌识别玩家身份。
+components:
+  messages:
+    match_action:
+      name: action
+      title: 提交游戏操作
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        oneOf:
+          - type: object
+            properties:
+              type:
+                type: string
+                enum:
+                  - move
+                  - split_move
+                description: 操作类型：move 或 split_move
+              from:
+                type: object
+                properties:
+                  x:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                    description: 网格上的 X 坐标
+                  'y':
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                    description: 网格上的 Y 坐标
+                required:
+                  - x
+                  - 'y'
+                additionalProperties: false
+                description: 起始坐标
+              to:
+                type: object
+                properties:
+                  x:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                    description: 网格上的 X 坐标
+                  'y':
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                    description: 网格上的 Y 坐标
+                required:
+                  - x
+                  - 'y'
+                additionalProperties: false
+                description: 目标坐标
+            required:
+              - type
+              - from
+              - to
+            additionalProperties: false
+          - type: object
+            properties:
+              type:
+                type: string
+                const: surrender
+                description: 投降并结束本场对局
+            required:
+              - type
+            additionalProperties: false
+    match_clear_queue:
+      name: clear_queue
+      title: 清空操作队列
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties: {}
+        additionalProperties: false
+        description: 无请求体
+    match_ping:
+      name: ping
+      title: 发送地图标记
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties:
+          playerId:
+            type: string
+            description: 发送标记的玩家 ID
+          x:
+            type: integer
+            minimum: -9007199254740991
+            maximum: 9007199254740991
+            description: 标记的 X 坐标
+          'y':
+            type: integer
+            minimum: -9007199254740991
+            maximum: 9007199254740991
+            description: 标记的 Y 坐标
+          type:
+            type: string
+            description: 标记类型
+        required:
+          - playerId
+          - x
+          - 'y'
+          - type
+        additionalProperties: false
+    match_game_end:
+      name: game_end
+      title: 比赛结束
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties:
+          mode:
+            type: string
+            enum:
+              - classic
+              - demolition
+              - turf_war
+              - biohazard
+              - payload
+              - rugby
+              - collapse
+              - domination
+              - espionage
+            description: 游戏模式
+          winnerTeamId:
+            anyOf:
+              - type: string
+              - type: 'null'
+            description: 获胜队伍 ID；平局时为 null
+        required:
+          - mode
+          - winnerTeamId
+        additionalProperties: false
+    queue_confirm:
+      name: confirm
+      title: 确认座位预约
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties: {}
+        additionalProperties: false
+        description: 无请求体
+    queue_pickColor:
+      name: pickColor
+      title: 选择颜色
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties:
+          color:
+            type: integer
+            minimum: -9007199254740991
+            maximum: 9007199254740991
+            description: 调色板颜色索引
+        required:
+          - color
+        additionalProperties: false
+    queue_error:
+      name: error
+      title: 队列错误
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: string
+        description: 面向用户展示的错误消息
+    queue_seat:
+      name: seat
+      title: 下发座位预约
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties:
+          name:
+            type: string
+            description: 目标房间名称，例如 match
+          sessionId:
+            type: string
+            description: 客户端会话 ID
+          roomId:
+            type: string
+            description: 目标房间 ID
+          reconnectionToken:
+            description: 用于重连的令牌
+            type: string
+        required:
+          - name
+          - sessionId
+          - roomId
+        additionalProperties: false
+    setup_pickColor:
+      name: pickColor
+      title: 选择颜色
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties:
+          color:
+            type: integer
+            minimum: -9007199254740991
+            maximum: 9007199254740991
+            description: 调色板颜色索引
+        required:
+          - color
+        additionalProperties: false
+    setup_pickTeam:
+      name: pickTeam
+      title: 选择队伍
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties:
+          teamId:
+            description: 要加入的已有队伍 ID
+            type: string
+          createNew:
+            description: 是否请求创建新队伍
+            type: boolean
+        additionalProperties: false
+    setup_updateSettings:
+      name: updateSettings
+      title: 更新房间设置
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties:
+          gameMode:
+            type: string
+            enum:
+              - classic
+              - demolition
+              - turf_war
+              - biohazard
+              - payload
+              - rugby
+              - collapse
+              - domination
+              - espionage
+            description: 游戏模式
+          maxPlayers:
+            type: integer
+            minimum: 2
+            maximum: 9007199254740991
+            description: 最大玩家人数
+          isPublic:
+            type: boolean
+            description: 房间是否公开展示
+          playersPerTeam:
+            type: integer
+            minimum: 1
+            maximum: 9007199254740991
+            description: 每队玩家数
+          mapType:
+            type: string
+            enum:
+              - square
+              - hex
+            description: 地图网格类型：方格或六边形
+          mapSource:
+            type: string
+            enum:
+              - generated
+              - custom
+            description: 地图来源：程序生成或自定义地图
+          customMapId:
+            type: string
+            description: 自定义地图 ID，在 mapSource 为 custom 时使用
+          mapWidth:
+            type: integer
+            minimum: 5
+            maximum: 100
+            description: 方格地图宽度，范围 5 到 100
+          mapHeight:
+            type: integer
+            minimum: 5
+            maximum: 100
+            description: 方格地图高度，范围 5 到 100
+          mapLeft:
+            type: integer
+            minimum: 5
+            maximum: 100
+            description: 六边形地图左半径
+          mapRight:
+            type: integer
+            minimum: 5
+            maximum: 100
+            description: 六边形地图右半径
+          mapLeftSlant:
+            type: integer
+            minimum: 9
+            maximum: 199
+            description: 六边形地图左斜半径
+          mapRightSlant:
+            type: integer
+            minimum: 9
+            maximum: 199
+            description: 六边形地图右斜半径
+          seed:
+            type: integer
+            minimum: -9007199254740991
+            maximum: 9007199254740991
+            description: 地图生成随机种子
+          mountainRate:
+            type: number
+            minimum: 0
+            maximum: 1
+            description: 山地密度，范围 0 到 1
+          cityRate:
+            type: number
+            minimum: 0
+            maximum: 1
+            description: 城市密度，范围 0 到 1
+          minGeneralDistanceFactor:
+            type: number
+            minimum: 0
+            maximum: 1
+            description: 将军最小距离系数，范围 0 到 1
+          generalInitialTroops:
+            type: integer
+            minimum: 1
+            maximum: 9007199254740991
+            description: 将军初始兵力
+          cityInitialTroops:
+            type: integer
+            minimum: 0
+            maximum: 9007199254740991
+            description: 城市初始兵力
+          speed:
+            type: number
+            minimum: 0.5
+            maximum: 10
+            description: 游戏速度倍率，范围 0.5 到 10
+          duration:
+            type: number
+            minimum: 30
+            maximum: 600
+            description: 对局持续时间，单位秒
+          flagCount:
+            type: integer
+            minimum: 1
+            maximum: 20
+            description: 旗帜数量，仅统治模式生效
+          targetScore:
+            type: integer
+            minimum: 100
+            maximum: 10000
+            description: 获胜分数，仅统治模式生效
+          bombSiteCount:
+            type: integer
+            minimum: 1
+            maximum: 10
+            description: 炸弹点数量，仅爆破模式生效
+          plantDuration:
+            type: number
+            minimum: 1
+            maximum: 30
+            description: 安包时长，单位秒，仅爆破模式生效
+          defuseDuration:
+            type: number
+            minimum: 1
+            maximum: 30
+            description: 拆包时长，单位秒，仅爆破模式生效
+          detonateDuration:
+            type: number
+            minimum: 10
+            maximum: 300
+            description: 爆炸倒计时，单位秒，仅爆破模式生效
+          collapseInterval:
+            type: number
+            minimum: 5
+            maximum: 300
+            description: 塌缩波之间的间隔秒数，仅塌缩模式生效
+          startDelay:
+            type: number
+            minimum: 5
+            maximum: 600
+            description: 首次塌缩前的延迟秒数，仅塌缩模式生效
+          collapseShape:
+            type: string
+            enum:
+              - circle
+              - square
+            description: 塌缩区域形状，仅塌缩模式生效
+          payloadSpeed:
+            type: number
+            minimum: 0.5
+            maximum: 10
+            description: 运载车移动速度，仅运载模式生效
+          payloadCartSize:
+            type: integer
+            minimum: 1
+            maximum: 5
+            description: 运载车大小，仅运载模式生效
+          payloadRequiredOccupied:
+            type: integer
+            minimum: 1
+            maximum: 25
+            description: 推动运载车所需占领人数，仅运载模式生效
+          rugbyBallCount:
+            type: integer
+            minimum: 1
+            maximum: 5
+            description: 橄榄球数量，仅橄榄球模式生效
+          rugbyMoveSpeed:
+            type: number
+            minimum: 0.2
+            maximum: 10
+            description: 橄榄球移动速度，仅橄榄球模式生效
+          rugbyWinningScore:
+            type: integer
+            minimum: 1
+            maximum: 20
+            description: 获胜分数，仅橄榄球模式生效
+          incubationDuration:
+            type: number
+            minimum: 15
+            maximum: 300
+            description: 潜伏时长，单位秒，仅生化模式生效
+          zombieTroopMultiplier:
+            type: number
+            minimum: 1.5
+            maximum: 5
+            description: 僵尸兵力倍率，仅生化模式生效
+        additionalProperties: false
+    setup_start:
+      name: start
+      title: 开始游戏
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties: {}
+        additionalProperties: false
+        description: 无请求体
+    setup_error:
+      name: error
+      title: 房间错误
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: string
+        description: 面向用户展示的错误消息
+    setup_validationFailed:
+      name: validationFailed
+      title: 设置校验失败
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties:
+          message:
+            type: string
+            description: 面向用户展示的校验错误消息
+          severity:
+            type: string
+            enum:
+              - info
+              - warning
+              - error
+              - success
+            description: 提示消息严重级别
+          field:
+            description: 校验失败的字段
+            type: string
+        required:
+          - message
+          - severity
+        additionalProperties: false
+    setup_seat:
+      name: seat
+      title: 下发比赛座位预约
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties:
+          name:
+            type: string
+            description: 目标房间名称，例如 match
+          sessionId:
+            type: string
+            description: 客户端会话 ID
+          roomId:
+            type: string
+            description: 目标房间 ID
+          reconnectionToken:
+            description: 用于重连的令牌
+            type: string
+        required:
+          - name
+          - sessionId
+          - roomId
+        additionalProperties: false
+    vs-ai_confirm:
+      name: confirm
+      title: 确认人机座位预约
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties: {}
+        additionalProperties: false
+        description: 无请求体
+    vs-ai_seat:
+      name: seat
+      title: 下发人机比赛座位预约
+      payload:
+        $schema: https://json-schema.org/draft/2020-12/schema
+        type: object
+        properties:
+          name:
+            type: string
+            description: 目标房间名称，例如 match
+          sessionId:
+            type: string
+            description: 客户端会话 ID
+          roomId:
+            type: string
+            description: 目标房间 ID
+          reconnectionToken:
+            description: 用于重连的令牌
+            type: string
+        required:
+          - name
+          - sessionId
+          - roomId
+        additionalProperties: false

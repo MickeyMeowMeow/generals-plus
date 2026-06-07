@@ -4,6 +4,8 @@ import * as path from "node:path";
 import { apiReference } from "@scalar/express-api-reference";
 import type { Application } from "express";
 
+import { createScalarApiReferenceConfiguration } from "#/contracts/scalar-docs";
+
 function findDocsDir(candidateDocsDirs: string[]) {
   return candidateDocsDirs.find((dir) =>
     fs.existsSync(path.join(dir, "openapi.final.yaml")),
@@ -27,12 +29,9 @@ export function mountApiDocsPreview(
     res.sendFile(path.join(docsDir, "asyncapi.final.yaml"));
   });
 
-  const scalarHandler = apiReference({
-    spec: {
-      url: "/api-docs/openapi.final.yaml",
-    },
-    theme: "default",
-  });
+  const scalarHandler = apiReference(
+    createScalarApiReferenceConfiguration("/api-docs"),
+  );
 
   app.get("/api-docs", scalarHandler);
   app.get("/api-docs/", scalarHandler);

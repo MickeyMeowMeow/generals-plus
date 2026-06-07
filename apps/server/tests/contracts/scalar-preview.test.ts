@@ -74,6 +74,7 @@ describe("mountApiDocsPreview", () => {
       expect(response.headers.get("content-type")).toContain("text/html");
       expect(text).toContain("Scalar");
       expect(text).toContain("/api-docs/openapi.final.yaml");
+      expect(text).toContain("/api-docs/asyncapi.final.yaml");
     });
   });
 });
